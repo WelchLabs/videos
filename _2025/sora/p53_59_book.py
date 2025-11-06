@@ -242,7 +242,7 @@ class TrackerControlledVectorField(VectorField):
         self.note_changed_data()
 
 
-class follow_trajectory_2(InteractiveScene):
+class follow_trajectory_2b(InteractiveScene):
     def construct(self):
         '''
         Ok ok ok need to do a direct transition from p47b after fading out all the traces etc -> then bring
@@ -551,7 +551,8 @@ class follow_trajectory_2(InteractiveScene):
         self.wait()
 
         history_length=64
-        dots_indices_with_tails=[0, 30, 60, 90, 120, 150, 180, 210, 240, 255]
+        # dots_indices_with_tails=[0, 30, 60, 90, 120, 150, 180, 210, 240, 255]
+        dots_indices_with_tails = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255]
         for k in range(0,64):
             self.play(*[all_dots_to_move[path_index].animate.move_to(axes.c2p(*[history_pre_noise[k, path_index, 0], 
                                 history_pre_noise[k, path_index, 1]])) for path_index in range(len(all_dots_to_move))], 
@@ -576,9 +577,9 @@ class follow_trajectory_2(InteractiveScene):
 
 
         self.play(FadeOut(all_path_segments))
-        self.wait()
+        # self.wait()
         self.play(FadeOut(all_dots_to_move))
-        self.wait()
+        # self.wait()
 
         # self.play(time_tracker.animate.set_value(0.0), run_time=1.0)
         time_tracker.set_value(0.0)
@@ -587,6 +588,7 @@ class follow_trajectory_2(InteractiveScene):
 
 
         # num_dots=16 #Start small for testing and crank for final animation. 
+        num_dots=96 #256 is kinda overwhelming here
         colors=get_color_wheel_colors(num_dots)
         all_traced_paths=VGroup()
         all_dots_to_move=VGroup()
@@ -595,16 +597,16 @@ class follow_trajectory_2(InteractiveScene):
             dot_to_move.set_color(colors[path_index])
             all_dots_to_move.add(dot_to_move)
 
-            traced_path = CustomTracedPath(dot_to_move.get_center, stroke_color=colors[path_index], stroke_width=2.0, 
+            traced_path = CustomTracedPath(dot_to_move.get_center, stroke_color=colors[path_index], stroke_width=3.0, 
                                           opacity_range=(0.4, 0.4), fade_length=24) #Tryin opaicty 0 and longer fade length in v2
             # traced_path.set_opacity(0.5)
             # traced_path.set_fill(opacity=0)
             all_traced_paths.add(traced_path)
         self.add(all_traced_paths)
 
-        self.wait()
+        # self.wait()
 
-        self.play(FadeIn(all_dots_to_move), self.frame.animate.reorient(0, 0, 0, (-0.06, 0.01, 0.0), 7.10), run_time=3.0)
+        # self.play(FadeIn(all_dots_to_move), self.frame.animate.reorient(0, 0, 0, (-0.06, 0.01, 0.0), 7.10), run_time=3.0)
         self.wait()
 
         for k in range(64):
@@ -618,21 +620,39 @@ class follow_trajectory_2(InteractiveScene):
             # self.play(time_tracker.animate.set_value(8.0*(k/64.0)), run_time=0.1)
 
         self.wait()
-        self.play(FadeOut(all_traced_paths), FadeOut(vector_field), FadeOut(axes),
-                  self.frame.animate.reorient(0, 0, 0, (-0.11, -0.32, 0.0), 6.34), 
-                  run_time=2.5)
+        #BOook?
+
+        self.frame.reorient(0, 0, 0, (-0.23, 0.03, 0.0), 7.34)
         self.wait()
 
-        #Ok so to get me into p57, I think i just want to go back to that sam path I showed at the beggining of 40?
-        # self.play(FadeIn(axes), FadeOut(all_dots_to_move))
-
-        time_tracker.set_value(8.0)
-        time_tracker.set_value(0.0) #Doesn't seem liek this is taking?
-        self.play(FadeIn(axes), 
-                  FadeOut(all_dots_to_move), 
-                  # FadeIn(vector_field), #Lets actually fade in the vector field in p57
-                  self.frame.animate.reorient(0, 0, 0, (0.00, 0.00, 0.0), 8.25), run_time=3.0)
+        self.remove(axes)
+        self.frame.reorient(0, 0, 0, (-0.39, -0.12, 0.0), 7.81)
         self.wait()
+
+        self.frame.reorient(0, 0, 0, (-0.26, -0.33, 0.0), 6.40)
+        self.wait()
+
+
+        self.remove(all_traced_paths)
+        self.wait()
+
+
+        # self.wait()
+        # self.play(FadeOut(all_traced_paths), FadeOut(vector_field), FadeOut(axes),
+        #           self.frame.animate.reorient(0, 0, 0, (-0.11, -0.32, 0.0), 6.34), 
+        #           run_time=2.5)
+        # self.wait()
+
+        # #Ok so to get me into p57, I think i just want to go back to that sam path I showed at the beggining of 40?
+        # # self.play(FadeIn(axes), FadeOut(all_dots_to_move))
+
+        # time_tracker.set_value(8.0)
+        # time_tracker.set_value(0.0) #Doesn't seem liek this is taking?
+        # self.play(FadeIn(axes), 
+        #           FadeOut(all_dots_to_move), 
+        #           # FadeIn(vector_field), #Lets actually fade in the vector field in p57
+        #           self.frame.animate.reorient(0, 0, 0, (0.00, 0.00, 0.0), 8.25), run_time=3.0)
+        # self.wait()
 
         self.embed()
 
