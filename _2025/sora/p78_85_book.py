@@ -4,7 +4,7 @@ import glob
 CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
 YELLOW_FADE='#7f6a2d'
-BLUE='#65c8d0'
+BLUE='#00AEEF' #'#65c8d0'
 GREEN='#00a14b' 
 CHILL_GREEN='#6c946f'
 CHILL_BLUE='#3d5c6f'
@@ -194,7 +194,6 @@ class CustomTracedPath(VMobject):
         """Get the current number of segments"""
         return len(self.segments)
 
-
 class TrackerControlledVectorField(VectorField):
     def __init__(self, time_tracker, max_radius=2.0, min_opacity=0.1, max_opacity=0.7, **kwargs):
         self.time_tracker = time_tracker
@@ -269,7 +268,6 @@ class TrackerControlledVectorField(VectorField):
         
         # Make sure the data is marked as changed
         self.note_changed_data()
-
 
 class MultiClassSwissroll(Dataset):
     def __init__(self, tmin, tmax, N, num_classes=10, center=(0,0), scale=1.0):
@@ -729,8 +727,6 @@ class guidance_book_4c(InteractiveScene):
 
         self.embed()
 
-
-
 class guidance_book_5(InteractiveScene):
     def construct(self):
 
@@ -849,33 +845,23 @@ class guidance_book_5(InteractiveScene):
         self.add(all_traced_paths)
         # self.wait()
 
-        # self.play(dots.animate.set_opacity(0.15), 
-        #          FadeOut(traced_path),
-        #          FadeOut(dot_to_move),
-        #          FadeOut(a2), 
-        #          FadeOut(x100), 
-        #          eq_3.animate.set_opacity(0.0), 
-        #          eq_2.animate.set_opacity(0.0),
-        #          FadeIn(all_dots_to_move)
-        #          )
-        # self.wait()
 
         dots.set_opacity(0.15)
-        self.add(all_dots_to_move)
-        self.wait()
+        # self.add(all_dots_to_move)
+        # self.wait()
 
 
-        for k in range(xt_history.shape[1]):
-            #Clunky but meh
-            animations=[]
-            path_index=0
-            for class_index in range(xt_history.shape[0]):
-                for j in range(num_dots_per_class): 
-                    animations.append(all_dots_to_move[path_index].animate.move_to(axes.c2p(*[xt_history[class_index, k, j, 0], 
-                                                                                              xt_history[class_index, k, j, 1]])))
-                    path_index+=1
-            self.play(*animations, rate_func=linear, run_time=0.1)
-        self.wait()
+        # for k in range(xt_history.shape[1]):
+        #     #Clunky but meh
+        #     animations=[]
+        #     path_index=0
+        #     for class_index in range(xt_history.shape[0]):
+        #         for j in range(num_dots_per_class): 
+        #             animations.append(all_dots_to_move[path_index].animate.move_to(axes.c2p(*[xt_history[class_index, k, j, 0], 
+        #                                                                                       xt_history[class_index, k, j, 1]])))
+        #             path_index+=1
+        #     self.play(*animations, rate_func=linear, run_time=0.1)
+        # self.wait()
 
 
 
@@ -885,16 +871,16 @@ class guidance_book_5(InteractiveScene):
         # Use colors here that match what I'll use for two different vector fields I think
         # I think it's going to be gray and yellow, lets try that. 
 
-        self.play(FadeOut(all_dots_to_move), 
-                  dots.animate.set_color('#777777').set_opacity(1.0))
-        self.wait()
+        # self.play(FadeOut(all_dots_to_move), 
+        #           dots.animate.set_color('#777777').set_opacity(1.0))
+        # self.wait()
 
         cat_dots=VGroup()
         for i, d in enumerate(dots):
             if labels_array[i]==2: 
                 cat_dots.add(d)
-        self.play(cat_dots.animate.set_color(YELLOW))
-        self.wait()
+        # self.play(cat_dots.animate.set_color(YELLOW))
+        # self.wait()
 
         #Ok, now cat picture overlay again I think, probably as yello points are coming in. 
 
@@ -960,15 +946,15 @@ class guidance_book_5(InteractiveScene):
             time_tracker=time_tracker,
             func=vector_function_heatmap,
             coordinate_system=extended_axes,
-            density=4.0, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
-            stroke_width=2,
+            density=5.0, #was 4, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
+            stroke_width=3,
             max_radius=5.5,      # Vectors fade to min_opacity at this distance
-            min_opacity=0.1,     # Minimum opacity at max_radius
-            max_opacity=0.8,     # Maximum opacity at origin
-            tip_width_ratio=4,
-            tip_len_to_width=0.01,
+            min_opacity=0.5,     # Minimum opacity at max_radius
+            max_opacity=0.5,     # Maximum opacity at origin
+            tip_width_ratio=4, #4
+            tip_len_to_width=0.007, #0.01
             max_vect_len_to_step_size=0.7,
-            color=YELLOW
+            color='#00AEEF'
         )
 
         #Should use partial() to not repeat so much...
@@ -1003,15 +989,15 @@ class guidance_book_5(InteractiveScene):
             time_tracker=time_tracker,
             func=vector_function_heatmap_u,
             coordinate_system=extended_axes,
-            density=4.0, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
-            stroke_width=2,
+            density=5.0, #was 4, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
+            stroke_width=3,
             max_radius=5.5,      # Vectors fade to min_opacity at this distance
-            min_opacity=0.1,     # Minimum opacity at max_radius
-            max_opacity=0.8,     # Maximum opacity at origin
-            tip_width_ratio=4,
-            tip_len_to_width=0.01,
+            min_opacity=0.5,     # Minimum opacity at max_radius
+            max_opacity=0.5,     # Maximum opacity at origin
+            tip_width_ratio=4, #4
+            tip_len_to_width=0.007, #0.01
             max_vect_len_to_step_size=0.7,
-            color='#777777'
+            color=CHILL_BROWN
         )
 
 
@@ -1027,21 +1013,31 @@ class guidance_book_5(InteractiveScene):
         guidance_index=0 #No guidance, cfg_scales=[0.0, 0.1, 0.5, 1.0, 2.0, 3.0, 5.0, 10.0]
         dot_to_move_3 = Dot(axes.c2p(*[xt_history[guidance_index, 0, path_index, 0], xt_history[guidance_index, 0, path_index, 1], 0]), 
                             radius=0.07)
-        dot_to_move_3.set_color(YELLOW)
+        dot_to_move_3.set_color(BLUE)
         dot_to_move_3.set_opacity(1.0)
 
-        traced_path_3 = CustomTracedPath(dot_to_move_3.get_center, stroke_color=WHITE, stroke_width=5.0, 
-                                      opacity_range=(0.4, 0.95), fade_length=64)
+        traced_path_3 = CustomTracedPath(dot_to_move_3.get_center, stroke_color=BLUE, stroke_width=3.0, 
+                                      opacity_range=(1.0, 1.0), fade_length=64)
         traced_path_3.set_fill(opacity=0)
         self.add(traced_path_3)
 
-        self.wait(0)
-        self.play(dots.animate.set_opacity(0.2), axes.animate.set_opacity(0.5), 
-                  self.frame.animate.reorient(0, 0, 0, (0.23, 2.08, 0.0), 4.78), run_time=2.0)
+        # self.wait(0)
+        # self.play(dots.animate.set_opacity(0.2), axes.animate.set_opacity(0.5), 
+        #           #self.frame.animate.reorient(0, 0, 0, (0.23, 2.08, 0.0), 4.78), 
+        #           run_time=2.0)
+        dots.set_opacity(0.3)
+        axes.set_opacity(0.5)
         self.add(dot_to_move_3)
         self.wait()
 
-        self.play(FadeIn(vector_field))
+        self.add(vector_field)
+
+
+
+        # self.play(FadeIn(vector_field))
+        
+        # self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 4.78)
+        self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 5.4) #lil wider
         self.wait()
 
         # COMMENTING OUT THIS ANIMATION WHILE WORKING ON LATER ONES -> SLOW!
@@ -1052,249 +1048,667 @@ class guidance_book_5(InteractiveScene):
                      rate_func=linear, run_time=0.01)
         self.wait()
 
-        #Bring up "cat part of sprial to empasize that the point doesnt make it, and I think fade out vector field. 
-        self.play(cat_dots.animate.set_opacity(0.7), 
-                  FadeOut(vector_field))
+
+        # Book 
+        # Ok yep so this will get me to figure 9.35.
+
+
+        self.wait(1)
+        self.embed()
+
+class guidance_book_6(InteractiveScene):
+    def construct(self):
+
+        '''
+        Phew - alright last big scene here - Classifier free guidance lets go!!!
+
+        '''
+
+
+        dataset = MultiClassSwissroll(np.pi/2, 5*np.pi, 100, num_classes=3)
+        colors = dataset.get_class_colors()
+        loader = DataLoader(dataset, batch_size=len(dataset)*2, shuffle=True)
+        # x, labels = next(iter(loader))
+        # x=x.cpu().numpy()
+
+        axes = Axes(
+            x_range=[-1.2, 1.2, 0.5],
+            y_range=[-1.2, 1.2, 0.5],
+            height=7,
+            width=7,
+            axis_config={
+                "color": CHILL_BROWN, 
+                "stroke_width": 2,
+                "include_tip": True,
+                "include_ticks": False,
+                "tick_size": 0.06,
+                "tip_config": {"color": CHILL_BROWN, "length": 0.15, "width": 0.15}
+            }
+        )
+
+        axes.set_opacity(0.5)
+
+        # Create extended axes with SAME center point and proportional scaling
+        extended_axes = Axes(
+            x_range=[-2.0, 2.0, 0.5],    # Extended range
+            y_range=[-2.0, 2.0, 0.5],    # Extended range
+            height=7 * (4.0/2.4),        # Scale height proportionally: original_height * (new_range/old_range)
+            width=7 * (4.0/2.4),         # Scale width proportionally: original_width * (new_range/old_range)
+            axis_config={"stroke_width": 0}  # Make invisible
+        )
+
+        # Move extended axes to same position as original axes
+        extended_axes.move_to(axes.get_center())
+
+
+        dots = VGroup()
+        labels_array=[]
+        for point in dataset.data:
+            # Map the point coordinates to the axes
+            screen_point = axes.c2p(point[0][0], point[0][1])
+            dot = Dot(screen_point, radius=0.05)
+            # dot.set_color(YELLOW)
+            dots.add(dot)
+            labels_array.append(point[1])
+        labels_array=np.array(labels_array)
+        dots.set_color(YELLOW)
+        dots.set_opacity(0.5)
+
+
+
+        self.add(axes)
+        # self.wait()
+        # self.play(ShowCreation(dots), run_time=8.0)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==0: 
+                d.set_color('#5C4E9A').set_opacity(1.0) #Inside 5C4E9A
+                self.wait(0.1)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==1: 
+                d.set_color('#FAA726').set_opacity(1.0)  #Middle
+                self.wait(0.1)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==2: 
+                d.set_color('#00AEEF').set_opacity(1.0) #Outside
+                self.wait(0.1)
+        # self.wait()
+
+        ## --- First book pause
+        self.add(dots)
         self.wait()
 
 
-        # Ok hitting p81 now. i think zoom out to overall scene i think? 
-        # Many maybe drop vector field? Let's see here...
-        # Ok thinking of the storyboard as I go here, but I think there's some good options
-        # I think I can introduce the two different vector fields with the f(...) notation I've been using
+        self.wait()
+ 
+
+        # Hmmm hmm ok, so there isn's really a single vector field I can show - right?
+        # maybe I just leave out the vector field for now - and just show the paths of the points. 
+        # may want to consider playing the same paths as below - we'll see
+        xt_history=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_history_3.npy')
+        heatmaps=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_3.npy')
+
+
+        num_dots_per_class=5 #Crank up for final viz - 96 for video
+        #Purpple - 5C4E9A, Gold - FAA726, Purple - 00AEEF
+        colors_by_class={0:'#5C4E9A', 1: '#FAA726', 2: '#00AEEF'}
+
+        all_traced_paths=VGroup()
+        all_dots_to_move=VGroup()
+        # for class_index in range(xt_history.shape[0]):
+        #     for path_index in range(num_dots_per_class): 
+        #         dot_to_move_2=Dot(axes.c2p(*np.concatenate((xt_history[class_index, 0, path_index, :], [0]))), radius=0.06)
+        #         dot_to_move_2.set_color(colors_by_class[class_index])
+        #         all_dots_to_move.add(dot_to_move_2)
+
+        #         traced_path_2 = CustomTracedPath(dot_to_move_2.get_center, stroke_color=colors_by_class[class_index], stroke_width=1.7, 
+        #                                       opacity_range=(0.75, 0.75), fade_length=12)
+        #         # traced_path_2.set_opacity(0.5)
+        #         # traced_path_2.set_fill(opacity=0)
+        #         all_traced_paths.add(traced_path_2)
+        self.add(all_traced_paths)
+        # self.wait()
+
+
+        dots.set_opacity(0.15)
+        # self.add(all_dots_to_move)
+        # self.wait()
+
+
+        cat_dots=VGroup()
+        for i, d in enumerate(dots):
+            if labels_array[i]==2: 
+                cat_dots.add(d)
+        # self.play(cat_dots.animate.set_color(YELLOW))
+        # self.wait()
+
+        #Ok, now cat picture overlay again I think, probably as yello points are coming in. 
+
+        xt_history=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_history_5.npy')
+        heatmaps=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_5.npy')
+        heatmaps_u=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_5u.npy')
+        heatmaps_c=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_5c.npy')
+        model=torch.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/jun_27_1.pt', map_location=torch.device('cpu'))
+
+        #Setup conditional vector field! If thngs get funky here, switch to using exported heatmaps instead of model
+
+        bound=2.0
+        num_heatmap_steps=64
+        grid=[]
+        for i, x in enumerate(np.linspace(-bound, bound, num_heatmap_steps)):
+            for j, y in enumerate(np.linspace(-bound, bound, num_heatmap_steps)):
+                grid.append([x,y])
+        grid=torch.tensor(grid).float()
+
+
+        time_tracker = ValueTracker(0.0)  # Start at time 0
+        schedule = ScheduleLogLinear(N=256, sigma_min=0.01, sigma_max=10) #N=200
+        sigmas=schedule.sample_sigmas(256)
+
+        # def vector_function_with_tracker(coords_array):
+        #     """Vector function that uses the ValueTracker for time"""
+        #     current_time = time_tracker.get_value()
+        #     max_time = 8.0  # Map time 0-8 to sigma indices 0-255
+        #     sigma_idx = int(np.clip(current_time * 255 / max_time, 0, 255)) #Needs to be N-1
+        #     res = model.forward(torch.tensor(coords_array).float(), sigmas[sigma_idx], cond=torch.tensor(2)) #Hardcode to cat for now
+        #     return -res.detach().numpy()
+
+        # Let's try the heatmap version - having trouble with model based version
+        # If this sucks, try higher resolution, and if that stucks, try model based version again
+        def vector_function_heatmap(coords_array):
+            """
+            Function that takes an array of coordinates and returns corresponding vectors
+            coords_array: shape (N, 2) or (N, 3) - array of [x, y] or [x, y, z] coordinates
+            Returns: array of shape (N, 2) with [vx, vy] vectors (z component handled automatically)
+            """
+            result = np.zeros((len(coords_array), 2))
+            
+            for i, coord in enumerate(coords_array):
+                x, y = coord[0], coord[1]  # Take only x, y coordinates
+                
+                current_time = time_tracker.get_value()
+                max_time = 8.0  # Map time 0-8 to sigma indices 0-255
+                sigma_idx = int(np.clip(current_time * 255 / max_time, 0, 255)) #Needs to be N-1
+                # Find the closest grid point to interpolate from
+                distances = np.linalg.norm(grid.numpy() - np.array([x, y]), axis=1)
+                closest_idx = np.argmin(distances)
+                
+                # Get the vector at the closest grid point
+                vector = heatmaps_c[0, sigma_idx, closest_idx, :]
+                result[i] = vector
+            
+            return -result #Reverse direction
+
+
+
+        # Create the tracker-controlled vector field
+        vector_field = TrackerControlledVectorField(
+            time_tracker=time_tracker,
+            func=vector_function_heatmap,
+            coordinate_system=extended_axes,
+            density=4.0, #was 4, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
+            stroke_width=2,
+            max_radius=5.5,      # Vectors fade to min_opacity at this distance
+            min_opacity=0.75,     # Minimum opacity at max_radius
+            max_opacity=0.75,     # Maximum opacity at origin
+            tip_width_ratio=5, #4
+            tip_len_to_width=0.01, #0.01
+            max_vect_len_to_step_size=0.7,
+            color='#00AEEF'
+        )
+
+        #Should use partial() to not repeat so much...
+        def vector_function_heatmap_u(coords_array):
+            """
+            Function that takes an array of coordinates and returns corresponding vectors
+            coords_array: shape (N, 2) or (N, 3) - array of [x, y] or [x, y, z] coordinates
+            Returns: array of shape (N, 2) with [vx, vy] vectors (z component handled automatically)
+            """
+            result = np.zeros((len(coords_array), 2))
+            
+            for i, coord in enumerate(coords_array):
+                x, y = coord[0], coord[1]  # Take only x, y coordinates
+                
+                current_time = time_tracker.get_value()
+                max_time = 8.0  # Map time 0-8 to sigma indices 0-255
+                sigma_idx = int(np.clip(current_time * 255 / max_time, 0, 255)) #Needs to be N-1
+                # Find the closest grid point to interpolate from
+                distances = np.linalg.norm(grid.numpy() - np.array([x, y]), axis=1)
+                closest_idx = np.argmin(distances)
+                
+                # Get the vector at the closest grid point
+                vector = heatmaps_u[0, sigma_idx, closest_idx, :]
+                result[i] = vector
+            
+            return -result #Reverse direction
+
+
+
+        # Create the tracker-controlled vector field
+        vector_field_u = TrackerControlledVectorField(
+            time_tracker=time_tracker,
+            func=vector_function_heatmap_u,
+            coordinate_system=extended_axes,
+            density=4.0, #was 4, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
+            stroke_width=2,
+            max_radius=5.5,      # Vectors fade to min_opacity at this distance
+            min_opacity=0.75,     # Minimum opacity at max_radius
+            max_opacity=0.75,     # Maximum opacity at origin
+            tip_width_ratio=5, #4
+            tip_len_to_width=0.01, #0.01
+            max_vect_len_to_step_size=0.7,
+            color=CHILL_BROWN
+        )
+
+
+        path_index=70
+        guidance_index=0 #No guidance, cfg_scales=[0.0, 0.1, 0.5, 1.0, 2.0, 3.0, 5.0, 10.0]
+        dot_to_move_3 = Dot(axes.c2p(*[xt_history[guidance_index, 0, path_index, 0], xt_history[guidance_index, 0, path_index, 1], 0]), 
+                            radius=0.07)
+        dot_to_move_3.set_color(BLUE)
+        dot_to_move_3.set_opacity(1.0)
+
+        traced_path_3 = CustomTracedPath(dot_to_move_3.get_center, stroke_color=BLUE, stroke_width=3.0, 
+                                      opacity_range=(1.0, 1.0), fade_length=64)
+        traced_path_3.set_fill(opacity=0)
+        self.add(traced_path_3)
+
+        # self.wait(0)
+        # self.play(dots.animate.set_opacity(0.2), axes.animate.set_opacity(0.5), 
+        #           #self.frame.animate.reorient(0, 0, 0, (0.23, 2.08, 0.0), 4.78), 
+        #           run_time=2.0)
+        dots.set_opacity(0.3)
+        axes.set_opacity(0.5)
+        self.add(dot_to_move_3)
+        self.wait()
+
+        self.add(vector_field)
+
+
+
+        # self.play(FadeIn(vector_field))
         
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0.0), 7.40), run_time=4)
+        # self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 4.78)
+        self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 5.4) #lil wider
+        # self.wait()
+
+ 
+        # self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0.0), 7.40), run_time=4)
         self.wait()
 
-        self.play(FadeOut(dot_to_move_3), FadeOut(traced_path_3))
+        # self.play(FadeOut(dot_to_move_3), FadeOut(traced_path_3))
+        self.remove(dot_to_move_3, traced_path_3)
+        self.wait()
+
+
+
+        #Booook Book 
+        dots.set_opacity(0.2)
+        cat_dots.set_opacity(0.5)
+        self.add(vector_field_u)
+        self.remove(vector_field); self.add(vector_field)
+
+        # self.frame.reorient(0, 0, 0, (0.14, -0.06, 0.0), 11.99) #Whold field
+        self.frame.reorient(0, 0, 0, (0.05, 0.06, 0.0), 7.05) #A bit tighter
+        self.wait()
+
+        time_tracker.set_value(0.0)
+        self.wait()
+
+        time_tracker.set_value(3.0)
+        self.wait()
+
+        time_tracker.set_value(4.0)
+        self.wait()
+
+
+        time_tracker.set_value(8)
+        self.wait()
+
+class guidance_book_7(InteractiveScene):
+    def construct(self):
+
+        '''
+        Phew - alright last big scene here - Classifier free guidance lets go!!!
+
+        '''
+
+
+        dataset = MultiClassSwissroll(np.pi/2, 5*np.pi, 100, num_classes=3)
+        colors = dataset.get_class_colors()
+        loader = DataLoader(dataset, batch_size=len(dataset)*2, shuffle=True)
+        # x, labels = next(iter(loader))
+        # x=x.cpu().numpy()
+
+        axes = Axes(
+            x_range=[-1.2, 1.2, 0.5],
+            y_range=[-1.2, 1.2, 0.5],
+            height=7,
+            width=7,
+            axis_config={
+                "color": CHILL_BROWN, 
+                "stroke_width": 2,
+                "include_tip": True,
+                "include_ticks": False,
+                "tick_size": 0.06,
+                "tip_config": {"color": CHILL_BROWN, "length": 0.15, "width": 0.15}
+            }
+        )
+
+        axes.set_opacity(0.5)
+
+        # Create extended axes with SAME center point and proportional scaling
+        extended_axes = Axes(
+            x_range=[-2.0, 2.0, 0.5],    # Extended range
+            y_range=[-2.0, 2.0, 0.5],    # Extended range
+            height=7 * (4.0/2.4),        # Scale height proportionally: original_height * (new_range/old_range)
+            width=7 * (4.0/2.4),         # Scale width proportionally: original_width * (new_range/old_range)
+            axis_config={"stroke_width": 0}  # Make invisible
+        )
+
+        # Move extended axes to same position as original axes
+        extended_axes.move_to(axes.get_center())
+
+
+        dots = VGroup()
+        labels_array=[]
+        for point in dataset.data:
+            # Map the point coordinates to the axes
+            screen_point = axes.c2p(point[0][0], point[0][1])
+            dot = Dot(screen_point, radius=0.05)
+            # dot.set_color(YELLOW)
+            dots.add(dot)
+            labels_array.append(point[1])
+        labels_array=np.array(labels_array)
+        dots.set_color(YELLOW)
+        dots.set_opacity(0.5)
+
+
+
+        self.add(axes)
+        # self.wait()
+        # self.play(ShowCreation(dots), run_time=8.0)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==0: 
+                d.set_color('#5C4E9A').set_opacity(1.0) #Inside 5C4E9A
+                self.wait(0.1)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==1: 
+                d.set_color('#FAA726').set_opacity(1.0)  #Middle
+                self.wait(0.1)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==2: 
+                d.set_color('#00AEEF').set_opacity(1.0) #Outside
+                self.wait(0.1)
+        # self.wait()
+
+        ## --- First book pause
+        self.add(dots)
+        self.wait()
+
+
+        self.wait()
+ 
+
+        # Hmmm hmm ok, so there isn's really a single vector field I can show - right?
+        # maybe I just leave out the vector field for now - and just show the paths of the points. 
+        # may want to consider playing the same paths as below - we'll see
+        xt_history=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_history_3.npy')
+        heatmaps=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_3.npy')
+
+
+        num_dots_per_class=5 #Crank up for final viz - 96 for video
+        #Purpple - 5C4E9A, Gold - FAA726, Purple - 00AEEF
+        colors_by_class={0:'#5C4E9A', 1: '#FAA726', 2: '#00AEEF'}
+
+        all_traced_paths=VGroup()
+        all_dots_to_move=VGroup()
+        # for class_index in range(xt_history.shape[0]):
+        #     for path_index in range(num_dots_per_class): 
+        #         dot_to_move_2=Dot(axes.c2p(*np.concatenate((xt_history[class_index, 0, path_index, :], [0]))), radius=0.06)
+        #         dot_to_move_2.set_color(colors_by_class[class_index])
+        #         all_dots_to_move.add(dot_to_move_2)
+
+        #         traced_path_2 = CustomTracedPath(dot_to_move_2.get_center, stroke_color=colors_by_class[class_index], stroke_width=1.7, 
+        #                                       opacity_range=(0.75, 0.75), fade_length=12)
+        #         # traced_path_2.set_opacity(0.5)
+        #         # traced_path_2.set_fill(opacity=0)
+        #         all_traced_paths.add(traced_path_2)
+        self.add(all_traced_paths)
+        # self.wait()
+
+
+        dots.set_opacity(0.15)
+        # self.add(all_dots_to_move)
+        # self.wait()
+
+
+        cat_dots=VGroup()
+        for i, d in enumerate(dots):
+            if labels_array[i]==2: 
+                cat_dots.add(d)
+        # self.play(cat_dots.animate.set_color(YELLOW))
+        # self.wait()
+
+        #Ok, now cat picture overlay again I think, probably as yello points are coming in. 
+
+        xt_history=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_history_5.npy')
+        heatmaps=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_5.npy')
+        heatmaps_u=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_5u.npy')
+        heatmaps_c=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_5c.npy')
+        model=torch.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/jun_27_1.pt', map_location=torch.device('cpu'))
+
+        #Setup conditional vector field! If thngs get funky here, switch to using exported heatmaps instead of model
+
+        bound=2.0
+        num_heatmap_steps=64
+        grid=[]
+        for i, x in enumerate(np.linspace(-bound, bound, num_heatmap_steps)):
+            for j, y in enumerate(np.linspace(-bound, bound, num_heatmap_steps)):
+                grid.append([x,y])
+        grid=torch.tensor(grid).float()
+
+
+        time_tracker = ValueTracker(0.0)  # Start at time 0
+        schedule = ScheduleLogLinear(N=256, sigma_min=0.01, sigma_max=10) #N=200
+        sigmas=schedule.sample_sigmas(256)
+
+        # def vector_function_with_tracker(coords_array):
+        #     """Vector function that uses the ValueTracker for time"""
+        #     current_time = time_tracker.get_value()
+        #     max_time = 8.0  # Map time 0-8 to sigma indices 0-255
+        #     sigma_idx = int(np.clip(current_time * 255 / max_time, 0, 255)) #Needs to be N-1
+        #     res = model.forward(torch.tensor(coords_array).float(), sigmas[sigma_idx], cond=torch.tensor(2)) #Hardcode to cat for now
+        #     return -res.detach().numpy()
+
+        # Let's try the heatmap version - having trouble with model based version
+        # If this sucks, try higher resolution, and if that stucks, try model based version again
+        def vector_function_heatmap(coords_array):
+            """
+            Function that takes an array of coordinates and returns corresponding vectors
+            coords_array: shape (N, 2) or (N, 3) - array of [x, y] or [x, y, z] coordinates
+            Returns: array of shape (N, 2) with [vx, vy] vectors (z component handled automatically)
+            """
+            result = np.zeros((len(coords_array), 2))
+            
+            for i, coord in enumerate(coords_array):
+                x, y = coord[0], coord[1]  # Take only x, y coordinates
+                
+                current_time = time_tracker.get_value()
+                max_time = 8.0  # Map time 0-8 to sigma indices 0-255
+                sigma_idx = int(np.clip(current_time * 255 / max_time, 0, 255)) #Needs to be N-1
+                # Find the closest grid point to interpolate from
+                distances = np.linalg.norm(grid.numpy() - np.array([x, y]), axis=1)
+                closest_idx = np.argmin(distances)
+                
+                # Get the vector at the closest grid point
+                vector = heatmaps_c[0, sigma_idx, closest_idx, :]
+                result[i] = vector
+            
+            return -result #Reverse direction
+
+
+
+        # Create the tracker-controlled vector field
+        vector_field = TrackerControlledVectorField(
+            time_tracker=time_tracker,
+            func=vector_function_heatmap,
+            coordinate_system=extended_axes,
+            density=4.0, #was 4, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
+            stroke_width=2,
+            max_radius=5.5,      # Vectors fade to min_opacity at this distance
+            min_opacity=0.75,     # Minimum opacity at max_radius
+            max_opacity=0.75,     # Maximum opacity at origin
+            tip_width_ratio=5, #4
+            tip_len_to_width=0.01, #0.01
+            max_vect_len_to_step_size=0.7,
+            color='#00AEEF'
+        )
+
+        #Should use partial() to not repeat so much...
+        def vector_function_heatmap_u(coords_array):
+            """
+            Function that takes an array of coordinates and returns corresponding vectors
+            coords_array: shape (N, 2) or (N, 3) - array of [x, y] or [x, y, z] coordinates
+            Returns: array of shape (N, 2) with [vx, vy] vectors (z component handled automatically)
+            """
+            result = np.zeros((len(coords_array), 2))
+            
+            for i, coord in enumerate(coords_array):
+                x, y = coord[0], coord[1]  # Take only x, y coordinates
+                
+                current_time = time_tracker.get_value()
+                max_time = 8.0  # Map time 0-8 to sigma indices 0-255
+                sigma_idx = int(np.clip(current_time * 255 / max_time, 0, 255)) #Needs to be N-1
+                # Find the closest grid point to interpolate from
+                distances = np.linalg.norm(grid.numpy() - np.array([x, y]), axis=1)
+                closest_idx = np.argmin(distances)
+                
+                # Get the vector at the closest grid point
+                vector = heatmaps_u[0, sigma_idx, closest_idx, :]
+                result[i] = vector
+            
+            return -result #Reverse direction
+
+
+
+        # Create the tracker-controlled vector field
+        vector_field_u = TrackerControlledVectorField(
+            time_tracker=time_tracker,
+            func=vector_function_heatmap_u,
+            coordinate_system=extended_axes,
+            density=4.0, #was 4, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
+            stroke_width=2,
+            max_radius=5.5,      # Vectors fade to min_opacity at this distance
+            min_opacity=0.75,     # Minimum opacity at max_radius
+            max_opacity=0.75,     # Maximum opacity at origin
+            tip_width_ratio=5, #4
+            tip_len_to_width=0.01, #0.01
+            max_vect_len_to_step_size=0.7,
+            color=CHILL_BROWN
+        )
+
+
+        # self.add(vector_field)
+
+        # self.play(time_tracker.animate.set_value(8.0), run_time=5)
+        # self.play(time_tracker.animate.set_value(0.0), run_time=5)
+
+
+        path_index=70
+        guidance_index=0 #No guidance, cfg_scales=[0.0, 0.1, 0.5, 1.0, 2.0, 3.0, 5.0, 10.0]
+        dot_to_move_3 = Dot(axes.c2p(*[xt_history[guidance_index, 0, path_index, 0], xt_history[guidance_index, 0, path_index, 1], 0]), 
+                            radius=0.07)
+        dot_to_move_3.set_color(BLUE)
+        dot_to_move_3.set_opacity(1.0)
+
+        traced_path_3 = CustomTracedPath(dot_to_move_3.get_center, stroke_color=BLUE, stroke_width=3.0, 
+                                      opacity_range=(1.0, 1.0), fade_length=64)
+        traced_path_3.set_fill(opacity=0)
+        self.add(traced_path_3)
+
+        # self.wait(0)
+        # self.play(dots.animate.set_opacity(0.2), axes.animate.set_opacity(0.5), 
+        #           #self.frame.animate.reorient(0, 0, 0, (0.23, 2.08, 0.0), 4.78), 
+        #           run_time=2.0)
+        dots.set_opacity(0.3)
+        axes.set_opacity(0.5)
+        self.add(dot_to_move_3)
+        self.wait()
+
+        self.add(vector_field)
+
+        self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 5.4) #lil wider
+        self.wait()
+
+        # COMMENTING OUT THIS ANIMATION WHILE WORKING ON LATER ONES -> SLOW!
+        for k in range(xt_history.shape[1]):
+            self.play(time_tracker.animate.set_value(8.0*(k/256.0)), 
+                      dot_to_move_3.animate.move_to(axes.c2p(*[xt_history[guidance_index, k, path_index, 0], 
+                                                               xt_history[guidance_index, k, path_index, 1]])),
+                     rate_func=linear, run_time=0.01)
+
+
+        # self.play(FadeIn(vector_field))
+        
+        # self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 4.78)
+        self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 5.4) #lil wider
+        # self.wait()
+
+        # self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0.0), 7.40), run_time=4)
+        self.wait()
+
+        # self.play(FadeOut(dot_to_move_3), FadeOut(traced_path_3))
+        self.remove(dot_to_move_3, traced_path_3)
         self.wait()
 
         #A little torn, but I think we go ahead and bring in both vector fields in 81 instead of waiting until 82. 
         #Eh these are pretty overwhelming - let's try just starting with clean f(notation)
 
-        eq_4=Tex("f(x, t)", font_size=48)
-        eq_4.set_color(WHITE)
-        eq_4.move_to([-4.5, 2, 0])
-        eq_4_label=MarkupText("UNCONDITIONAL MODEL", font_size=16, font='myriad-pro')
-        eq_4_label.next_to(eq_4, DOWN, buff=0.15).set_color(CHILL_BROWN)
-        self.play(Write(eq_4))
-        self.play(FadeIn(eq_4_label))
+
+        dots.set_opacity(0.2)
+        cat_dots.set_opacity(0.5)
+        self.add(vector_field_u)
+        self.remove(vector_field); self.add(vector_field)
+
+        # self.frame.reorient(0, 0, 0, (0.14, -0.06, 0.0), 11.99) #Whold field
+        self.frame.reorient(0, 0, 0, (0.05, 0.06, 0.0), 7.05) #A bit tighter
         self.wait()
 
-
-        eq_5=Tex("f(x, t, cat)", font_size=48)
-        eq_5.set_color(WHITE)
-        eq_5[-4:-1].set_color(YELLOW)
-        eq_5.move_to([4.0, 2, 0])
-        eq_5_label=MarkupText("CONDITIONAL MODEL", font_size=16, font='myriad-pro')
-        eq_5_label.next_to(eq_5, DOWN, buff=0.15).set_color(CHILL_BROWN)
-        self.play(Write(eq_5))
-        self.play(FadeIn(eq_5_label))
+        time_tracker.set_value(0.0)
         self.wait()
 
-        eq_6=Tex("f(x, t, no \  class)", font_size=48)
-        eq_6.set_color(WHITE)
-        eq_6.move_to(eq_4) #, aligned_edge=LEFT)
-
-        self.play(ReplacementTransform(eq_4[-1], eq_6[-1]), 
-                  ReplacementTransform(eq_4[:5], eq_6[:5]))
-        self.play(Write(eq_6[-9:-1]))
-        self.wait()
-
-
-        # time_tracker.set_value(3.2)
-        self.play(time_tracker.animate.set_value(3.2), run_time=0.1) 
-        #This doesnt seem to be taking hmmm - maybe b/c it's faded out?
-        #Nuclear option here would be to break to a new scene at 80 -> that probably wouldn't be terrible. 
-        # set_value(3.2)
-
-        self.wait()
-        self.play(FadeOut(eq_5), FadeOut(eq_5_label))
-        self.play(FadeIn(vector_field_u))
-        self.wait()
-
-        self.play(eq_4.animate.set_opacity(0.0),
-                  eq_6.animate.set_opacity(0.0), 
-                  eq_4_label.animate.set_opacity(0.0), 
-                  FadeIn(vector_field), 
-                  FadeIn(eq_5), 
-                  FadeIn(eq_5_label))
-        self.wait()
-
-        ## Now time animation - need ot bring diffusion time counter like I did before. 
-        time_value = ValueTracker((8-3.2)/8) 
-        time_display = DecimalNumber(
-            1.0,
-            num_decimal_places=2,
-            font_size=35,
-            color=CHILL_BROWN
-        )
-        time_display.move_to([-5.4, -3.3, 0]) 
-        time_label = MarkupText("t =", font_size=35)
-        time_label.set_color(CHILL_BROWN)
-        time_label.next_to(time_display, LEFT, buff=0.15)
-
-        # Add updater to keep the display synchronized with the tracker
-        time_display.add_updater(lambda m: m.set_value(time_value.get_value()))
-
-        self.play(FadeIn(time_display), FadeIn(time_label))
-        self.wait()
-
-        self.play(
-            time_tracker.animate.set_value(0.0),  
-            time_value.animate.set_value(1.0),    
-            run_time=10.0, 
-            rate_func=linear
-        )
-        self.wait()
-
-
-        self.play(
-            time_tracker.animate.set_value(8.0),  
-            time_value.animate.set_value(0.0),    
-            run_time=10.0, 
-            rate_func=linear
-        )
-        self.wait()        
-
-        # Paragraph 83
-        # Ok assuming time updates work for starting config - that gets us to 83!
-        # If time update doesn't work I can split this into 2 scenes. 
-        # Aright now, for 83 -> i see a few pairs of vectors that I think would be good/fine to show cfg on
-        # I want to zoom way in on a single pair, make all other vectors very low opacity or just totally gone
-        # and show the geometry of diffisuion guidance, introducing new green vector. 
-        # This is going to be cool!
-        # Now I think this probably going to take some manual algiment, so I'm thinking 
-        # it make sense to skip 83 for a minute, and go ahead and make sure that everything comes together like I 
-        # expect/need in 84. 
-        # Once I've confirmed that green arrows and path look good, then I'll come back to 83
-
-        # self.frame.reorient(0, 0, 0, (1.41, 1.13, 0.0), 1.05)
-
-        yellow_vec_start=np.array([1.46,1.095,0])
-        yellow_vec_vals=np.array([-0.01, 0.15, 0])
-        example_vec_yellow=Arrow(yellow_vec_start, 
-                                 yellow_vec_start+yellow_vec_vals,
-                                 thickness = 0.8,
-                                 tip_width_ratio= 5, 
-                                 buff=0.0)
-        example_vec_yellow.set_color(YELLOW)
-
-        gray_vec_vals=np.array([-0.12, 0.005, 0])
-        example_vec_gray=Arrow(yellow_vec_start, 
-                                 yellow_vec_start+gray_vec_vals,
-                                 thickness = 0.8,
-                                 tip_width_ratio= 5, 
-                                 buff=0.0)
-        example_vec_gray.set_color('#777777')
-
-        green_vec_vals=(yellow_vec_vals-gray_vec_vals) #Fudging the guidance value a bit here. 
-        example_vec_green=Arrow(yellow_vec_start+gray_vec_vals, 
-                                 yellow_vec_start+gray_vec_vals+green_vec_vals,
-                                 thickness = 0.8,
-                                 tip_width_ratio= 5, 
-                                 buff=0.0)
-        example_vec_green.set_color(GREEN)
-
-        green_vec_vals_final=1.8*(yellow_vec_vals-gray_vec_vals) #Fudging the guidance value a bit here. 
-        final_vec_green=Arrow(yellow_vec_start+gray_vec_vals, 
-                                 yellow_vec_start+gray_vec_vals+green_vec_vals_final,
-                                 thickness = 0.8,
-                                 tip_width_ratio= 5, 
-                                 buff=0.0)
-        final_vec_green.set_color(GREEN)
-
-        # green_vec_vals_final_final_lol=1.8*(yellow_vec_vals-gray_vec_vals) #Fudging the guidance value a bit here. 
-        final_final_vec_green_lol=Arrow(yellow_vec_start, 
-                                 yellow_vec_start+gray_vec_vals+green_vec_vals_final,
-                                 thickness = 0.8,
-                                 tip_width_ratio= 5, 
-                                 buff=0.0)
-        final_final_vec_green_lol.set_color(GREEN)
-
-
-        # self.add(example_vec_yellow, example_vec_gray, final_vec_green)
-        #Ok I think this picture is pretty consistent. Sweet.
-        # self.remove(example_vec_yellow, example_vec_gray, final_vec_green)
-        self.wait()
-
-        #now can i fade in and replace smoothly?
-
-        # eq_5.scale(0.2)
-        # eq_5.next_to(example_vec_yellow, RIGHT, buff=0.01)
-
-        # self.add(example_vec_yellow, example_vec_gray) #Add before move? You barley notice
-        self.play(FadeOut(time_display), FadeOut(time_label), #FadeOut(eq_5), 
-                  FadeOut(eq_5_label),
-                  FadeIn(example_vec_yellow), FadeIn(example_vec_gray))
-        self.play(self.frame.animate.reorient(0, 0, 0, (1.41, 1.13, 0.0), 1.05), 
-                  FadeOut(vector_field_u), 
-                  FadeOut(vector_field),
-                  eq_5.animate.scale(0.16).next_to(example_vec_yellow, RIGHT, buff=0.015).set_color(YELLOW),
-                  run_time=5.0)   
-        self.wait()
-
-
-        eq_7=Tex("f(x, t)", font_size=48)
-        eq_7.set_color('#777777').scale(0.16)
-        eq_7.next_to(example_vec_gray, DOWN, buff=0.015)
-        self.play(FadeIn(eq_7))
-        self.wait()
-
-        eq_8=Tex("f(x, t, cat) - f(x,t)", font_size=48)
-        eq_8.set_color(GREEN).scale(0.16)
-        # eq_8[:len(eq_5)].set_color(YELLOW)
-        # eq_8[-len(eq_7):].set_color('#777777')
-        eq_5_copy=eq_5.copy()
-        eq_7_copy=eq_7.copy()
-        eq_8.next_to(eq_5, LEFT, buff=0.17).shift([0,0.02,0])
-
-        # self.add(eq_8)
-        # If we take our yellow conditioned vector..
-        self.play(ReplacementTransform(eq_5_copy, eq_8[:len(eq_5)]), run_time=2)
-        self.wait()
-        self.play(ReplacementTransform(eq_7_copy, eq_8[-len(eq_7):]), run_time=2)
-        self.add(eq_8); self.remove(eq_5_copy, eq_7_copy)
-        self.wait()
-
-        self.play(GrowArrow(example_vec_green))
-        self.wait()
-
-        # Ok I think we do a quick Cats/not cats overlay in illustrator to remind folks that yellwow dots are cats. 
-        # Cool - done
-
-        eq_9=Tex(r"\alpha (f(x, t, cat) - f(x,t))", font_size=48)
-        eq_9.set_color(WHITE).scale(0.16)
-        eq_9[2:-1].set_color(GREEN)
-        eq_9.move_to(eq_8, aligned_edge=RIGHT).shift([0.05, 0.05, 0])
-        self.wait()
-
-        self.play(ReplacementTransform(example_vec_green, final_vec_green), 
-                  ReplacementTransform(eq_8, eq_9[2:-1]))
-        self.add(eq_9); self.remove(eq_8)
-        self.wait()
-
-        #"and replace our original conditioned yellow vector with a vector pointing in this new direction."
-        # Ok yeah so I think yellow and maybe green get lower opacity and we add in final final green vector
-        self.play(FadeIn(final_final_vec_green_lol), 
-                  final_vec_green.animate.set_opacity(0.1),
-                  example_vec_yellow.animate.set_opacity(0.1),
-                  eq_5.animate.set_opacity(0.1), 
-                  eq_9.animate.next_to(final_final_vec_green_lol, LEFT, buff=0.05, aligned_edge=RIGHT))
-        self.wait()
-
-        ## Ok ok ok ok now in need a zoom out and smooth transition back to all 3 vector fields!
-
-
-        # self.play(ApplyWave(cat_dots))
-        # self.play(cat_dots.animate.set_opacity(0.9))
+        # time_tracker.set_value(3.0)
         # self.wait()
-        # self.play()
-        # self.remove(eq_8)
 
-
-        # Paragraph 84
+        # time_tracker.set_value(4.0)
         # self.wait()
+
+
+        # time_tracker.set_value(8)
+        # self.wait()
+
+        # Book 
+        # Ok so for the main points I want to make here, I think 0.0 and 3 or 4 will 
+        # be fine/good, however 
+        # it might be worth looking a bit further ahead to how I'm going to 
+        # show guidance, I recall the timining between finicky then
+        # Ok i think that the guidance zoom in on a pair of arrows action
+        # is actually at 8s? It's just with a little bigger arrows maybe?
+        # Either way I don't think that I want to show 8 seconds for the first big
+        # COmpareson, I think 3 or 4 is more clear. Yeah 4s is dope, let's show that. 
+
 
         def vector_function_heatmap_g(coords_array):
             """
@@ -1329,9 +1743,9 @@ class guidance_book_5(InteractiveScene):
             density=4.0, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
             stroke_width=2,
             max_radius=5.5,      # Vectors fade to min_opacity at this distance
-            min_opacity=0.25,     # Minimum opacity at max_radius
-            max_opacity=0.85,     # Maximum opacity at origin
-            tip_width_ratio=4,
+            min_opacity=0.75,     # Minimum opacity at max_radius
+            max_opacity=0.75,     # Maximum opacity at origin
+            tip_width_ratio=5,
             tip_len_to_width=0.01,
             max_vect_len_to_step_size=0.7,
             color=GREEN
@@ -1343,24 +1757,14 @@ class guidance_book_5(InteractiveScene):
 
         # vector_field
 
-        vector_field.set_opacity_range(0.05, 0.4)
-        vector_field_u.set_opacity_range(0.05, 0.4)
-        axes.set_opacity(0.4)
+        #Book?
 
-        self.wait()
-        self.play(FadeIn(vector_field), FadeIn(vector_field_u), FadeIn(vector_field_g), 
-                  FadeOut(eq_9), FadeOut(eq_7), FadeOut(eq_5), FadeOut(example_vec_yellow), FadeOut(final_vec_green), 
-                  FadeOut(final_final_vec_green_lol), FadeOut(example_vec_gray), cat_dots.animate.set_opacity(0.4),
-                  self.frame.animate.reorient(0, 0, 0, (0.23, 2.08, 0.0), 4.78), run_time=5) #Maybe too wide, we'll see
-        self.wait()
+        self.add(vector_field_g)
 
-        #Paragraph 84
-        time_display.scale(0.6)
-        time_label.scale(0.6)
-        time_display.move_to([-3.3,-0.1,0])
-        time_label.next_to(time_display, LEFT, buff=0.07)
-        self.play(FadeIn(dot_to_move_3), FadeIn(traced_path_3), FadeIn(time_display), FadeIn(time_label))
-        self.wait()
+        self.add(dot_to_move_3)
+        self.add(traced_path_3)
+
+
 
 
         path_index=70
@@ -1370,30 +1774,487 @@ class guidance_book_5(InteractiveScene):
         dot_to_move_4.set_color(GREEN)
         dot_to_move_4.set_opacity(1.0)
 
-        traced_path_4 = CustomTracedPath(dot_to_move_4.get_center, stroke_color=GREEN, stroke_width=5.0, 
-                                      opacity_range=(0.6, 0.95), fade_length=64)
+        traced_path_4 = CustomTracedPath(dot_to_move_4.get_center, stroke_color=GREEN, stroke_width=3.0, 
+                                      opacity_range=(1.0, 1.0), fade_length=64)
         traced_path_4.set_fill(opacity=0)
         self.add(traced_path_4)
 
         self.wait()
 
-
-        time_value.set_value((8-3.2)/8)
-        #Ok i think i probably want my diffusion time tracker for these last two moves right?
-        self.play(time_tracker.animate.set_value(0.0), 
-                  time_value.animate.set_value(1.0), run_time=4.0) #Back to=0 here. Can edit this out if I need to
-        self.wait()
         self.add(dot_to_move_4)
+        # self.add(dot_to_move_3, traced_path_3)
+        self.remove(dot_to_move_3, traced_path_3)
+        # traced_path_3.set_opacity(1.0)
+        dots.set_opacity(0.1)
+        cat_dots.set_opacity(0.35)
+        vector_field_g.set_opacity_range(0.7, 0.7)
+        vector_field_u.set_opacity_range(0.7, 0.7)
+        vector_field.set_opacity_range(0.7, 0.7)
         self.wait()
 
+        self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 5.4) #lil wider
 
+        self.wait()
         for k in range(xt_history.shape[1]):
             self.play(time_tracker.animate.set_value(8.0*(k/256.0)), 
-                      time_value.animate.set_value(1.0-k/256.0),
+                      # time_value.animate.set_value(1.0-k/256.0),
                       dot_to_move_4.animate.move_to(axes.c2p(*[xt_history[guidance_index, k, path_index, 0], 
                                                                xt_history[guidance_index, k, path_index, 1]])),
                      rate_func=linear, run_time=0.01)
         self.wait()
+
+
+        #Ok yeah yeah side by side book - nice!
+
+        self.add(dot_to_move_3, traced_path_3)
+        self.wait()
+
+        self.remove(vector_field_u, vector_field_g, vector_field)
+        self.wait()
+        self.embed()
+
+class guidance_book_8(InteractiveScene):
+    def construct(self):
+
+        '''
+        Phew - alright last big scene here - Classifier free guidance lets go!!!
+
+        '''
+
+
+        dataset = MultiClassSwissroll(np.pi/2, 5*np.pi, 100, num_classes=3)
+        colors = dataset.get_class_colors()
+        loader = DataLoader(dataset, batch_size=len(dataset)*2, shuffle=True)
+        # x, labels = next(iter(loader))
+        # x=x.cpu().numpy()
+
+        axes = Axes(
+            x_range=[-1.2, 1.2, 0.5],
+            y_range=[-1.2, 1.2, 0.5],
+            height=7,
+            width=7,
+            axis_config={
+                "color": CHILL_BROWN, 
+                "stroke_width": 2,
+                "include_tip": True,
+                "include_ticks": False,
+                "tick_size": 0.06,
+                "tip_config": {"color": CHILL_BROWN, "length": 0.15, "width": 0.15}
+            }
+        )
+
+        axes.set_opacity(0.5)
+
+        # Create extended axes with SAME center point and proportional scaling
+        extended_axes = Axes(
+            x_range=[-2.0, 2.0, 0.5],    # Extended range
+            y_range=[-2.0, 2.0, 0.5],    # Extended range
+            height=7 * (4.0/2.4),        # Scale height proportionally: original_height * (new_range/old_range)
+            width=7 * (4.0/2.4),         # Scale width proportionally: original_width * (new_range/old_range)
+            axis_config={"stroke_width": 0}  # Make invisible
+        )
+
+        # Move extended axes to same position as original axes
+        extended_axes.move_to(axes.get_center())
+
+
+        dots = VGroup()
+        labels_array=[]
+        for point in dataset.data:
+            # Map the point coordinates to the axes
+            screen_point = axes.c2p(point[0][0], point[0][1])
+            dot = Dot(screen_point, radius=0.05)
+            # dot.set_color(YELLOW)
+            dots.add(dot)
+            labels_array.append(point[1])
+        labels_array=np.array(labels_array)
+        dots.set_color(YELLOW)
+        dots.set_opacity(0.5)
+
+
+
+        self.add(axes)
+        # self.wait()
+        # self.play(ShowCreation(dots), run_time=8.0)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==0: 
+                d.set_color('#5C4E9A').set_opacity(1.0) #Inside 5C4E9A
+                self.wait(0.1)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==1: 
+                d.set_color('#FAA726').set_opacity(1.0)  #Middle
+                self.wait(0.1)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==2: 
+                d.set_color('#00AEEF').set_opacity(1.0) #Outside
+                self.wait(0.1)
+        # self.wait()
+
+        ## --- First book pause
+        self.add(dots)
+        self.wait()
+
+
+        self.wait()
+ 
+
+        # Hmmm hmm ok, so there isn's really a single vector field I can show - right?
+        # maybe I just leave out the vector field for now - and just show the paths of the points. 
+        # may want to consider playing the same paths as below - we'll see
+        xt_history=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_history_3.npy')
+        heatmaps=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_3.npy')
+
+
+        num_dots_per_class=5 #Crank up for final viz - 96 for video
+        #Purpple - 5C4E9A, Gold - FAA726, Purple - 00AEEF
+        colors_by_class={0:'#5C4E9A', 1: '#FAA726', 2: '#00AEEF'}
+
+        all_traced_paths=VGroup()
+        all_dots_to_move=VGroup()
+        # for class_index in range(xt_history.shape[0]):
+        #     for path_index in range(num_dots_per_class): 
+        #         dot_to_move_2=Dot(axes.c2p(*np.concatenate((xt_history[class_index, 0, path_index, :], [0]))), radius=0.06)
+        #         dot_to_move_2.set_color(colors_by_class[class_index])
+        #         all_dots_to_move.add(dot_to_move_2)
+
+        #         traced_path_2 = CustomTracedPath(dot_to_move_2.get_center, stroke_color=colors_by_class[class_index], stroke_width=1.7, 
+        #                                       opacity_range=(0.75, 0.75), fade_length=12)
+        #         # traced_path_2.set_opacity(0.5)
+        #         # traced_path_2.set_fill(opacity=0)
+        #         all_traced_paths.add(traced_path_2)
+        self.add(all_traced_paths)
+        # self.wait()
+
+
+        dots.set_opacity(0.15)
+        # self.add(all_dots_to_move)
+        # self.wait()
+
+
+        cat_dots=VGroup()
+        for i, d in enumerate(dots):
+            if labels_array[i]==2: 
+                cat_dots.add(d)
+        # self.play(cat_dots.animate.set_color(YELLOW))
+        # self.wait()
+
+        #Ok, now cat picture overlay again I think, probably as yello points are coming in. 
+
+        xt_history=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_history_5.npy')
+        heatmaps=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_5.npy')
+        heatmaps_u=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_5u.npy')
+        heatmaps_c=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_5c.npy')
+        model=torch.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/jun_27_1.pt', map_location=torch.device('cpu'))
+
+        #Setup conditional vector field! If thngs get funky here, switch to using exported heatmaps instead of model
+
+        bound=2.0
+        num_heatmap_steps=64
+        grid=[]
+        for i, x in enumerate(np.linspace(-bound, bound, num_heatmap_steps)):
+            for j, y in enumerate(np.linspace(-bound, bound, num_heatmap_steps)):
+                grid.append([x,y])
+        grid=torch.tensor(grid).float()
+
+
+        time_tracker = ValueTracker(0.0)  # Start at time 0
+        schedule = ScheduleLogLinear(N=256, sigma_min=0.01, sigma_max=10) #N=200
+        sigmas=schedule.sample_sigmas(256)
+
+        # def vector_function_with_tracker(coords_array):
+        #     """Vector function that uses the ValueTracker for time"""
+        #     current_time = time_tracker.get_value()
+        #     max_time = 8.0  # Map time 0-8 to sigma indices 0-255
+        #     sigma_idx = int(np.clip(current_time * 255 / max_time, 0, 255)) #Needs to be N-1
+        #     res = model.forward(torch.tensor(coords_array).float(), sigmas[sigma_idx], cond=torch.tensor(2)) #Hardcode to cat for now
+        #     return -res.detach().numpy()
+
+        # Let's try the heatmap version - having trouble with model based version
+        # If this sucks, try higher resolution, and if that stucks, try model based version again
+        def vector_function_heatmap(coords_array):
+            """
+            Function that takes an array of coordinates and returns corresponding vectors
+            coords_array: shape (N, 2) or (N, 3) - array of [x, y] or [x, y, z] coordinates
+            Returns: array of shape (N, 2) with [vx, vy] vectors (z component handled automatically)
+            """
+            result = np.zeros((len(coords_array), 2))
+            
+            for i, coord in enumerate(coords_array):
+                x, y = coord[0], coord[1]  # Take only x, y coordinates
+                
+                current_time = time_tracker.get_value()
+                max_time = 8.0  # Map time 0-8 to sigma indices 0-255
+                sigma_idx = int(np.clip(current_time * 255 / max_time, 0, 255)) #Needs to be N-1
+                # Find the closest grid point to interpolate from
+                distances = np.linalg.norm(grid.numpy() - np.array([x, y]), axis=1)
+                closest_idx = np.argmin(distances)
+                
+                # Get the vector at the closest grid point
+                vector = heatmaps_c[0, sigma_idx, closest_idx, :]
+                result[i] = vector
+            
+            return -result #Reverse direction
+
+
+
+        # Create the tracker-controlled vector field
+        vector_field = TrackerControlledVectorField(
+            time_tracker=time_tracker,
+            func=vector_function_heatmap,
+            coordinate_system=extended_axes,
+            density=4.0, #was 4, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
+            stroke_width=2,
+            max_radius=5.5,      # Vectors fade to min_opacity at this distance
+            min_opacity=0.75,     # Minimum opacity at max_radius
+            max_opacity=0.75,     # Maximum opacity at origin
+            tip_width_ratio=5, #4
+            tip_len_to_width=0.01, #0.01
+            max_vect_len_to_step_size=0.7,
+            color='#00AEEF'
+        )
+
+        #Should use partial() to not repeat so much...
+        def vector_function_heatmap_u(coords_array):
+            """
+            Function that takes an array of coordinates and returns corresponding vectors
+            coords_array: shape (N, 2) or (N, 3) - array of [x, y] or [x, y, z] coordinates
+            Returns: array of shape (N, 2) with [vx, vy] vectors (z component handled automatically)
+            """
+            result = np.zeros((len(coords_array), 2))
+            
+            for i, coord in enumerate(coords_array):
+                x, y = coord[0], coord[1]  # Take only x, y coordinates
+                
+                current_time = time_tracker.get_value()
+                max_time = 8.0  # Map time 0-8 to sigma indices 0-255
+                sigma_idx = int(np.clip(current_time * 255 / max_time, 0, 255)) #Needs to be N-1
+                # Find the closest grid point to interpolate from
+                distances = np.linalg.norm(grid.numpy() - np.array([x, y]), axis=1)
+                closest_idx = np.argmin(distances)
+                
+                # Get the vector at the closest grid point
+                vector = heatmaps_u[0, sigma_idx, closest_idx, :]
+                result[i] = vector
+            
+            return -result #Reverse direction
+
+
+
+        # Create the tracker-controlled vector field
+        vector_field_u = TrackerControlledVectorField(
+            time_tracker=time_tracker,
+            func=vector_function_heatmap_u,
+            coordinate_system=extended_axes,
+            density=4.0, #was 4, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
+            stroke_width=2,
+            max_radius=5.5,      # Vectors fade to min_opacity at this distance
+            min_opacity=0.75,     # Minimum opacity at max_radius
+            max_opacity=0.75,     # Maximum opacity at origin
+            tip_width_ratio=5, #4
+            tip_len_to_width=0.01, #0.01
+            max_vect_len_to_step_size=0.7,
+            color=CHILL_BROWN
+        )
+
+
+        # self.add(vector_field)
+
+        # self.play(time_tracker.animate.set_value(8.0), run_time=5)
+        # self.play(time_tracker.animate.set_value(0.0), run_time=5)
+
+
+        path_index=70
+        guidance_index=0 #No guidance, cfg_scales=[0.0, 0.1, 0.5, 1.0, 2.0, 3.0, 5.0, 10.0]
+        dot_to_move_3 = Dot(axes.c2p(*[xt_history[guidance_index, 0, path_index, 0], xt_history[guidance_index, 0, path_index, 1], 0]), 
+                            radius=0.07)
+        dot_to_move_3.set_color(BLUE)
+        dot_to_move_3.set_opacity(1.0)
+
+        traced_path_3 = CustomTracedPath(dot_to_move_3.get_center, stroke_color=BLUE, stroke_width=3.0, 
+                                      opacity_range=(1.0, 1.0), fade_length=64)
+        traced_path_3.set_fill(opacity=0)
+        self.add(traced_path_3)
+
+        # self.wait(0)
+        # self.play(dots.animate.set_opacity(0.2), axes.animate.set_opacity(0.5), 
+        #           #self.frame.animate.reorient(0, 0, 0, (0.23, 2.08, 0.0), 4.78), 
+        #           run_time=2.0)
+        dots.set_opacity(0.3)
+        axes.set_opacity(0.5)
+        self.add(dot_to_move_3)
+        self.wait()
+
+        self.add(vector_field)
+
+        self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 5.4) #lil wider
+        self.wait()
+
+        # COMMENTING OUT THIS ANIMATION WHILE WORKING ON LATER ONES -> SLOW!
+        # for k in range(xt_history.shape[1]):
+        #     self.play(time_tracker.animate.set_value(8.0*(k/256.0)), 
+        #               dot_to_move_3.animate.move_to(axes.c2p(*[xt_history[guidance_index, k, path_index, 0], 
+        #                                                        xt_history[guidance_index, k, path_index, 1]])),
+        #              rate_func=linear, run_time=0.01)
+
+
+        # self.play(FadeIn(vector_field))
+        
+        # self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 4.78)
+        self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 5.4) #lil wider
+        # self.wait()
+
+        # self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0.0), 7.40), run_time=4)
+        self.wait()
+
+        # self.play(FadeOut(dot_to_move_3), FadeOut(traced_path_3))
+        self.remove(dot_to_move_3, traced_path_3)
+        self.wait()
+
+        #A little torn, but I think we go ahead and bring in both vector fields in 81 instead of waiting until 82. 
+        #Eh these are pretty overwhelming - let's try just starting with clean f(notation)
+
+
+        dots.set_opacity(0.2)
+        cat_dots.set_opacity(0.5)
+        self.add(vector_field_u)
+        self.remove(vector_field); self.add(vector_field)
+
+        # self.frame.reorient(0, 0, 0, (0.14, -0.06, 0.0), 11.99) #Whold field
+        self.frame.reorient(0, 0, 0, (0.05, 0.06, 0.0), 7.05) #A bit tighter
+        self.wait()
+
+        time_tracker.set_value(0.0)
+        self.wait()
+
+        # time_tracker.set_value(3.0)
+        # self.wait()
+
+        # time_tracker.set_value(4.0)
+        # self.wait()
+
+
+        # time_tracker.set_value(8)
+        # self.wait()
+
+        # Book 
+        # Ok so for the main points I want to make here, I think 0.0 and 3 or 4 will 
+        # be fine/good, however 
+        # it might be worth looking a bit further ahead to how I'm going to 
+        # show guidance, I recall the timining between finicky then
+        # Ok i think that the guidance zoom in on a pair of arrows action
+        # is actually at 8s? It's just with a little bigger arrows maybe?
+        # Either way I don't think that I want to show 8 seconds for the first big
+        # COmpareson, I think 3 or 4 is more clear. Yeah 4s is dope, let's show that. 
+
+
+        def vector_function_heatmap_g(coords_array):
+            """
+            Function that takes an array of coordinates and returns corresponding vectors
+            coords_array: shape (N, 2) or (N, 3) - array of [x, y] or [x, y, z] coordinates
+            Returns: array of shape (N, 2) with [vx, vy] vectors (z component handled automatically)
+            """
+            result = np.zeros((len(coords_array), 2))
+            
+            for i, coord in enumerate(coords_array):
+                x, y = coord[0], coord[1]  # Take only x, y coordinates
+                
+                current_time = time_tracker.get_value()
+                max_time = 8.0  # Map time 0-8 to sigma indices 0-255
+                sigma_idx = int(np.clip(current_time * 255 / max_time, 0, 255)) #Needs to be N-1
+                # Find the closest grid point to interpolate from
+                distances = np.linalg.norm(grid.numpy() - np.array([x, y]), axis=1)
+                closest_idx = np.argmin(distances)
+                
+                # Get the vector at the closest grid point
+                vector = heatmaps[3, sigma_idx, closest_idx, :] #cfg_scales=[0.0, 0.1, 0.5, 1.0, 2.0, 3.0, 5.0, 10.0]
+                result[i] = vector
+            
+            return -result #Reverse direction
+
+
+        # Create the tracker-controlled vector field
+        vector_field_g = TrackerControlledVectorField(
+            time_tracker=time_tracker,
+            func=vector_function_heatmap_g,
+            coordinate_system=extended_axes,
+            density=4.0, #5 gives nice detail, but is maybe a little too much, especially to zoom in on soon? Ok I think i like 4.
+            stroke_width=2,
+            max_radius=5.5,      # Vectors fade to min_opacity at this distance
+            min_opacity=0.75,     # Minimum opacity at max_radius
+            max_opacity=0.75,     # Maximum opacity at origin
+            tip_width_ratio=5,
+            tip_len_to_width=0.01,
+            max_vect_len_to_step_size=0.7,
+            color=GREEN
+        )
+
+        # self.add(vector_field_g)
+        # self.remove(vector_field_g)
+
+
+        # vector_field
+
+        #Book?
+
+        self.add(vector_field_g)
+
+        self.add(dot_to_move_3)
+        self.add(traced_path_3)
+
+
+
+
+        path_index=70
+        guidance_index=3 #No guidance, cfg_scales=[0.0, 0.1, 0.5, 1.0, 2.0, 3.0, 5.0, 10.0]
+        dot_to_move_4 = Dot(axes.c2p(*[xt_history[guidance_index, 0, path_index, 0], xt_history[guidance_index, 0, path_index, 1], 0]), 
+                            radius=0.07)
+        dot_to_move_4.set_color(GREEN)
+        dot_to_move_4.set_opacity(1.0)
+
+        traced_path_4 = CustomTracedPath(dot_to_move_4.get_center, stroke_color=GREEN, stroke_width=3.0, 
+                                      opacity_range=(1.0, 1.0), fade_length=64)
+        traced_path_4.set_fill(opacity=0)
+        self.add(traced_path_4)
+
+        self.wait()
+
+        self.add(dot_to_move_4)
+        # self.add(dot_to_move_3, traced_path_3)
+        self.remove(dot_to_move_3, traced_path_3)
+        # traced_path_3.set_opacity(1.0)
+        dots.set_opacity(0.1)
+        cat_dots.set_opacity(0.35)
+        vector_field_g.set_opacity_range(0.7, 0.7)
+        vector_field_u.set_opacity_range(0.7, 0.7)
+        vector_field.set_opacity_range(0.7, 0.7)
+        self.wait()
+
+        self.frame.reorient(0, 0, 0, (0.23, 2.08, 0.0), 5.4) #lil wider
+
+        self.wait()
+        # for k in range(xt_history.shape[1]):
+        #     self.play(time_tracker.animate.set_value(8.0*(k/256.0)), 
+        #               # time_value.animate.set_value(1.0-k/256.0),
+        #               dot_to_move_4.animate.move_to(axes.c2p(*[xt_history[guidance_index, k, path_index, 0], 
+        #                                                        xt_history[guidance_index, k, path_index, 1]])),
+        #              rate_func=linear, run_time=0.01)
+        self.wait()
+
+
+        #Ok yeah yeah side by side book - nice!
+
+        self.add(dot_to_move_3, traced_path_3)
+        self.wait()
+
+        self.remove(vector_field_u, vector_field_g, vector_field)
+        self.wait()
+
 
         # self.add(dot_to_move_3, traced_path_3)
 
@@ -1417,46 +2278,21 @@ class guidance_book_5(InteractiveScene):
             if labels_array[i]==0: 
                 person_dots.add(d)
 
-        self.play(FadeOut(time_display), FadeOut(time_label), FadeOut(dot_to_move_4), FadeOut(dot_to_move_3),
-                  FadeOut(traced_path_4), FadeOut(traced_path_3), time_tracker.animate.set_value(1.0),
-                  cat_dots.animate.set_opacity(0.7),
-                  vector_field_g.animate.set_opacity_range(0.1, 0.8),
-                  dog_dots.animate.set_color('#FF00FF').set_opacity(0.7),
-                  person_dots.animate.set_color('#00FFFF').set_opacity(0.7),
-                  self.frame.animate.reorient(0, 0, 0, (0.06, -0.02, 0.0), 7.52), 
-                  run_time=6.0)
         self.wait()
-
-        # t1=MarkupText("Classifier-", font='myriad-pro')
-        # t1.set_color(GREEN)
-        # t1.to_corner(UL, buff=0.5)
-
-        # t2=MarkupText("Free", font='myriad-pro')
-        # t2.set_color(GREEN)
-        # t2.next_to(t1, DOWN, buff=0.1, aligned_edge=LEFT)
-
-        # t3=MarkupText("Guidance", font='myriad-pro')
-        # t3.set_color(GREEN)
-        # t3.next_to(t2, DOWN, buff=0.1, aligned_edge=LEFT)
-
-        # self.play(Write(t1), Write(t2), Write(t3), run_time=1.5, lag_ratio=0.5)
-        # self.wait()
-        # self.remove(t1, t2, t3)
-        #Eh i hate this sytle, let me to the name overaly in illustroter. 
-
-
-        #ok now guide a set of cat points, then dog points, then peroson points
-        # self.remove(dot_to_move_3)
-
-        # Ok I'm feeling pretty strongly that we should totally lose the ground truth points
-        # before doing these reconstructions, there's too much going on!!
-
-        # Hmm ok question actually - do I want to do fresh exports (with lower sigmas)
-        # for these...
-        # Hmm you know a feel like a unified export with some gaurantees from the 
-        # the jupyter side that we'll have a nice spiral would be cood
-        # I can still use the same heatmap for continuity. 
-        # Ok let me go do that. 
+        self.play(
+                  #FadeOut(time_display), 
+                  #FadeOut(time_label), 
+                  FadeOut(dot_to_move_4), 
+                  FadeOut(dot_to_move_3),
+                  FadeOut(traced_path_4), 
+                  FadeOut(traced_path_3), 
+                  # time_tracker.animate.set_value(1.0),
+                  # cat_dots.animate.set_opacity(0.7),
+                  # vector_field_g.animate.set_opacity_range(0.1, 0.8),
+                  # dog_dots.animate.set_color('#FF00FF').set_opacity(0.7),
+                  # person_dots.animate.set_color('#00FFFF').set_opacity(0.7),
+                  self.frame.animate.reorient(0, 0, 0, (0.06, -0.02, 0.0), 7.52), 
+                  run_time=1.0)
         
 
         xt_history_2=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_history_6.npy')
@@ -1465,6 +2301,8 @@ class guidance_book_5(InteractiveScene):
         heatmaps_c_2=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_6c.npy')
         model_2=torch.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/jun_27_2.pt', map_location=torch.device('cpu'))
 
+        # dots.set_opacity(0.8)
+        # self.wait()
 
         def vector_function_heatmap_2(coords_array):
             result = np.zeros((len(coords_array), 2))
@@ -1574,8 +2412,8 @@ class guidance_book_5(InteractiveScene):
         self.wait()
 
 
-        num_dots_per_class=96 #Crank up for final viz
-        colors_by_class={2:YELLOW, 0: '#00FFFF', 1: '#FF00FF'}
+        num_dots_per_class=16 #Crank up for final viz
+        # colors_by_class={2:YELLOW, 0: '#00FFFF', 1: '#FF00FF'}
 
         all_traced_paths_2=VGroup()
         all_dots_to_move_2=VGroup()
@@ -1593,13 +2431,22 @@ class guidance_book_5(InteractiveScene):
         self.add(all_traced_paths_2)
         self.wait()
 
+        # Book
+        # Hmm Can I just jump to running them all at once? 
+        dots.set_opacity(0.2)
+
+
+
+
+
+
         #Cross fading vector fields is a litle sketchy, hopefully it's fine. 
-        self.play(FadeOut(cat_dots), FadeOut(dog_dots), FadeOut(person_dots), 
-                  # FadeIn(all_dots_to_move_2[2*num_dots_per_class:]), #Just first class here 
-                  FadeOut(vector_field), FadeOut(vector_field_u), FadeOut(vector_field_g),
-                  FadeIn(vector_field_2), FadeIn(vector_field_u_2), FadeIn(vector_field_g_2),
-                  run_time=2)
-        self.wait()
+        # self.play(FadeOut(cat_dots), FadeOut(dog_dots), FadeOut(person_dots), 
+        #           # FadeIn(all_dots_to_move_2[2*num_dots_per_class:]), #Just first class here 
+        #           FadeOut(vector_field), FadeOut(vector_field_u), FadeOut(vector_field_g),
+        #           FadeIn(vector_field_2), FadeIn(vector_field_u_2), FadeIn(vector_field_g_2),
+        #           run_time=2)
+        # self.wait()
 
         #Ok pausing here and testing on new scene - getting really unwieldy. 
 
@@ -1622,8 +2469,7 @@ class guidance_book_5(InteractiveScene):
         self.wait(20)
         self.embed()
 
-
-class guidance_book_2(InteractiveScene):
+class guidance_book_9b(InteractiveScene):
     def construct(self):
 
         '''
@@ -1682,20 +2528,33 @@ class guidance_book_2(InteractiveScene):
         dots.set_color(YELLOW)
         dots.set_opacity(0.5)
 
-        dog_dots=VGroup()
-        for i, d in enumerate(dots):
-            if labels_array[i]==1: 
-                dog_dots.add(d)
 
-        person_dots=VGroup()
+
+        self.add(axes)
+        # self.wait()
+        # self.play(ShowCreation(dots), run_time=8.0)
+        # self.wait()
+
         for i, d in enumerate(dots):
             if labels_array[i]==0: 
-                person_dots.add(d)
+                d.set_color('#5C4E9A').set_opacity(1.0) #Inside 5C4E9A
+                self.wait(0.1)
+        # self.wait()
 
-        cat_dots=VGroup()
+        for i, d in enumerate(dots):
+            if labels_array[i]==1: 
+                d.set_color('#FAA726').set_opacity(1.0)  #Middle
+                self.wait(0.1)
+        # self.wait()
+
         for i, d in enumerate(dots):
             if labels_array[i]==2: 
-                cat_dots.add(d)
+                d.set_color('#00AEEF').set_opacity(1.0) #Outside
+                self.wait(0.1)
+        # self.wait()
+
+        ## --- First book pause
+        self.add(dots)
 
 
         xt_history_2=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_history_6.npy')
@@ -1771,7 +2630,8 @@ class guidance_book_2(InteractiveScene):
 
 
         
-        colors_by_class={2:YELLOW, 0: '#00FFFF', 1: '#FF00FF'}
+        # colors_by_class={2:YELLOW, 0: '#00FFFF', 1: '#FF00FF'}
+        colors_by_class={0:'#5C4E9A', 1: '#FAA726', 2: '#00AEEF'}
 
         all_traced_paths=VGroup()
         all_dots_to_move=VGroup()
@@ -1781,18 +2641,264 @@ class guidance_book_2(InteractiveScene):
                 dot_to_move.set_color(colors_by_class[class_index])
                 all_dots_to_move.add(dot_to_move)
 
-                traced_path = CustomTracedPath(dot_to_move.get_center, stroke_color=colors_by_class[class_index], stroke_width=2.5, 
-                                              opacity_range=(0.0, 1.0), fade_length=128)
+                traced_path = CustomTracedPath(dot_to_move.get_center, stroke_color=colors_by_class[class_index], stroke_width=1.8, 
+                                              opacity_range=(0.75, 0.75), fade_length=128)
                 # traced_path.set_opacity(0.5)
                 # traced_path.set_fill(opacity=0)
                 all_traced_paths.add(traced_path)
         self.add(all_traced_paths)
         self.wait()
 
-        self.add(vector_field_cats_u, vector_field_cats_c, vector_field_cats_g)
+
+
+        self.remove(vector_field_cats_u, vector_field_cats_c, vector_field_cats_g)
         self.wait()
 
-        self.play(FadeIn(all_dots_to_move[2*num_dots_per_class:]))
+        dots.set_opacity(0.3)
+
+        self.add(all_dots_to_move)
+
+
+        #Booook? Book
+
+        self.frame.reorient(0, 0, 0, (0.0, 0.00, 0.0), 9.00) #Slightly wider bro
+
+
+        self.wait()
+        for k in range(xt_history_2.shape[1]):
+            #Clunky but meh
+            animations=[]
+            path_index=0
+            for class_index in range(xt_history_2.shape[0]):
+                for j in range(num_dots_per_class): 
+                    animations.append(all_dots_to_move[path_index].animate.move_to(axes.c2p(*[xt_history_2[class_index, k, j, 0], 
+                                                                                              xt_history_2[class_index, k, j, 1]])))
+                    path_index+=1
+            self.play(*animations, rate_func=linear, run_time=0.1)
+        self.wait()
+
+        self.remove(all_traced_paths)
+        self.wait()
+
+        self.embed()
+
+
+class guidance_book_2(InteractiveScene):
+    def construct(self):
+
+        '''
+        Phew - alright last big scene here - Classifier free guidance lets go!!!
+
+        '''
+        num_dots_per_class=96  #Crank up for final viz - 96 takes 8-9 hours. 
+
+
+        dataset = MultiClassSwissroll(np.pi/2, 5*np.pi, 100, num_classes=3)
+        colors = dataset.get_class_colors()
+        loader = DataLoader(dataset, batch_size=len(dataset)*2, shuffle=True)
+        # x, labels = next(iter(loader))
+        # x=x.cpu().numpy()
+
+        axes = Axes(
+            x_range=[-1.2, 1.2, 0.5],
+            y_range=[-1.2, 1.2, 0.5],
+            height=7,
+            width=7,
+            axis_config={
+                "color": CHILL_BROWN, 
+                "stroke_width": 2,
+                "include_tip": True,
+                "include_ticks": False,
+                "tick_size": 0.06,
+                "tip_config": {"color": CHILL_BROWN, "length": 0.15, "width": 0.15}
+            }
+        )
+
+        axes.set_opacity(0.5)
+
+        # Create extended axes with SAME center point and proportional scaling
+        extended_axes = Axes(
+            x_range=[-2.0, 2.0, 0.5],    # Extended range
+            y_range=[-2.0, 2.0, 0.5],    # Extended range
+            height=7 * (4.0/2.4),        # Scale height proportionally: original_height * (new_range/old_range)
+            width=7 * (4.0/2.4),         # Scale width proportionally: original_width * (new_range/old_range)
+            axis_config={"stroke_width": 0}  # Make invisible
+        )
+
+        # Move extended axes to same position as original axes
+        extended_axes.move_to(axes.get_center())
+
+
+        dots = VGroup()
+        labels_array=[]
+        for point in dataset.data:
+            # Map the point coordinates to the axes
+            screen_point = axes.c2p(point[0][0], point[0][1])
+            dot = Dot(screen_point, radius=0.05)
+            # dot.set_color(YELLOW)
+            dots.add(dot)
+            labels_array.append(point[1])
+        labels_array=np.array(labels_array)
+        dots.set_color(YELLOW)
+        dots.set_opacity(0.5)
+
+
+
+        self.add(axes)
+        # self.wait()
+        # self.play(ShowCreation(dots), run_time=8.0)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==0: 
+                d.set_color('#5C4E9A').set_opacity(1.0) #Inside 5C4E9A
+                self.wait(0.1)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==1: 
+                d.set_color('#FAA726').set_opacity(1.0)  #Middle
+                self.wait(0.1)
+        # self.wait()
+
+        for i, d in enumerate(dots):
+            if labels_array[i]==2: 
+                d.set_color('#00AEEF').set_opacity(1.0) #Outside
+                self.wait(0.1)
+        # self.wait()
+
+        ## --- First book pause
+        self.add(dots)
+
+
+        xt_history_2=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_history_6.npy')
+        heatmaps_2=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_6.npy')
+        heatmaps_u_2=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_6u.npy')
+        heatmaps_c_2=np.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/conditioned_heatmaps_6c.npy')
+        model_2=torch.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/jun_27_2.pt', map_location=torch.device('cpu'))
+
+
+        bound=2.0
+        num_heatmap_steps=64
+        grid=[]
+        for i, x in enumerate(np.linspace(-bound, bound, num_heatmap_steps)):
+            for j, y in enumerate(np.linspace(-bound, bound, num_heatmap_steps)):
+                grid.append([x,y])
+        grid=torch.tensor(grid).float()
+
+        time_tracker = ValueTracker(0.0)  # Start at time 0
+        schedule = ScheduleLogLinear(N=256, sigma_min=0.01, sigma_max=10) #N=200
+        sigmas=schedule.sample_sigmas(256)
+
+        self.wait()
+
+
+        def vector_function_parent(coords_array, heatmap_array, class_index):
+            result = np.zeros((len(coords_array), 2))
+            
+            for i, coord in enumerate(coords_array):
+                x, y = coord[0], coord[1]  # Take only x, y coordinates
+                
+                current_time = time_tracker.get_value()
+                max_time = 8.0  # Map time 0-8 to sigma indices 0-255
+                sigma_idx = int(np.clip(current_time * 255 / max_time, 0, 255)) #Needs to be N-1
+                # Find the closest grid point to interpolate from
+                distances = np.linalg.norm(grid.numpy() - np.array([x, y]), axis=1)
+                closest_idx = np.argmin(distances)
+                
+                # Get the vector at the closest grid point
+                vector = heatmap_array[class_index, sigma_idx, closest_idx, :] #I think this is the right class index
+                result[i] = vector
+            return -result 
+
+
+        vector_field_cats_g = TrackerControlledVectorField(
+            time_tracker=time_tracker,
+            func=partial(vector_function_parent, heatmap_array=heatmaps_2, class_index=2),
+            coordinate_system=extended_axes, density=4.0, stroke_width=2, max_radius=5.5, min_opacity=0.7, max_opacity=0.7, 
+            tip_width_ratio=4, tip_len_to_width=0.01, max_vect_len_to_step_size=0.7, color=GREEN)
+
+        vector_field_cats_u = TrackerControlledVectorField(
+            time_tracker=time_tracker,
+            func=partial(vector_function_parent, heatmap_array=heatmaps_u_2, class_index=2),
+            coordinate_system=extended_axes, density=4.0, stroke_width=2, max_radius=5.5, min_opacity=0.7, max_opacity=0.7, 
+            tip_width_ratio=4, tip_len_to_width=0.01, max_vect_len_to_step_size=0.7, color=CHILL_BROWN)
+
+        vector_field_cats_c = TrackerControlledVectorField(
+            time_tracker=time_tracker,
+            func=partial(vector_function_parent, heatmap_array=heatmaps_c_2, class_index=2),
+            coordinate_system=extended_axes, density=4.0, stroke_width=2, max_radius=5.5, min_opacity=0.7, max_opacity=0.7, 
+            tip_width_ratio=4, tip_len_to_width=0.01, max_vect_len_to_step_size=0.7, color='#00AEEF')
+
+        
+        self.frame.reorient(0, 0, 0, (0.06, -0.02, 0.0), 7.52)
+        self.add(axes)
+        self.wait()
+
+        self.add(vector_field_cats_g, vector_field_cats_u, vector_field_cats_c)
+
+
+        #Book?
+
+
+
+
+        
+        # colors_by_class={2:YELLOW, 0: '#00FFFF', 1: '#FF00FF'}
+        colors_by_class={0:'#5C4E9A', 1: '#FAA726', 2: '#00AEEF'}
+
+        all_traced_paths=VGroup()
+        all_dots_to_move=VGroup()
+        for class_index in range(xt_history_2.shape[0]):
+            for path_index in range(num_dots_per_class): 
+                dot_to_move=Dot(axes.c2p(*np.concatenate((xt_history_2[class_index, 0, path_index, :], [0]))), radius=0.06)
+                dot_to_move.set_color(colors_by_class[class_index])
+                all_dots_to_move.add(dot_to_move)
+
+                traced_path = CustomTracedPath(dot_to_move.get_center, stroke_color=colors_by_class[class_index], stroke_width=1.8, 
+                                              opacity_range=(0.75, 0.75), fade_length=128)
+                # traced_path.set_opacity(0.5)
+                # traced_path.set_fill(opacity=0)
+                all_traced_paths.add(traced_path)
+        self.add(all_traced_paths)
+        self.wait()
+
+
+
+        self.remove(vector_field_cats_u, vector_field_cats_c, vector_field_cats_g)
+        self.wait()
+
+        dots.set_opacity(0.3)
+
+        self.add(all_dots_to_move)
+
+
+        #Booook? Book
+
+        self.frame.reorient(0, 0, 0, (0.0, 0.00, 0.0), 9.00) #Slightly wider bro
+
+
+        self.wait()
+        for k in range(xt_history_2.shape[1]):
+            #Clunky but meh
+            animations=[]
+            path_index=0
+            for class_index in range(xt_history_2.shape[0]):
+                for j in range(num_dots_per_class): 
+                    animations.append(all_dots_to_move[path_index].animate.move_to(axes.c2p(*[xt_history_2[class_index, k, j, 0], 
+                                                                                              xt_history_2[class_index, k, j, 1]])))
+                    path_index+=1
+            self.play(*animations, rate_func=linear, run_time=0.1)
+        self.wait()
+
+
+
+
+
+
+
+        # ----
+        # self.play(FadeIn(all_dots_to_move[2*num_dots_per_class:]))
         self.wait()
 
         for k in range(xt_history_2.shape[1]):
