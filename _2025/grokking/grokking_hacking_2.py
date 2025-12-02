@@ -35,6 +35,11 @@ def black_to_tan_hex(value, vmin, vmax=1):
     norm = colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
     return colors.to_hex(cmap(norm(value)))
 
+def softmax_with_temperature(logits, temperature=1.0, axis=-1):
+    scaled = logits / temperature
+    exp_scaled = np.exp(scaled - np.max(scaled, axis=axis, keepdims=True))
+    return exp_scaled / np.sum(exp_scaled, axis=axis, keepdims=True)
+
 svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/graphics/to_manim')
 data_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764602090')
 
@@ -48,7 +53,7 @@ class GrokkingHackingTwo(InteractiveScene):
             activations = pickle.load(f)
 
         all_svgs=Group()
-        for svg_file in svg_files[1:15]: #Expand if I add more artboards
+        for svg_file in svg_files[1:16]: #Expand if I add more artboards
             svg_image=SVGMobject(str(svg_file))
             all_svgs.add(svg_image[1:]) #Thowout background
 
@@ -77,7 +82,7 @@ class GrokkingHackingTwo(InteractiveScene):
         input_mapping_3a=[[46, 47], [51, 52], [53, 54], [55, 56], [57, 58], [59, 60], [61, 62], [63, 64]]
         input_mapping_3b=[[65, 66], [67, 68]]
 
-        example_index=116
+        example_index=117
 
         #Color inputs
         for mapping, activations_index, offset in zip([input_mapping_1a, input_mapping_1b, input_mapping_2a, input_mapping_2b, input_mapping_3a, input_mapping_3b], 
@@ -92,12 +97,13 @@ class GrokkingHackingTwo(InteractiveScene):
         # 50/50 on viridis vs tan here, easy to change. 
         # Swaggin here a bit, these are upside down and not skipping correctly, I think
         # Easy to adjust later if needed for consistency
-        vmin=np.min(activations['blocks.0.hook_resid_pre'])*0.4 #Scaling
-        vmax=np.max(activations['blocks.0.hook_resid_pre'])*0.4
+
         embedding_fill_indices_1=[3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]
         embedding_fill_indices_2=[28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
         embedding_fill_indices_3=[53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73]
         for i, indices in enumerate([embedding_fill_indices_1, embedding_fill_indices_2, embedding_fill_indices_3]):
+            vmin=np.min(activations['blocks.0.hook_resid_pre'][example_index][i])*1.2 #Scaling by column
+            vmax=np.max(activations['blocks.0.hook_resid_pre'][example_index][i])*1.2
             for j, idx in enumerate(indices):
                 # c=viridis_hex(activations['blocks.0.hook_resid_pre'][example_index, 0, i], vmin, vmax)
                 c=black_to_tan_hex(activations['blocks.0.hook_resid_pre'][example_index, i, j], vmin, vmax)
@@ -105,13 +111,13 @@ class GrokkingHackingTwo(InteractiveScene):
                 all_svgs[4][idx].set_color(c)
 
 
-        self.wait()
+        # self.wait()
 
 
         ## Attention - Values - mapping again is hacky here, technicall first layer should be same for all
         ## Keep moving for now.
-        vmin=np.min(activations['blocks.0.attn.hook_v'])*0.25 #Scaling
-        vmax=np.max(activations['blocks.0.attn.hook_v'])*0.25
+        vmin=np.min(activations['blocks.0.attn.hook_v'][example_index])*0.25 #Scaling
+        vmax=np.max(activations['blocks.0.attn.hook_v'][example_index])*0.25
         value_fill_indices_1=[0, 2, 4, 6, 8]
         value_fill_indices_2=[10, 12, 14, 16, 18]
         value_fill_indices_3=[20, 22, 24, 26, 28]
@@ -138,8 +144,8 @@ class GrokkingHackingTwo(InteractiveScene):
 
 
         #MLP layer 1 (565, 3, 128) 
-        vmin=np.min(activations['blocks.0.hook_resid_mid'])*0.4 #Scaling
-        vmax=np.max(activations['blocks.0.hook_resid_mid'])*0.4
+        vmin=np.min(activations['blocks.0.hook_resid_mid'][example_index])*0.85 #Scaling
+        vmax=np.max(activations['blocks.0.hook_resid_mid'][example_index])*0.85
         mlp_indices_1=[0, 2, 4, 6, 8, 10, 12]
         for i, idx in enumerate(mlp_indices_1):
             c=black_to_tan_hex(activations['blocks.0.hook_resid_mid'][example_index, 2, i], vmin, vmax)
@@ -147,23 +153,67 @@ class GrokkingHackingTwo(InteractiveScene):
 
 
         #MLP Layer 2 (565, 3, 512)
-        vmin=np.min(activations['blocks.0.mlp.hook_pre'])*0.4 #Scaling
-        vmax=np.max(activations['blocks.0.mlp.hook_pre'])*0.4
+        vmin=np.min(activations['blocks.0.mlp.hook_pre'][example_index])*0.85 #Scaling
+        vmax=np.max(activations['blocks.0.mlp.hook_pre'][example_index])*0.85
         mlp_indices_2=[14, 16, 18, 20, 22, 24, 26, 28, 30]
         for i, idx in enumerate(mlp_indices_2):
             c=black_to_tan_hex(activations['blocks.0.mlp.hook_pre'][example_index, 2, i], vmin, vmax)
             all_svgs[9][idx].set_color(c)
 
         # MLP Layer 3 (565, 3, 128) 
-        vmin=np.min(activations['blocks.0.hook_mlp_out'])*0.4 #Scaling
-        vmax=np.max(activations['blocks.0.hook_mlp_out'])*0.4
+        vmin=np.min(activations['blocks.0.hook_mlp_out'][example_index])*0.85 #Scaling
+        vmax=np.max(activations['blocks.0.hook_mlp_out'][example_index])*0.85
         mlp_indices_3=[32, 34, 36, 38, 40, 42, 44]
         for i, idx in enumerate(mlp_indices_3):
             c=black_to_tan_hex(activations['blocks.0.hook_mlp_out'][example_index, 2, i], vmin, vmax)
             all_svgs[9][idx].set_color(c)
 
+        #Add back borders for occlusions
+        # for i in range(1, 47, 2):
+        #     self.remove(all_svgs[9][i]); self.add(all_svgs[9][i])
+
+
+        #Logits or probs (565, 113)
+        logit_indices_1=[3, 5, 7, 9, 11, 13, 15, 17]
+        logit_indices_2=[19, 21]
+
+        #Don't love probs or logits, how about temperature?
+        probs_sortof=softmax_with_temperature(activations['logits'][example_index], temperature=25.0, axis=0)
+
+
+        vmin=np.min(probs_sortof)*1.0 #Scaling
+        vmax=np.max(probs_sortof)*1.0
+
+        for i, idx in enumerate(logit_indices_1):
+            c=black_to_tan_hex(probs_sortof[i], vmin, vmax)
+            all_svgs[11][idx].set_color(c)
+
+        for i, idx in enumerate(logit_indices_2):
+            c=black_to_tan_hex(probs_sortof[i+111], vmin, vmax)
+            all_svgs[11][idx].set_color(c)
+
+
+        #MLP weights
+        np.random.seed(5)
+        R=np.random.uniform(0.3, 0.75, len(all_svgs[8]))
+        for i in range(len(all_svgs[8])):
+            all_svgs[8][i].set_opacity(R[i])
+        # all_svgs[8][3].set_color(YELLOW)
+
+        # self.remove(all_svgs[8])
+
 
         self.wait()
+
+        #Ok 50/50 still on activations in tan vs viridis - easy to change as I actually get into paragraph 25
+
+
+
+
+
+        
+
+
 
 
 
