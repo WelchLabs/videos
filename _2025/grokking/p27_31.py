@@ -364,6 +364,63 @@ class P28_31(InteractiveScene):
             self.wait(0.2)
         self.wait()
 
+        # Ok this should be the most complicated part
+        # First color points using viridis following p
+        # Then fancy scatter plots. I think that by moving pairs of collections of poitns at the same to each 
+        # of the 49 scatter plots, I can make it reasonably clear what I'm doing without adding a buynch of labelling. 
+        # Ok but first, let's color!
+
+        #My god this is slow lol
+        for i in range(1, p):
+            for j in range(7):
+                c=viridis_hex(i, 0, p)
+                all_pts[j][i].set_color(c)
+                self.wait(0.1)
+        self.wait()
+
+
+        # Ok now for axes here, I think start with just making a 7x7 grid of axes with the same spacing
+        # Then I can figure out how to add little boxes around each scattter plot, I think that's the way to 
+        # handle the organization
+        # Then it's probably draw all the points in final locations, then to replacment transform?
+
+        axes_2 = VGroup()
+        for i in range(49):  # 7 × 7
+            a = Axes(
+                x_range=[-1.0, 1.0, 1],
+                y_range=[-1.0, 1.0, 1],
+                width=0.8,
+                height=0.8,
+                axis_config={
+                    "color": CHILL_BROWN,
+                    "include_ticks": False,
+                    "include_numbers": False,
+                    "include_tip": True,
+                    "stroke_width": 1,
+                    "tip_config": {"width": 0.02, "length": 0.02},
+                },
+            )
+            axes_2.add(a)
+
+        axes_2.arrange_in_grid(rows=7, cols=7, buff=0.2)
+        axes_2.move_to([6.4, 0, 0])
+
+
+        all_pts_2=VGroup()
+        activation_scaling=[0.25, 0.25, 0.25, 0.25, 0.18, 0.18,0.18] #Will probably need to noodle here a bit
+
+        for i, neuron_idx_1 in enumerate(neuron_indices):
+            for k, neuron_idx_2 in enumerate(neuron_indices):
+                dese_pts=VGroup()
+                for j in range(p):
+                    x = j / p
+                    y = activations['blocks.0.mlp.hook_pre'][j, 2, i]*activation_scaling[i]
+                    pt = Dot(axes[i].c2p(x, y), radius=0.02, stroke_width=0)
+                    dese_pts.add(pt)
+                all_pts_2.add(dese_pts)
+
+
+
 
 
 
