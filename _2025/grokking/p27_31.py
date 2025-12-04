@@ -184,7 +184,7 @@ svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/graphics/
 data_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
 
 
-class P28_31(InteractiveScene):
+class P28_31f(InteractiveScene):
     def construct(self): 
 
         p=113
@@ -375,12 +375,12 @@ class P28_31(InteractiveScene):
         # Ok but first, let's color!
 
         #My god this is slow lol - removing temporarily
-        # for i in range(1, p):
-        #     for j in range(7):
-        #         c=viridis_hex(i, 0, p)
-        #         all_pts[j][i].set_color(c)
-        #         self.wait(0.1)
-        # self.wait()
+        for i in range(p):
+            for j in range(7):
+                c=viridis_hex(i, 0, p)
+                all_pts[j][i].set_color(c)
+                self.wait(0.1)
+        self.wait()
 
 
         # Ok now for axes here, I think start with just making a 7x7 grid of axes with the same spacing
@@ -436,10 +436,10 @@ class P28_31(InteractiveScene):
         # self.add(all_pts_2[2])
 
         #P30 moves
-        self.play(self.frame.reorient(0, 0, 0, (6.27, 2.27, 0.0), 3.75), run_time=4)
+        self.play(self.frame.animate.reorient(0, 0, 0, (6.27, 2.27, 0.0), 3.75), run_time=4)
         self.wait()
         self.play(ReplacementTransform(all_pts[0].copy(), all_pts_2[1]), 
-                  ReplacementTransform(all_pts[1].copy(), all_pts_2[1]), lag_ratio=0.1, run_time=4)
+                  ReplacementTransform(all_pts[1].copy(), all_pts_2[1]), lag_ratio=0.1, run_time=10)
         self.wait()
 
         #Hmm ok kinda thinkign about just fading in the rest actually? 
@@ -459,7 +459,7 @@ class P28_31(InteractiveScene):
         #activation_history.shape (2000, 113, 3, 512)
         
 
-        for step_count in tqdm(np.arange(1999, -1, -1)):
+        for step_count in tqdm(np.arange(999, -1, -1)):
             all_pts_old=all_pts
             all_pts_2_old=all_pts_2
 
