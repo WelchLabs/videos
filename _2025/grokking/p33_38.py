@@ -354,7 +354,7 @@ class P34_38(InteractiveScene):
         wave_label_1.move_to([-0.1, 1.7, 0])
 
         self.wait()
-        self.play(ShowCreation(curve_1))
+        self.play(ShowCreation(curve_1), run_time=5)
         self.add(wave_label_1)
         self.wait()
 
