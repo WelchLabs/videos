@@ -212,7 +212,7 @@ class P44_50(InteractiveScene):
             activations = pickle.load(f)
 
         all_svgs=Group()
-        for svg_file in svg_files[1:20]: #Expand if I add more artboards
+        for svg_file in svg_files[1:21]: #Expand if I add more artboards
             svg_image=SVGMobject(str(svg_file))
             all_svgs.add(svg_image[1:]) #Thowout background
 
@@ -329,6 +329,7 @@ class P44_50(InteractiveScene):
         wave_label_1.scale(0.45*1.5)
         wave_label_1.move_to([-0.9, 3.65, 0])
 
+
         wave_label_2 = Tex(r'\sin \big(\tfrac{8\pi}{113}x\big)')
         wave_label_2.set_color(MAGENTA)
         wave_label_2.scale(0.45*1.5)
@@ -345,17 +346,36 @@ class P44_50(InteractiveScene):
         wave_label_4.move_to([-0.9, -3.2, 0])
 
 
+        all_flat_objs=Group(all_svgs, axis_1, axis_2, curve_1, curve_2, curve_3, curve_4, x_label, y_label)
+                            # wave_label_1, wave_label_2, wave_label_3, wave_label_4, )
+        all_flat_objs.rotate(90*DEGREES, [1, 0, 0])
+        self.frame.reorient(0, 90, 0, (0.00, 0.0, 0.00), 7.86)
+
         self.add(all_svgs[18])
         self.add(axis_1, axis_2, x_label, y_label)
         self.add(curve_1, curve_2, curve_3, curve_4)
-        self.add(wave_label_1, wave_label_2, wave_label_3, wave_label_4)
+        # self.add(wave_label_1, wave_label_2, wave_label_3, wave_label_4)
         self.remove(all_svgs[7]); self.add(all_svgs[7]) 
         self.remove(all_svgs[9]); self.add(all_svgs[9]) 
+        
+
+        self.add(all_svgs[19])
+        nudge_group_1=Group(axis_2, curve_3, curve_4)
+        nudge_group_1.shift([0, 0, -0.15])
+
+        all_svgs[19].shift([0.05, 0, 0.2])
+        all_svgs[19][24:].shift([0, 0, -0.18])
+
+
+        # self.remove(all_svgs[19][24:])
+
         self.wait()
 
 
-        #Ok so I think this is just like p30ish, where I fade out everything past the second MLP layer?
 
+
+
+        #Ok so I think this is just like p30ish, where I fade out everything past the second MLP layer?
         mid_mlp_fade_group=Group(all_svgs[14][9],
                                 all_svgs[14][:3], 
                                 all_svgs[10],
@@ -383,6 +403,14 @@ class P44_50(InteractiveScene):
         # Ok got em. 
         # Hmm if i want to "bring over" the probe plots that's might get tricky
         # ok one problem at a time tho
+        #
+        # Ok, I thought about the 2d vs 3d stuff, here's what I think: 
+        # I do think, for some scenes at least, having the cosine and sine waves
+        # interact with the 3D surfaces is going to be important. 
+        # So I think It makes sense to "flip up" to network into 3D land
+        # Now I don't think I actually do all my stuff in the same scene,
+        # But I do think for a couple I can/should. 
+
 
 
 
