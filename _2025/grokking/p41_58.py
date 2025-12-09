@@ -244,8 +244,16 @@ def make_fourier_surf_func(axes, comp_func):
     return func
 
 
-class P44_50(InteractiveScene):
+class P44_49(InteractiveScene):
     def construct(self): 
+        '''
+        Big 2d scene, building up to most zoomed out view. 
+        Hmm I thought i was going to want to like bring over the flat sin/cosines to build
+        the decomp stuff -> what's why I did these kinda awkward rotations
+        but it actually seems like I don't really need dems. 
+        Ok let me archive this one, then got back to straight flat
+        That will make some stuff easier!
+        '''
 
         p=113
         svg_files=list(sorted(svg_dir.glob('*network_to_manim*')))
@@ -258,7 +266,7 @@ class P44_50(InteractiveScene):
             activations = pickle.load(f)
 
         all_svgs=Group()
-        for svg_file in svg_files[1:21]: #Expand if I add more artboards
+        for svg_file in svg_files[1:25]: #Expand if I add more artboards
             svg_image=SVGMobject(str(svg_file))
             all_svgs.add(svg_image[1:]) #Thowout background
 
@@ -392,31 +400,20 @@ class P44_50(InteractiveScene):
         wave_label_4.move_to([-0.9, -3.2, 0])
 
 
-        all_flat_objs=Group(all_svgs, axis_1, axis_2, curve_1, curve_2, curve_3, curve_4, x_label, y_label)
-                            # wave_label_1, wave_label_2, wave_label_3, wave_label_4, )
-        all_flat_objs.rotate(90*DEGREES, [1, 0, 0])
-        self.frame.reorient(0, 90, 0, (0.00, 0.0, 0.00), 7.86)
-
         self.add(all_svgs[18])
         self.add(axis_1, axis_2, x_label, y_label)
         self.add(curve_1, curve_2, curve_3, curve_4)
-        # self.add(wave_label_1, wave_label_2, wave_label_3, wave_label_4)
+        self.add(wave_label_1, wave_label_2, wave_label_3, wave_label_4)
         self.remove(all_svgs[7]); self.add(all_svgs[7]) 
         self.remove(all_svgs[9]); self.add(all_svgs[9]) 
         
+        probe_group_1=Group(axis_2, curve_3, curve_4, wave_label_3, wave_label_4, y_label)
+        probe_group_1.shift([0, -0.3, 0])
 
-        self.add(all_svgs[19])
-        nudge_group_1=Group(axis_2, curve_3, curve_4)
-        nudge_group_1.shift([0, 0, -0.15])
-
-        all_svgs[19].shift([0.05, 0, 0.2])
-        all_svgs[19][24:].shift([0, 0, -0.18])
-
-
-        # self.remove(all_svgs[19][24:])
+        probe_group_2=Group(axis_1, curve_1, curve_2, wave_label_1, wave_label_2, x_label)
+        probe_group_2.shift([0, -0.15, 0])
 
         self.wait()
-
 
         #Ok so I think this is just like p30ish, where I fade out everything past the second MLP layer?
         mid_mlp_fade_group=Group(all_svgs[14][9],
@@ -432,71 +429,72 @@ class P44_50(InteractiveScene):
         self.wait()
         self.play(FadeOut(mid_mlp_fade_group), 
                  # self.frame.animate.reorient(0, 90, 0, (1.32, 0.17, 0.0), 8.35), 
-                 self.frame.animate.reorient(0, 89, 0, (1.19, 0.17, 0.09), 9.02),
+                 self.frame.animate.reorient(0, 0, 0, (1.19, 0.17, 0.09), 9.02),
                  run_time=4)
         self.wait()
 
 
-        # Hmmmm how do I want to build this surface?
-        # Might be interesting to start will all just points the bulid the surface?
-        # Trying to think through how we go from 2D to 3d here too...
-        # Yeah kinda leaning towards setting up and explaining the x/y grid first maybe?
-        # So, this will definitely need to be a separate scene that we bring together in premiere
-        # In the 2d view I need to get the framing right, and s
-        # Oh wait do I need to include probes here? Yes, right, like we're building.
-        # Ok got em. 
-        # Hmm if i want to "bring over" the probe plots that's might get tricky
-        # ok one problem at a time tho
-        #
-        # Ok, I thought about the 2d vs 3d stuff, here's what I think: 
-        # I do think, for some scenes at least, having the cosine and sine waves
-        # interact with the 3D surfaces is going to be important. 
-        # So I think It makes sense to "flip up" to network into 3D land
-        # Now I don't think I actually do all my stuff in the same scene,
-        # But I do think for a couple I can/should. 
-        # Ok I've got the setup in 3D rollin now, 
-        # Now I'm thinking Initially the 3d part of this will be a separate secene
-        # I just need/want to keep the FoVs close so I can bring them together
-        # When I need to, to show the composition.
-        # Let me jump to a 3d version of this scene and then come back
-
-        # Ok so for now at least, I'm going to blend these 2d and 3d scenes in premiere. 
-        # So what I need here then is an x-sweep, and then a y-sweep. Let's do it. 
-
-        # Ok faking x vs y is getting annoying let me go create a separation x-first activation cache. 
-        # Or I guess I've kinda setup this up for 
-        # I think I should make a new activation cache...
-
-        # Eh that doesn't quite get b/c activations is a global deal
-        # Maybe the easy thing is to load all activations, and then compute the "magic indices"
-        # that let me grab iso y. That's probaby reasonably straight forward, and it's easy to validate. 
-        # Let's try that next. 
-
-
-        self.wait()
-
+        # TURN BACK ON THESE SWEEPS IN FINAL RENDER
         #Ok x sweep:
-        magic_indices=np.arange(0, len(activations['x']), 113)
+        # magic_indices=np.arange(0, len(activations['x']), 113)
 
-        for i in magic_indices:
-            draw_inputs(self, activations, all_svgs, reset=False, example_index=i, wait=0)
-            draw_embeddings(self, activations, all_svgs, reset=False, example_index=i, wait=0, colormap=black_to_tan_hex)
-            draw_attention_values(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
-            draw_attention_patterns(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
-            draw_mlp_1(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
-            draw_mlp_2(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
-            self.wait(0.2)
+        # for i in magic_indices:
+        #     draw_inputs(self, activations, all_svgs, reset=False, example_index=i, wait=0)
+        #     draw_embeddings(self, activations, all_svgs, reset=False, example_index=i, wait=0, colormap=black_to_tan_hex)
+        #     draw_attention_values(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+        #     draw_attention_patterns(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+        #     draw_mlp_1(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+        #     draw_mlp_2(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+        #     self.wait(0.2)
+
+        # self.wait()
+        # #Now y sweep
+        # for i in range(113):
+        #     draw_inputs(self, activations, all_svgs, reset=False, example_index=i, wait=0)
+        #     draw_embeddings(self, activations, all_svgs, reset=False, example_index=i, wait=0, colormap=black_to_tan_hex)
+        #     draw_attention_values(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+        #     draw_attention_patterns(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+        #     draw_mlp_1(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+        #     draw_mlp_2(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+        #     self.wait(0.2)
+
+        # self.wait()
+        #Ok yeah these sweepse are pretty slow lol. 
+
 
         self.wait()
-        #Now y sweep
-        for i in range(113):
-            draw_inputs(self, activations, all_svgs, reset=False, example_index=i, wait=0)
-            draw_embeddings(self, activations, all_svgs, reset=False, example_index=i, wait=0, colormap=black_to_tan_hex)
-            draw_attention_values(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
-            draw_attention_patterns(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
-            draw_mlp_1(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
-            draw_mlp_2(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
-            self.wait(0.2)
+
+        #Ok cool cool, so trying to kinda do a few things here: 
+        # 1. bring in last layer of MLP so we can look at one neurons outputs
+        # 2. Zoom out ot "final ish view"
+        # 3. Bring in dotted arrows pointing to surfaces like in moch up. 
+
+
+
+        # mid_mlp_fade_group=Group(all_svgs[14][9],
+        #                         all_svgs[14][:3], 
+        #                         all_svgs[10],
+        #                         all_svgs[11],
+        #                         all_svgs[0][7:14],
+        #                         all_svgs[0][-1],
+        #                         all_svgs[8][-105:],
+        #                         all_svgs[9][-14:],
+        #                         all_svgs[14][-20:])
+
+
+        self.add(mid_mlp_fade_group)
+
+        self.frame.reorient(0, 0, 0, (0.03, 0.17, 0.2), 12.02)
+
+
+        self.remove(all_svgs[18])
+        self.add(all_svgs[21])
+
+        #Next -> get probe groups into good locations. 
+
+        self.wait()
+
+
 
 
 
@@ -586,9 +584,9 @@ class P45_3D(InteractiveScene):
         self.wait()
 
         # Turn back on before final render 
-        # for i in range(p):
-        #     self.add(pts_1_x[i])
-        #     self.wait(0.2)
+        for i in range(p):
+            self.add(pts_1_x[i])
+            self.wait(0.2)
 
         self.wait()
 
@@ -598,9 +596,9 @@ class P45_3D(InteractiveScene):
         self.wait()
 
         # Turn back on before final render
-        # for i in range(p):
-        #     self.add(pts_1_y[i])
-        #     self.wait(0.2)
+        for i in range(p):
+            self.add(pts_1_y[i])
+            self.wait(0.2)
 
         self.wait()
 
@@ -801,6 +799,10 @@ class P45_3D(InteractiveScene):
         self.remove(ts); self.add(ts)
         self.wait()
 
+
+        #Now move to what could be kinda a "final" position in the overall network viz
+        self.play(self.frame.animate.reorient(134, 42, 0, (1.31, 1.43, -2.65), 11.48), run_time=5)
+        self.wait()
 
 
         #WHEN I COME BACK TO THIS, 331 IS THE MOVE
@@ -1214,7 +1216,309 @@ class P41_43(InteractiveScene):
 
 
 
+# class P44_49(InteractiveScene):
+#     def construct(self): 
+#         '''
+#         Big 2d scene, building up to most zoomed out view. 
+#         Hmm I thought i was going to want to like bring over the flat sin/cosines to build
+#         the decomp stuff -> what's why I did these kinda awkward rotations
+#         but it actually seems like I don't really need dems. 
+#         Ok let me archive this one, then got back to straight flat
+#         That will make some stuff easier!
+#         '''
 
+#         p=113
+#         svg_files=list(sorted(svg_dir.glob('*network_to_manim*')))
+
+#         # with open(data_dir/'final_model_activations_sample.p', 'rb') as f:
+#         #     activations = pickle.load(f)
+
+#         #Slow!
+#         with open(data_dir/'final_model_activations.p', 'rb') as f:
+#             activations = pickle.load(f)
+
+#         all_svgs=Group()
+#         for svg_file in svg_files[1:25]: #Expand if I add more artboards
+#             svg_image=SVGMobject(str(svg_file))
+#             all_svgs.add(svg_image[1:]) #Thowout background
+
+#         all_svgs.scale(6.0) #Eh?
+
+#         # p41 - Ok need to pick up with my linear probes, 
+#         # then turn them into circles
+
+#         example_index=0
+#         self.frame.reorient(0, 0, 0, (0, 0, 0), 8.0)
+
+#         draw_inputs(self, activations, all_svgs, reset=False, example_index=example_index, wait=0)
+#         draw_embeddings(self, activations, all_svgs, reset=False, example_index=example_index, wait=0, colormap=black_to_tan_hex)
+#         draw_attention_values(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         draw_attention_patterns(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         draw_mlp_1(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         draw_mlp_2(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         draw_mlp_3(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         draw_logits(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex, temperature=25.0)
+#         self.add(all_svgs[:15], all_svgs[16])
+#         self.remove(all_svgs[7]); self.add(all_svgs[7]) 
+
+
+#         axis_1 = Axes(
+#             x_range=[0, 1.0, 1],
+#             y_range=[-1.0, 1.0, 1],
+#             width=2*2.4,
+#             height=2*0.56,
+#             axis_config={
+#                 "color": CHILL_BROWN,
+#                 "include_ticks": False,
+#                 "include_numbers": False,
+#                 "include_tip": True,
+#                 "stroke_width":1.8,
+#                 "tip_config": {"width":0.02, "length":0.02}
+#                 }
+#             )
+
+#         axis_2 = Axes(
+#             x_range=[0, 1.0, 1],
+#             y_range=[-1.0, 1.0, 1],
+#             width=2*2.4,
+#             height=2*0.56,
+#             axis_config={
+#                 "color": CHILL_BROWN,
+#                 "include_ticks": False,
+#                 "include_numbers": False,
+#                 "include_tip": True,
+#                 "stroke_width":1.8,
+#                 "tip_config": {"width":0.02, "length":0.02}
+#                 }
+#             )
+
+#         axis_1.move_to([-4, 3.05, 0])
+#         x_label=Tex('x', font_size=24)
+#         x_label.set_color(CHILL_BROWN)
+#         x_label.next_to(axis_1, RIGHT, buff=0.1)
+#         x_label.shift([0, -0.1, 0])
+        
+#         axis_2.move_to([-4, -2.85, 0])
+#         y_label=Tex('y', font_size=24)
+#         y_label.set_color(CHILL_BROWN)
+#         y_label.next_to(axis_2, RIGHT, buff=0.1)
+#         y_label.shift([0, -0.1, 0])
+
+#         sparse_probe_1=np.load(data_dir/'sparse_probe_1.npy')
+#         sparse_probe_2=np.load(data_dir/'sparse_probe_2.npy')
+#         sparse_probe_3=np.load(data_dir/'sparse_probe_3.npy')
+#         sparse_probe_4=np.load(data_dir/'sparse_probe_4.npy')
+
+#         pts_curve_1=[]
+#         for j in range(p):
+#             x = j / p
+#             y = sparse_probe_1[j]
+#             pts_curve_1.append(axis_1.c2p(x, y))
+
+#         curve_1 = VMobject(stroke_width=3)
+#         curve_1.set_points_smoothly(pts_curve_1)
+#         curve_1.set_color(YELLOW)
+
+#         pts_curve_2=[]
+#         for j in range(p):
+#             x = j / p
+#             y = sparse_probe_2[j]
+#             pts_curve_2.append(axis_1.c2p(x, y))
+
+#         curve_2 = VMobject(stroke_width=3)
+#         curve_2.set_points_smoothly(pts_curve_2)
+#         curve_2.set_color(MAGENTA)
+
+#         pts_curve_3=[]
+#         for j in range(p):
+#             x = j / p
+#             y = sparse_probe_3[j]
+#             pts_curve_3.append(axis_2.c2p(x, y))
+
+#         curve_3 = VMobject(stroke_width=3)
+#         curve_3.set_points_smoothly(pts_curve_3)
+#         curve_3.set_color(CYAN)
+
+#         pts_curve_4=[]
+#         for j in range(p):
+#             x = j / p
+#             y = sparse_probe_4[j]
+#             pts_curve_4.append(axis_2.c2p(x, y))
+
+#         curve_4 = VMobject(stroke_width=3)
+#         curve_4.set_points_smoothly(pts_curve_4)
+#         curve_4.set_color(RED)
+
+
+#         # wave_label_1 =  Tex(r'\cos \big(\tfrac{8\pi}{113}x\big)')
+#         # wave_label_1.set_color(YELLOW)
+#         # wave_label_1.scale(0.45*1.5)
+#         # wave_label_1.move_to([-0.9, 3.65, 0])
+
+
+#         # wave_label_2 = Tex(r'\sin \big(\tfrac{8\pi}{113}x\big)')
+#         # wave_label_2.set_color(MAGENTA)
+#         # wave_label_2.scale(0.45*1.5)
+#         # wave_label_2.move_to([-0.95, 2.65, 0])
+
+#         # wave_label_3 = Tex(r'\cos \big(\tfrac{8\pi}{113}y\big)')
+#         # wave_label_3.set_color(CYAN)
+#         # wave_label_3.scale(0.45*1.5)
+#         # wave_label_3.move_to([-0.9, -2.2, 0])
+
+#         # wave_label_4 = Tex(r'\sin \big(\tfrac{8\pi}{113}y\big)')
+#         # wave_label_4.set_color(RED)
+#         # wave_label_4.scale(0.45*1.5)
+#         # wave_label_4.move_to([-0.9, -3.2, 0])
+
+
+#         all_flat_objs=Group(all_svgs, axis_1, axis_2, curve_1, curve_2, curve_3, curve_4, x_label, y_label)
+#                             # wave_label_1, wave_label_2, wave_label_3, wave_label_4, )
+#         all_flat_objs.rotate(90*DEGREES, [1, 0, 0])
+#         self.frame.reorient(0, 90, 0, (0.00, 0.0, 0.00), 7.86)
+
+#         self.add(all_svgs[18])
+#         self.add(axis_1, axis_2, x_label, y_label)
+#         self.add(curve_1, curve_2, curve_3, curve_4)
+#         # self.add(wave_label_1, wave_label_2, wave_label_3, wave_label_4)
+#         self.remove(all_svgs[7]); self.add(all_svgs[7]) 
+#         self.remove(all_svgs[9]); self.add(all_svgs[9]) 
+        
+
+#         self.add(all_svgs[19])
+#         nudge_group_1=Group(axis_2, curve_3, curve_4)
+#         nudge_group_1.shift([0, 0, -0.15])
+
+#         all_svgs[19].shift([0.05, 0, 0.2])
+#         all_svgs[19][24:].shift([0, 0, -0.18])
+
+
+#         # self.remove(all_svgs[19][24:])
+
+#         self.wait()
+
+
+#         #Ok so I think this is just like p30ish, where I fade out everything past the second MLP layer?
+#         mid_mlp_fade_group=Group(all_svgs[14][9],
+#                                 all_svgs[14][:3], 
+#                                 all_svgs[10],
+#                                 all_svgs[11],
+#                                 all_svgs[0][7:14],
+#                                 all_svgs[0][-1],
+#                                 all_svgs[8][-105:],
+#                                 all_svgs[9][-14:],
+#                                 all_svgs[14][-20:])
+
+#         self.wait()
+#         self.play(FadeOut(mid_mlp_fade_group), 
+#                  # self.frame.animate.reorient(0, 90, 0, (1.32, 0.17, 0.0), 8.35), 
+#                  self.frame.animate.reorient(0, 89, 0, (1.19, 0.17, 0.09), 9.02),
+#                  run_time=4)
+#         self.wait()
+
+
+#         # Hmmmm how do I want to build this surface?
+#         # Might be interesting to start will all just points the bulid the surface?
+#         # Trying to think through how we go from 2D to 3d here too...
+#         # Yeah kinda leaning towards setting up and explaining the x/y grid first maybe?
+#         # So, this will definitely need to be a separate scene that we bring together in premiere
+#         # In the 2d view I need to get the framing right, and s
+#         # Oh wait do I need to include probes here? Yes, right, like we're building.
+#         # Ok got em. 
+#         # Hmm if i want to "bring over" the probe plots that's might get tricky
+#         # ok one problem at a time tho
+#         #
+#         # Ok, I thought about the 2d vs 3d stuff, here's what I think: 
+#         # I do think, for some scenes at least, having the cosine and sine waves
+#         # interact with the 3D surfaces is going to be important. 
+#         # So I think It makes sense to "flip up" to network into 3D land
+#         # Now I don't think I actually do all my stuff in the same scene,
+#         # But I do think for a couple I can/should. 
+#         # Ok I've got the setup in 3D rollin now, 
+#         # Now I'm thinking Initially the 3d part of this will be a separate secene
+#         # I just need/want to keep the FoVs close so I can bring them together
+#         # When I need to, to show the composition.
+#         # Let me jump to a 3d version of this scene and then come back
+
+#         # Ok so for now at least, I'm going to blend these 2d and 3d scenes in premiere. 
+#         # So what I need here then is an x-sweep, and then a y-sweep. Let's do it. 
+
+#         # Ok faking x vs y is getting annoying let me go create a separation x-first activation cache. 
+#         # Or I guess I've kinda setup this up for 
+#         # I think I should make a new activation cache...
+
+#         # Eh that doesn't quite get b/c activations is a global deal
+#         # Maybe the easy thing is to load all activations, and then compute the "magic indices"
+#         # that let me grab iso y. That's probaby reasonably straight forward, and it's easy to validate. 
+#         # Let's try that next. 
+
+
+#         self.wait()
+
+#         #Turn back on sweeps before final render!
+#         #Ok x sweep:
+#         # magic_indices=np.arange(0, len(activations['x']), 113)
+
+#         # for i in magic_indices:
+#         #     draw_inputs(self, activations, all_svgs, reset=False, example_index=i, wait=0)
+#         #     draw_embeddings(self, activations, all_svgs, reset=False, example_index=i, wait=0, colormap=black_to_tan_hex)
+#         #     draw_attention_values(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         #     draw_attention_patterns(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         #     draw_mlp_1(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         #     draw_mlp_2(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         #     self.wait(0.2)
+
+#         # self.wait()
+#         # #Now y sweep
+#         # for i in range(113):
+#         #     draw_inputs(self, activations, all_svgs, reset=False, example_index=i, wait=0)
+#         #     draw_embeddings(self, activations, all_svgs, reset=False, example_index=i, wait=0, colormap=black_to_tan_hex)
+#         #     draw_attention_values(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         #     draw_attention_patterns(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         #     draw_mlp_1(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         #     draw_mlp_2(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+#         #     self.wait(0.2)
+
+#         # self.wait()
+#         #Ok yeah these sweepse are pretty slow lol. 
+
+
+#         self.wait()
+
+#         #Ok cool cool, so trying to kinda do a few things here: 
+#         # 1. bring in last layer of MLP so we can look at one neurons outputs
+#         # 2. Zoom out ot "final ish view"
+#         # 3. Bring in dotted arrows pointing to surfaces like in moch up. 
+
+
+
+#         # mid_mlp_fade_group=Group(all_svgs[14][9],
+#         #                         all_svgs[14][:3], 
+#         #                         all_svgs[10],
+#         #                         all_svgs[11],
+#         #                         all_svgs[0][7:14],
+#         #                         all_svgs[0][-1],
+#         #                         all_svgs[8][-105:],
+#         #                         all_svgs[9][-14:],
+#         #                         all_svgs[14][-20:])
+
+
+#         self.add(mid_mlp_fade_group)
+
+#         self.frame.reorient(0, 89, 0, (0.03, 0.17, 0.2), 12.02)
+
+
+#         self.remove(all_svgs[18])
+#         self.add(all_svgs[21])
+
+#         self.wait()
+
+
+
+
+
+#         self.wait(20)
+#         self.embed()
 
 
 
