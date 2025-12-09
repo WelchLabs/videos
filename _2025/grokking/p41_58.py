@@ -239,7 +239,11 @@ class P44_50(InteractiveScene):
         p=113
         svg_files=list(sorted(svg_dir.glob('*network_to_manim*')))
 
-        with open(data_dir/'final_model_activations_sample.p', 'rb') as f:
+        # with open(data_dir/'final_model_activations_sample.p', 'rb') as f:
+        #     activations = pickle.load(f)
+
+        #Slow!
+        with open(data_dir/'final_model_activations.p', 'rb') as f:
             activations = pickle.load(f)
 
         all_svgs=Group()
@@ -460,7 +464,10 @@ class P44_50(InteractiveScene):
 
         self.wait()
 
-        for i in range(p):
+        #Ok x sweep:
+        magic_indices=np.arange(0, len(activations['x']), 113)
+
+        for i in magic_indices:
             draw_inputs(self, activations, all_svgs, reset=False, example_index=i, wait=0)
             draw_embeddings(self, activations, all_svgs, reset=False, example_index=i, wait=0, colormap=black_to_tan_hex)
             draw_attention_values(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
@@ -469,8 +476,16 @@ class P44_50(InteractiveScene):
             draw_mlp_2(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
             self.wait(0.2)
 
-
-
+        self.wait()
+        #Now y sweep
+        for i in range(113):
+            draw_inputs(self, activations, all_svgs, reset=False, example_index=i, wait=0)
+            draw_embeddings(self, activations, all_svgs, reset=False, example_index=i, wait=0, colormap=black_to_tan_hex)
+            draw_attention_values(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+            draw_attention_patterns(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+            draw_mlp_1(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+            draw_mlp_2(self, activations, all_svgs, reset=False, example_index=example_index, wait=0.0, colormap=black_to_tan_hex)
+            self.wait(0.2)
 
 
 
