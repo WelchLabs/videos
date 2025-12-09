@@ -644,6 +644,10 @@ class P45_3D(InteractiveScene):
                   self.frame.animate.reorient(132, 36, 0, (-0.4, -0.43, -0.72), 8.05), 
                   run_time=10)
 
+        self.wait()
+        self.remove(pts_1_y, pts_1_x)
+        self.wait()
+
 
         # self.frame.reorient(132, 36, 0, (-0.4, -0.43, -0.72), 8.05)
         # Ok now the "break apart" into multiple frequencies. 
@@ -754,53 +758,83 @@ class P45_3D(InteractiveScene):
                   ReplacementTransform(y_label.copy(), labels[1][1]),
                   ReplacementTransform(y_label.copy(), labels[2][1]),
                   self.frame.animate.reorient(137, 59, 0, (0.28, 0.08, -2.34), 8.54), 
-                  run_time=4)
+                  run_time=7)
         self.remove(component_surfaces); self.add(component_surfaces)
         # self.add(labels)
         self.wait()
 
+        # Ok so this is annoying, but I think that doing labels in premiere is probably going to be the move
+        # I should go ahead and sketch that out. 
+
+
+        self.play(self.frame.animate.reorient(163, 84, 0, (-0.02, 0.17, -2.58), 8.54), run_time=4) #Focus on bottom plot
+        self.wait()
+        self.play(self.frame.animate.reorient(89, 84, 0, (-0.02, 0.17, -2.58), 8.54), run_time=4) #Now y plot
+        self.wait()
+        self.play(self.frame.animate.reorient(133, 68, 0, (-0.02, 0.17, -2.58), 8.54), run_time=4) #Now product plot
+        self.wait()
+
+
+        #Ok now we collpase back!
+        # self.frame.animate.reorient(132, 36, 0, (-0.4, -0.43, -0.72), 8.05)
+
+        surf_copy_2b=surface.copy().set_color(YELLOW).shift([0, 0, -0.001])
+        surf_copy_1b=surface.copy().set_color(CYAN).shift([0, 0, -0.001])
+        surf_copy_0b=surface.copy().set_color(ORANGE).shift([0, 0, -0.001])
+
+        self.wait()
+        self.play(ReplacementTransform(component_surfaces[2], surf_copy_2b), 
+                  ReplacementTransform(component_axes[2], axes_1.copy()), 
+                  ReplacementTransform(component_surfaces[1], surf_copy_1b), 
+                  ReplacementTransform(component_axes[1], axes_1.copy()), 
+                  ReplacementTransform(component_surfaces[0], surf_copy_0b), 
+                  ReplacementTransform(component_axes[0], axes_1.copy()), 
+                  ReplacementTransform(labels[0][0], x_label.copy()),
+                  ReplacementTransform(labels[1][0], x_label.copy()),
+                  ReplacementTransform(labels[2][0], x_label.copy()),
+                  ReplacementTransform(labels[0][1], y_label.copy()),
+                  ReplacementTransform(labels[1][1], y_label.copy()),
+                  ReplacementTransform(labels[2][1], y_label.copy()),
+                  self.frame.animate.reorient(135, 39, 0, (-0.09, -0.17, -1.42), 8.05), 
+                  run_time=7)
+        self.remove(component_surfaces, surf_copy_2b, surf_copy_1b, surf_copy_0b, component_axes)
+        self.remove(ts); self.add(ts)
+        self.wait()
 
 
 
+        #WHEN I COME BACK TO THIS, 331 IS THE MOVE
+        # neuron_idx= 331 #106 #343 #192
+        # neuron_surface_mean=np.mean(mlp_hook_pre[:,:,2,neuron_idx])
 
+        # surf_func_with_axes = partial(
+        #     surf_func, 
+        #     axes=axes_1,
+        #     surf_array=mlp_hook_pre[:,:,2,neuron_idx]-neuron_surface_mean, 
+        #     scale=1.0
+        # )
 
-
-
-        # self.remove(ts)
-
-
-
-        neuron_idx= 331 #106 #343 #192
-        neuron_surface_mean=np.mean(mlp_hook_pre[:,:,2,neuron_idx])
-
-        surf_func_with_axes = partial(
-            surf_func, 
-            axes=axes_1,
-            surf_array=mlp_hook_pre[:,:,2,neuron_idx]-neuron_surface_mean, 
-            scale=1.0
-        )
-
-        surface = ParametricSurface(
-            surf_func_with_axes,  
-            u_range=[0, 1.0],
-            v_range=[0, 1.0],
-            resolution=(resolution, resolution),
-        )
-
-        # surf_func=partial(param_surface, surf_array=mlp_hook_pre[:,:,2,neuron_idx], scale=0.15)
         # surface = ParametricSurface(
-        #     surf_func,  
+        #     surf_func_with_axes,  
         #     u_range=[0, 1.0],
         #     v_range=[0, 1.0],
         #     resolution=(resolution, resolution),
         # )
 
-        ts = TexturedSurface(surface, str(data_dir/('activations_'+str(neuron_idx).zfill(3)+'.png')))
-        ts.set_shading(0.0, 0.1, 0)
+        # # surf_func=partial(param_surface, surf_array=mlp_hook_pre[:,:,2,neuron_idx], scale=0.15)
+        # # surface = ParametricSurface(
+        # #     surf_func,  
+        # #     u_range=[0, 1.0],
+        # #     v_range=[0, 1.0],
+        # #     resolution=(resolution, resolution),
+        # # )
+
+        # ts = TexturedSurface(surface, str(data_dir/('activations_'+str(neuron_idx).zfill(3)+'.png')))
+        # ts.set_shading(0.0, 0.1, 0)
 
 
-        self.wait()
-        self.add(ts)
+        # self.wait()
+        # self.add(ts)
 
 
 
