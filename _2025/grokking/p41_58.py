@@ -625,7 +625,7 @@ class P52_54_3D(InteractiveScene):
 
 
         #Ok now let's add the sin-sin surface. 
-        neuron_idx_2= 331 #106 #343 #192
+        neuron_idx_2= 341 #331 #106 #343 #192
         nueron_2_mean=np.mean(mlp_hook_pre[:,:,2,neuron_idx_2])
 
         surf_func_with_axes = partial(
@@ -645,24 +645,37 @@ class P52_54_3D(InteractiveScene):
         ts2 = TexturedSurface(surface_2, str(data_dir/('activations_'+str(neuron_idx_2).zfill(3)+'.png')))
         ts2.set_shading(0.0, 0.1, 0)
 
-        surf_2_component_eq=lambda i, j: 0.155 * np.cos(2*np.pi*((4*i)/113) + 3.04) * np.cos(2*np.pi*((4*j)/113) + 3.04)
+        # surf_2_component_eq=lambda i, j: 0.155 * np.cos(2*np.pi*((4*i)/113) + 3.04) * np.cos(2*np.pi*((4*j)/113) + 3.04)
+        surf_2_component_eq=lambda i, j: 2*0.211 * np.cos(2*np.pi*((4*i)/113) + 1.068) * np.cos(2*np.pi*((4*j)/113) + 1.068)
         surf_2_component = ParametricSurface(
             make_fourier_surf_func(axes_2, surf_2_component_eq),
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
-        surf_2_component.set_color(CYAN).set_shading(0.1, 0.5, 0.5) 
+        # surf_2_component.set_color(CYAN).set_shading(0.1, 0.5, 0.5) 
+        surf_2_component.set_color('#00AAAA').set_shading(0.1, 0.5, 0.5) 
 
-        axes_2_group=Group(axes_2[:2], x_label_2, y_label_2, ts2, surf_2_component)
-        axes_2_group.move_to([0, 0, -15])
+
+        surf_2_component_eq_flipped=lambda i, j: -2.4*0.211 * np.cos(2*np.pi*((4*i)/113) + 1.068) * np.cos(2*np.pi*((4*j)/113) + 1.068)
+        surf_2_component_flipped = ParametricSurface(
+            make_fourier_surf_func(axes_2, surf_2_component_eq_flipped),
+            u_range=[0, 1.0],
+            v_range=[0, 1.0],
+            resolution=(resolution, resolution),
+        )
+        surf_2_component_flipped.set_color('#00AAAA').set_shading(0.1, 0.5, 0.5) 
+
+        axes_2_group=Group(axes_2[:2], x_label_2, y_label_2, ts2, surf_2_component, surf_2_component_flipped)
+        axes_2_group.move_to([1.2, -1.2, -15])
     
 
         axes_2_group.rotate(25*DEGREES, [1, -1, 0]) #Tilt up and scale to compensate for FOV
         axes_2_group.scale(1.8)
 
         # self.frame.reorient(134, 42, 0, (1.31, 1.43, -2.65), 11.48) #Where P45 scene below ends right now. 
-        self.frame.reorient(135, 42, 0, (1.62, 1.74, -3.08), 12.34)
+        # self.frame.reorient(135, 42, 0, (1.62, 1.74, -3.08), 12.34)
+        self.frame.reorient(132, 45, 0, (-0.42, 4.11, -3.43), 12.94)
 
         self.add(axes_1_group[:4])
         self.wait()
@@ -680,23 +693,44 @@ class P52_54_3D(InteractiveScene):
 
         self.wait()
         self.add(surf_1_component)
-        self.play(surf_1_component.animate.move_to([-4.6, 4.6, 0]).rotate(5*DEGREES, [1, -1, 0]).rotate(3*DEGREES, [1, 1, 0]), 
-                 run_time=3)
+        self.play(surf_1_component.animate.move_to([-6.0, 6.0, 0]).rotate(5*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1]), 
+                 run_time=4)
         # surf_1_component.rotate(5*DEGREES, [1, -1, 0])
         # surf_1_component.rotate(3*DEGREES, [1, 1, 0])
+        # surf_1_component.rotate(-10*DEGREES, [0, 0, 1])
+        # surf_1_component.rotate(5*DEGREES, [1, 1, 0])
         self.wait()
 
-        # Ok good soptting point here I think -> I don't think that 331 is the best eneuron here
+        # Ok good stopping point here I think -> I don't think that 331 is the best eneuron here
         # That sin sin compenent doesn't match that well. 
         # Let me look at other options then come back. 
 
 
         self.wait()
+        surf_2_component.shift([0, 0, -0.42])
         self.add(surf_2_component)
-        self.play(surf_2_component.animate.move_to([-4.6, 4.6, -5]), #.rotate(5*DEGREES, [1, -1, 0]).rotate(3*DEGREES, [1, 1, 0]), 
-                 run_time=3)
+
+        self.play(surf_2_component.animate.move_to([-6.3, 6.3, -2.5]).scale(1/1.8).rotate(-20*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1]), 
+                 run_time=4)
         # surf_1_component.rotate(5*DEGREES, [1, -1, 0])
         # surf_1_component.rotate(3*DEGREES, [1, 1, 0])
+        # surf_2_component.move_to([-6.3, 6.3, -2.5])
+
+        # self.remove(axes_2_group[3])
+        # self.add(axes_2_group[3])
+
+        #Now flip second surface
+        surf_2_component_flipped.move_to([-6.3, 6.3, -2.5]).scale(1/1.8).rotate(-20*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1])
+
+        # self.add(surf_2_component_flipped)
+        # Cool now animate to this. 
+        self.wait()
+        self.play(ReplacementTransform(surf_2_component, surf_2_component_flipped), 
+                  run_time=4)
+        self.wait()
+
+
+        #Dope, now add these stuckers!
 
 
 
