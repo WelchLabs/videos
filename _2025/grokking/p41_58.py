@@ -513,26 +513,28 @@ class P44_58(InteractiveScene):
         self.wait()
 
 
-        # Fade back in full network - I think we can get to final arrow positions here
-
-        
+        # Fade back in full network - I think we can get to final arrow positions here        
         # self.add(all_svgs[14][:3])
 
-        
+        # self.remove(all_svgs[14][-20:])
+
         self.wait()
         self.play(FadeOut(all_svgs[26]),
-                  FadeOut(all_svgs[14][9]),
-                  FadeOut(all_svgs[10]),
-                  FadeOut(all_svgs[11]),
-                  FadeOut(all_svgs[0][7:14]),
-                  FadeOut(all_svgs[0][-1]),
-                  FadeOut(all_svgs[8][-105:]),
-                  FadeOut(all_svgs[9][-14:]),
-                  FadeOut(all_svgs[14][-20:]),
+                  FadeIn(all_svgs[14][9]),
+                  FadeIn(all_svgs[10]),
+                  FadeIn(all_svgs[11]),
+                  FadeIn(all_svgs[0][7:14]),
+                  FadeIn(all_svgs[0][-1]),
+                  FadeIn(all_svgs[23]), #This is the arrow out of the final MLP layer, I think we'll want this here. 
+                  # FadeIn(all_svgs[8][-105:]),
+                  # FadeIn(all_svgs[9][-14:]),
+                  # FadeIn(all_svgs[14][-20:]),
                   run_time=5)
         self.remove(all_svgs[9]); self.add(all_svgs[9])
+        # self.add(all_svgs[23])
 
-
+        self.wait()
+        self.play(Write(all_svgs[24]), run_time=3) #Draw arrow from output. Hmm ya know we want neuron 7 I think. Fixing...
         self.wait()
 
 
@@ -541,6 +543,370 @@ class P44_58(InteractiveScene):
 
         self.wait(20)
         self.embed()
+
+
+
+class P56a_neuron_100(InteractiveScene):
+    '''
+    Ok so here we want to show a few additional final MLP outputs that the unembedding layer will
+    bring together to make the final shape. 
+    
+    '''
+    def construct(self): 
+        p=113
+
+        mlp_out=np.load(data_dir/'hook_mlp_out.npy')
+
+        axes_1 = ThreeDAxes(
+            x_range=[0, p, 10],
+            y_range=[0, p, 10],
+            z_range=[-1, 1, 1],
+            width=4,
+            height=4,
+            depth=1.4,
+            axis_config={
+                "color": CHILL_BROWN,
+                "include_ticks": False,
+                "include_numbers": False,
+                "include_tip": True,
+                "stroke_width":2,
+                "tip_config": {"width":0.05, "length":0.05}
+                }
+        )
+
+        x_label = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
+        axes_1_group=VGroup(axes_1, x_label, y_label)
+        x_label.rotate(DEGREES*90, [1, 0, 0])
+        y_label.rotate(DEGREES*90, [1, 0, 0])
+        y_label.rotate(DEGREES*90, [0, 0, 1])
+        axes_1[0].rotate(DEGREES*90, [1, 0, 0])
+        axes_1[1].rotate(DEGREES*90, [0, 1, 0])
+
+        neuron_idx_1 = 100
+        neuron_1_mean=np.mean(mlp_out[:,:,2,neuron_idx_1])
+        neuron_1_max=np.max(np.abs(mlp_out[:,:,2,neuron_idx_1]-neuron_1_mean))
+
+        surf_func_with_axes = partial(
+            surf_func, 
+            axes=axes_1,
+            surf_array=0.75*(mlp_out[:,:,2,neuron_idx_1]-neuron_1_mean)/neuron_1_max, 
+            scale=1.0
+        )
+
+        surface = ParametricSurface(
+            surf_func_with_axes,  
+            u_range=[0, 1.0],
+            v_range=[0, 1.0],
+            resolution=(resolution, resolution),
+        )
+
+        ts = TexturedSurface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
+        ts.set_shading(0.0, 0.1, 0)
+        ts.set_opacity(0.8)
+
+        self.frame.reorient(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
+
+        self.wait()
+        self.play(ShowCreation(axes_1), ShowCreation(x_label), ShowCreation(y_label), run_time=5)
+        self.wait()
+
+
+        self.play(ShowCreation(ts), 
+                 # self.frame.animate.reorient(44, 53, 0, (-0.55, -0.54, -0.39), 7.20), 
+                 run_time=5)
+        self.wait()
+
+        self.wait(20)
+        self.embed()
+
+class P56a_neuron_101(InteractiveScene):
+    '''
+    Ok so here we want to show a few additional final MLP outputs that the unembedding layer will
+    bring together to make the final shape. 
+    
+    '''
+    def construct(self): 
+        p=113
+
+        mlp_out=np.load(data_dir/'hook_mlp_out.npy')
+
+        axes_1 = ThreeDAxes(
+            x_range=[0, p, 10],
+            y_range=[0, p, 10],
+            z_range=[-1, 1, 1],
+            width=4,
+            height=4,
+            depth=1.4,
+            axis_config={
+                "color": CHILL_BROWN,
+                "include_ticks": False,
+                "include_numbers": False,
+                "include_tip": True,
+                "stroke_width":2,
+                "tip_config": {"width":0.05, "length":0.05}
+                }
+        )
+
+        x_label = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
+        axes_1_group=VGroup(axes_1, x_label, y_label)
+        x_label.rotate(DEGREES*90, [1, 0, 0])
+        y_label.rotate(DEGREES*90, [1, 0, 0])
+        y_label.rotate(DEGREES*90, [0, 0, 1])
+        axes_1[0].rotate(DEGREES*90, [1, 0, 0])
+        axes_1[1].rotate(DEGREES*90, [0, 1, 0])
+
+        neuron_idx_1 = 101
+        neuron_1_mean=np.mean(mlp_out[:,:,2,neuron_idx_1])
+        neuron_1_max=np.max(np.abs(mlp_out[:,:,2,neuron_idx_1]-neuron_1_mean))
+
+        surf_func_with_axes = partial(
+            surf_func, 
+            axes=axes_1,
+            surf_array=0.75*(mlp_out[:,:,2,neuron_idx_1]-neuron_1_mean)/neuron_1_max, 
+            scale=1.0
+        )
+
+        surface = ParametricSurface(
+            surf_func_with_axes,  
+            u_range=[0, 1.0],
+            v_range=[0, 1.0],
+            resolution=(resolution, resolution),
+        )
+
+        ts = TexturedSurface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
+        ts.set_shading(0.0, 0.1, 0)
+        ts.set_opacity(0.8)
+
+        self.frame.reorient(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
+
+        self.wait()
+        self.play(ShowCreation(axes_1), ShowCreation(x_label), ShowCreation(y_label), run_time=5)
+        self.wait()
+
+
+        self.play(ShowCreation(ts), 
+                 # self.frame.animate.reorient(44, 53, 0, (-0.55, -0.54, -0.39), 7.20), 
+                 run_time=5)
+        self.wait()
+
+        self.wait(20)
+        self.embed()
+
+class P56a_neuron_102(InteractiveScene):
+    '''
+    Ok so here we want to show a few additional final MLP outputs that the unembedding layer will
+    bring together to make the final shape. 
+    
+    '''
+    def construct(self): 
+        p=113
+
+        mlp_out=np.load(data_dir/'hook_mlp_out.npy')
+
+        axes_1 = ThreeDAxes(
+            x_range=[0, p, 10],
+            y_range=[0, p, 10],
+            z_range=[-1, 1, 1],
+            width=4,
+            height=4,
+            depth=1.4,
+            axis_config={
+                "color": CHILL_BROWN,
+                "include_ticks": False,
+                "include_numbers": False,
+                "include_tip": True,
+                "stroke_width":2,
+                "tip_config": {"width":0.05, "length":0.05}
+                }
+        )
+
+        x_label = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
+        axes_1_group=VGroup(axes_1, x_label, y_label)
+        x_label.rotate(DEGREES*90, [1, 0, 0])
+        y_label.rotate(DEGREES*90, [1, 0, 0])
+        y_label.rotate(DEGREES*90, [0, 0, 1])
+        axes_1[0].rotate(DEGREES*90, [1, 0, 0])
+        axes_1[1].rotate(DEGREES*90, [0, 1, 0])
+
+        neuron_idx_1 = 102
+        neuron_1_mean=np.mean(mlp_out[:,:,2,neuron_idx_1])
+        neuron_1_max=np.max(np.abs(mlp_out[:,:,2,neuron_idx_1]-neuron_1_mean))
+
+        surf_func_with_axes = partial(
+            surf_func, 
+            axes=axes_1,
+            surf_array=0.75*(mlp_out[:,:,2,neuron_idx_1]-neuron_1_mean)/neuron_1_max, 
+            scale=1.0
+        )
+
+        surface = ParametricSurface(
+            surf_func_with_axes,  
+            u_range=[0, 1.0],
+            v_range=[0, 1.0],
+            resolution=(resolution, resolution),
+        )
+
+        ts = TexturedSurface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
+        ts.set_shading(0.0, 0.1, 0)
+        ts.set_opacity(0.8)
+
+        self.frame.reorient(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
+
+        self.wait()
+        self.play(ShowCreation(axes_1), ShowCreation(x_label), ShowCreation(y_label), run_time=5)
+        self.wait()
+
+
+        self.play(ShowCreation(ts), 
+                 # self.frame.animate.reorient(44, 53, 0, (-0.55, -0.54, -0.39), 7.20), 
+                 run_time=5)
+        self.wait()
+
+        self.wait(20)
+        self.embed()
+
+class P56_logits(InteractiveScene):
+    def construct(self): 
+
+        logits=np.load(data_dir/'logits.npy')
+
+
+        p=113
+
+        axes_1 = ThreeDAxes(
+            x_range=[0, p, 10],
+            y_range=[0, p, 10],
+            z_range=[-1, 1, 1],
+            width=4,
+            height=4,
+            depth=1.4,
+            axis_config={
+                "color": CHILL_BROWN,
+                "include_ticks": False,
+                "include_numbers": False,
+                "include_tip": True,
+                "stroke_width":2,
+                "tip_config": {"width":0.05, "length":0.05}
+                }
+        )
+
+        x_label = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
+        x_label.rotate(DEGREES*90, [1, 0, 0])
+        x_label.rotate(DEGREES*180, [0, 0, 1])
+        y_label.rotate(DEGREES*90, [0, 0, 1])
+        y_label.rotate(DEGREES*90, [0, 1, 0])
+        axes_1[0].rotate(DEGREES*90, [1, 0, 0])
+        axes_1[1].rotate(DEGREES*90, [0, 1, 0])
+
+        neuron_idx=7
+        neuron_1_mean=np.mean(logits[:,:,neuron_idx])
+        neuron_1_max=np.max(np.abs(logits[:,:,neuron_idx]-neuron_1_mean))
+
+        surf_func_with_axes = partial(
+            surf_func, 
+            axes=axes_1,
+            surf_array=(logits[:,:,neuron_idx]-neuron_1_mean)/neuron_1_max, 
+            scale=1.0
+        )
+
+        surface = ParametricSurface(
+            surf_func_with_axes,  
+            u_range=[0, 1.0],
+            v_range=[0, 1.0],
+            resolution=(resolution, resolution),
+        )
+
+        ts = TexturedSurface(surface, str(data_dir/('logits_'+str(neuron_idx).zfill(3)+'.png')))
+        ts.set_shading(0.0, 0.1, 0)
+        ts.set_opacity(0.8)
+
+        ts_copy=ts.copy()
+
+        axes_1_group=Group(axes_1[:2], x_label, y_label, ts)
+
+        self.frame.reorient(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
+
+
+        self.wait()
+        self.play(ShowCreation(axes_1), ShowCreation(x_label), ShowCreation(y_label), run_time=5)
+        self.wait()
+
+
+        self.play(ShowCreation(ts), 
+                 # self.frame.animate.reorient(44, 53, 0, (-0.55, -0.54, -0.39), 7.20), 
+                 run_time=5)
+        self.wait()
+
+
+        # self.wait()
+
+        # self.add(axes_1_group) 
+        #Ok yeah I think i want to do a flatten zoom in thing here. 
+
+
+        def flat_surf_func(u, v, axes):
+            x = u * 113
+            y = v * 113
+            z = 0  # Flat at z=0
+            return axes.c2p(x, y, z)
+
+        flat_surf_func_with_axes = partial(flat_surf_func, axes=axes_1)
+
+        # Create the flat surface with the same texture
+        flat_surface = ParametricSurface(
+            flat_surf_func_with_axes,
+            u_range=[0, 1.0],
+            v_range=[0, 1.0],
+            resolution=(resolution, resolution),
+        )
+
+        flat_ts = TexturedSurface(flat_surface, str(data_dir/('logits_'+str(neuron_idx).zfill(3)+'.png')))
+        flat_ts.set_shading(0.0, 0.1, 0)
+        flat_ts.set_opacity(0.8)
+
+        # Animate: morph surface flat + move camera overhead
+        self.wait()
+        self.play(
+            ReplacementTransform(ts, flat_ts),
+            FadeOut(axes_1[2]),
+            y_label.animate.rotate(-90*DEGREES, [0, 1, 0]),
+            x_label.animate.rotate(90*DEGREES, [1, 0, 0]).rotate(90*DEGREES, [0, 0, 1]),
+            self.frame.animate.reorient(90, 0, 0, (-0.03, -0.11, -0.33), 5.73),
+            run_time=9
+        )
+        self.wait()
+
+        # x_label.rotate(90*DEGREES, [1, 0, 0])
+        # x_label.rotate(90*DEGREES, [0, 0, 1])
+        # self.frame.reorient(90, 0, 0, (-0.03, -0.11, -0.33), 5.73)
+
+        #Zoom in to upper left corner -> to do- create illustrator overlay
+        self.wait()
+        self.play(self.frame.animate.reorient(90, 0, 0, (-1.82, -1.77, -0.33), 0.88), run_time=5)
+        
+
+        #Cool, now back to 3d view that we can use in final deal. 
+        self.wait()
+        self.play(
+            ReplacementTransform(flat_ts, ts_copy),
+            y_label.animate.rotate(90*DEGREES, [0, 1, 0]),
+            x_label.animate.rotate(90*DEGREES, [0, 0, 1]).rotate(-90*DEGREES, [1, 0, 0]).rotate(180*DEGREES, [0, 0, 1]),
+            self.frame.animate.reorient(43, 57, 0, (-0.15, -0.07, -0.33), 6.60), 
+            run_time=9
+            )
+        self.wait()
+
+        # x_label.rotate(90*DEGREES, [0, 0, 1])
+
+
+
+        self.wait(20)
+        self.embed()
+
 
 
 class P52_54_3D(InteractiveScene):
