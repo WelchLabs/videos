@@ -244,7 +244,7 @@ def make_fourier_surf_func(axes, comp_func):
     return func
 
 
-class P44_51(InteractiveScene):
+class P44_58(InteractiveScene):
     def construct(self): 
         '''
         Big 2d scene, building up to most zoomed out view. 
@@ -513,6 +513,26 @@ class P44_51(InteractiveScene):
         self.wait()
 
 
+        # Fade back in full network - I think we can get to final arrow positions here
+
+        
+        # self.add(all_svgs[14][:3])
+
+        
+        self.wait()
+        self.play(FadeOut(all_svgs[26]),
+                  FadeOut(all_svgs[14][9]),
+                  FadeOut(all_svgs[10]),
+                  FadeOut(all_svgs[11]),
+                  FadeOut(all_svgs[0][7:14]),
+                  FadeOut(all_svgs[0][-1]),
+                  FadeOut(all_svgs[8][-105:]),
+                  FadeOut(all_svgs[9][-14:]),
+                  FadeOut(all_svgs[14][-20:]),
+                  run_time=5)
+        self.remove(all_svgs[9]); self.add(all_svgs[9])
+
+
         self.wait()
 
 
@@ -690,10 +710,9 @@ class P52_54_3D(InteractiveScene):
         #Probably stick with orange, then do the same thing for the bottom surface
 
 
-
         self.wait()
         self.add(surf_1_component)
-        self.play(surf_1_component.animate.move_to([-6.0, 6.0, 0]).rotate(5*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1]), 
+        self.play(surf_1_component.animate.move_to([-7.0, 7.0, 0]).rotate(5*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1]), 
                  run_time=4)
         # surf_1_component.rotate(5*DEGREES, [1, -1, 0])
         # surf_1_component.rotate(3*DEGREES, [1, 1, 0])
@@ -710,7 +729,7 @@ class P52_54_3D(InteractiveScene):
         surf_2_component.shift([0, 0, -0.42])
         self.add(surf_2_component)
 
-        self.play(surf_2_component.animate.move_to([-6.3, 6.3, -2.5]).scale(1/1.8).rotate(-20*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1]), 
+        self.play(surf_2_component.animate.move_to([-7.4, 7.4, -2.5]).scale(1/1.8).rotate(-20*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1]), 
                  run_time=4)
         # surf_1_component.rotate(5*DEGREES, [1, -1, 0])
         # surf_1_component.rotate(3*DEGREES, [1, 1, 0])
@@ -720,7 +739,7 @@ class P52_54_3D(InteractiveScene):
         # self.add(axes_2_group[3])
 
         #Now flip second surface
-        surf_2_component_flipped.move_to([-6.3, 6.3, -2.5]).scale(1/1.8).rotate(-20*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1])
+        surf_2_component_flipped.move_to([-7.4, 7.4, -2.5]).scale(1/1.8).rotate(-20*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1])
 
         # self.add(surf_2_component_flipped)
         # Cool now animate to this. 
@@ -731,6 +750,30 @@ class P52_54_3D(InteractiveScene):
 
 
         #Dope, now add these stuckers!
+        #Figre out combined surface first. 
+        #Hmm mnani I do kinda want this last surface to be in viridis...maybe it's ok tho?
+
+        combined_surf_eq=lambda i, j: 0.354 * np.cos(2*np.pi*((4*i)/113) - 0.516) * np.cos(2*np.pi*((4*j)/113) - 0.516)+ 0.354 * np.cos(2*np.pi*((4*i)/113) + 1.068) * np.cos(2*np.pi*((4*j)/113) + 1.068)
+        combined_surf = ParametricSurface(
+            make_fourier_surf_func(axes_1, combined_surf_eq),
+            u_range=[0, 1.0],
+            v_range=[0, 1.0],
+            resolution=(resolution, resolution),
+        )
+        combined_surf.set_color(GREEN).set_shading(0.1, 0.5, 0.5)
+        # self.add(combined_surf)
+
+        combined_surf.rotate(5*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1])
+        combined_surf.move_to([-7.75, 7.75, -6])
+
+        
+        self.wait()
+        self.play(ReplacementTransform(surf_1_component.copy(), combined_surf),
+                  ReplacementTransform(surf_2_component_flipped.copy(), combined_surf), 
+                  run_time=6)
+        self.wait()
+
+
 
 
 
@@ -900,6 +943,10 @@ class P49_51_3D(InteractiveScene):
 
         self.wait(20)
         self.embed()
+
+
+
+
 
 
 class P45_3D(InteractiveScene):
