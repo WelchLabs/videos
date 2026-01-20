@@ -128,6 +128,11 @@ class GoHackingOne(InteractiveScene):
 
         self.wait()
 
+        # To do -> make sure I've got the right orientation
+        # by comparing to game comentary, especially considering
+        # which play is on which side. 
+        
+
         # i=10
         # x, y, color=moves[i]
 
