@@ -268,3 +268,10 @@ class GoHackingTwo(InteractiveScene):
         self.wait()
 
 
+        self.remove(board_rect, lines,  hoshi_dots)
+
+        self.wait(20)
+        self.embed()
+
+
+
