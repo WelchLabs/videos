@@ -15,7 +15,11 @@ CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
 # games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/alpha_go_self_play')
-games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/human_human_kgs-19-2015')
+# games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/human_human_kgs-19-2015')
+# games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/games_with_videos')
+games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/less_wrong_reverse_engineer')
+
+
 
 size = 19  # 19x19 board
 padding = 0.5
@@ -117,16 +121,27 @@ class GoHackingOne(InteractiveScene):
         self.add(hoshi_dots)
 
         # moves = parse_sgf(games_dir/'alpha_go_self_play/1c.sgf')
-        p=list(games_dir.glob('*.sgf'))[0]
+        p=sorted(list(games_dir.glob('*.sgf')))[0]
         moves = parse_sgf(p)
 
         self.wait()
-        for i, (x, y, color) in enumerate(moves):
+        for i, (x, y, color) in enumerate(moves[:20]):
             stone = create_stone(x, y, color)
             self.add(stone)
             # self.wait(0.1)
 
         self.wait()
+
+        # x, y, color = moves[20]
+        # stone = create_stone(x, y, color)
+        # self.add(stone)
+
+        # self.remove(stone)
+
+        # To do -> make sure I've got the right orientation
+        # by comparing to game comentary, especially considering
+        # which play is on which side. 
+
 
         # i=10
         # x, y, color=moves[i]
@@ -181,6 +196,82 @@ class GoHackingOne(InteractiveScene):
         # # Try these additional methods if available:
         # white_2.set_gloss(0.8)
         # white_2.set_shadow(0.3)
+
+
+class GoHackingTwo(InteractiveScene):
+    def construct(self): 
+
+
+        board_rect = Square(side_length=board_width + padding)
+        board_rect.set_fill(FRESH_TAN, opacity=1)
+        board_rect.set_stroke(CHILL_BROWN, width=2)
+
+        # We center the grid so the middle intersection is at (0,0,0)
+        lines = VGroup()
+        start_point = -(size - 1) / 2 * step
+        
+        for i in range(size):
+            # Vertical lines
+            v_line = Line(
+                [start_point + i * step, start_point, 0],
+                [start_point + i * step, -start_point, 0]
+            )
+            # Horizontal lines
+            h_line = Line(
+                [start_point, start_point + i * step, 0],
+                [-start_point, start_point + i * step, 0]
+            )
+            lines.add(v_line, h_line)
+            
+        lines.set_stroke(BLACK, width=1.5)
+
+        # For a 19x19, these are usually at 4, 10, and 16 (1-indexed)
+        hoshi_indices = [3, 9, 15] # 0-indexed
+        hoshi_dots = VGroup()
+        for x in hoshi_indices:
+            for y in hoshi_indices:
+                dot = Circle(radius=0.05, fill_color=BLACK, fill_opacity=1, stroke_width=0)
+                # Position the dot based on grid coordinates
+                dot.move_to([start_point + x * step, start_point + y * step, 0])
+                hoshi_dots.add(dot)
+
+
+        self.add(board_rect)
+        self.add(lines)
+        self.add(hoshi_dots)
+
+        moves=[
+            # White Stones (#FFFFFF)
+            (3, 15, '#FFFFFF'),  # Top left stone
+            (2, 4, '#FFFFFF'),   # Bottom left stone
+            # (10, 13, '#FFFFFF'), # Center cluster
+            (11, 13, '#FFFFFF'), # Center cluster
+            (10, 12, '#FFFFFF'), # Center cluster
+            (11, 12, '#FFFFFF'), # Center cluster
+            (10, 11, '#FFFFFF'), # Center cluster
+            
+            # Black Stones (#000000)
+            (11, 14, '#000000'), # Center cluster
+            (10, 13, '#000000'), # Center cluster (Overlap/Contact)
+            (12, 13, '#000000'), # Center cluster
+            (9, 12, '#000000'),  # Center cluster
+            (12, 12, '#000000'), # Center cluster
+            (11, 11, '#000000')  # Center cluster
+        ]
+
+        self.wait()
+        for i, (x, y, color) in enumerate(moves):
+            stone = create_stone(x, y, color)
+            self.add(stone)
+            # self.wait(0.1)
+
+        self.wait()
+
+
+        self.remove(board_rect, lines,  hoshi_dots)
+
+        self.wait(20)
+        self.embed()
 
 
 
