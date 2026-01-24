@@ -1,0 +1,630 @@
+[
+  {
+    "id": 0,
+    "phoneme": "<START>",
+    "connects_from": []
+  },
+  {
+    "id": 1,
+    "phoneme": "HH",
+    "connects_from": [
+      0
+    ]
+  },
+  {
+    "id": 2,
+    "phoneme": "AE",
+    "connects_from": [
+      1
+    ]
+  },
+  {
+    "id": 3,
+    "phoneme": "D",
+    "connects_from": [
+      2
+    ]
+  },
+  {
+    "id": 4,
+    "phoneme": "P",
+    "connects_from": [
+      3
+    ]
+  },
+  {
+    "id": 5,
+    "phoneme": "IY",
+    "connects_from": [
+      4
+    ]
+  },
+  {
+    "id": 6,
+    "phoneme": "<END>",
+    "connects_from": [
+      5
+    ]
+  },
+  {
+    "id": 7,
+    "phoneme": "K",
+    "connects_from": [
+      0
+    ]
+  },
+  {
+    "id": 8,
+    "phoneme": "R",
+    "connects_from": [
+      7
+    ]
+  },
+  {
+    "id": 9,
+    "phoneme": "IH",
+    "connects_from": [
+      8
+    ]
+  },
+  {
+    "id": 10,
+    "phoneme": "T",
+    "connects_from": [
+      9
+    ]
+  },
+  {
+    "id": 11,
+    "phoneme": "IH",
+    "connects_from": [
+      10
+    ]
+  },
+  {
+    "id": 12,
+    "phoneme": "K",
+    "connects_from": [
+      11
+    ]
+  },
+  {
+    "id": 13,
+    "phoneme": "S",
+    "connects_from": [
+      12
+    ]
+  },
+  {
+    "id": 14,
+    "phoneme": "<END>",
+    "connects_from": [
+      13
+    ]
+  },
+  {
+    "id": 15,
+    "phoneme": "AE",
+    "connects_from": [
+      7
+    ]
+  },
+  {
+    "id": 16,
+    "phoneme": "N",
+    "connects_from": [
+      15
+    ]
+  },
+  {
+    "id": 17,
+    "phoneme": "G",
+    "connects_from": [
+      16
+    ]
+  },
+  {
+    "id": 18,
+    "phoneme": "EH",
+    "connects_from": [
+      17
+    ]
+  },
+  {
+    "id": 19,
+    "phoneme": "T",
+    "connects_from": [
+      18
+    ]
+  },
+  {
+    "id": 20,
+    "phoneme": "IH",
+    "connects_from": [
+      19
+    ]
+  },
+  {
+    "id": 21,
+    "phoneme": "N",
+    "connects_from": [
+      20
+    ]
+  },
+  {
+    "id": 22,
+    "phoneme": "T",
+    "connects_from": [
+      21
+    ]
+  },
+  {
+    "id": 23,
+    "phoneme": "UW",
+    "connects_from": [
+      22
+    ]
+  },
+  {
+    "id": 24,
+    "phoneme": "AE",
+    "connects_from": [
+      23
+    ]
+  },
+  {
+    "id": 25,
+    "phoneme": "N",
+    "connects_from": [
+      24
+    ]
+  },
+  {
+    "id": 26,
+    "phoneme": "<END>",
+    "connects_from": [
+      25
+    ]
+  },
+  {
+    "id": 27,
+    "phoneme": "M",
+    "connects_from": [
+      0
+    ]
+  },
+  {
+    "id": 28,
+    "phoneme": "IY",
+    "connects_from": [
+      27
+    ]
+  },
+  {
+    "id": 29,
+    "phoneme": "Y",
+    "connects_from": [
+      28
+    ]
+  },
+  {
+    "id": 30,
+    "phoneme": "UW",
+    "connects_from": [
+      29
+    ]
+  },
+  {
+    "id": 31,
+    "phoneme": "L",
+    "connects_from": [
+      30
+    ]
+  },
+  {
+    "id": 32,
+    "phoneme": "<END>",
+    "connects_from": [
+      31
+    ]
+  },
+  {
+    "id": 33,
+    "phoneme": "P",
+    "connects_from": [
+      0
+    ]
+  },
+  {
+    "id": 34,
+    "phoneme": "OW",
+    "connects_from": [
+      33
+    ]
+  },
+  {
+    "id": 35,
+    "phoneme": "L",
+    "connects_from": [
+      34
+    ]
+  },
+  {
+    "id": 36,
+    "phoneme": "T",
+    "connects_from": [
+      35
+    ]
+  },
+  {
+    "id": 37,
+    "phoneme": "AH",
+    "connects_from": [
+      36
+    ]
+  },
+  {
+    "id": 38,
+    "phoneme": "S",
+    "connects_from": [
+      37
+    ]
+  },
+  {
+    "id": 39,
+    "phoneme": "W",
+    "connects_from": [
+      38
+    ]
+  },
+  {
+    "id": 40,
+    "phoneme": "AA",
+    "connects_from": [
+      39
+    ]
+  },
+  {
+    "id": 41,
+    "phoneme": "Z",
+    "connects_from": [
+      40
+    ]
+  },
+  {
+    "id": 42,
+    "phoneme": "<END>",
+    "connects_from": [
+      41
+    ]
+  },
+  {
+    "id": 43,
+    "phoneme": "AH",
+    "connects_from": [
+      0
+    ]
+  },
+  {
+    "id": 44,
+    "phoneme": "HH",
+    "connects_from": [
+      43
+    ]
+  },
+  {
+    "id": 45,
+    "phoneme": "AH",
+    "connects_from": [
+      44
+    ]
+  },
+  {
+    "id": 46,
+    "phoneme": "Z",
+    "connects_from": [
+      45
+    ]
+  },
+  {
+    "id": 47,
+    "phoneme": "B",
+    "connects_from": [
+      46
+    ]
+  },
+  {
+    "id": 48,
+    "phoneme": "AH",
+    "connects_from": [
+      47
+    ]
+  },
+  {
+    "id": 49,
+    "phoneme": "N",
+    "connects_from": [
+      48
+    ]
+  },
+  {
+    "id": 50,
+    "phoneme": "D",
+    "connects_from": [
+      49
+    ]
+  },
+  {
+    "id": 51,
+    "phoneme": "IH",
+    "connects_from": [
+      50
+    ]
+  },
+  {
+    "id": 52,
+    "phoneme": "Z",
+    "connects_from": [
+      51
+    ]
+  },
+  {
+    "id": 53,
+    "phoneme": "S",
+    "connects_from": [
+      52
+    ]
+  },
+  {
+    "id": 54,
+    "phoneme": "AW",
+    "connects_from": [
+      53
+    ]
+  },
+  {
+    "id": 55,
+    "phoneme": "TH",
+    "connects_from": [
+      54
+    ]
+  },
+  {
+    "id": 56,
+    "phoneme": "IY",
+    "connects_from": [
+      55
+    ]
+  },
+  {
+    "id": 57,
+    "phoneme": "S",
+    "connects_from": [
+      56
+    ]
+  },
+  {
+    "id": 58,
+    "phoneme": "T",
+    "connects_from": [
+      57
+    ]
+  },
+  {
+    "id": 59,
+    "phoneme": "<END>",
+    "connects_from": [
+      58
+    ]
+  },
+  {
+    "id": 60,
+    "phoneme": "IH",
+    "connects_from": [
+      0
+    ]
+  },
+  {
+    "id": 61,
+    "phoneme": "N",
+    "connects_from": [
+      60
+    ]
+  },
+  {
+    "id": 62,
+    "phoneme": "K",
+    "connects_from": [
+      61
+    ]
+  },
+  {
+    "id": 63,
+    "phoneme": "L",
+    "connects_from": [
+      62
+    ]
+  },
+  {
+    "id": 64,
+    "phoneme": "UW",
+    "connects_from": [
+      63
+    ]
+  },
+  {
+    "id": 65,
+    "phoneme": "D",
+    "connects_from": [
+      64
+    ]
+  },
+  {
+    "id": 66,
+    "phoneme": "<END>",
+    "connects_from": [
+      65
+    ]
+  },
+  {
+    "id": 67,
+    "phoneme": "N",
+    "connects_from": [
+      43
+    ]
+  },
+  {
+    "id": 68,
+    "phoneme": "D",
+    "connects_from": [
+      67
+    ]
+  },
+  {
+    "id": 69,
+    "phoneme": "M",
+    "connects_from": [
+      68
+    ]
+  },
+  {
+    "id": 70,
+    "phoneme": "AO",
+    "connects_from": [
+      69
+    ]
+  },
+  {
+    "id": 71,
+    "phoneme": "R",
+    "connects_from": [
+      70
+    ]
+  },
+  {
+    "id": 72,
+    "phoneme": "B",
+    "connects_from": [
+      71
+    ]
+  },
+  {
+    "id": 73,
+    "phoneme": "OW",
+    "connects_from": [
+      72
+    ]
+  },
+  {
+    "id": 74,
+    "phoneme": "T",
+    "connects_from": [
+      73
+    ]
+  },
+  {
+    "id": 75,
+    "phoneme": "S",
+    "connects_from": [
+      74
+    ]
+  },
+  {
+    "id": 76,
+    "phoneme": "<END>",
+    "connects_from": [
+      75
+    ]
+  },
+  {
+    "id": 77,
+    "phoneme": "R",
+    "connects_from": [
+      3
+    ]
+  },
+  {
+    "id": 78,
+    "phoneme": "EH",
+    "connects_from": [
+      77
+    ]
+  },
+  {
+    "id": 79,
+    "phoneme": "JH",
+    "connects_from": [
+      78
+    ]
+  },
+  {
+    "id": 80,
+    "phoneme": "IH",
+    "connects_from": [
+      79
+    ]
+  },
+  {
+    "id": 81,
+    "phoneme": "S",
+    "connects_from": [
+      80
+    ]
+  },
+  {
+    "id": 82,
+    "phoneme": "T",
+    "connects_from": [
+      81
+    ]
+  },
+  {
+    "id": 83,
+    "phoneme": "ER",
+    "connects_from": [
+      82
+    ]
+  },
+  {
+    "id": 84,
+    "phoneme": "D",
+    "connects_from": [
+      83
+    ]
+  },
+  {
+    "id": 85,
+    "phoneme": "<END>",
+    "connects_from": [
+      84
+    ]
+  },
+  {
+    "id": 86,
+    "phoneme": "D",
+    "connects_from": [
+      0
+    ]
+  },
+  {
+    "id": 87,
+    "phoneme": "AO",
+    "connects_from": [
+      86
+    ]
+  },
+  {
+    "id": 88,
+    "phoneme": "R",
+    "connects_from": [
+      87
+    ]
+  },
+  {
+    "id": 89,
+    "phoneme": "<END>",
+    "connects_from": [
+      88
+    ]
+  }
+]
