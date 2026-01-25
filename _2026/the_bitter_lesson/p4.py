@@ -187,6 +187,130 @@ class TestNetwork(Scene):
         self.wait()
 
 
+class P4(Scene):
+    def construct(self):
+        with open("phone_dag_with_connections.json", "r") as f:
+            nodes_data = json.load(f)
+
+        network = Network(nodes_data, layer_spacing=2.5, node_spacing=3.0)
+
+        # Pre-compute layer info for connections
+        node_to_layer = {}
+        for l_idx, layer in enumerate(network.layers):
+            for node_id in layer:
+                node_to_layer[node_id] = l_idx
+
+        # Build layer groups (in order)
+        layer_groups = []
+        shown_nodes = set()
+
+        for layer_idx, layer in enumerate(network.layers):
+            layer_mobjects = []
+
+            for node_id in layer:
+                if node_id not in shown_nodes:
+                    node = network.nodes[node_id]
+                    layer_mobjects.extend([node.circle, node.text])
+                    shown_nodes.add(node_id)
+
+            for connection in network.connections:
+                from_id = connection.node_from.node_id
+                to_id = connection.node_to.node_id
+                if node_to_layer.get(from_id) == layer_idx and node_to_layer.get(to_id) == layer_idx + 1:
+                    layer_mobjects.append(connection.arrow)
+
+            if layer_mobjects:
+                layer_groups.append(VGroup(*layer_mobjects))
+
+        # Pre-compute camera keyframes for each cumulative state
+        # (what camera should be when layers 0..i are fully visible)
+        padding = 0.5
+        aspect = self.camera.frame.get_width() / self.camera.frame.get_height()
+        camera_keyframes = []  # List of (width, center_x, center_y)
+
+        cumulative_mobjects = []
+        for group in layer_groups:
+            cumulative_mobjects.extend(group.submobjects)
+            cumulative_group = VGroup(*cumulative_mobjects)
+            w = cumulative_group.get_width() + padding
+            h = cumulative_group.get_height() + padding
+            needed_width = max(w, h * aspect)
+            center = cumulative_group.get_center()
+            camera_keyframes.append((needed_width, center[0], center[1]))
+
+        # Start with all mobjects invisible
+        for group in layer_groups:
+            group.set_opacity(0)
+            self.add(group)
+
+        # Set initial camera
+        init_w, init_cx, init_cy = camera_keyframes[0]
+        self.camera.frame.set_width(init_w)
+        self.camera.frame.move_to([init_cx, init_cy, 0])
+
+        # Animation settings
+        total_duration = 20.0
+        lag_ratio = 0.3
+        num_layers = len(layer_groups)
+
+        # Bezier ease-in-out
+        def bezier_rate(t):
+            return t * t * (3 - 2 * t)
+
+        # Progress tracker
+        progress = ValueTracker(0)
+
+        def update_scene(_):
+            t = progress.get_value()
+
+            # Set layer opacities based on LaggedStart timing
+            for i, group in enumerate(layer_groups):
+                if num_layers > 1:
+                    layer_start = i * lag_ratio / (num_layers - 1 + lag_ratio)
+                    layer_end = layer_start + 1.0 / (num_layers - 1 + lag_ratio)
+                else:
+                    layer_start = 0
+                    layer_end = 1
+
+                if t >= layer_end:
+                    group.set_opacity(1)
+                elif t >= layer_start:
+                    layer_progress = (t - layer_start) / (layer_end - layer_start)
+                    group.set_opacity(layer_progress)
+                else:
+                    group.set_opacity(0)
+
+            # Smoothly interpolate camera between keyframes
+            # Map t to a continuous "layer index" (can be fractional)
+            layer_float = t * (num_layers - 1)
+            layer_low = int(layer_float)
+            layer_high = min(layer_low + 1, num_layers - 1)
+            frac = layer_float - layer_low
+
+            # Interpolate between keyframes
+            w0, cx0, cy0 = camera_keyframes[layer_low]
+            w1, cx1, cy1 = camera_keyframes[layer_high]
+
+            interp_w = w0 + (w1 - w0) * frac
+            interp_cx = cx0 + (cx1 - cx0) * frac
+            interp_cy = cy0 + (cy1 - cy0) * frac
+
+            self.camera.frame.set_width(interp_w)
+            self.camera.frame.move_to([interp_cx, interp_cy, 0])
+
+        progress.add_updater(update_scene)
+        self.add(progress)
+
+        # Animate progress from 0 to 1 with bezier timing
+        self.play(
+            progress.animate.set_value(1),
+            run_time=total_duration,
+            rate_func=bezier_rate
+        )
+
+        progress.remove_updater(update_scene)
+        self.wait(0.5)
+        
 class AnimateNetwork(Scene):
     def construct(self):
         with open("phone_dag_with_connections.json", "r") as f:
@@ -248,6 +372,9 @@ class AnimateNetwork(Scene):
 
 class TestArrow(InteractiveScene):
     def construct(self):
-        arrow = Arrow(LEFT, RIGHT, thickness=0.5, fill_color=WHITE)
+        with open("phone_dag_claude.json", "r") as f:
+            nodes_data = json.load(f)
 
-        self.add(arrow)
+        network = Network(nodes_data, layer_spacing=2.5, node_spacing=3.0)
+        
+        self.add(network)
