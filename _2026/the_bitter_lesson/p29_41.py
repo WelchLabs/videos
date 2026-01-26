@@ -214,12 +214,38 @@ class P29_41(InteractiveScene):
 
 
         #Ok this looks decent. 
-        self.add(cnn)
+        # self.add(cnn)
         cnn.move_to([0, 0, 0])
         cnn.rotate(90*DEGREES, axis=OUT) 
         cnn.rotate(30*DEGREES, axis=RIGHT) 
         cnn.rotate(-30*DEGREES, axis=UP)
         cnn.rotate(-15*DEGREES, axis=OUT)
+
+        border = RoundedRectangle(
+            width=4.8,
+            height=4.8,
+            corner_radius=0.2,
+            stroke_color=CHILL_BROWN,
+            stroke_width=5,
+            fill_opacity=0,
+        )
+        border.move_to([-0.1, -0.2, 0])
+
+        # Add label text below
+        label = Text(
+            "SUPERVISED POLICY NETWORK (CNN)",
+            font="Myriad Pro",
+            font_size=32,
+        )
+        label.set_color(CHILL_BROWN)
+        label.next_to(border, DOWN, buff=0.3)
+
+        self.wait()
+        self.play(FadeIn(alphago_logo))
+        self.play(ShowCreation(cnn), Write(border), Write(label), run_time=5)
+
+        # self.add(border)
+        # self.add(label)
 
         self.wait()
 
