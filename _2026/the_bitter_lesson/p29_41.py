@@ -16,7 +16,7 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-# games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/alpha_go_self_play')
+self_games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/alpha_go_self_play')
 human_games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/human_human_kgs-19-2015')
 # games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/games_with_videos')
 games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/less_wrong_reverse_engineer')
@@ -781,12 +781,195 @@ class P29_41(InteractiveScene):
                   FadeIn(arrow_ag_2))  
         self.wait()            
 
-
-
+        # P34
+        # Ok now we need to play a game, show the winner (how do I figure this out?)
+        # Then highlight all winning moves in green, and all losing moves 
+        # in red. And want to be able to cycle through a few of these. 
         
-        # self.remove(arrow_ag_1)
+
+        # self_game_files=sorted(list(self_games_dir.glob('*.sgf')))
+        # game_index=0
+        # p=self_game_files[game_index]
+
+        #White wins
+        p=self_games_dir/'G01.sgf'
+        winning_color='#FFFFFF'
+
+        #Black wins
+        # p=self_games_dir/'G05.sgf' 
+        # winning_color='#000000'
+
+        #White wins
+        # p=self_games_dir/'G02.sgf' 
+        # winning_color='#FFFFFF'
+
+        moves = parse_sgf(p)
+        stones=Group()
+        board_state = {}  # (x, y) -> color
+        stone_objects = {}  # (x, y) -> Mobject
+        for i, (x, y, color) in enumerate(moves):
+            stone = create_stone(x, y, color)
+            stones.add(stone)
+            self.add(stone)
+            # self.wait(0.1) #Uncomment in FINAL RENDER
+            
+            board_state[(x, y)] = color
+            stone_objects[(x, y)] = stone
+            
+            # Check for captures
+            captured = find_captures(x, y, board_state)
+            for cx, cy in captured:
+                # Remove from scene and state
+                stones.remove(stone_objects[(cx, cy)])
+                self.remove(stone_objects[(cx, cy)])
+                del board_state[(cx, cy)]
+                del stone_objects[(cx, cy)]
 
         self.wait()
+
+        
+        #Ok, now I need a winner icon, and to add green/red squares. 
+
+        winner_graphic=ImageMobject(str(svg_dir/'winner_icon.png'))
+        winner_graphic.scale(0.25)
+
+        if winning_color=='#FFFFFF':
+            winner_graphic.move_to([-7.2, 0, 0])
+        else:
+            winner_graphic.move_to([7.2, 0, 0])
+
+        self.wait()
+        self.play(FadeIn(winner_graphic))
+        self.wait()
+
+        ##So i would love to have the quares behind the stones here
+        ## but ti's being a bit finnicky and clock is ticking
+        ## so probably keep rolling
+
+        squares_1=VGroup()
+        for i, (x, y, color) in enumerate(moves):
+            if winning_color==color:
+                pos = [(-(size-1)/2 + x) * step, (-(size-1)/2 + y) * step, 0]
+                square=Rectangle(0.35, 0.35)
+                square.set_stroke(color=GREEN, width=7)
+                square.move_to(pos) 
+                # square.shift([0.1, -0.2, 0])
+                self.add(square)
+                squares_1.add(square)
+                # self.wait(0.1)   #Uncomment for FINAL RENDER
+
+        self.wait()   
+
+        squares_2=VGroup()
+        for i, (x, y, color) in enumerate(moves):
+            if winning_color!=color:
+                pos = [(-(size-1)/2 + x) * step, (-(size-1)/2 + y) * step, 0]
+                square=Rectangle(0.35, 0.35)
+                square.set_stroke(color=RED, width=7)
+                square.move_to(pos) 
+                # square.shift([0.1, -0.2, 0])
+                self.add(square)
+                squares_2.add(square)
+                # self.wait(0.1)   #Uncomment for FINAL RENDER
+
+        self.wait()           
+        self.play(FadeOut(squares_1),
+                  FadeOut(squares_2),
+                  FadeOut(winner_graphic),
+                  run_time=3)
+        self.play(FadeOut(stones))
+        self.wait()
+
+
+
+        #Ok let's do a second game for the back half of p34. 
+
+        #Black wins
+        p=self_games_dir/'G05.sgf' 
+        winning_color='#000000'
+
+        #White wins
+        # p=self_games_dir/'G02.sgf' 
+        # winning_color='#FFFFFF'
+
+        moves = parse_sgf(p)
+        stones=Group()
+        board_state = {}  # (x, y) -> color
+        stone_objects = {}  # (x, y) -> Mobject
+        for i, (x, y, color) in enumerate(moves):
+            stone = create_stone(x, y, color)
+            stones.add(stone)
+            self.add(stone)
+            # self.wait(0.1) #Uncomment in FINAL RENDER
+            
+            board_state[(x, y)] = color
+            stone_objects[(x, y)] = stone
+            
+            # Check for captures
+            captured = find_captures(x, y, board_state)
+            for cx, cy in captured:
+                # Remove from scene and state
+                stones.remove(stone_objects[(cx, cy)])
+                self.remove(stone_objects[(cx, cy)])
+                del board_state[(cx, cy)]
+                del stone_objects[(cx, cy)]
+
+        self.wait()
+
+        
+        #Ok, now I need a winner icon, and to add green/red squares. 
+
+        winner_graphic=ImageMobject(str(svg_dir/'winner_icon.png'))
+        winner_graphic.scale(0.25)
+
+        if winning_color=='#FFFFFF':
+            winner_graphic.move_to([-7.2, 0, 0])
+        else:
+            winner_graphic.move_to([7.2, 0, 0])
+
+        self.wait()
+        self.play(FadeIn(winner_graphic))
+        self.wait()
+
+        ##So i would love to have the quares behind the stones here
+        ## but ti's being a bit finnicky and clock is ticking
+        ## so probably keep rolling
+
+        squares_1=VGroup()
+        for i, (x, y, color) in enumerate(moves):
+            if winning_color==color:
+                pos = [(-(size-1)/2 + x) * step, (-(size-1)/2 + y) * step, 0]
+                square=Rectangle(0.35, 0.35)
+                square.set_stroke(color=GREEN, width=7)
+                square.move_to(pos) 
+                # square.shift([0.1, -0.2, 0])
+                self.add(square)
+                squares_1.add(square)
+                # self.wait(0.1)   #Uncomment for FINAL RENDER
+
+        self.wait()   
+
+        squares_2=VGroup()
+        for i, (x, y, color) in enumerate(moves):
+            if winning_color!=color:
+                pos = [(-(size-1)/2 + x) * step, (-(size-1)/2 + y) * step, 0]
+                square=Rectangle(0.35, 0.35)
+                square.set_stroke(color=RED, width=7)
+                square.move_to(pos) 
+                # square.shift([0.1, -0.2, 0])
+                self.add(square)
+                squares_2.add(square)
+                # self.wait(0.1)   #Uncomment for FINAL RENDER
+
+        self.wait()           
+        self.play(FadeOut(squares_1),
+                  FadeOut(squares_2),
+                  FadeOut(winner_graphic),
+                  # FadeOut(stones),
+                  run_time=3)
+        self.play(FadeOut(stones))
+        self.wait()
+
 
 
 
