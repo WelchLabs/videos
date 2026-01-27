@@ -388,7 +388,7 @@ def find_captures(x, y, board_state):
     
     return captured
 
-class P29_41(InteractiveScene):
+class P29_36(InteractiveScene):
     def construct(self): 
         '''
         Ok leaning towards doing a bit more in manim than I first thought, 
@@ -961,7 +961,34 @@ class P29_41(InteractiveScene):
                 squares_2.add(square)
                 # self.wait(0.1)   #Uncomment for FINAL RENDER
 
-        self.wait()           
+
+        #P35 Add titling
+        pg_title = Text(
+            "POLICY GRADIENT METHOD",
+            font="Myriad Pro",
+            weight='bold',
+            font_size=46,
+        )
+        pg_title.set_color(WHITE)
+        pg_title.move_to([0, 5.15, 0])
+
+        pg_subtitle = Text(
+            "REINFORCE , WIlliams 1992",
+            font="Myriad Pro",
+            # weight='bold',
+            font_size=32,
+        )
+        pg_subtitle.set_color(CHILL_BROWN)
+        pg_subtitle.next_to(pg_title, DOWN, buff=0.15)
+
+
+        # self.add(pg_title)
+        # self.add(pg_subtitle)
+        self.wait()
+        self.play(Write(pg_title), run_time=3)
+        self.add(pg_subtitle)
+        self.wait()    
+
         self.play(FadeOut(squares_1),
                   FadeOut(squares_2),
                   FadeOut(winner_graphic),
@@ -970,15 +997,153 @@ class P29_41(InteractiveScene):
         self.play(FadeOut(stones))
         self.wait()
 
+        # Ok I was thinking about another game here, but 
+        # I don't think that really fits with the vibe of the paragraph
+        # I think lets just transition to a 2 row format to introduce 
+        # value network
+        # I could also cut in the lots of games 3d action 
+        # Anyway, can't go wrong wiht a nice transition here
+        # Then will start a new class!
 
-
-
-
-
+        self.wait()
+        self.play(FadeOut(pg_title), 
+                  FadeOut(pg_subtitle), 
+                  FadeOut(board_5), 
+                  FadeOut(ag_group_2),
+                  FadeOut(ag_2_label),
+                  FadeOut(ag_2_stone),
+                  FadeOut(arrow_ag_2),
+                  FadeOut(arrow_ag_1),
+                  FadeOut(ag_1_label),
+                  FadeOut(ag_1_stone),
+                  policy_network_label.animate.set_color(BLUE),
+                  self.frame.animate.reorient(0, 0, 0, (-7.2, -2.21, 0.0), 10.53),
+                  run_time=4)
 
 
         self.wait(20)
         self.embed()
+
+
+
+
+
+class P37_42(InteractiveScene):
+    def construct(self): 
+        '''
+        Ok leaning towards doing a bit more in manim than I first thought, 
+        mostly becuase I think there's a path that's not so bad
+        Let me see how this goes/feels, and I can fall back to less Manim 
+        if I need to. 
+        '''
+
+        # alphago_logo=SVGMobject(str(svg_dir/'alpha_go_logo.svg'))
+        alphago_logo=ImageMobject(str(svg_dir/'alpha_go_logo.png'))
+        alphago_logo.scale(0.25)
+        alphago_logo.move_to([-0.15, 3, 0])
+
+        conv_raster=ImageMobject(str(svg_dir/'conv_raster.png'))
+        conv_raster.scale(1.135)
+        conv_raster.move_to([-0.1, -0.25, 0])
+        # conv_raster.set_opacity(0.5)
+
+        border = RoundedRectangle(
+            width=4.8,
+            height=4.8,
+            corner_radius=0.2,
+            stroke_color=CHILL_BROWN,
+            stroke_width=5,
+            fill_opacity=0,
+        )
+        border.move_to([-0.1, -0.2, 0])
+
+
+        policy_network_label = Text(
+            "POLICY NETWORK",
+            font="Myriad Pro",
+            font_size=42,
+        )
+        policy_network_label.set_color(BLUE)
+        policy_network_label.next_to(border, DOWN, buff=0.3)
+
+        ag_group_1=Group(conv_raster, border, policy_network_label, alphago_logo)
+        ag_group_1.scale(0.7).move_to([-7.2, 0.2, 0])
+
+
+        arrow_in = Arrow(
+            border.get_left() + LEFT * 1.4,
+            border.get_left(),
+            stroke_width=5,
+            stroke_color=CHILL_BROWN,
+            fill_color=CHILL_BROWN,
+            buff=0.4,
+        )
+        
+
+        arrow_out = Arrow(
+            border.get_right(),
+            border.get_right() + RIGHT * 1.4,
+            stroke_width=5,
+            stroke_color=CHILL_BROWN,
+            fill_color=CHILL_BROWN,
+            buff=0.4,
+        )
+
+        #Ok now we bring in the actualy go board renderig?
+        board_1=render_example_go_game_1()
+        board_1.scale(0.4*1.0)
+        board_1.move_to([-12 , -0.05,  0. ])
+
+        board_2=render_example_go_game_1()
+        board_2.scale(0.4*1.0)
+        board_2.set_opacity(0.5)
+        board_2.move_to([-2.2 , -0.05,  0. ])
+
+        state_label=Text("STATE", font="Myriad Pro", weight='bold', font_size=44)
+        state_label.set_color(CHILL_BROWN)
+        state_label.move_to([-12 , -2.1,  0. ])
+
+        action_label=Text("ACTION", font="Myriad Pro", weight='bold', font_size=44)
+        action_label.set_color(CHILL_BROWN)
+        action_label.move_to([-2.2, -2.1, 0])
+
+        heatmap=create_heatmap_overlay(heatmap_1)
+        heatmap.set_opacity(0.8) 
+        heatmap.scale(0.4 * 1.0)  # Match board_2's final scale
+        heatmap.move_to([-2.2 , -0.05,  0. ])
+
+
+
+        self.frame.reorient(0, 0, 0, (-7.2, -2.21, 0.0), 10.53)
+        self.add(ag_group_1)
+        
+
+        # self.add(board_1, arrow_in, arrow_out, board_2)
+        # self.play(ShowCreation(heatmap))
+        # self.add(state_label, action_label)
+
+        self.wait()
+        self.play(FadeIn(board_1),
+                  FadeIn(arrow_in), 
+                  FadeIn(arrow_out), 
+                  FadeIn(board_2),
+                  FadeIn(state_label),
+                  FadeIn(action_label),
+                  ShowCreation(heatmap), 
+                  run_time=3)
+        self.wait()
+
+
+        self.wait(20)
+        self.embed()
+
+
+
+
+
+
+
+
 
 
 
