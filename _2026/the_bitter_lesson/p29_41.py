@@ -292,7 +292,101 @@ def create_heatmap_overlay(heatmap_data): #, opacity=0.6):
     
     return heatmap_group
 
+def get_board():
+    board_rect = Square(side_length=board_width + padding)
+    board_rect.set_fill(FRESH_TAN, opacity=1)
+    board_rect.set_stroke(CHILL_BROWN, width=2)
 
+    # We center the grid so the middle intersection is at (0,0,0)
+    lines = VGroup()
+    start_point = -(size - 1) / 2 * step
+    
+    for i in range(size):
+        # Vertical lines
+        v_line = Line(
+            [start_point + i * step, start_point, 0],
+            [start_point + i * step, -start_point, 0]
+        )
+        # Horizontal lines
+        h_line = Line(
+            [start_point, start_point + i * step, 0],
+            [-start_point, start_point + i * step, 0]
+        )
+        lines.add(v_line, h_line)
+        
+    lines.set_stroke(BLACK, width=1.5)
+
+    # For a 19x19, these are usually at 4, 10, and 16 (1-indexed)
+    hoshi_indices = [3, 9, 15] # 0-indexed
+    hoshi_dots = VGroup()
+    for x in hoshi_indices:
+        for y in hoshi_indices:
+            dot = Circle(radius=0.05, fill_color=BLACK, fill_opacity=1, stroke_width=0)
+            # Position the dot based on grid coordinates
+            dot.move_to([start_point + x * step, start_point + y * step, 0])
+            hoshi_dots.add(dot)
+
+    board=Group()
+    board.add(board_rect)
+    board.add(lines)
+    board.add(hoshi_dots)
+
+    return board
+
+def get_neighbors(x, y, size=19):
+    """Return orthogonally adjacent positions within bounds."""
+    neighbors = []
+    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        nx, ny = x + dx, y + dy
+        if 0 <= nx < size and 0 <= ny < size:
+            neighbors.append((nx, ny))
+    return neighbors
+
+
+def get_group(x, y, board_state):
+    """Find all connected stones of the same color using flood fill."""
+    color = board_state.get((x, y))
+    if color is None:
+        return set()
+    
+    group = set()
+    stack = [(x, y)]
+    
+    while stack:
+        cx, cy = stack.pop()
+        if (cx, cy) in group:
+            continue
+        if board_state.get((cx, cy)) == color:
+            group.add((cx, cy))
+            for nx, ny in get_neighbors(cx, cy):
+                if (nx, ny) not in group:
+                    stack.append((nx, ny))
+    return group
+
+
+def get_liberties(group, board_state):
+    """Count empty intersections adjacent to the group."""
+    liberties = set()
+    for x, y in group:
+        for nx, ny in get_neighbors(x, y):
+            if (nx, ny) not in board_state:
+                liberties.add((nx, ny))
+    return liberties
+
+
+def find_captures(x, y, board_state):
+    """After placing a stone at (x,y), find any captured opponent stones."""
+    color = board_state.get((x, y))
+    opponent = WHITE if color == BLACK else BLACK
+    
+    captured = set()
+    for nx, ny in get_neighbors(x, y):
+        if board_state.get((nx, ny)) == opponent:
+            group = get_group(nx, ny, board_state)
+            if len(get_liberties(group, board_state)) == 0:
+                captured.update(group)
+    
+    return captured
 
 class P29_41(InteractiveScene):
     def construct(self): 
@@ -529,8 +623,76 @@ class P29_41(InteractiveScene):
         # be easier if I do that first
         # Will slow down immediate progress, but I'm tempted to 
         # just go ahead and do the big grid of games animations then come back. 
+        # Ok I think I got it. 
+
+        self.remove(board_1, board_2, next_move_1)
+
+        for game_index in range(12):
+
+            p=human_game_files[game_index]
+            moves = parse_sgf(p)
+            moves_to_show=np.random.randint(0, len(moves)-2)
+
+            board_3=get_board()
+
+            board_and_stones=Group()
+            board_and_stones.add(board_3)
+            board_state = {}  # (x, y) -> color
+            stone_objects = {}  # (x, y) -> Mobject
+            for i, (x, y, color) in enumerate(moves[:moves_to_show]):
+                stone = create_stone(x, y, color)
+                board_and_stones.add(stone)
+                
+                board_state[(x, y)] = color
+                stone_objects[(x, y)] = stone
+                
+                # Check for captures
+                captured = find_captures(x, y, board_state)
+                for cx, cy in captured:
+                    # Remove from scene and state
+                    board_and_stones.remove(stone_objects[(cx, cy)])
+                    del board_state[(cx, cy)]
+                    del stone_objects[(cx, cy)]
+
+            #Hmm ok now need yellow box around next move...
+            # self.wait()
+            # self.add(board_and_stones)
+
+            x, y, c = moves[moves_to_show]
+            pos = [(-(size-1)/2 + x) * step, (-(size-1)/2 + y) * step, 0]
+            next_move=Rectangle(0.5, 0.5)
+            next_move.set_stroke(color=YELLOW, width=7)
+            next_move.move_to(pos)
+
+            # self.add(next_move)
+            
+            board_and_stones_copy=copy.deepcopy(board_and_stones)
+            board_and_stones_copy.set_opacity(0.5)
+            board_and_stones_copy.add(next_move)
+            board_and_stones_copy.scale(0.4*1.2)
+            board_and_stones_copy.move_to([5.4 , -0.3,  0. ])
+            
+
+            board_and_stones.scale(0.4*1.2)
+            board_and_stones.move_to([-5.4 , -0.3,  0. ])
+
+            
+            self.add(board_and_stones, board_and_stones_copy)
+            self.wait()
+            self.remove(board_and_stones, board_and_stones_copy)
+
+        self.wait()
 
 
+
+        # board_4=get_board()
+
+
+        # self.wait()
+        # self.remove(board_1, board_2, next_move_1)
+        # self.add(board_3, board_4)
+        # self.wait()
+        # self.wait()
 
 
         self.wait()
