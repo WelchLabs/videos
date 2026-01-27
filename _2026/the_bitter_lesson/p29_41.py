@@ -69,8 +69,6 @@ def parse_sgf(file_path):
         parsed_moves.append((x, y, color))
     return parsed_moves
 
-
-
 def create_stone(x, y, color=BLACK, squash = 0.3):
     """Create a 3D stone at the given grid position."""
     stone_radius=step*0.45
@@ -98,8 +96,7 @@ def create_stone(x, y, color=BLACK, squash = 0.3):
     
     return stone
 
-def create_cnn_layer(width=19, height=19, cell_size=0.15, depth=0.1, 
-                     fill_color=BLUE, fill_opacity=0.8, line_width=0.02):
+def create_cnn_layer(width=19, height=19, cell_size=0.15, depth=0.1, fill_color=BLUE, fill_opacity=0.8, line_width=0.02):
     """Create a single CNN layer as a flat prism with grid lines."""
     
     layer_w = width * cell_size
@@ -195,8 +192,6 @@ def create_cnn_layer(width=19, height=19, cell_size=0.15, depth=0.1,
     layer = Group(box, grid_lines)
     return layer
 
-
-
 def render_example_go_game_1():
     board_rect = Square(side_length=board_width + padding)
     board_rect.set_fill(FRESH_TAN, opacity=1)
@@ -260,7 +255,6 @@ def render_example_go_game_1():
         board.add(stone)
     
     return board
-
 
 def create_heatmap_overlay(heatmap_data): #, opacity=0.6):
     """Create a heatmap overlay for a Go board using viridis colormap."""
@@ -341,7 +335,6 @@ def get_neighbors(x, y, size=19):
             neighbors.append((nx, ny))
     return neighbors
 
-
 def get_group(x, y, board_state):
     """Find all connected stones of the same color using flood fill."""
     color = board_state.get((x, y))
@@ -362,7 +355,6 @@ def get_group(x, y, board_state):
                     stack.append((nx, ny))
     return group
 
-
 def get_liberties(group, board_state):
     """Count empty intersections adjacent to the group."""
     liberties = set()
@@ -371,7 +363,6 @@ def get_liberties(group, board_state):
             if (nx, ny) not in board_state:
                 liberties.add((nx, ny))
     return liberties
-
 
 def find_captures(x, y, board_state):
     """After placing a stone at (x,y), find any captured opponent stones."""
@@ -386,7 +377,6 @@ def find_captures(x, y, board_state):
                 captured.update(group)
     
     return captured
-
 
 def get_value_network():
         
@@ -544,7 +534,6 @@ def get_value_network():
 
 
 
-
 class P29_36(InteractiveScene):
     def construct(self): 
         '''
@@ -621,20 +610,22 @@ class P29_36(InteractiveScene):
         arrow_in = Arrow(
             border.get_left() + LEFT * 0.85,
             border.get_left(),
-            stroke_width=5,
+            thickness=10,
             stroke_color=CHILL_BROWN,
             fill_color=CHILL_BROWN,
             buff=0.2,
+            tip_width_ratio=4,
         )
         
 
         arrow_out = Arrow(
             border.get_right(),
             border.get_right() + RIGHT * 0.85,
-            stroke_width=5,
+            thickness=7,
             stroke_color=CHILL_BROWN,
             fill_color=CHILL_BROWN,
             buff=0.2,
+            tip_width_ratio=4
         )
 
         #Ok now we bring in the actualy go board renderig?
@@ -783,7 +774,7 @@ class P29_36(InteractiveScene):
         # Ok I think I got it. 
 
         self.remove(board_1, board_2, next_move_1)
-        num_games_to_play=2 ## CRANK UP IN FINAL RENDER
+        num_games_to_play=12 ## CRANK UP IN FINAL RENDER
 
         for game_index in range(num_games_to_play):
 
@@ -968,7 +959,7 @@ class P29_36(InteractiveScene):
             stone = create_stone(x, y, color)
             stones.add(stone)
             self.add(stone)
-            # self.wait(0.1) #Uncomment in FINAL RENDER
+            self.wait(0.1) #Uncomment in FINAL RENDER
             
             board_state[(x, y)] = color
             stone_objects[(x, y)] = stone
@@ -1013,7 +1004,7 @@ class P29_36(InteractiveScene):
                 # square.shift([0.1, -0.2, 0])
                 self.add(square)
                 squares_1.add(square)
-                # self.wait(0.1)   #Uncomment for FINAL RENDER
+                self.wait(0.1)   #Uncomment for FINAL RENDER
 
         self.wait()   
 
@@ -1027,7 +1018,7 @@ class P29_36(InteractiveScene):
                 # square.shift([0.1, -0.2, 0])
                 self.add(square)
                 squares_2.add(square)
-                # self.wait(0.1)   #Uncomment for FINAL RENDER
+                self.wait(0.1)   #Uncomment for FINAL RENDER
 
         self.wait()           
         self.play(FadeOut(squares_1),
@@ -1057,7 +1048,7 @@ class P29_36(InteractiveScene):
             stone = create_stone(x, y, color)
             stones.add(stone)
             self.add(stone)
-            # self.wait(0.1) #Uncomment in FINAL RENDER
+            self.wait(0.1) #Uncomment in FINAL RENDER
             
             board_state[(x, y)] = color
             stone_objects[(x, y)] = stone
@@ -1102,7 +1093,7 @@ class P29_36(InteractiveScene):
                 # square.shift([0.1, -0.2, 0])
                 self.add(square)
                 squares_1.add(square)
-                # self.wait(0.1)   #Uncomment for FINAL RENDER
+                self.wait(0.1)   #Uncomment for FINAL RENDER
 
         self.wait()   
 
@@ -1116,7 +1107,7 @@ class P29_36(InteractiveScene):
                 # square.shift([0.1, -0.2, 0])
                 self.add(square)
                 squares_2.add(square)
-                # self.wait(0.1)   #Uncomment for FINAL RENDER
+                self.wait(0.1)   #Uncomment for FINAL RENDER
 
 
         #P35 Add titling
@@ -1183,8 +1174,6 @@ class P29_36(InteractiveScene):
 
 
 
-
-
 class P37_42(InteractiveScene):
     def construct(self): 
         '''
@@ -1230,20 +1219,22 @@ class P37_42(InteractiveScene):
         arrow_in = Arrow(
             border.get_left() + LEFT * 1.4,
             border.get_left(),
-            stroke_width=5,
+            thickness=10,
             stroke_color=CHILL_BROWN,
             fill_color=CHILL_BROWN,
             buff=0.4,
+            tip_width_ratio=3
         )
         
 
         arrow_out = Arrow(
             border.get_right(),
             border.get_right() + RIGHT * 1.4,
-            stroke_width=5,
+            thickness=10,
             stroke_color=CHILL_BROWN,
             fill_color=CHILL_BROWN,
             buff=0.4,
+            tip_width_ratio=3
         )
 
         #Ok now we bring in the actualy go board renderig?
@@ -1313,18 +1304,20 @@ class P37_42(InteractiveScene):
         arrow_in_2 = Arrow(
             border_2.get_left() + LEFT * 1.4,
             border_2.get_left(),
-            stroke_width=5,
+            thickness=10,
             stroke_color=CHILL_BROWN,
             fill_color=CHILL_BROWN,
             buff=0.4,
+            tip_width_ratio=3,
         )
         
         arrow_out_2 = Arrow(
             border_2.get_right(),
             border_2.get_right() + RIGHT * 1.4,
-            stroke_width=5,
+            thickness=10,
             stroke_color=CHILL_BROWN,
             fill_color=CHILL_BROWN,
+            tip_width_ratio=3,
             buff=0.4,
         )
 
@@ -1401,11 +1394,11 @@ class P37_42(InteractiveScene):
         # Should be able to borrow something from earlier, cycling through games
 
         self.remove(heatmap)
+        self.remove(board_1, board_2, board_3)
 
         self_games_files=sorted(list(self_games_dir.glob('*.sgf')))
 
-
-        num_games_to_play=2 ## CRANK UP IN FINAL RENDER
+        num_games_to_play=12 ## CRANK UP IN FINAL RENDER
         for game_index in range(num_games_to_play):
         # game_index=0
 
@@ -1457,9 +1450,7 @@ class P37_42(InteractiveScene):
             board_6_group.move_to([-12 , -0.05-4.5,  0. ])
 
             
-            self.wait()
-
-            self.remove(board_1, board_2, board_3)
+            
             self.add(board_4_group, board_5_group, board_6_group)
             if game_index==0:
                 self.play(pwin.animate.shift([-0.8, 0, 0]))
@@ -1481,13 +1472,10 @@ class P37_42(InteractiveScene):
         ## Hmm yeah when we do get to P42, I am going to want continuity with the 
         ## little networks sliding to their spots in the MTCS tree. 
         ## That's going to be kinda annoying, but I think makes sense. 
-
-
-
-
-
-
-        
+        ## ok so i'm going to go ahead and hack on P42 in a separate class
+        ## then when I know where the images and labels should be 
+        ## I'll come back here and do the transition
+        ## Also gun to my head I can do the transition in Premiere
 
 
 
