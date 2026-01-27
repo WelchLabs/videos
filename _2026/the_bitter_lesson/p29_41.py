@@ -2,6 +2,8 @@ from manimlib import *
 from tqdm import tqdm
 import re
 from pathlib import Path
+import matplotlib.pyplot as plt
+
 
 CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
@@ -15,7 +17,7 @@ CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
 # games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/alpha_go_self_play')
-# games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/human_human_kgs-19-2015')
+human_games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/human_human_kgs-19-2015')
 # games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/games_with_videos')
 games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/less_wrong_reverse_engineer')
 
@@ -26,7 +28,27 @@ padding = 0.5
 board_width = 8 # Total width in Manim units
 step = board_width / size
 
-
+heatmap_1 = np.array([
+    [0.17, 0.16, 0.16, 0.16, 0.16, 0.15, 0.16, 0.15, 0.16, 0.15, 0.15, 0.15, 0.15, 0.15, 0.16, 0.17, 0.16, 0.16, 0.17],
+    [0.17, 0.17, 0.17, 0.18, 0.19, 0.19, 0.17, 0.17, 0.17, 0.16, 0.16, 0.15, 0.17, 0.17, 0.20, 0.20, 0.19, 0.19, 0.16],
+    [0.17, 0.17, 0.30, 0.30, 0.22, 0.28, 0.21, 0.19, 0.18, 0.17, 0.17, 0.19, 0.20, 0.22, 0.27, 0.96, 0.71, 0.20, 0.17],
+    [0.16, 0.18, 0.26, 0.01, 0.24, 0.21, 0.19, 0.18, 0.17, 0.17, 0.17, 0.17, 0.29, 0.21, 0.24, 0.78, 0.97, 0.22, 0.17],
+    [0.16, 0.17, 0.20, 0.22, 0.19, 0.17, 0.17, 0.17, 0.18, 0.20, 0.67, 0.02, 0.20, 0.19, 0.20, 0.29, 0.35, 0.22, 0.16],
+    [0.16, 0.17, 0.20, 0.19, 0.17, 0.16, 0.16, 0.17, 0.16, 0.48, 0.03, 0.01, 0.00, 0.17, 0.19, 0.20, 0.25, 0.19, 0.15],
+    [0.16, 0.17, 0.19, 0.17, 0.17, 0.16, 0.17, 0.15, 0.15, 0.03, 0.02, 0.01, 0.01, 0.17, 0.19, 0.20, 0.21, 0.17, 0.15],
+    [0.15, 0.16, 0.17, 0.18, 0.17, 0.16, 0.16, 0.16, 0.48, 0.51, 0.07, 0.04, 0.28, 0.20, 0.19, 0.19, 0.20, 0.17, 0.15],
+    [0.15, 0.15, 0.17, 0.17, 0.17, 0.16, 0.16, 0.17, 0.51, 0.52, 0.78, 0.98, 0.23, 0.20, 0.19, 0.20, 0.19, 0.17, 0.15],
+    [0.15, 0.16, 0.17, 0.17, 0.17, 0.15, 0.16, 0.18, 0.20, 0.27, 0.22, 0.20, 0.20, 0.20, 0.18, 0.19, 0.19, 0.17, 0.15],
+    [0.15, 0.15, 0.17, 0.17, 0.17, 0.17, 0.18, 0.19, 0.20, 0.20, 0.20, 0.19, 0.19, 0.20, 0.18, 0.20, 0.20, 0.17, 0.15],
+    [0.15, 0.15, 0.17, 0.19, 0.18, 0.17, 0.19, 0.20, 0.20, 0.18, 0.19, 0.19, 0.19, 0.19, 0.18, 0.20, 0.20, 0.18, 0.15],
+    [0.15, 0.15, 0.17, 0.17, 0.17, 0.18, 0.20, 0.19, 0.18, 0.18, 0.18, 0.19, 0.19, 0.18, 0.17, 0.19, 0.20, 0.17, 0.15],
+    [0.15, 0.14, 0.15, 0.25, 0.17, 0.18, 0.19, 0.18, 0.18, 0.18, 0.19, 0.19, 0.19, 0.18, 0.18, 0.20, 0.20, 0.18, 0.16],
+    [0.15, 0.15, 0.00, 0.35, 0.17, 0.16, 0.17, 0.16, 0.17, 0.17, 0.17, 0.19, 0.18, 0.18, 0.19, 0.23, 0.22, 0.19, 0.16],
+    [0.15, 0.17, 0.24, 0.44, 0.20, 0.17, 0.16, 0.16, 0.16, 0.17, 0.17, 0.17, 0.18, 0.19, 0.23, 0.44, 0.40, 0.19, 0.17],
+    [0.15, 0.17, 0.30, 0.29, 0.21, 0.16, 0.17, 0.16, 0.17, 0.17, 0.17, 0.17, 0.18, 0.18, 0.22, 0.38, 0.25, 0.19, 0.17],
+    [0.15, 0.15, 0.17, 0.18, 0.17, 0.16, 0.16, 0.16, 0.16, 0.15, 0.15, 0.15, 0.16, 0.17, 0.19, 0.19, 0.18, 0.17, 0.16],
+    [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.14, 0.15, 0.15, 0.15, 0.16, 0.16, 0.17, 0.16, 0.17]
+])
 
 def parse_sgf(file_path):
     with open(file_path, 'r') as f:
@@ -241,6 +263,34 @@ def render_example_go_game_1():
     return board
 
 
+def create_heatmap_overlay(heatmap_data): #, opacity=0.6):
+    """Create a heatmap overlay for a Go board using viridis colormap."""
+    cmap = plt.cm.viridis
+    
+    heatmap_group = VGroup()
+    start_point = -(size - 1) / 2 * step
+    
+    for i in range(size):
+        for j in range(size):
+            # heatmap array is top-down, manim is bottom-up, so flip j
+            value = heatmap_data[18 - j, i]
+            
+            # Get RGB from viridis colormap
+            rgb = cmap(value)[:3]
+            hex_color = rgb_to_hex(rgb)
+            
+            square = Square(side_length=step)
+            square.set_fill(hex_color) #, opacity=opacity * value)  # opacity scales with value
+            square.set_stroke(width=0)
+            
+            # Position at grid intersection
+            x = start_point + i * step
+            y = start_point + j * step
+            square.move_to([x, y, 0])
+            
+            heatmap_group.add(square)
+    
+    return heatmap_group
 
 
 
@@ -433,7 +483,7 @@ class P29_41(InteractiveScene):
                   # FadeOut(label), 
                   board_1.animate.scale(1.2).move_to([-5.4 , -0.3,  0. ]),
                   board_2.animate.scale(1.2).move_to([5.4 , -0.3,  0. ]),
-                  next_move_1.animate.move_to([ 5.78, -0.11,  0.        ]),
+                  next_move_1.animate.move_to([ 5.792, -0.10,  0. ]),
                   Write(all_svgs[1]),
                   Write(all_svgs[2][:-5]),
                   Write(all_svgs[2][-1]),
@@ -451,7 +501,36 @@ class P29_41(InteractiveScene):
         self.play(FadeIn(all_svgs[3]), 
                   FadeIn(all_svgs[2][-3:-1]))
 
+        
+        #Ok now add heatmap to the go board. 
+        heatmap=create_heatmap_overlay(heatmap_1)
+        heatmap.set_opacity(0.8) 
+        heatmap.scale(0.4 * 1.2)  # Match board_2's final scale
+        heatmap.move_to([5.4, -0.3, 0])  # Match board_2's final position
+
         self.wait()
+        self.play(ShowCreation(heatmap), FadeOut(next_move_1), run_time=4)
+        self.wait()
+        
+        ## Alrighty, now the end of p31 here, flipping through boards and next moves
+        ## from different games. 
+
+        self.play(self.frame.animate.reorient(0, 0, 0, (0.03, -0.06, 0.0), 8.94), 
+                  FadeOut(all_svgs[:6]), 
+                  FadeOut(heatmap), 
+                  FadeIn(next_move_1),
+                  run_time=4)
+        self.wait()
+
+        human_game_files=list(human_games_dir.glob('*.sgf'))
+
+        # Ok so now I want to iterate throught these game files
+        # However I have yet to implement capturing -> and it will just
+        # be easier if I do that first
+        # Will slow down immediate progress, but I'm tempted to 
+        # just go ahead and do the big grid of games animations then come back. 
+
+
 
 
         self.wait()
