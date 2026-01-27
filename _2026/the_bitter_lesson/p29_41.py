@@ -409,11 +409,24 @@ class P29_41(InteractiveScene):
     
         # Ok, kind of an annoying large amount of stuff to figure out here
         # One step at a time. 
+        svg_files=list(sorted(svg_dir.glob('*p29_42*')))
 
+        all_svgs=Group()
+        for svg_file in svg_files: 
+            svg_image=SVGMobject(str(svg_file))
+            all_svgs.add(svg_image[1:]) #Thowout background
+
+        
+        all_svgs.move_to([-2.1, -6, 0])
+        all_svgs.scale(7)
+
+        for o in all_svgs[4]: o.set_opacity(0.4+0.6*np.random.rand())
+        for o in all_svgs[5]: o.set_opacity(0.4+0.6*np.random.rand())
+ 
 
         self.wait()
         self.remove(state_label, action_label, policy_label, label, arrow_next_move_1)
-        self.play(self.frame.animate.reorient(0, 0, 0, (-0.17, -2.26, 0.0), 12.41),
+        self.play(self.frame.animate.reorient(0, 0, 0, (-0.11, -2.82, 0.0), 13.77),
                   # FadeOut(state_label),
                   # FadeOut(action_label),
                   # FadeOut(policy_label), 
@@ -421,21 +434,51 @@ class P29_41(InteractiveScene):
                   board_1.animate.scale(1.2).move_to([-5.4 , -0.3,  0. ]),
                   board_2.animate.scale(1.2).move_to([5.4 , -0.3,  0. ]),
                   next_move_1.animate.move_to([ 5.78, -0.11,  0.        ]),
+                  Write(all_svgs[1]),
+                  Write(all_svgs[2][:-5]),
+                  Write(all_svgs[2][-1]),
+                  Write(all_svgs[4]),
+                  Write(all_svgs[5]),
+                  # Write(all_svgs[3:5]),
                   run_time=3
                  )
         self.add(policy_network_label)
 
+        self.wait()
+        self.play(FadeIn(all_svgs[0]), 
+                  FadeIn(all_svgs[2][-5:-3]))
+        self.wait()
+        self.play(FadeIn(all_svgs[3]), 
+                  FadeIn(all_svgs[2][-3:-1]))
 
-
-    
         self.wait()
 
+
+        self.wait()
 
         self.wait(20)
         self.embed()
 
 
 
+
+        #Ok that looks nice -> now how do we want to bring in the LLM action?
+
+        # border_2 = RoundedRectangle(
+        #     width=4.8,
+        #     height=4.8,
+        #     corner_radius=0.2,
+        #     stroke_color=CHILL_BROWN,
+        #     stroke_width=5,
+        #     fill_opacity=0,
+        # )
+        # border_2.move_to([-0.1, -6.2, 0])
+
+        # self.add(all_svgs[0])
+        # self.add(all_svgs[3:])
+        # self.add(all_svgs[1])
+        # self.add(all_svgs[2]) #[1:])
+        # self.add(border_2)
 
 
 
