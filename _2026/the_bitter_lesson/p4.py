@@ -372,7 +372,7 @@ class AnimateNetwork(Scene):
 
 class TestArrow(InteractiveScene):
     def construct(self):
-        with open("phone_dag_claude.json", "r") as f:
+        with open("phone_dag_claude_v2.json", "r") as f:
             nodes_data = json.load(f)
 
         network = Network(nodes_data, layer_spacing=2.5, node_spacing=3.0)
