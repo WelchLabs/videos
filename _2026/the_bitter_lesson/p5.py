@@ -200,17 +200,32 @@ class P5b(InteractiveScene):
             spectra_plot.add(spectra_1)
             spectra_plots.add(spectra_plot)
 
+
+        # Ok specta look nice!
+        # Now do I wan to use cool arrows, or try to show the mapping with animation?
+        # Ok one at time like this looks nice, but it might be too slow 
+        # in the edit. If it does end up being too slow, 
+        # then we can change to lag ratio or all at once setup. 
+
+        self.wait()
+        segments_copy=segments.copy()
+        for i in range(len(segments)):
+            self.play(ReplacementTransform(segments_copy[i], spectra_plots[i][1]), 
+                      ShowCreation(spectra_plots[i][0]), #axis
+                      run_time=3)
+
         self.wait()
 
-
-        self.add(spectra_plots)
-
-
+        # Ok making progress here. Now I recon that I really need the 
+        # graph right? 
 
 
 
         self.wait(20)
         self.embed()
+
+
+
 
 
 
@@ -223,13 +238,22 @@ class P5a(InteractiveScene):
         nodes=[['start', 0, 0, 0],
                ['T',     1, 4, 4],
                ['AH',    2, 6, 7],
-               ['EL',    3, 8, 4]]
+               ['EL',    3, 8, 4], 
+               ['G',     4, 4, -4], 
+               ['IH',    5, 8, -4],
+               ['end',    -1, 40, 0]
+               ]
 
         #Connections between node ids
         edges=[[0, 1], 
                   [1, 2],
                   [2, 3],
-                  [1, 3],]
+                  [1, 3],
+                  [0, 4], 
+                  [4, 5], 
+                  [5, -1],  #Rmove later
+                  [3, -1]   #Remove later
+                ]
 
         node_mobjects = {}
         buff = 0.2
