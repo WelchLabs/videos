@@ -133,6 +133,12 @@ edges=[[0, 1],
 
         ]
 
+spectra_keys_2 = ["stephen_tell_T", "stephen_tell_EL", 
+               "stephen_me_M", "stephen_me_IY", "stephen_about_A", 
+               "stephen_about_B", "stephen_about_AW", "stephen_about_T", 
+               "stephen_china_SH", "stephen_china_AY", "stephen_china_N", 
+               "stephen_china_UH"]
+
 
 def get_rect_edge_point(rect, direction):
     """
@@ -392,20 +398,118 @@ class P5(InteractiveScene):
         self.wait()
 
 
+        ## --- Ok! Now we can introduce some waveform action!
+        axes_width = 22 #Initial axis width
+        sample_rate, data = wavfile.read(audio_fn)
+        data = data / np.max(np.abs(data))
+        
+        downsample_factor=12
+        data_ds = data[::downsample_factor]
+        print(len(data_ds))
+        
+        duration = len(data) / sample_rate
+        t = np.linspace(0, duration, len(data_ds))
 
-
-        # self.remove(graph_2)
-
-        # for i in range(len(node_mobjects_2)):
-        #     self.add(node_mobjects_2[i])
-
-        # node_mobjects_2[1].shift([-5, 0, 0])
-
-
+        axes = Axes(
+            x_range=[0, duration, duration/4],
+            y_range=[-1, 1, 0.5],
+            width=axes_width,
+            height=2.5,
+            axis_config={
+                "color": CHILL_BROWN,
+                "stroke_width": 2,
+                "include_ticks": False,
+                "tick_size": 0.05,
+                "include_tip": True,
+                "tip_config": {"width":0.02, "length":0.02}
+            },
+        )
+        axes.move_to([0, 10.5, 0])
+        # self.add(axes)
+        
+        waveform = VMobject()
+        waveform.set_stroke(BLUE, width=3)
 
         self.wait()
+        N = 20
+        if not fast:
+            ## Audio "playing in" -
+            for i in range(N, len(data_ds), N):
+                points = [axes.c2p(t[j], data_ds[j]) for j in range(i)]
+                waveform.set_points_as_corners(points)
+                self.wait(1/30) 
+        else:
+            self.add(waveform)
+        
+        # Final frame with all samples
+        points = [axes.c2p(t[j], data_ds[j]) for j in range(len(data_ds))]
+        waveform.set_points_as_corners(points)
 
-        self.frame.reorient(0, 0, 0, (0.18, 0.5, 0.0), 18.15)
+        self.wait()
+        # self.remove(waveform)
+
+        ## --- Now break apart waveform
+        cut_points=[0, 4500, 12000, 15500, 19000, 21500, 25000, 31500, 35000, 40500, 46000, 51500]
+        phones_1=["T", "EL", "M", "IY", "AH", "B", "AW", "T", "SH", "AY", "N", "UH"]
+
+        # Convert to downsampled indices
+        cut_points_ds = [cp // downsample_factor for cp in cut_points]
+
+        # Make sure we cover all data
+        if cut_points_ds[-1] < len(data_ds):
+            cut_points_ds.append(len(data_ds))
+
+        # Get scaling info from axes
+        axes_left = axes.c2p(0, 0)[0]
+        y_center = axes.c2p(0, 0)[1]
+        y_scale = axes.c2p(0, 1)[1] - y_center
+        total_samples = len(data_ds)
+
+        num_steps=30
+        spacing=0.5 #0.35
+
+        self.wait()
+        self.remove(waveform)
+        # gap_width = 0.3  # scene units between blocks
+        for count, gap_width in enumerate(np.linspace(0, spacing, num_steps)):
+            segments = VGroup()
+            x_cursor = axes_left
+            
+            for i in range(len(cut_points_ds) - 1):
+                start_idx = cut_points_ds[i]
+                end_idx = cut_points_ds[i + 1]
+                n_samples = end_idx - start_idx
+                
+                # Width proportional to sample count
+                seg_width = (n_samples / total_samples) * axes_width
+                
+                segment_data = data_ds[start_idx:end_idx]
+                
+                seg = VMobject()
+                seg.set_stroke(BLUE, width=3)
+                
+                local_x = np.linspace(0, seg_width, n_samples)
+                points = [[x_cursor + local_x[j], y_center + segment_data[j] * y_scale, 0] 
+                          for j in range(n_samples)]
+                seg.set_points_as_corners(points)
+                
+                segments.add(seg)
+                x_cursor += seg_width + gap_width
+
+            # total_new_width = x_cursor - axes_left - gap_width  # subtract last gap
+            # scale_factor = axes_width / total_new_width
+            # segments.scale(scale_factor, about_point=axes.c2p(0, 0))
+            # segments.move_to(axes.get_center())
+            segments.set_x(axes.get_x())
+
+            self.add(segments)
+            self.wait(0.1)
+            if count<num_steps-1:
+                self.remove(segments)
+
+        self.wait()
+        # self.remove(segments)
+
 
 
 
@@ -416,3 +520,10 @@ class P5(InteractiveScene):
 
         self.wait(20)
         self.embed()
+
+
+
+
+
+
+
