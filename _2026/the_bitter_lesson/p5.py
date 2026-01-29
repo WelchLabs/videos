@@ -3,6 +3,7 @@ from tqdm import tqdm
 import re
 from pathlib import Path
 import matplotlib.pyplot as plt
+from scipy.io import wavfile
 
 
 CHILL_BROWN='#948979'
@@ -18,6 +19,216 @@ MAGENTA='#FF00FF'
 
 SCALE_FACTOR=0.4
 
+
+audio_fn='/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/exports/tell_me_about_china.wav'
+spectra_path='/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/hacking/spectral_envelopes_final.npy'
+
+
+class P5b(InteractiveScene):
+    def construct(self): 
+
+        '''
+        Ok let me hack a bit on how to do the waveform here. I guess first I need to 
+        get the take from the final a-roll, glad that's done!
+
+
+        '''
+        axes_width = 9 #Initial axis width
+
+        sample_rate, data = wavfile.read(audio_fn)
+        data = data / np.max(np.abs(data))
+        
+        # Downsample for plotting (adjust factor as needed)
+        # downsample_factor = max(1, len(data) // 5000)
+        downsample_factor=12
+        data_ds = data[::downsample_factor]
+        print(len(data_ds))
+        
+        # Time array
+        duration = len(data) / sample_rate
+        t = np.linspace(0, duration, len(data_ds))
+        
+        # Create axes
+        axes = Axes(
+            x_range=[0, duration, duration/4],
+            y_range=[-1, 1, 0.5],
+            width=axes_width,
+            height=2.5,
+            axis_config={
+                "color": CHILL_BROWN,
+                "stroke_width": 2,
+                "include_ticks": False,
+                "tick_size": 0.05,
+                "include_tip": True,
+                "tip_config": {"width":0.02, "length":0.02}
+            },
+        )
+        axes.move_to([0, 2.5, 0])
+        # self.add(axes)
+        
+        waveform = VMobject()
+        waveform.set_stroke(BLUE, width=3)
+
+        self.wait()
+        self.add(waveform)
+
+        N = 20
+        ## Audio "playing in" - Uncomment for final render
+        # for i in range(N, len(data_ds), N):
+        #     points = [axes.c2p(t[j], data_ds[j]) for j in range(i)]
+        #     waveform.set_points_as_corners(points)
+        #     self.wait(1/30) 
+        
+        # Final frame with all samples
+        points = [axes.c2p(t[j], data_ds[j]) for j in range(len(data_ds))]
+        waveform.set_points_as_corners(points)
+
+        self.wait()
+
+        #Ok, matthew is going to provide exact cutpoints, let me fake a few for now
+        cut_points=[0, 4500, 12000, 15500, 19000, 21500, 25000, 31500, 35000, 40500, 46000, 51500]
+        phones_1=["T", "EL", "M", "IY", "AH", "B", "AW", "T", "SH", "AY", "N", "UH"]
+
+        # Convert to downsampled indices
+        cut_points_ds = [cp // downsample_factor for cp in cut_points]
+
+        # Make sure we cover all data
+        if cut_points_ds[-1] < len(data_ds):
+            cut_points_ds.append(len(data_ds))
+
+        
+        # Get scaling info from axes
+        axes_left = axes.c2p(0, 0)[0]
+        y_center = axes.c2p(0, 0)[1]
+        y_scale = axes.c2p(0, 1)[1] - y_center
+        total_samples = len(data_ds)
+
+        num_steps=30
+        spacing=0.35
+
+        self.wait()
+        self.remove(waveform)
+        # gap_width = 0.3  # scene units between blocks
+        for count, gap_width in enumerate(np.linspace(0, spacing, num_steps)):
+            segments = VGroup()
+            x_cursor = axes_left
+            
+            for i in range(len(cut_points_ds) - 1):
+                start_idx = cut_points_ds[i]
+                end_idx = cut_points_ds[i + 1]
+                n_samples = end_idx - start_idx
+                
+                # Width proportional to sample count
+                seg_width = (n_samples / total_samples) * axes_width
+                
+                segment_data = data_ds[start_idx:end_idx]
+                
+                seg = VMobject()
+                seg.set_stroke(BLUE, width=3)
+                
+                local_x = np.linspace(0, seg_width, n_samples)
+                points = [[x_cursor + local_x[j], y_center + segment_data[j] * y_scale, 0] 
+                          for j in range(n_samples)]
+                seg.set_points_as_corners(points)
+                
+                segments.add(seg)
+                x_cursor += seg_width + gap_width
+
+            # total_new_width = x_cursor - axes_left - gap_width  # subtract last gap
+            # scale_factor = axes_width / total_new_width
+            # segments.scale(scale_factor, about_point=axes.c2p(0, 0))
+            # segments.move_to(axes.get_center())
+            segments.set_x(axes.get_x())
+
+            self.add(segments)
+            self.wait()
+            if count<num_steps-1:
+                self.remove(segments)
+
+        self.wait()
+
+        # Ok that's nice, now I need 12 little spectrograms. 
+        # I think it's going to make the most sense to space them evenly
+        # instead of trying to line them up with each audio chunk
+        # I can add arrows connecting wavesforms to spectograms, probably in 
+        # illustrator. Or I can warp each chunk to make them even in the 
+        # previous step -> we'l see what make sense here!
+
+        spectral_envelope_outputs_loaded = np.load(spectra_path, allow_pickle=True)
+        spectral_envelopes_loaded_dict = spectral_envelope_outputs_loaded.item()
+
+        phone_keys = ["stephen_tell_T", "stephen_tell_EL", 
+                       "stephen_me_M", "stephen_me_IY", "stephen_about_A", 
+                       "stephen_about_B", "stephen_about_AW", "stephen_about_T", 
+                       "stephen_china_SH", "stephen_china_AY", "stephen_china_N", 
+                       "stephen_china_UH"]
+
+        horizontal_spacing = 1.1
+
+        spectra_plots=Group()
+        for count, phone_key in enumerate(phone_keys):
+
+            axes_2 = Axes(
+                x_range=[0, 25000, 5000],
+                y_range=[0, 1, 0.5],
+                width=0.9,
+                height=0.6,
+                axis_config={
+                    "color": CHILL_BROWN,
+                    "stroke_width": 2.0,
+                    "include_ticks": False,
+                    "include_tip": True,
+                    "tip_config": {"width":0.01, "length":0.01}
+                },
+            )
+            axes_2.move_to([-6+horizontal_spacing*count, 1, 0])
+
+            curr_result = spectral_envelopes_loaded_dict.get(phone_key)
+            w=curr_result.get("w")
+            lpc_envelope = curr_result.get("lpc_envelope"),
+            s=np.log10(lpc_envelope / np.max(lpc_envelope))[0]
+            s=(s-s.min())/(s.max()-s.min())
+
+            spectra_1 = VMobject()
+            spectra_1.set_stroke(BLUE, width=4)
+
+            points = [axes_2.c2p(w[j], s[j]) for j in range(len(s))]
+            spectra_1.set_points_as_corners(points)
+
+            spectra_plot=Group()
+            spectra_plot.add(axes_2)
+            spectra_plot.add(spectra_1)
+            spectra_plots.add(spectra_plot)
+
+
+        # Ok specta look nice!
+        # Now do I wan to use cool arrows, or try to show the mapping with animation?
+        # Ok one at time like this looks nice, but it might be too slow 
+        # in the edit. If it does end up being too slow, 
+        # then we can change to lag ratio or all at once setup. 
+
+        self.wait()
+        segments_copy=segments.copy()
+        for i in range(len(segments)):
+            self.play(ReplacementTransform(segments_copy[i], spectra_plots[i][1]), 
+                      ShowCreation(spectra_plots[i][0]), #axis
+                      run_time=3)
+
+        self.wait()
+
+        # Ok making progress here. Now I recon that I really need the 
+        # graph right? 
+
+
+
+        self.wait(20)
+        self.embed()
+
+
+
+
+
+
 class P5a(InteractiveScene):
     def construct(self): 
 
@@ -27,24 +238,33 @@ class P5a(InteractiveScene):
         nodes=[['start', 0, 0, 0],
                ['T',     1, 4, 4],
                ['AH',    2, 6, 7],
-               ['EL',    3, 8, 4]]
+               ['EL',    3, 8, 4], 
+               ['G',     4, 4, -4], 
+               ['IH',    5, 8, -4],
+               ['end',    -1, 40, 0]
+               ]
 
         #Connections between node ids
         edges=[[0, 1], 
                   [1, 2],
                   [2, 3],
-                  [1, 3],]
+                  [1, 3],
+                  [0, 4], 
+                  [4, 5], 
+                  [5, -1],  #Rmove later
+                  [3, -1]   #Remove later
+                ]
 
-       # Create node mobjects
         node_mobjects = {}
+        buff = 0.2
         for label, idx, x, y in nodes:
-            text = Text(label, font="American Typewriter")
+            text = Text(label, font="American Typewriter", color=CHILL_BROWN)
             text.set_color(CHILL_BROWN)
-            box = SurroundingRectangle(
-                text,
+            box = RoundedRectangle(
+                width=text.get_width() + 2 * buff,
+                height=text.get_height() + 2 * buff,
+                corner_radius=0.15,
                 color=CHILL_BROWN,
-                buff=0.2,
-                # corner_radius=0.15,
             )
             node = VGroup(box, text)
             node.move_to([x*SCALE_FACTOR, y*SCALE_FACTOR, 0])
