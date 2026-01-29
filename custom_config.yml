@@ -16,7 +16,7 @@ window:
   full_screen: False
 camera:
   resolution: (3840, 2160) #(7680, 4320) #(3840, 2160) #(7680, 4320) #
-  background_color: "#000000" #191519" #"#000000" ##FFFFFF"
+  background_color: '#FFFFFF' #"#000000" #191519" #"#000000" ##FFFFFF"
   fps: 30
   background_opacity: 1.0
 file_writer:

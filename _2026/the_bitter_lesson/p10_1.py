@@ -4,7 +4,8 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 
-CHILL_BROWN='#cabba6'
+# CHILL_BROWN='#cabba6'
+CHILL_BROWN='#655d53' #Going darker
 
 class Node(VMobject):
     def __init__(
@@ -35,12 +36,13 @@ class Node(VMobject):
             radius=self.node_radius,
             stroke_color=self.node_stroke_color,
             stroke_width=self.node_stroke_width,
-            fill_color=CHILL_BROWN,
-            fill_opacity=0.2,
+            fill_color=WHITE,
+            fill_opacity=1.0,
         )
         circle.move_to(ORIGIN)
 
         text = Text(self.label, font_size=self.font_size, color=self.node_stroke_color)
+        text.set_color(BLACK)
         text.move_to(circle.get_center())
 
         self.add(circle, text)
@@ -91,6 +93,9 @@ class Arrow(VMobject):
             stroke_opacity=self.stroke_opacity,
             fill_color=self.stroke_color,
             fill_opacity=self.stroke_opacity,
+            thickness=1.5,
+            # max_tip_length_to_length_ratio=0.1,
+            # tip_width_ratio=2,
             buff=0
         )
 
@@ -215,8 +220,8 @@ class Layer(VMobject):
         self.colormap = colormap
         self.position = position
 
-        self.ellipsis_size = self.node_radius * 0.2  # Smaller ellipses
-        self.ellipsis_spacing = self.node_radius * 0.8  # Closer together
+        self.ellipsis_size = self.node_radius * 0.1  # Smaller ellipses
+        self.ellipsis_spacing = self.node_radius * 0.5  # Closer together
 
         self.nodes = VGroup()
         self.ellipsis_dots = VGroup()
@@ -235,7 +240,7 @@ class Layer(VMobject):
         else:
             self._create_truncated_layer()
             
-        self.ellipsis_dots.set_color(self.node_stroke_color)
+        self.ellipsis_dots.set_color(CHILL_BROWN)
 
         self.add(self.nodes, self.ellipsis_dots)
 
@@ -413,8 +418,6 @@ class Graph(VMobject):
             layer.move_to(RIGHT * i * self.layer_spacing)
             self.layers.add(layer)
 
-        self.add(self.layers)
-
         for i, matrix in enumerate(self.weight_matrices):
             layer_from = self.layers[i]
             layer_to = self.layers[i + 1]
@@ -438,6 +441,7 @@ class Graph(VMobject):
                     self.arrows.add(arrow)
 
         self.add(self.arrows)
+        self.add(self.layers)
         self.move_to(ORIGIN)
 
     def update_weights(self, new_matrices):
@@ -454,7 +458,7 @@ class P10(Scene):
     def construct(self):
         # 6 layers, each with 7 nodes (showing only 6)
         # Phoneme labels for each layer (same across all layers)
-        phoneme_labels = ["P", "PL", "E", "", "AH", "S", "Z"]  # Index 3 is hidden
+        phoneme_labels = ["T", "AH", "EL", "", "G", "I", "V"]  # Index 3 is hidden
 
         # Create 5 weight matrices to connect the 6 layers
         W1 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 1 -> layer 2
@@ -462,46 +466,59 @@ class P10(Scene):
         W3 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 3 -> layer 4
         W4 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 4 -> layer 5
         W5 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 5 -> layer 6
+        W6 = np.random.uniform(0.3, 1.0, (7, 7))
+        W7 = np.random.uniform(0.3, 1.0, (7, 7))
+        W8 = np.random.uniform(0.3, 1.0, (7, 7))
+
 
         graph = Graph(
-            weight_matrices=[W1, W2, W3, W4, W5],
+            weight_matrices=[W1, W2, W3, W4, W5, W6, W7, W8],
             layer_labels=phoneme_labels,
-            layer_spacing=1.5,
+            layer_spacing=1.2,
             max_display=6,
-            node_radius=0.3,
-            node_spacing=1.5,
-            node_stroke_color=CHILL_BROWN,
-            node_stroke_width=3,
-            arrow_stroke_width=0.25 
+            node_radius=0.25,
+            node_spacing=0.9,
+            node_stroke_color=BLACK,
+            node_stroke_width=3.0,
+            arrow_stroke_width=0,
         )
-
         self.add(graph)
+
+
+        self.remove(graph[1]); self.add(graph[1])
+
+        # self.frame.
+        
         self.embed()
         
 class P10v2(Scene):
     def construct(self):
-        phoneme_labels = ["P", "PL", "E", "", "AH", "S", "Z"]  # Index 3 is hidden
+        phoneme_labels = ["T", "AH", "EL", "", "G", "I", "V"]   # Index 3 is hidden
 
         W1 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 1 -> layer 2
         W2 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 2 -> layer 3
         W3 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 3 -> layer 4
         W4 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 4 -> layer 5
         W5 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 5 -> layer 6
+        W6 = np.random.uniform(0.3, 1.0, (7, 7))
+        W7 = np.random.uniform(0.3, 1.0, (7, 7))
+        W8 = np.random.uniform(0.3, 1.0, (7, 7))
+
 
         graph = Graph(
-            weight_matrices=[W1, W2, W3, W4, W5],
+            weight_matrices=[W1, W2, W3, W4, W5, W6, W7, W8],
             layer_labels=phoneme_labels,
-            layer_spacing=1.5,
+            layer_spacing=1.2,
             max_display=6,
-            node_radius=0.3,
-            node_spacing=1.5,
-            node_stroke_color=CHILL_BROWN,
-            node_stroke_width=3,
-            arrow_stroke_width=0.25
+            node_radius=0.25,
+            node_spacing=0.9,
+            node_stroke_color=BLACK,
+            node_stroke_width=3.0,
+            arrow_stroke_width=0,
         )
 
         # Zoom out to see the entire graph
-        self.camera.frame.scale(1.3)
+        # self.camera.frame.scale()
 
         first_layer = graph.layers[0]
 
@@ -550,4 +567,178 @@ class P10v2(Scene):
                 run_time=1.5
             )
 
+        self.embed()
+
+
+class P10v3(Scene):
+    def construct(self):
+        phoneme_labels = ["T", "AH", "EL", "", "G", "I", "V"]   # Index 3 is hidden
+
+        W1 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 1 -> layer 2
+        W2 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 2 -> layer 3
+        W3 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 3 -> layer 4
+        W4 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 4 -> layer 5
+        W5 = np.random.uniform(0.3, 1.0, (7, 7))  # layer 5 -> layer 6
+        W6 = np.random.uniform(0.3, 1.0, (7, 7))
+        W7 = np.random.uniform(0.3, 1.0, (7, 7))
+        W8 = np.random.uniform(0.3, 1.0, (7, 7))
+
+
+        graph = Graph(
+            weight_matrices=[W1, W2, W3, W4, W5, W6, W7, W8],
+            layer_labels=phoneme_labels,
+            layer_spacing=1.2,
+            max_display=6,
+            node_radius=0.25,
+            node_spacing=0.9,
+            node_stroke_color=BLACK,
+            node_stroke_width=3.0,
+            arrow_stroke_width=0,
+        )
+
+        # Zoom out to see the entire graph
+        self.camera.frame.scale(0.8)
+
+        first_layer = graph.layers[0]
+
+        node_anims = []
+        for node in first_layer.nodes:
+            node_anims.append(ShowCreation(node[0]))
+            node_anims.append(Write(node[1]))
+
+        ellipsis_anims = [FadeIn(dot) for dot in first_layer.ellipsis_dots]
+
+        self.wait()
+        self.play(
+            LaggedStart(*node_anims, *ellipsis_anims, lag_ratio=0.1),
+            run_time=3.0
+        )
+        self.wait(0.5)
+
+
+        # Collect all animations with their x-positions for sorting
+        all_anims_with_pos = []
+
+        # Add arrows
+        for arrow in graph.arrows:
+            # Use the midpoint or start x-position of the arrow
+            x_pos = arrow.line.get_center()[0]
+            all_anims_with_pos.append((x_pos, GrowArrow(arrow.line)))
+
+        # Add nodes from all layers except the first (assuming it's already shown)
+        for layer_idx, layer in enumerate(graph.layers[1:], start=1):
+            for node in layer.nodes:
+                x_pos = node.get_center()[0]
+                all_anims_with_pos.append((x_pos, ShowCreation(node[0])))
+                all_anims_with_pos.append((x_pos, Write(node[1])))
+            for dot in layer.ellipsis_dots:
+                x_pos = dot.get_center()[0]
+                all_anims_with_pos.append((x_pos, FadeIn(dot)))
+
+        # Sort by x-position
+        all_anims_with_pos.sort(key=lambda x: x[0])
+
+        # Extract just the animations in sorted order
+        sorted_anims = [anim for _, anim in all_anims_with_pos]
+
+        # Play everything in one smooth left-to-right sweep
+        self.wait()
+        self.play(
+            LaggedStart(*sorted_anims, lag_ratio=0.02),
+            run_time=20
+        )
+
+        # for layer_idx in range(len(graph.layers) - 1):
+        #     arrows_to_show = []
+        #     for arrow in graph.arrows:
+        #         from_layer_idx = None
+        #         to_layer_idx = None
+
+        #         for i, layer in enumerate(graph.layers):
+        #             if arrow.start_obj in layer.nodes:
+        #                 from_layer_idx = i
+        #             if arrow.end_obj in layer.nodes:
+        #                 to_layer_idx = i
+
+        #         if from_layer_idx == layer_idx and to_layer_idx == layer_idx + 1:
+        #             arrows_to_show.append(arrow)
+
+        #     next_layer = graph.layers[layer_idx + 1]
+
+        #     arrow_anims = [GrowArrow(arrow.line) for arrow in arrows_to_show]
+
+        #     next_node_anims = []
+        #     for node in next_layer.nodes:
+        #         next_node_anims.append(ShowCreation(node[0]))
+        #         next_node_anims.append(Write(node[1]))
+
+        #     next_ellipsis_anims = [FadeIn(dot) for dot in next_layer.ellipsis_dots]
+
+        #     self.play(
+        #         LaggedStart(*arrow_anims, lag_ratio=0.05),
+        #         LaggedStart(*next_node_anims, *next_ellipsis_anims, lag_ratio=0.1),
+        #         run_time=1.5
+        #     )
+
+        self.wait(20)
+        self.embed()
+
+
+class P10v4(Scene):
+    def construct(self):
+        phoneme_labels = ["T", "AH", "EL", "", "G", "I", "V"]
+        W1 = np.random.uniform(0.3, 1.0, (7, 7))
+        W2 = np.random.uniform(0.3, 1.0, (7, 7))
+        W3 = np.random.uniform(0.3, 1.0, (7, 7))
+        W4 = np.random.uniform(0.3, 1.0, (7, 7))
+        W5 = np.random.uniform(0.3, 1.0, (7, 7))
+        W6 = np.random.uniform(0.3, 1.0, (7, 7))
+        W7 = np.random.uniform(0.3, 1.0, (7, 7))
+        W8 = np.random.uniform(0.3, 1.0, (7, 7))
+        graph = Graph(
+            weight_matrices=[W1, W2, W3, W4, W5, W6, W7, W8],
+            layer_labels=phoneme_labels,
+            layer_spacing=1.2,
+            max_display=6,
+            node_radius=0.25,
+            node_spacing=0.9,
+            node_stroke_color=BLACK,
+            node_stroke_width=3.0,
+            arrow_stroke_width=0,
+        )
+        self.camera.frame.scale(0.8)
+
+        # Collect all animations with their x-positions for sorting
+        all_anims_with_pos = []
+
+        # Add ALL layers' nodes (including first layer)
+        for layer in graph.layers:
+            for node in layer.nodes:
+                x_pos = node.get_center()[0]
+                all_anims_with_pos.append((x_pos, ShowCreation(node[0])))
+                all_anims_with_pos.append((x_pos, Write(node[1])))
+            for dot in layer.ellipsis_dots:
+                x_pos = dot.get_center()[0]
+                all_anims_with_pos.append((x_pos, FadeIn(dot)))
+
+        # Add arrows
+        for arrow in graph.arrows:
+            x_pos = arrow.line.get_center()[0]
+            all_anims_with_pos.append((x_pos, GrowArrow(arrow.line)))
+
+        # Sort by x-position
+        all_anims_with_pos.sort(key=lambda x: x[0])
+
+        # Extract just the animations in sorted order
+        sorted_anims = [anim for _, anim in all_anims_with_pos]
+
+        # Play everything in one smooth left-to-right sweep
+        self.wait()
+        self.play(
+            LaggedStart(*sorted_anims, lag_ratio=0.02),
+            run_time=20
+        )
+
+
+        self.wait(20)
         self.embed()
