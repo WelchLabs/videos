@@ -16,12 +16,11 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-self_games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/alpha_go_self_play')
-human_games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/human_human_kgs-19-2015')
+self_games_dir='_2026/the_bitter_lesson/alpha_go_self_play'
+# human_games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/human_human_kgs-19-2015')
 # games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/games_with_videos')
-games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/less_wrong_reverse_engineer')
+# games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/less_wrong_reverse_engineer')
 
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/graphics/to_manim/')
 
 size = 19  # 19x19 board
 padding = 0.5
@@ -185,12 +184,12 @@ class GamesGridThree(InteractiveScene):
         # cam_start =(42, 53, 0, (-1.75, 0.64, 2.08), 5.56)
         # cam_end = (0, 0, 0, (-0.93, -0.67, 0.0), 75.13)
 
-        # 5x4 
+        # 5x5
         cam_start=(44, 49, 0, (0.49, -0.77, -1.31), 8.91)
         cam_end=(0, 0, 0, (-0.56, -0.14, 0.0), 46.47)
-        
+
         # Load game files
-        self_games_files = sorted(list(self_games_dir.glob('*.sgf')))+sorted(list(self_games_dir.glob('*.sgf')))
+        self_games_files = sorted(list(Path.cwd().glob(self_games_dir+'/*.sgf')))+sorted(list(Path.cwd().glob(self_games_dir+'/*.sgf')))
         
         # Make sure we have enough games
         num_games = N * N
@@ -296,6 +295,9 @@ class GamesGridThree(InteractiveScene):
                         del stone_objects[(cx, cy)]
             
             self.wait(0.01)
+
+        self.wait(20)
+        self.embed()
 
 
 class GamesGridTwo(InteractiveScene):
