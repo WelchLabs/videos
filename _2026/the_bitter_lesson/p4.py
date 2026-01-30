@@ -1,175 +1,134 @@
 from manimlib import *
 import json
+from collections import defaultdict
+
+CHILL_BROWN = '#948979'
+SCALE_FACTOR = 1  # Scale down the coordinates from phone_dag.json
+
 
 class Node(VGroup):
-    def __init__(self, node_data, radius=0.05, font_size=2, **kwargs):
+    """Node for phone_dag.json format: [phoneme, id, x, y]"""
+    def __init__(self, phoneme, node_id, x, y, buff=0.2, scale_factor=SCALE_FACTOR, **kwargs):
         super().__init__(**kwargs)
 
-        self.node_id = node_data["id"]
-        self.phoneme = node_data["phoneme"]
-        self.connects_from = node_data["connects_from"]
+        self.node_id = node_id
+        self.phoneme = phoneme
+        self.x = x
+        self.y = y
 
-        if self.phoneme in ["<START>", "<END>"]:
-            actual_radius = radius * 1.5
-        else:
-            actual_radius = radius
+        self.text = Text(phoneme, font="American Typewriter", color=CHILL_BROWN)
 
-        self.circle = Circle(radius=actual_radius, color=WHITE, stroke_color=WHITE)
+        self.box = RoundedRectangle(
+            width=self.text.get_width() + 2 * buff,
+            height=self.text.get_height() + 2 * buff,
+            corner_radius=0.15,
+            color=CHILL_BROWN,
+        )
 
-        self.text = Text(self.phoneme, font_size=font_size, color=WHITE)
+        self.text.move_to(self.box.get_center())
+        self.add(self.box, self.text)
 
-        self.text.move_to(self.circle.get_center())
-
-        self.add(self.circle, self.text)
+        # Position the node
+        self.move_to([x * scale_factor, y * scale_factor, 0])
 
 
 class Connection(VGroup):
-    def __init__(self, node_from, node_to, arc_amount=0, **kwargs):
+    def __init__(self, node_from, node_to, **kwargs):
         super().__init__(**kwargs)
 
         self.node_from = node_from
         self.node_to = node_to
 
-        from_radius = node_from.circle.get_width() / 2
-        to_radius = node_to.circle.get_width() / 2
-        buff = from_radius + 0.005
-
-        start = node_from.get_center()
-        end = node_to.get_center()
-        direction = end - start
-        length = np.linalg.norm(direction)
-
-        if length > 2 * buff + 0.01:
-            unit = direction / length
-            start = start + unit * buff
-            end = end - unit * buff
-
-            self.arrow = Arrow(
-                start,
-                end,
-                buff=0,
-                thickness=0.5,
-                fill_color=WHITE,
-            )
-        else:
-            self.arrow = Line(start, end, stroke_width=0.1, color=WHITE)
+        self.arrow = Arrow(
+            node_from.get_center(),
+            node_to.get_center(),
+            buff=0.5,
+            thickness=0.5,
+            fill_color=CHILL_BROWN,
+        )
+        self.arrow.set_color(CHILL_BROWN)
 
         self.add(self.arrow)
 
 
-class TestNode(Scene):
-    def construct(self):
-        node_data = {
-            "id": 0,
-            "phoneme": "T",
-            "connects_from": []
-        }
-        node = Node(node_data)
-        self.add(node)
-        self.wait()
-        
-        self.embed()
-
-
 class Network(VGroup):
-    def __init__(self, nodes_data, layer_spacing=2.5, node_spacing=1.0, **kwargs):
+    """Network for phone_dag.json format with nodes and edges"""
+    def __init__(self, data, layer_spacing=2.5, node_spacing=3.0, scale_factor=SCALE_FACTOR, **kwargs):
         super().__init__(**kwargs)
 
-        self.nodes_data = nodes_data
-        self.layer_spacing = layer_spacing
-        self.node_spacing = node_spacing
+        nodes_list = data["nodes"]  # [[phoneme, id, x, y], ...]
+        edges_list = data["edges"]  # [[from_id, to_id, bool], ...]
 
-        self.nodes = {data["id"]: Node(data) for data in nodes_data}
+        # Create nodes
+        self.nodes = {}
+        nodes_list = data["nodes"]
+        if isinstance(nodes_list[0], list):
+            # old format: [phoneme, id, x, y]
+            for phoneme, node_id, x, y in nodes_list:
+                node = Node(phoneme, node_id, x, y, scale_factor=scale_factor)
+                self.nodes[node_id] = node
+        else:
+            # new format: {"id":, "phoneme":, "x":, "y":}
+            for node in nodes_list:
+                phoneme = node["phoneme"]
+                node_id = node["id"]
+                x = node["x"]
+                y = node["y"]
+                node_obj = Node(phoneme, node_id, x, y, scale_factor=scale_factor)
+                self.nodes[node_id] = node_obj
 
-        self.layers = self._organize_into_layers()
+        # Group nodes by layer (assuming x is layer index)
+        layers_dict = defaultdict(list)
+        for node_id, node in self.nodes.items():
+            layers_dict[node.x].append(node_id)
+        self.layers = [layers_dict[i] for i in sorted(layers_dict.keys())]
 
-        self._position_nodes()
+        # Position nodes in layers
+        for layer_idx, layer in enumerate(self.layers):
+            y_pos = layer_idx * layer_spacing
+            num_nodes = len(layer)
+            for i, node_id in enumerate(layer):
+                node = self.nodes[node_id]
+                x_pos = (i - (num_nodes - 1) / 2) * node_spacing
+                node.move_to([x_pos, y_pos, 0])
 
+        # Create connections
         self.connections = []
-        self._create_connections()
+        edges_list = data["edges"]
+        if isinstance(edges_list[0], list):
+            # old format: [from_id, to_id, bool]
+            for from_id, to_id, _ in edges_list:
+                if from_id in self.nodes and to_id in self.nodes:
+                    connection = Connection(self.nodes[from_id], self.nodes[to_id])
+                    self.connections.append(connection)
+        else:
+            # new format: {"source":, "target":, ...}
+            for edge in edges_list:
+                from_id = edge["source"]
+                to_id = edge["target"]
+                if from_id in self.nodes and to_id in self.nodes:
+                    connection = Connection(self.nodes[from_id], self.nodes[to_id])
+                    self.connections.append(connection)
 
+        # Add to VGroup (arrows first, then nodes on top)
         for connection in self.connections:
             self.add(connection)
-
         for node in self.nodes.values():
             self.add(node)
 
-    def _organize_into_layers(self):
-        layers = []
-        visited = set()
 
-        current_layer = [node_id for node_id, node in self.nodes.items()
-                        if not node.connects_from]
-
-        while current_layer:
-            layers.append(current_layer)
-            visited.update(current_layer)
-
-            next_layer = []
-            for node_id, node in self.nodes.items():
-                if node_id not in visited:
-                    if all(parent_id in visited for parent_id in node.connects_from):
-                        next_layer.append(node_id)
-
-            current_layer = next_layer
-
-        return layers
-
-    def _position_nodes(self):
-        node_positions = {}
-
-        for node_id in self.layers[0]:
-            node_positions[node_id] = np.array([0.0, 0.0, 0.0])
-
-        for layer in self.layers[1:]:
-            for node_id in layer:
-                node_data = self.nodes_data[node_id]
-                rel_coords = node_data.get("relative_coordinates", {})
-
-                if rel_coords:
-                    parent_id = list(rel_coords.keys())[0]
-                    parent_id_int = int(parent_id)
-
-                    if parent_id_int in node_positions:
-                        parent_pos = node_positions[parent_id_int]
-                        rel_x = rel_coords[parent_id]["rel_x"] / 100.0
-                        rel_y = rel_coords[parent_id]["rel_y"] / 100.0
-
-                        node_positions[node_id] = parent_pos + np.array([rel_x, rel_y, 0.0])
-                    else:
-                        node_positions[node_id] = np.array([0.0, 0.0, 0.0])
-                else:
-                    node_positions[node_id] = np.array([0.0, 0.0, 0.0])
-
-        for node_id, node in self.nodes.items():
-            if node_id in node_positions:
-                node.move_to(node_positions[node_id])
-
-    def _create_connections(self):
-        for node_id, node in self.nodes.items():
-            for parent_id in node.connects_from:
-                parent_node = self.nodes[parent_id]
-                target_node = node
-
-                connection = Connection(parent_node, target_node, arc_amount=0)
-                self.connections.append(connection)
+class TestNode(Scene):
+    def construct(self):
+        node = Node("T", 0, 0, 0)
+        self.add(node)
+        self.wait()
+        self.embed()
 
 
 class TestConnection(Scene):
     def construct(self):
-        node1_data = {
-            "id": 0,
-            "phoneme": "T",
-            "connects_from": []
-        }
-        node2_data = {
-            "id": 1,
-            "phoneme": "E",
-            "connects_from": [0]
-        }
-
-        node1 = Node(node1_data).shift(LEFT * 2)
-        node2 = Node(node2_data).shift(RIGHT * 2)
+        node1 = Node("T", 0, -2, 0, scale_factor=1)
+        node2 = Node("E", 1, 2, 0, scale_factor=1)
         connection = Connection(node1, node2)
 
         self.add(node1, node2, connection)
@@ -178,10 +137,11 @@ class TestConnection(Scene):
 
 class TestNetwork(Scene):
     def construct(self):
-        with open("phone_dag_with_connections.json", "r") as f:
-            nodes_data = json.load(f)
+        with open("phone_dag.json", "r") as f:
+            data = json.load(f)
 
-        network = Network(nodes_data, layer_spacing=2.5, node_spacing=3.0)
+        network = Network(data)
+        network.center()
 
         self.add(network)
         self.wait()
@@ -210,7 +170,7 @@ class P4(Scene):
             for node_id in layer:
                 if node_id not in shown_nodes:
                     node = network.nodes[node_id]
-                    layer_mobjects.extend([node.circle, node.text])
+                    layer_mobjects.extend([node.box, node.text])
                     shown_nodes.add(node_id)
 
             for connection in network.connections:
@@ -313,7 +273,7 @@ class P4(Scene):
         
 class AnimateNetwork(Scene):
     def construct(self):
-        with open("phone_dag_with_connections.json", "r") as f:
+        with open("phone_dag_v2.json", "r") as f:
             nodes_data = json.load(f)
 
         network = Network(nodes_data, layer_spacing=2.5, node_spacing=3.0)
@@ -322,19 +282,19 @@ class AnimateNetwork(Scene):
         shown_mobjects = []
 
         for layer_idx, layer in enumerate(network.layers):
-            circles_to_show = []
+            boxes_to_show = []
             texts_to_show = []
             for node_id in layer:
                 if node_id not in shown_nodes:
                     node = network.nodes[node_id]
-                    circles_to_show.append(node.circle)
+                    boxes_to_show.append(node.box)
                     texts_to_show.append(node.text)
                     shown_nodes.add(node_id)
-                    shown_mobjects.append(node.circle)
+                    shown_mobjects.append(node.box)
                     shown_mobjects.append(node.text)
 
-            if circles_to_show:
-                self.play(*[ShowCreation(circle) for circle in circles_to_show])
+            if boxes_to_show:
+                self.play(*[ShowCreation(box) for box in boxes_to_show])
                 self.play(*[Write(text) for text in texts_to_show])
 
             arrows_to_show = []
@@ -376,5 +336,67 @@ class TestArrow(InteractiveScene):
             nodes_data = json.load(f)
 
         network = Network(nodes_data, layer_spacing=2.5, node_spacing=3.0)
-        
+
         self.add(network)
+
+
+class RenderNetworkV2(Scene):
+    def construct(self):
+        with open("phone_dag_v2.json", "r") as f:
+            data = json.load(f)
+
+        # Use raw coordinates from JSON (x = horizontal, y = vertical for branching)
+        scale = 0.01
+        nodes = {}
+        node_group = VGroup()
+
+        for node_data in data["nodes"]:
+            node_id = node_data["id"]
+            phoneme = node_data["phoneme"]
+            x = node_data["x"] * scale
+            y = node_data["y"] * scale
+
+            text = Text(phoneme, font="American Typewriter", color=CHILL_BROWN)
+            box = RoundedRectangle(
+                width=text.get_width() + 0.4,
+                height=text.get_height() + 0.4,
+                corner_radius=0.15,
+                color=CHILL_BROWN,
+            )
+            text.move_to(box.get_center())
+            node = VGroup(box, text)
+            node.move_to([x, y, 0])
+            nodes[node_id] = node
+            node_group.add(node)
+
+        # Create edges
+        edge_group = VGroup()
+        for edge_data in data["edges"]:
+            source_id = edge_data["source"]
+            target_id = edge_data["target"]
+            if source_id in nodes and target_id in nodes:
+                arrow = Arrow(
+                    nodes[source_id].get_center(),
+                    nodes[target_id].get_center(),
+                    buff=0.5,
+                    thickness=0.5,
+                    fill_color=CHILL_BROWN,
+                )
+                arrow.set_color(CHILL_BROWN)
+                edge_group.add(arrow)
+
+        network = VGroup(edge_group, node_group)
+        network.center()
+
+        # Fit camera to network
+        padding = 1.0
+        aspect = self.camera.frame.get_width() / self.camera.frame.get_height()
+        w = network.get_width() + padding
+        h = network.get_height() + padding
+        needed_width = max(w, h * aspect)
+
+        self.camera.frame.set_width(needed_width)
+        self.camera.frame.move_to(network.get_center())
+
+        self.add(network)
+        self.wait()
