@@ -3,6 +3,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 import copy
+from tqdm import tqdm
 
 CHILL_BROWN = '#948979'
 
@@ -132,6 +133,94 @@ def get_rect_edge_point(rect, direction):
     
     return center + t * direction
 
+def purge_priority_neighbors(all_nodes_list, neighbor_buffer=1.0):
+    """
+    Remove non-priority nodes that are within neighbor_buffer distance 
+    of any priority node (id > 10000).
+    
+    Args:
+        all_nodes_list: List of [name, id, x, y] nodes
+        neighbor_buffer: Distance threshold for removal
+    
+    Returns:
+        Filtered list with nearby non-priority nodes removed
+    """
+    # Separate priority and non-priority nodes
+    priority_nodes = [n for n in all_nodes_list if n[1] > 100000]
+    other_nodes = [n for n in all_nodes_list if n[1] <= 100000]
+    
+    def distance(n1, n2):
+        return ((n1[2] - n2[2])**2 + (n1[3] - n2[3])**2)**0.5
+    
+    # Filter out non-priority nodes that are too close to any priority node
+    kept_nodes = []
+    for node in other_nodes:
+        too_close = False
+        for p_node in priority_nodes:
+            if distance(node, p_node) < neighbor_buffer:
+                too_close = True
+                break
+        if not too_close:
+            kept_nodes.append(node)
+    
+    return priority_nodes + kept_nodes
+
+def nudge_neighbors(all_nodes_list, num_graph_walks=2, neighbor_buffer=1.0, nudge_step_size=0.1):
+    """
+    Iteratively nudge non-priority nodes away from their nearest neighbor if too close.
+    Priority nodes (id > 10000) remain fixed.
+    
+    Args:
+        all_nodes_list: List of [name, id, x, y] nodes
+        num_graph_walks: Number of iterations through the graph
+        neighbor_buffer: Distance threshold that triggers nudging
+        nudge_step_size: How far to nudge each step
+    
+    Returns:
+        Modified list with adjusted node positions
+    """
+    nodes = [n.copy() for n in all_nodes_list]
+    
+    def distance(n1, n2):
+        return ((n1[2] - n2[2])**2 + (n1[3] - n2[3])**2)**0.5
+    
+    def find_nearest_neighbor(node, all_nodes):
+        nearest = None
+        min_dist = float('inf')
+        for other in all_nodes:
+            if other[1] == node[1]:
+                continue
+            d = distance(node, other)
+            if d < min_dist:
+                min_dist = d
+                nearest = other
+        return nearest, min_dist
+    
+    for walk in range(num_graph_walks):
+        for node in tqdm(nodes):
+            # Skip priority nodes - they stay fixed
+            if node[1] > 100000:
+                continue
+                
+            nearest, dist = find_nearest_neighbor(node, nodes)
+            
+            if nearest is not None and dist < neighbor_buffer:
+                dx = node[2] - nearest[2]
+                dy = node[3] - nearest[3]
+                
+                if dist > 0:
+                    dx = (dx / dist) * nudge_step_size
+                    dy = (dy / dist) * nudge_step_size
+                else:
+                    dx = nudge_step_size
+                    dy = 0
+                
+                node[2] += dx
+                node[3] += dy
+    
+    return nodes
+
+
 class RenderNetworkV2(Scene):
     def construct(self):
         with open(json_dir/"phone_dag_v2.json", "r") as f:
@@ -153,6 +242,16 @@ class RenderNetworkV2(Scene):
             x = node_data["x"] * JSON_SCALE_FACTOR_X
             y = node_data["y"] * JSON_SCALE_FACTOR_Y
             all_nodes_list.append([label, idx, x, y])
+
+        #Ok so I probably want to crank up the buffer, but will come back to this
+        print(len(all_nodes_list))
+        all_nodes_list=purge_priority_neighbors(all_nodes_list, neighbor_buffer=1.5)
+        print(len(all_nodes_list))
+
+        #Ok now I need some kind nudge method, that doesn't nudge priority nodes
+
+        all_nodes_list=nudge_neighbors(all_nodes_list, num_graph_walks=4, neighbor_buffer=2.0, nudge_step_size=0.5)
+        print(len(all_nodes_list))
 
         self.wait()
 
