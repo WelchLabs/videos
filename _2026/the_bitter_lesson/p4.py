@@ -244,8 +244,6 @@ class P4a(Scene):
 
         nodes_to_render=-1
 
-
-
         #Maybe a little preprocessing here?
         all_nodes_list=copy.deepcopy(small_graph_nodes[:-1]) #Leave off ending node for now
         for n in all_nodes_list:
@@ -271,7 +269,7 @@ class P4a(Scene):
         all_nodes_list=nudge_neighbors(all_nodes_list, num_graph_walks=4, neighbor_buffer=2.0, nudge_step_size=0.5)
         print(len(all_nodes_list))
 
-        self.wait()
+        # self.wait()
 
         node_mobjects = {}
         buff = 0.2
@@ -337,14 +335,6 @@ class P4a(Scene):
         graph = VGroup(arrows, all_nodes)
 
 
-        self.add(arrows)
-        self.wait()
-
-
-        self.add(all_nodes)
-        self.wait()
-
-
         node_objects_non_priority=[node_mobjects[i] for i in node_mobjects.keys() if i<100000]
         arrows_non_priority={}
         for k, v in arrow_dict.items():
@@ -355,21 +345,28 @@ class P4a(Scene):
         non_priority_arrows_group=VGroup(*arrows_non_priority.values())
 
 
-        self.wait()
+        # self.wait()
 
         #Option 1 -> wide angle side view.
-        self.frame.reorient(54.702143403436715, 52.815862596421724, 0.0, (-38.418354, -57.3952, -45.180237), 291.11)
+        # self.frame.reorient(54.702143403436715, 52.815862596421724, 0.0, (-38.418354, -57.3952, -45.180237), 291.11)
+        # self.frame.reorient(37.72561614030112, 61.77569642974304, 0.0, (36.621754, 7.254342, -5.611898), 69.38)
+        self.frame.reorient(46.21387977186886, 61.775696429743014, -3.1805546814635168e-15, (35.291615, 6.35425, -4.9829783), 69.38)    
+        self.add(arrows)
+        self.add(all_nodes)
+
+
         self.wait()
         self.play(self.frame.animate.reorient(0, 0, 0, (-0.11, 0.17, 0.0), 14.76), 
-                 run_time=25)     
+                 run_time=30)     
 
         # self.frame.reorient(0, 0, 0, (-0.11, 0.17, 0.0), 14.76)
 
-
         self.wait()
-        self.play(FadeOut(non_priority_nodes_group),
-                  FadeOut(non_priority_arrows_group), 
-                  run_time=5)
+        self.remove(non_priority_arrows_group)
+        self.play(
+                  # FadeOut(non_priority_arrows_group),
+                  FadeOut(non_priority_nodes_group), 
+                  run_time=7)
         self.wait()
         # self.remove(non_priority_nodes_group)
         # self.remove(non_priority_arrows_group)

@@ -1174,7 +1174,7 @@ class P29_36(InteractiveScene):
 
 
 
-class P37_42(InteractiveScene):
+class P37_42b(InteractiveScene):s
     def construct(self): 
         '''
         Ok leaning towards doing a bit more in manim than I first thought, 
@@ -1398,7 +1398,7 @@ class P37_42(InteractiveScene):
 
         self_games_files=sorted(list(self_games_dir.glob('*.sgf')))
 
-        num_games_to_play=12 ## CRANK UP IN FINAL RENDER
+        num_games_to_play=30 ## CRANK UP IN FINAL RENDER
         for game_index in range(num_games_to_play):
         # game_index=0
 
