@@ -172,7 +172,7 @@ def get_rect_edge_point(rect, direction):
 
 class P5(InteractiveScene):
     def construct(self): 
-        fast=True #False for final render
+        fast=False #False for final render
 
         node_mobjects = {}
         buff = 0.2
@@ -433,6 +433,7 @@ class P5(InteractiveScene):
         
         waveform = VMobject()
         waveform.set_stroke(BLUE, width=3)
+        self.add(waveform)
 
         self.wait()
         N = 20
