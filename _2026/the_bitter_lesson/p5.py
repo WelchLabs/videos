@@ -169,7 +169,6 @@ def get_rect_edge_point(rect, direction):
 
 
 
-
 class P5(InteractiveScene):
     def construct(self): 
         fast=False #False for final render
