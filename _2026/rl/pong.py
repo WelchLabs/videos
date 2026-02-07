@@ -40,6 +40,7 @@ grad_buffer = {k: np.zeros_like(v) for k, v in model.items()}
 
 
 def sigmoid(x):
+    x = np.clip(x, -30, 30)
     return 1.0 / (1.0 + np.exp(-x))
 
 
