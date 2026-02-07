@@ -122,18 +122,15 @@ try:
         if done:
             episode_number += 1
 
-            epx = np.vstack(xs)
-            eph = np.vstack(hs)
-            epdlogp = np.vstack(dlogps)
-            epr = np.vstack(drs)
+            epx = np.asarray(xs, dtype=np.float32)
+            eph = np.asarray(hs, dtype=np.float32)
+            epdlogp = np.asarray(dlogps, dtype=np.float32).reshape(-1)
+            epr = np.asarray(drs, dtype=np.float32).reshape(-1)
 
             xs, hs, dlogps, drs = [], [], [], []
 
             discounted_epr = discount_rewards(epr)
-            discounted_epr -= np.mean(discounted_epr)
-            std = np.std(discounted_epr)
-            if std > 0:
-                discounted_epr /= std
+            discounted_epr = (discounted_epr - discounted_epr.mean()) / (discounted_epr.std() + 1e-8)
 
             epdlogp *= discounted_epr
             grad = policy_backward(eph, epdlogp, epx)
