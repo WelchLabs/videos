@@ -1,7 +1,8 @@
 directories:
   mirror_module_path: False
   removed_mirror_prefix: "/Users/stephen/Stephencwelch Dropbox/Stephen Welch"
-  base: "/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/manim"
+  # base: "/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/manim"
+  base: "/home/stephen"
   # base: "/Users/stephen/Stephencwelch Dropbox/welch_labs/double_descent/manim"
   subdirs:
     raster_images: "images/raster"
