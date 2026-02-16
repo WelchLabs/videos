@@ -1,0 +1,59 @@
+# Copyright (c) Sebastian Raschka under Apache License 2.0 (see LICENSE.txt)
+# Source for "Build a Reasoning Model (From Scratch)": https://mng.bz/lZ5B
+# Code repository: https://github.com/rasbt/reasoning-from-scratch
+
+name: Code Style Checks
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**/*.py'
+      - '**/*.ipynb'
+      - '**/*.yaml'
+      - '**/*.yml'
+      - '**/*.sh'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**/*.py'
+      - '**/*.ipynb'
+      - '**/*.yaml'
+      - '**/*.yml'
+      - '**/*.sh'
+
+jobs:
+  flake8:
+    runs-on: ubuntu-latest
+    env:
+      SKIP_EXPENSIVE: "1"
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    - name: Install ruff (a faster flake 8 equivalent)
+      run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync --dev --python=3.13
+          uv add ruff
+
+    - name: Run ruff with exceptions
+      run: |
+        source .venv/bin/activate
+        ruff check .
+
+    - name: Run quote style check
+      run: |
+        source .venv/bin/activate
+        uv run .github/scripts/check_double_quotes.py
+
+    - name: Run line length check on main chapter notebooks
+      run: |
+        source .venv/bin/activate
+        uv run .github/scripts/check_notebook_line_length.py \
+          ch02/01_main-chapter-code/ch02_main.ipynb \
+          ch03/01_main-chapter-code/ch03_main.ipynb \
+          chC/01_main-chapter-code/chC_main.ipynb \
+          chF/01_main-chapter-code/chF_main.ipynb

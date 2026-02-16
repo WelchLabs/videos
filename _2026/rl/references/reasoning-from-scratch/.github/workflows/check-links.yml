@@ -1,0 +1,49 @@
+# Copyright (c) Sebastian Raschka under Apache License 2.0 (see LICENSE.txt)
+# Source for "Build a Reasoning Model (From Scratch)": https://mng.bz/lZ5B
+# Code repository: https://github.com/rasbt/reasoning-from-scratch
+
+name: Check Hyperlinks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SKIP_EXPENSIVE: "1"
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        uv add pytest-check-links
+    - name: Check links
+      env:
+        CHECK_LINKS_TIMEOUT: "10"  # per‑request timeout
+        CHECK_LINKS_RETRIES: "1"   # number of attempts after the initial failure
+        CHECK_LINKS_RETRY_AFTER_MAX: "10"  # how long to wait before retrying
+      run: |
+        source .venv/bin/activate
+        PYTHONPATH=.github/scripts pytest -p check_links_plugin --check-links ./ \
+          --check-links-ignore "https://platform.openai.com/*" \
+          --check-links-ignore "https://openai.com/*" \
+          --check-links-ignore "https://arena.lmsys.org" \
+          --check-links-ignore "https://unsloth.ai/blog/gradient" \
+          --check-links-ignore "https://www.reddit.com/r/*" \
+          --check-links-ignore "https://code.visualstudio.com/*" \
+          --check-links-ignore "https://arxiv.org/*" \
+          --check-links-ignore "https://ai.stanford.edu/~amaas/data/sentiment/" \
+          --check-links-ignore "https://x.com/*" \
+          --check-links-ignore "https://scholar.google.com/*" \
+          --check-links-ignore "https://en.wikipedia.org/*" \
+          --check-links-ignore "https?://localhost(:\\d+)?/.*" \
+          --check-links-ignore "https?://127[.]0[.]0[.]1(:\\d+)?/.*" \
+          --check-links-ignore "https://mng\\.bz/.*"

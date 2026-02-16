@@ -1,0 +1,7 @@
+@misc{Kazemnejad2025:NanoAhaMoment,
+  author       = {Amirhossein Kazemnejad and Milad Aghajohari and Alessandro Sordoni and Aaron Courville and Siva Reddy},
+  title        = {Nano Aha! Moment: Single File "RL for LLM" Library},
+  year         = {2025},
+  howpublished = {\url{https://github.com/McGill-NLP/nano-aha-moment}},
+  note         = {GitHub repository}
+}

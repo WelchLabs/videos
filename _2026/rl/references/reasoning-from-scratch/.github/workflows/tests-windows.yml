@@ -1,0 +1,59 @@
+# Copyright (c) Sebastian Raschka under Apache License 2.0 (see LICENSE.txt)
+# Source for "Build a Reasoning Model (From Scratch)": https://mng.bz/lZ5B
+# Code repository: https://github.com/rasbt/reasoning-from-scratch
+
+name: Code tests Windows
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**/*.py'
+      - '**/*.ipynb'
+      - '**/*.yaml'
+      - '**/*.yml'
+      - '**/*.sh'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**/*.py'
+      - '**/*.ipynb'
+      - '**/*.yaml'
+      - '**/*.yml'
+      - '**/*.sh'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  uv-tests:
+    name: Code tests Windows
+    runs-on: windows-latest
+    env:
+      SKIP_EXPENSIVE: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv and dependencies
+        shell: bash
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync --group dev
+
+      - name: Run tests
+        shell: bash
+        env:
+          OMP_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          CUBLAS_WORKSPACE_CONFIG: ":16:8"
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          uv run pytest tests

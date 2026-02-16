@@ -1,0 +1,71 @@
+# Copyright (c) Sebastian Raschka under Apache License 2.0 (see LICENSE.txt)
+# Source for "Build a Reasoning Model (From Scratch)": https://mng.bz/lZ5B
+# Code repository: https://github.com/rasbt/reasoning-from-scratch
+
+[tool.setuptools.dynamic]
+version = { attr = "reasoning_from_scratch.__version__" }
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reasoning_from_scratch"
+dynamic = ["version"]
+description = "Reasoning Models From Scratch"
+readme = "README.md"
+
+authors = [
+  { name = "Sebastian Raschka" }
+]
+
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+
+dependencies = [
+    "jupyterlab>=4.4.7",
+    "torch>=2.7.1",
+    "tokenizers>=0.21.2",
+    "nbformat>=5.10.4",
+    "sympy>=1.14.0", # For verifier in ch03
+    "matplotlib>=3.10.7",
+]
+
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent"
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "ruff>=0.4.4",
+    "pytest-ruff>=0.5",
+    "transformers>=4.53.0",
+    "twine>=6.1.0",
+    "build>=1.2.2.post1",
+]
+
+[project.optional-dependencies]
+extra = [
+    "datasets>=4.1.1",  # Appendix F, MMLU
+    "chainlit>=2.8.3",  # Appendix G, Chat UI
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["reasoning_from_scratch"]
+
+[tool.uv.sources]
+reasoning = { workspace = true }
+reasoning-from-scratch = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+    ".",
+]
