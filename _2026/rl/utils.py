@@ -187,7 +187,7 @@ def compute_token_log_probs(
 
     logits = outputs.logits / temperature  # Shape: [batch_size, seq_len, vocab_size]
     shift_logits = logits[..., :-1, :]  # Shape: [batch_size, seq_len-1, vocab_size]
-    shift_labels = inputs["labels"][..., 1:]  # Shape: [batch_size, seq_len-1]
+    shift_labels = inputs["labels"][..., 1:].clone()  # Shape: [batch_size, seq_len-1]
     shift_labels_mask = inputs["labels_mask"][..., 1:]  # Shape: [batch_size, seq_len-1]
 
     # Create mask for valid labels
