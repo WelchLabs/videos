@@ -8,7 +8,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.distributed as dist
-import wandb
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
+    wandb = None
 from datasets import Dataset
 from deepspeed import DeepSpeedEngine
 from transformers import AutoTokenizer, PreTrainedModel
@@ -252,7 +257,8 @@ def evaluate_on_test_set(
         >>> print(f"Average reward: {episodes_stats['rewards']:.3f}")
     """
     generations = inference_engine.generate(
-        prompt_token_ids=test_dataset["input_ids"], sampling_params=eval_sampling_params
+        prompts=[{"prompt_token_ids": ids} for ids in test_dataset["input_ids"]],
+        sampling_params=eval_sampling_params,
     )
 
     metrics = {
@@ -297,7 +303,7 @@ def dump_episodes(
     iteration: int,
     is_eval: bool = False,
     do_save: bool = True,
-) -> wandb.Table:
+) -> Union["wandb.Table", None]:
     query_token_ids = episodes["all_query_token_ids"]
     response_token_ids = episodes["all_response_token_ids"]
     rewards = episodes_stats["rewards"]
@@ -334,10 +340,12 @@ def dump_episodes(
         episodes_dir = episodes_dir / f"rank_{rank:02d}"
     episodes_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create wandb table
-    table = wandb.Table(columns=["query", "response", "reward", "response_length"])
-    for i in range(len(query_texts)):
-        table.add_data(query_texts[i], response_texts[i], rewards[i], response_lengths[i])
+    # Create wandb table if available
+    table = None
+    if WANDB_AVAILABLE and wandb is not None:
+        table = wandb.Table(columns=["query", "response", "reward", "response_length"])
+        for i in range(len(query_texts)):
+            table.add_data(query_texts[i], response_texts[i], rewards[i], response_lengths[i])
 
     if not do_save:
         return table
@@ -387,7 +395,24 @@ def load_model_into_vllm(model: Union[DeepSpeedEngine, PreTrainedModel], llm: LL
         None
     """
     state_dict = model.module.state_dict() if isinstance(model, DeepSpeedEngine) else model.state_dict()
-    llm.llm_engine.model_executor.driver_worker.model_runner.model.load_weights(state_dict.items())
+
+    # Save weights to tmpfs (/dev/shm) to avoid serializing the full state_dict
+    # through vLLM's inter-process communication pipe. The worker process loads
+    # directly from this shared-memory path instead.
+    # NOTE: VLLM_ALLOW_INSECURE_SERIALIZATION=1 must be set BEFORE the LLM
+    # engine is created so the engine core subprocess inherits it.
+    weight_path = "/dev/shm/_vllm_temp_weights.pt"
+    torch.save(state_dict, weight_path)
+    del state_dict
+
+    def _load_weights_from_path(vllm_model):
+        import torch as _torch
+        weights = _torch.load(weight_path, map_location="cuda", weights_only=True)
+        vllm_model.load_weights(weights.items())
+        del weights
+
+    llm.apply_model(_load_weights_from_path)
+    os.remove(weight_path)
 
 
 def initialize_training_process_group(rank: int, world_size: int):
