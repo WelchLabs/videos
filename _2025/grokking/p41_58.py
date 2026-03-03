@@ -18,8 +18,8 @@ CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
 resolution=113
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/graphics/to_manim')
-data_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
+svg_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/graphics/to_manim')
+data_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
 
 def viridis_hex(value, vmin, vmax):
     """

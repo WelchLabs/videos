@@ -182,8 +182,8 @@ def draw_logits(self, activations, all_svgs, reset=False, example_index=0, wait=
 
 
 
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/graphics/to_manim')
-data_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764602090')
+svg_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/graphics/to_manim')
+data_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764602090')
 
 
 class P25_26(InteractiveScene):

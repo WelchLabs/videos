@@ -18,8 +18,8 @@ CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
 resolution=113
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/graphics/to_manim')
-data_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
+svg_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/graphics/to_manim')
+data_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
 
 def viridis_hex(value, vmin, vmax):
     """
@@ -249,7 +249,7 @@ class P59_mlp_surface_1b(InteractiveScene):
         p=113
         neuron_idx=341
 
-        ckpt_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
+        ckpt_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
         mlp_pre=np.load(data_dir/('training_mlp_pre'+str(neuron_idx)+'.npy'))
 
         axes_1 = ThreeDAxes(
@@ -322,7 +322,7 @@ class P59_mlp_surface_2b(InteractiveScene):
         p=113
         neuron_idx=106
 
-        ckpt_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
+        ckpt_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
         mlp_pre=np.load(data_dir/('training_mlp_pre'+str(neuron_idx)+'.npy'))
 
         axes_1 = ThreeDAxes(
@@ -395,7 +395,7 @@ class P59_mlp_surface_3b(InteractiveScene):
         p=113
         neuron_idx=1
 
-        ckpt_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
+        ckpt_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
         mlp_pre=np.load(data_dir/('training_mlp_out'+str(neuron_idx).zfill(3)+'.npy'))
 
         axes_1 = ThreeDAxes(
@@ -468,7 +468,7 @@ class P59_mlp_surface_4b(InteractiveScene):
         p=113
         neuron_idx=7
 
-        ckpt_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
+        ckpt_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
         mlp_pre=np.load(data_dir/('logits'+str(neuron_idx).zfill(3)+'.npy'))
 
         axes_1 = ThreeDAxes(
@@ -540,7 +540,7 @@ class P59_mlp_surface_4b(InteractiveScene):
 class P59_probe_1(InteractiveScene):
     def construct(self): 
 
-        ckpt_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
+        ckpt_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
 
         p=113
 
@@ -623,7 +623,7 @@ class P59_probe_1(InteractiveScene):
 class P59_probe_2(InteractiveScene):
     def construct(self): 
 
-        ckpt_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
+        ckpt_dir=Path('/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
 
         p=113
 
