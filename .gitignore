@@ -3,6 +3,7 @@
 
 #SW adding these for rl stuff
 *.json
+*.p
 qwen3*
 
 ### Python ###
