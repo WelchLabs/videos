@@ -1,5 +1,5 @@
 
-This project contains the code used to generate the explanatory math videos found on [Welch Labs](https://www.youtube.com/@WelchLabs/).
+This project contains the code used to generate the explanatory math and science videos found on [Welch Labs](https://www.youtube.com/@WelchLabs/).
 
 This almost entirely consists of scenes generated using the library [Manim](https://github.com/3b1b/manim).  See also the community maintained version at [ManimCommunity](https://github.com/ManimCommunity/manim/).
 
