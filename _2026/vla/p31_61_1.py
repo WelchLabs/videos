@@ -184,11 +184,42 @@ class P31_61_1(InteractiveScene):
                  run_time=3)
         self.wait()
 
+
+        #Zoom back out. 
         self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
                   run_time=3)
         self.wait()
         self.remove(action_expert_sublabel)
         self.wait()
+
+
+        # P35
+        # Ok, a few kinda messy/complicated things going on here as 
+        # We get into P35. 
+        # Ok so I do want to move smoothly from current scene into new one 
+        # here. Let me just start by hacking on moving pieces over that I 
+        # know need to move!
+
+
+
+        pi0_logo.set_color(CHILL_BROWN)
+        pi0_logo.scale(0.85)
+        pi0_logo.to_corner(DOWN + RIGHT, buff=0.25)
+
+        self.remove(pi0_box_3) #Do a fade out 
+        self.remove(all_svgs[3])
+        self.remove(all_svgs[1])
+        self.remove(final_time_series)
+        self.remove(action_expert_label)
+        self.remove(action_expert_box)
+        all_svgs[4].set_color(CHILL_BROWN) #LLM baux
+        all_svgs[4].move_to([2, 0.4, 0])
+
+        siglip_1=all_svgs[2][:13]
+        siglip_2=all_svgs[2][13:26]
+        siglip_3=all_svgs[2][26:39]
+        image_encoders_label=all_svgs[2][39:]
+
 
 
 
