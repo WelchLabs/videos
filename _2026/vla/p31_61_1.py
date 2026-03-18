@@ -25,7 +25,7 @@ class P31_61_1(InteractiveScene):
         and see where we end up. 
         '''
 
-        svgs_to_skip=[0, 2]
+        svgs_to_skip=[0, 2, 3]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
         all_svgs=Group()
         for i, svg_file in enumerate(svg_files): 
@@ -35,8 +35,13 @@ class P31_61_1(InteractiveScene):
             all_svgs.add(svg_image[1:]) #Thowout background
 
         
-
-        #P31
+        # P31
+        # I'll have to some hacking in premiere to make the
+        # video actually play
+        # Although it wouldn'b be that bad to make this play in manim
+        # Now that I have things setup - probably do this in a separte
+        # scene to avoid slowing down the big scene - could be a quick 
+        # pranav hack later. 
         final_time_series=ImageMobject(str(hacking_dir/'p31/000/pred_tall/299.png'))
         final_time_series.scale(0.7)
         final_time_series.move_to([2.3, -2.1, 0])
@@ -64,7 +69,7 @@ class P31_61_1(InteractiveScene):
         pi0_box = RoundedRectangle(
             width=1.85,
             height=1.55,
-            corner_radius=0.2,
+            corner_radius=0.1,
             stroke_color=FRESH_TAN,
             stroke_width=2,
             fill_opacity=0,
@@ -79,12 +84,71 @@ class P31_61_1(InteractiveScene):
 
         self.add(final_time_series, legend, final_image_overhead, final_image_left, final_image_right)
         self.add(prompt, pi0_box, pi0_logo)
-
         self.add(all_svgs[0])
+        self.wait()
+
+        # P31b 
+        # Move things around to start drilling into Pi0!
+        pi0_box_2 = RoundedRectangle(
+            width=5.1,
+            height=4.0,
+            corner_radius=0.1,
+            stroke_color=CHILL_BROWN,
+            stroke_width=1,
+            fill_opacity=0,
+        )
+        pi0_box_2.move_to([-0.25, 0.7, 0])   
+        self.wait()
+
+        self.remove(all_svgs[0], legend)
+        self.play(ReplacementTransform(pi0_box, pi0_box_2), 
+                  prompt.animate.scale(0.9).move_to([-5.5, -3.34, 0]),
+                  final_image_overhead.animate.scale(0.66).move_to([-5.23, 2.58, 0]),
+                  final_image_left.animate.scale(0.66).move_to([-5.23, 0.35, 0]),
+                  final_image_right.animate.scale(0.66).move_to([-5.23, -1.82, 0]),
+                  final_time_series.animate.scale(0.6).move_to([4.7, 0.78, 0]),
+                  pi0_logo.animate.scale(0.70).move_to([2, -1.1, 0]),
+                  run_time=6)
+
+
+        # self.add(all_svgs[1])
+        # prompt.scale(0.9).move_to([-5.5, -3.34, 0])
+        # final_image_overhead.scale(0.66)
+        # final_image_overhead.move_to([-5.23, 2.58, 0])
+        # final_image_left.scale(0.66)
+        # final_image_left.move_to([-5.23, 0.35, 0])
+        # final_image_right.scale(0.66)
+        # final_image_right.move_to([-5.23, -1.82, 0])
+        # final_time_series.scale(0.6)
+        # final_time_series.move_to([4.7, 0.78, 0])
+
+        #Pi0 is built on top of PaliGemma
+        self.wait()
+        self.play(Write((all_svgs[3])), 
+                  self.frame.animate.reorient(0, 0, 0, (-0.24, 0.62, 0.0), 5.09), 
+                  run_time=4)
+        self.wait()
+
+        self.play(Write((all_svgs[2])), run_time=4)
+        self.play(Write((all_svgs[4])), run_time=4)
+        self.wait()
+
+        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
+                  Write(all_svgs[1]), 
+                  run_time=5)
+        self.wait()
+
+
+
+
+
 
 
 
         self.wait()
+
+
+
 
 
         self.wait(20)
