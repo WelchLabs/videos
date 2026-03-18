@@ -171,23 +171,25 @@ class P31_61_1(InteractiveScene):
         self.wait()
         self.play(ReplacementTransform(pi0_box_2, pi0_box_3), 
                   pi0_logo.animate.move_to([2, -2.8, 0]), 
+                  final_time_series.animate.move_to([4.7, -1.7, 0]),
+                  all_svgs[1][-2:].animate.move_to([2.5, -1.8, 0]), #lil Arrow
                   run_time=4)
         self.play(ShowCreation(action_expert_box), 
                   Write(action_expert_label), 
                   run_time=3)
 
         self.wait()
+        self.play(Write(action_expert_sublabel), 
+                 self.frame.animate.reorient(0, 0, 0, (0.45, -1.81, 0.0), 4.13), 
+                 run_time=3)
+        self.wait()
 
+        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
+                  run_time=3)
+        self.wait()
+        self.remove(action_expert_sublabel)
+        self.wait()
 
-
-
-
-
-       
-
-        
-
-        # self.add(pi0_box_3, action_expert_box, action_expert_label, action_expert_sublabel)  
 
 
 
