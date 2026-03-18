@@ -136,8 +136,58 @@ class P31_61_1(InteractiveScene):
         self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
                   Write(all_svgs[1]), 
                   run_time=5)
+        
+
+
+        #P32 
+
+        action_expert_box = RoundedRectangle(
+            width=3.2,
+            height=1.5,
+            corner_radius=0.1,
+            stroke_color=YELLOW,
+            stroke_width=2,
+            fill_opacity=0,
+        )
+        action_expert_box.move_to([0.33, -1.8, 0])
+        pi0_box_3 = RoundedRectangle(
+            width=5.1,
+            height=5.7,
+            corner_radius=0.1,
+            stroke_color=CHILL_BROWN,
+            stroke_width=1,
+            fill_opacity=0,
+        )
+        pi0_box_3.move_to([-0.25, -0.15, 0]) 
+
+        action_expert_label=Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=24)
+        action_expert_label.set_color(YELLOW)
+        action_expert_label.move_to(action_expert_box)
+
+        action_expert_sublabel=Text('gemma_expert = GemmaForCausalLM()', font="consolas", font_size=16)
+        action_expert_sublabel.next_to(action_expert_label, DOWN, buff=0.13)
+
+
+        self.wait()
+        self.play(ReplacementTransform(pi0_box_2, pi0_box_3), 
+                  pi0_logo.animate.move_to([2, -2.8, 0]), 
+                  run_time=4)
+        self.play(ShowCreation(action_expert_box), 
+                  Write(action_expert_label), 
+                  run_time=3)
+
         self.wait()
 
+
+
+
+
+
+       
+
+        
+
+        # self.add(pi0_box_3, action_expert_box, action_expert_label, action_expert_sublabel)  
 
 
 
