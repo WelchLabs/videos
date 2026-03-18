@@ -200,6 +200,15 @@ class P31_61_1(InteractiveScene):
         # here. Let me just start by hacking on moving pieces over that I 
         # know need to move!
 
+        # Ok ok ok ok how are we going to break apart these images
+        # Ok Pranav's approach looks pretty solid -
+        # Image patches to disk - I like that
+        # Kinda weird to do it in manim I feel like
+        # Let me export patches in jupyter - 
+        # I think we go ahead and do it for all timesteps
+        # Then I can replace the image with the patchified version
+        
+
 
 
         pi0_logo.set_color(CHILL_BROWN)
