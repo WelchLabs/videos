@@ -184,14 +184,8 @@ class P31_61_1(InteractiveScene):
                  run_time=3)
         self.wait()
 
-
-        #Zoom back out. 
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
-                  run_time=3)
-        self.wait()
-        self.remove(action_expert_sublabel)
-        self.wait()
-
+        # Hmm this might actually be a good time to go ahead and do the image patch switcheroo
+        # before zooming back out!
 
         # P35
         # Ok, a few kinda messy/complicated things going on here as 
@@ -207,27 +201,142 @@ class P31_61_1(InteractiveScene):
         # Let me export patches in jupyter - 
         # I think we go ahead and do it for all timesteps
         # Then I can replace the image with the patchified version
-        
+
+
+        #The old switcheroo with image patches?
+        height, width = 224, 244
+        grid_n = 16
+        patch_h = height // grid_n
+        patch_w = width // grid_n
+        total_height = 2.72
+        patch_size = total_height / grid_n
+
+        FRAME_IDX=150
+        pixel_squares = Group()
+
+        for image_name in ['base_0_rgb', 'left_wrist_0_rgb', 'right_wrist_0_rgb']:
+            pixel_squares.add(Group())
+            patch_dir = hacking_dir/('p35/'+str(FRAME_IDX)+'/'+image_name)
+            for i in range(2, 14): #Skip top 2 and botton 2 rows
+                for j in range(grid_n):
+                    patch_path = os.path.join(patch_dir, f'patch_{i}_{j}.png')
+                    patch_mob = ImageMobject(patch_path)
+                    patch_mob.set_height(patch_size)
+                    patch_mob.set_width(patch_size, stretch=True)
+                    x_pos = (j - grid_n/2 + 0.5) * patch_size
+                    y_pos = -(i - grid_n/2 + 0.5) * patch_size
+                    patch_mob.move_to([x_pos, y_pos, 0])
+                    pixel_squares[-1].add(patch_mob)
+
+        pixel_squares[0].move_to([-5.23,  2.58,  0.])
+        pixel_squares[1].move_to([-5.23,  0.375,  0.])
+        pixel_squares[2].move_to([-5.23,  -1.82,  0.])
+
+        self.add(pixel_squares)
+        self.remove(final_image_overhead, final_image_left, final_image_right)
+        self.remove(all_svgs[1]); self.add(all_svgs[1]) #Occlusions bra
+
+        self.wait()
 
 
 
-        pi0_logo.set_color(CHILL_BROWN)
-        pi0_logo.scale(0.85)
-        pi0_logo.to_corner(DOWN + RIGHT, buff=0.25)
+        #Zoom back out to setup p35, image patches already in place!
+        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
+                  run_time=3)
+        self.wait()
+        self.remove(action_expert_sublabel)
+        self.wait()
 
-        self.remove(pi0_box_3) #Do a fade out 
-        self.remove(all_svgs[3])
-        self.remove(all_svgs[1])
-        self.remove(final_time_series)
-        self.remove(action_expert_label)
-        self.remove(action_expert_box)
-        all_svgs[4].set_color(CHILL_BROWN) #LLM baux
-        all_svgs[4].move_to([2, 0.4, 0])
+        # Ok I'm a little fuzzy on order here, definitely want to show images
+        # breaking apart very soon, probably with some zoom in action. 
 
         siglip_1=all_svgs[2][:13]
         siglip_2=all_svgs[2][13:26]
         siglip_3=all_svgs[2][26:39]
         image_encoders_label=all_svgs[2][39:]
+
+        self.wait()
+        self.play(pi0_logo.animate.scale(0.85).set_color(CHILL_BROWN).to_corner(DOWN + RIGHT, buff=0.25),
+                  FadeOut(pi0_box_3), 
+                  FadeOut(all_svgs[3]),
+                  FadeOut(all_svgs[1]),
+                  FadeOut(final_time_series), 
+                  FadeOut(action_expert_label), 
+                  FadeOut(action_expert_box), 
+                  all_svgs[4].animate.set_color(CHILL_BROWN).move_to([2, 0.4, 0]),
+                  pixel_squares[1].animate.shift([0, -0.2, 0.0]),
+                  pixel_squares[2].animate.shift([0, -0.4, 0.0]),
+                  prompt.animate.shift([0.2, -0.3, 0.0]),
+                  siglip_1.animate.scale(1.1).move_to([-3.0, 2.6, 0]),
+                  siglip_2.animate.scale(1.1).move_to([-3.0, 0.2, 0]),
+                  siglip_3.animate.scale(1.1).move_to([-3.0, -2.15, 0]),
+                  image_encoders_label.animate.scale(1.1).move_to([-3.05, 3.5, 0]),
+                  run_time=4)
+
+        # siglip_1.scale(1.1)
+        # siglip_1.move_to([-3.1, 2.6, 0])
+
+        # siglip_2.scale(1.1)
+        # siglip_2.move_to([-3.1, 0.2, 0])
+
+        # siglip_3.scale(1.1)
+        # siglip_3.move_to([-3.1, -2.15, 0])
+
+        # image_encoders_label.scale(1.1)
+        # image_encoders_label.move_to([-3.15, 3.5, 0])
+
+        
+
+        # Hmm still fuzzy on order and zooming in vs not -
+        # Let me try to build the "end product" a little bit, and the work backwards
+        # Image expansion is especially a little tricky
+
+        # self.play(*animations, 
+        #             pixel_squares[1].animate.shift([0, -0.2, 0.0]),
+        #             pixel_squares[2].animate.shift([0, -0.4, 0.0]),
+        #             prompt.animate.shift([0.2, -0.3, 0.0]),
+
+        
+        animations = []
+        gap_factor = 0.12
+
+        for i in range(len(pixel_squares)):
+            center = pixel_squares[i].get_center()
+            
+            for pixel in pixel_squares[i]:
+                pixel_pos = pixel.get_center()
+                direction_vector = pixel_pos - center
+                distance = np.linalg.norm(direction_vector)
+
+                if distance > 0:
+                    unit_vector = direction_vector / distance
+                    displacement = unit_vector * distance * gap_factor
+                    new_position = pixel_pos + displacement
+                    animations.append(ApplyMethod(pixel.move_to, new_position))
+
+        self.wait()
+        self.play(*animations, run_time=3.0)
+        self.wait()
+
+
+        # pixel_squares[1].shift([0, -0.2, 0.0])
+        # pixel_squares[2].shift([0, -0.4, 0.0])
+        # prompt.shift([0.2, -0.3, 0.0])
+
+
+        # pi0_logo.set_color(CHILL_BROWN)
+        # pi0_logo.scale(0.85)
+        # pi0_logo.to_corner(DOWN + RIGHT, buff=0.25)
+
+        # self.remove(pi0_box_3) #Do a fade out 
+        # self.remove(all_svgs[3])
+        # self.remove(all_svgs[1])
+        # self.remove(final_time_series)
+        # self.remove(action_expert_label)
+        # self.remove(action_expert_box)
+        # all_svgs[4].set_color(CHILL_BROWN) #LLM baux
+        # all_svgs[4].move_to([2, 0.4, 0])
+
 
 
 
