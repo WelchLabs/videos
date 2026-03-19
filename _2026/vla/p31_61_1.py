@@ -531,6 +531,7 @@ class P31_61_1(InteractiveScene):
         self.play(Write(ellipsis_dots_2), run_time=2)
         # self.wait()
 
+        # This will probably liine up with p36. 
         # Ok now the final batch!
         # Could zoom then move, but I think doing them both at 
         # once will be a little better?
@@ -570,7 +571,105 @@ class P31_61_1(InteractiveScene):
             run_time=10
         )        
 
+        # Ok now P37 is on to the text prompt!
+        # So I think we lost the quotes, turn it blue, break into 
+        # 4 tokens. Maybe make it a little smaller
+        # Expand the big matrix
+        # Add the blue line, and have each token turn into each vector!
+
+
+        embedding_brackets_2=all_svgs[7][2:8].shift([0.08, 0.00,0 ])
+        blue_text_embedding_arrow=all_svgs[7][:2].shift([0.08, 0.00,0 ])
+        embedding_exit_arrow=all_svgs[7][8:].shift([0.08, 0.00,0 ])
+
+        # Some noddling to get stuff to match bro
+        # self.remove(embedding_brackets_2)
+
+        # len(embedding_brackets_2)
+        # self.remove(embedding_brackets_2[0]) #Right
+        # self.remove(embedding_brackets_2[1]) #Upper Left
+        # self.remove(embedding_brackets_2[2]) #bottom left
+
+        # self.remove(embedding_brackets_1[0]) #Right
+        # self.remove(embedding_brackets_1[7]) #Bottom left
+        # self.remove(embedding_brackets_1[8]) #Upper left
+        embedding_brackets_1_only=VGroup(*[embedding_brackets_1[i] for i in [0, 8, 7, 9, 10, 11]])
+
+        # self.remove(embedding_brackets_1_only)
+        # self.remove(embedding_brackets_1[])
+
+        # Let me go ahead and get these 4 lines in place, then I'll 
+        # figure out how to animate to dems
+
+        embedding_rows_4=VGroup() #Text ones
+        for i in range(4):
+            # flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
+            # flat_rect.set_fill(BLUE, opacity=1)
+            # flat_rect.set_stroke(width=0)
+            # flat_rect.move_to([-1.5, -2.75-i*vertical_spacing, 0])  
+
+            flat_line = Line(LEFT * 0.55, RIGHT * 0.55)
+            flat_line.set_stroke(BLUE, width=4)
+            flat_line.move_to([-1.5, -2.75 - i * vertical_spacing, 0])
+
+            embedding_rows_4.add(flat_line)
+
+        tokenized_prompt=Text('Un  cap  the  pen', font="Myriad Pro", weight='bold', font_size=25)
+        tokenized_prompt.set_color(BLUE)
+        tokenized_prompt.set_stroke(BLUE, width=0.1)
+        tokenized_prompt.move_to(prompt)
+
+
+        self.wait()
+
+        self.play(self.frame.animate.reorient(0, 0, 0, (-2.87, -1.71, 0.0), 4.66), run_time=3)
         
+        #Break apart
+        self.wait()
+        self.remove(prompt[0], prompt[-1])
+        self.play(ReplacementTransform(prompt[1:3], tokenized_prompt[:2]),
+                    ReplacementTransform(prompt[3:6], tokenized_prompt[2:5]),
+                    ReplacementTransform(prompt[6:9], tokenized_prompt[5:8]),
+                    ReplacementTransform(prompt[9:12], tokenized_prompt[8:11]), 
+                  run_time=2.5)
+        self.wait()
+
+
+        self.wait()
+        # self.play(ReplacementTransform(embedding_brackets_1_only, embedding_brackets_2), 
+        #          ReplacementTransform(tokenized_prompt[:2].copy(), embedding_rows_4[0]),
+        #          ReplacementTransform(tokenized_prompt[2:4].copy(), embedding_rows_4[1]),
+        #          ReplacementTransform(tokenized_prompt[5:8].copy(), embedding_rows_4[2]),
+        #          ReplacementTransform(tokenized_prompt[8:11].copy(), embedding_rows_4[3]),
+        #           run_time=4)
+
+        self.play(
+            ReplacementTransform(embedding_brackets_1_only, embedding_brackets_2),
+            LaggedStart(
+                ReplacementTransform(tokenized_prompt[:2].copy(), embedding_rows_4[0]),
+                ReplacementTransform(tokenized_prompt[2:4].copy(), embedding_rows_4[1]),
+                ReplacementTransform(tokenized_prompt[5:8].copy(), embedding_rows_4[2]),
+                ReplacementTransform(tokenized_prompt[8:11].copy(), embedding_rows_4[3]),
+                lag_ratio=0.5,
+            ),
+            run_time=5
+        )
+
+
+        self.add(blue_text_embedding_arrow)
+        self.add(embedding_brackets_2)
+
+
+
+        self.wait()
+
+
+        self.wait(20)
+        self.embed()
+
+
+
+
 
 
 
@@ -607,14 +706,13 @@ class P31_61_1(InteractiveScene):
 
 
 
-        self.wait()
+        # self.wait()
 
 
 
 
 
-        self.wait(20)
-        self.embed()
+
 
 
 
