@@ -2,6 +2,7 @@ from manimlib import *
 from tqdm import tqdm
 from pathlib import Path
 import matplotlib.pyplot as plt
+import colorsys
 
 
 CHILL_BROWN='#948979'
@@ -18,6 +19,41 @@ MAGENTA='#FF00FF'
 svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/graphics/to_manim/')
 hacking_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/hackin')
 
+def patch_bright_average(img, exponent=2.0):
+    patches = img.reshape(16, 14, 16, 14, 3)
+    chroma = patches.max(axis=-1, keepdims=True) - patches.min(axis=-1, keepdims=True)
+    weights = chroma**exponent / (chroma**exponent).sum(axis=(1,3), keepdims=True)
+    return (patches * weights).sum(axis=(1, 3))  # (16, 16, 3)
+
+def boost_colors_hsv(colors, saturation_boost=1.0, min_saturation=0.0, min_value=0.0):
+    """
+    Adjust colors in HSV space for better visibility in the barcode viz.
+ 
+    Parameters
+    ----------
+    colors : ndarray, shape (N, 3)
+        RGB colors in [0, 1].
+    saturation_boost : float
+        Multiplier on S channel. 1.0 = no change, 1.5 = 50% more saturated.
+    min_saturation : float in [0, 1]
+        Floor for S channel. Prevents fully gray rows.
+    min_value : float in [0, 1]
+        Floor for V channel. Lifts dark/muddy colors so the hue reads clearly.
+ 
+    Returns
+    -------
+    boosted : ndarray, shape (N, 3), dtype float32
+    """
+    colors = np.asarray(colors, dtype=np.float32)
+    out = np.empty_like(colors)
+    for i in range(len(colors)):
+        h, s, v = colorsys.rgb_to_hsv(*colors[i])
+        s = min(1.0, s * saturation_boost)
+        s = max(s, min_saturation)
+        v = max(v, min_value)
+        out[i] = colorsys.hsv_to_rgb(h, s, v)
+    return out
+
 class P31_61_1(InteractiveScene):
     def construct(self): 
         '''
@@ -25,7 +61,7 @@ class P31_61_1(InteractiveScene):
         and see where we end up. 
         '''
 
-        svgs_to_skip=[0, 2, 3]
+        svgs_to_skip=[0, 2, 3, 8]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
         all_svgs=Group()
         for i, svg_file in enumerate(svg_files): 
@@ -214,7 +250,7 @@ class P31_61_1(InteractiveScene):
         FRAME_IDX=150
         pixel_squares = Group()
 
-        for image_name in ['base_0_rgb', 'left_wrist_0_rgb', 'right_wrist_0_rgb']:
+        for k, image_name in enumerate(['base_0_rgb', 'left_wrist_0_rgb', 'right_wrist_0_rgb']):
             pixel_squares.add(Group())
             patch_dir = hacking_dir/('p35/'+str(FRAME_IDX)+'/'+image_name)
             for i in range(2, 14): #Skip top 2 and botton 2 rows
@@ -227,6 +263,7 @@ class P31_61_1(InteractiveScene):
                     y_pos = -(i - grid_n/2 + 0.5) * patch_size
                     patch_mob.move_to([x_pos, y_pos, 0])
                     pixel_squares[-1].add(patch_mob)
+
 
         pixel_squares[0].move_to([-5.23,  2.58,  0.])
         pixel_squares[1].move_to([-5.23,  0.375,  0.])
@@ -269,8 +306,8 @@ class P31_61_1(InteractiveScene):
                   prompt.animate.shift([0.2, -0.3, 0.0]),
                   siglip_1.animate.scale(1.1).move_to([-3.0, 2.6, 0]),
                   siglip_2.animate.scale(1.1).move_to([-3.0, 0.2, 0]),
-                  siglip_3.animate.scale(1.1).move_to([-3.0, -2.15, 0]),
-                  image_encoders_label.animate.scale(1.1).move_to([-3.05, 3.5, 0]),
+                  siglip_3.animate.scale(1.1).move_to([-3.0, -2.1, 0]),
+                  image_encoders_label.animate.scale(1.1).move_to([-3.0, 3.5, 0]),
                   run_time=4)
 
         # siglip_1.scale(1.1)
@@ -316,13 +353,11 @@ class P31_61_1(InteractiveScene):
 
         self.wait()
         self.play(*animations, run_time=3.0)
-        self.wait()
-
+        
 
         # pixel_squares[1].shift([0, -0.2, 0.0])
         # pixel_squares[2].shift([0, -0.4, 0.0])
         # prompt.shift([0.2, -0.3, 0.0])
-
 
         # pi0_logo.set_color(CHILL_BROWN)
         # pi0_logo.scale(0.85)
@@ -337,6 +372,232 @@ class P31_61_1(InteractiveScene):
         # all_svgs[4].set_color(CHILL_BROWN) #LLM baux
         # all_svgs[4].move_to([2, 0.4, 0])
 
+
+        #Ok, mid p35 here -> now I think it's a zoom in and move patches over kinda deal
+
+        lil_arrows_pair_1=all_svgs[5]
+        lil_arrows_pair_2=lil_arrows_pair_1.copy()
+        lil_arrows_pair_3=lil_arrows_pair_1.copy()
+        lil_arrows_pair_1.move_to([-3.0, 2.57, 0])
+        lil_arrows_pair_2.move_to([-3.0, 0.18, 0])
+        lil_arrows_pair_3.move_to([-3.0, -2.18, 0])
+
+        embedding_brackets_1=all_svgs[6]
+        embedding_brackets_1.shift([0.08, 0.00,0 ])
+
+        # Ok I think a zoom in here, then pan down as we move patches over?
+
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (-3.4, 1.91, 0.0), 4.03),
+                  Write(embedding_brackets_1),
+                  Write(lil_arrows_pair_1),
+                  Write(lil_arrows_pair_2),
+                  Write(lil_arrows_pair_3),
+                  run_time=5
+                  )
+
+        # Ok, making progress here, now I want to bring over embedding vectors 
+        # as I pan down - I think that will work
+        # Maybe want to do a little script tweaking - we'll see!
+
+
+        # self.add(embedding_brackets_1)
+        # self.add(lil_arrows_pair_1, lil_arrows_pair_2, lil_arrows_pair_3)
+
+        # Alright let me figure out how to draw these embedding vectors
+        # Then how to animate between patches and vectors
+        # So I think what will make sense is to compute the colors first
+        # That was kinda hacky -> i'll compute the mod'd average colors 
+        # for each patch and then export this to disk bruh. 
+        # Hmm actually main method is quite simple, so unless 
+        # I end up needing to do crazy mod stuff, then let's try computing 
+        # patch colors in manim. 
+
+
+        # Hmm I don't actually have the image numpy arrays loaded up
+        # Let's do that next. 
+        # patch_bright_average()
+
+
+        #Ok now we just make some colored lines and put em in the right spots?
+        # l=Line([-2.05, 3.1, 0], [-0.95, 3.1, 0])
+        # l.set_stroke(color=boosted_color, width=4)
+        # self.add(l)
+
+        # overhead_im_full=Image.open(hacking_dir/('p35/full_size_base_0_rgb/'+str(FRAME_IDX).zfill(3)+'.jpg'))
+        # left_im_full=Image.open(hacking_dir/('p35/full_size_base_0_rgb/'+str(FRAME_IDX).zfill(3)+'.jpg'))
+        # right_im_full=Image.open(hacking_dir/('p35/full_size_base_0_rgb/'+str(FRAME_IDX).zfill(3)+'.jpg'))
+
+        overhead_im_full=np.load(hacking_dir/'p35/150_overhead.npy')
+        left_im_full=np.load(hacking_dir/'p35/150_left.npy')
+        right_im_full=np.load(hacking_dir/'p35/150_right.npy')
+
+        overhead_colors=patch_bright_average(np.array(overhead_im_full), exponent=2.0).reshape(-1, 3) #(16, 16, 3)  
+        left_colors=patch_bright_average(np.array(left_im_full), exponent=2.0).reshape(-1, 3) #(16, 16, 3)  
+        right_colors=patch_bright_average(np.array(right_im_full), exponent=2.0).reshape(-1, 3) #(16, 16, 3)  
+
+        patches_indices_to_move_1=[0, 1, 2, 3, 4, 5, 6, 7, 8]
+        embedding_rows_1=VGroup()
+        starting_squares_1=VGroup()
+        vertical_spacing=0.2
+        for i, patch_index in enumerate(patches_indices_to_move_1):
+
+            boosted_color=rgb_to_color(boost_colors_hsv(overhead_colors[patch_index+32].reshape(1,3)/255., 
+                                          saturation_boost=1.3, min_saturation=0.1, min_value=0.3).ravel())
+            flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
+            flat_rect.set_fill(boosted_color, opacity=1)
+            flat_rect.set_stroke(width=0)
+            flat_rect.move_to([-1.5, 3.15-i*vertical_spacing, 0])  
+
+            color_square = Square(side_length=patch_size)
+            color_square.set_fill(rgb_to_color(overhead_colors[patch_index+32]/255.), opacity=1)
+            color_square.set_stroke(width=0)
+            color_square.move_to(pixel_squares[0][patch_index])
+
+            embedding_rows_1.add(flat_rect)
+            starting_squares_1.add(color_square)
+
+
+        self.wait()
+        self.play(
+            LaggedStart(
+                *[Succession(
+                    FadeIn(starting_squares_1[i], run_time=0.1),
+                    ReplacementTransform(starting_squares_1[i], embedding_rows_1[i]),
+                ) for i in range(len(embedding_rows_1))],
+                lag_ratio=0.2,
+            ),
+            run_time=12
+        )
+
+        ##Ok now a little ...
+        ellipsis_dots = VGroup(*[
+            Dot(radius=0.025).set_color(CHILL_BROWN)
+            for _ in range(3)
+        ])
+        ellipsis_dots.arrange(DOWN, buff=0.035)
+        ellipsis_dots.next_to(embedding_rows_1[-1], DOWN, buff=0.15)
+
+        self.play(Write(ellipsis_dots), run_time=2)
+        self.wait()
+
+        #Pan down, or maybe just out and do it again as VO talks about colors. 
+        #Hmm seems lke we're grabbing the wrong colors...
+
+        patches_indices_to_move_2=[82, 83, 84, 85, 86, 87, 88, 89, 90, 91]
+        embedding_rows_2=VGroup()
+        starting_squares_2=VGroup()
+        vertical_spacing=0.2
+        for i, patch_index in enumerate(patches_indices_to_move_2):
+
+            boosted_color=rgb_to_color(boost_colors_hsv(left_colors[patch_index+32].reshape(1,3)/255., 
+                                          saturation_boost=1.5, min_saturation=0.2, min_value=0.3).ravel())
+            
+            # boosted_color=rgb_to_color(left_colors[patch_index+32]/255.)
+            flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
+            flat_rect.set_fill(boosted_color, opacity=1)
+            flat_rect.set_stroke(width=0)
+            flat_rect.move_to([-1.5, 1.0-i*vertical_spacing, 0])  
+
+            color_square = Square(side_length=patch_size)
+            color_square.set_fill(rgb_to_color(left_colors[patch_index+32]/255.), opacity=1)
+            color_square.set_stroke(width=0)
+            color_square.move_to(pixel_squares[1][patch_index])
+
+            embedding_rows_2.add(flat_rect)
+            starting_squares_2.add(color_square)
+
+        self.wait()
+        self.play(
+            self.frame.animate.reorient(0, 0, 0, (-2.39, 1.34, 0.0), 5.19),
+            LaggedStart(
+                *[Succession(
+                    FadeIn(starting_squares_2[i], run_time=0.1),
+                    ReplacementTransform(starting_squares_2[i], embedding_rows_2[i]),
+                ) for i in range(len(embedding_rows_2))],
+                lag_ratio=0.3,
+            ),
+            run_time=12
+        )
+
+        ##Ok now a little ...
+        ellipsis_dots_2 = VGroup(*[
+            Dot(radius=0.025).set_color(CHILL_BROWN)
+            for _ in range(3)
+        ])
+        ellipsis_dots_2.arrange(DOWN, buff=0.035)
+        ellipsis_dots_2.next_to(embedding_rows_2[-1], DOWN, buff=0.15)
+
+        self.play(Write(ellipsis_dots_2), run_time=2)
+        # self.wait()
+
+        # Ok now the final batch!
+        # Could zoom then move, but I think doing them both at 
+        # once will be a little better?
+        patches_indices_to_move_3=[186, 186, 187, 188, 189, 190, 191]
+        embedding_rows_3=VGroup()
+        starting_squares_3=VGroup()
+        vertical_spacing=0.2
+        for i, patch_index in enumerate(patches_indices_to_move_3):
+
+            boosted_color=rgb_to_color(boost_colors_hsv(right_colors[patch_index+32].reshape(1,3)/255., 
+                                          saturation_boost=1.5, min_saturation=0.2, min_value=0.3).ravel())
+            
+            # boosted_color=rgb_to_color(right_colors[patch_index+32]/255.)
+            flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
+            flat_rect.set_fill(boosted_color, opacity=1)
+            flat_rect.set_stroke(width=0)
+            flat_rect.move_to([-1.5, -1.3-i*vertical_spacing, 0])  
+
+            color_square = Square(side_length=patch_size)
+            color_square.set_fill(rgb_to_color(right_colors[patch_index+32]/255.), opacity=1)
+            color_square.set_stroke(width=0)
+            color_square.move_to(pixel_squares[2][patch_index])
+
+            embedding_rows_3.add(flat_rect)
+            starting_squares_3.add(color_square)
+
+        self.wait()
+        self.play(
+            self.frame.animate.reorient(0, 0, 0, (0, 0, 0.0), 8.0),
+            LaggedStart(
+                *[Succession(
+                    FadeIn(starting_squares_3[i], run_time=0.1),
+                    ReplacementTransform(starting_squares_3[i], embedding_rows_3[i]),
+                ) for i in range(len(embedding_rows_3))],
+                lag_ratio=0.3,
+            ),
+            run_time=10
+        )        
+
+        
+
+
+
+
+
+
+
+
+        # self.add(starting_squares_1); 
+        # self.remove(pixel_squares[0]); self.add(pixel_squares[0])
+        # self.play(
+        #     LaggedStart(
+        #         *[ReplacementTransform(starting_squares_1[i], embedding_rows_1[i]) 
+        #           for i in range(len(embedding_rows_1))],
+        #         lag_ratio=1.0,  # 1.5 would be very slow — start small
+        #     ),
+        #     run_time=6
+        # )
+
+
+        # self.add(color_square)
+        # self.play(Transform(color_square, flat_rect), run_time=3)
+        # self.remove(pixel_squares[0][0])
+
+
+        #Somethign like:
+        # self.play(self.frame.animate.reorient(0, 0, 0, (-3.07, 2.22, 0.0), 4.53))
 
 
 
