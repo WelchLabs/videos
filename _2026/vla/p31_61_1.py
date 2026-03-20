@@ -954,8 +954,73 @@ class P31_61_1(InteractiveScene):
         # perspective to actually play the animation in matplotlib, 
         # just would be resampling the cached colored patches in a loop
         # let's do that as plan A, and fall back if that's problematic. 
+        # Ok lol scratch that, let's try this shit in manim bro. 
+
+        all_attn_values=np.load(hacking_dir/'p42_1/p42_1.npy')
+
+        attn_row=all_attn_values[FRAME_IDX] #816
+        cam_attn_1=attn_row[:256].reshape(16,16) #Overhead
+        cam_attn_2=attn_row[256:512].reshape(16,16) #Left
+        cam_attn_3=attn_row[512:768].reshape(16,16) #Right
+
+        # Ok Claude, I got a good one for you. I want to create a magenta square
+        # on top of each image patch, with opacity controlled by cam_attn_1, cam_attn_2, etc.
+        # The first and last 32 attention values should be ignored.
+        # We may need to futz with scaling, let's make this parameterizable, 
+        # with one param for each image, with a default of the max attention value for 
+        # a given image, resulting in an opacity of 0.9. 
+
+        # Per-image scaling: attention value that maps to opacity 0.9
+        cam_attns = [cam_attn_1, cam_attn_2, cam_attn_3]
+
+        attn_scales = [cam_attn_1[2:14].max(), cam_attn_2[2:14].max(), cam_attn_3[2:14].max()]
+        max_opacities = [0.5, 0.95, 0.95]  # per-image max opacity
+
+        magenta_overlays = Group()
+        for k in range(3):
+            cam = cam_attns[k][2:14, :]  # (12, 16)
+            scale = attn_scales[k] if attn_scales[k] > 0 else 1.0
+            mo = max_opacities[k]
+            overlays_k = Group()
+            for idx, patch_mob in enumerate(pixel_squares[k]):
+                row = idx // 16
+                col = idx % 16
+                attn_val = cam[row, col]
+                opacity = min(mo, mo * (attn_val / scale))
+
+                sq = Square(side_length=patch_size)
+                sq.set_fill(MAGENTA, opacity=float(opacity))
+                sq.set_stroke(width=0)
+                sq.move_to(patch_mob.get_center())
+                overlays_k.add(sq)
+            magenta_overlays.add(overlays_k)
 
 
+        #Ok this looks great! Now, how do I animate these in/numbers comign over?
+        self.wait()
+        self.play(ReplacementTransform(attn_numbers[0].copy(), magenta_overlays[0][0].set_opacity(0.2)), 
+                  ReplacementTransform(attn_numbers[1].copy(), magenta_overlays[1][85]), #.copy().set_opacity(0.5)), 
+                  ReplacementTransform(attn_numbers[2].copy(), magenta_overlays[1][86]), #.copy().set_opacity(0.5)), 
+                  ReplacementTransform(attn_numbers[3].copy(), magenta_overlays[1][87]), #.copy().set_opacity(0.5)), 
+                  ReplacementTransform(attn_numbers[4].copy(), magenta_overlays[1][88]), #.copy().set_opacity(0.5)), 
+                  self.frame.animate.reorient(0, 0, 0, (0.67, 0.02, 0.0), 8.60),
+                  FadeIn(magenta_overlays[0][1:]), 
+                  FadeIn(magenta_overlays[1][:85]), 
+                  FadeIn(magenta_overlays[1][89:]), 
+                  FadeIn(magenta_overlays[2]), 
+                  run_time=5)
+        # self.play(FadeIn(magenta_overlays[0][1:]), 
+        #           FadeIn(magenta_overlays[1][:85]), 
+        #           FadeIn(magenta_overlays[1][89:]), 
+        #           FadeIn(magenta_overlays[2]), 
+        #           run_time=3)
+
+        # P43 Ok this next bit is going to be tricky, especially cleanup, but I think 
+        # Claude can help!
+        
+
+        # self.add(magenta_overlays)
+        # self.remove(magenta_overlays)
 
         self.wait()
 
