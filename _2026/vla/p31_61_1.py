@@ -19,6 +19,11 @@ MAGENTA='#FF00FF'
 svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/graphics/to_manim/')
 hacking_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/hackin')
 
+
+SATURATION_BOOST=1.5 #1.3
+MIN_SATURATION=0.2 #0.1
+MIN_VALUE=0.5 #0.3
+
 def patch_bright_average(img, exponent=2.0):
     patches = img.reshape(16, 14, 16, 14, 3)
     chroma = patches.max(axis=-1, keepdims=True) - patches.min(axis=-1, keepdims=True)
@@ -61,7 +66,7 @@ class P31_61_1(InteractiveScene):
         and see where we end up. 
         '''
 
-        svgs_to_skip=[0, 2, 3, 8]
+        svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
         all_svgs=Group()
         for i, svg_file in enumerate(svg_files): 
@@ -443,7 +448,7 @@ class P31_61_1(InteractiveScene):
         for i, patch_index in enumerate(patches_indices_to_move_1):
 
             boosted_color=rgb_to_color(boost_colors_hsv(overhead_colors[patch_index+32].reshape(1,3)/255., 
-                                          saturation_boost=1.3, min_saturation=0.1, min_value=0.3).ravel())
+                                          saturation_boost=SATURATION_BOOST, min_saturation=MIN_SATURATION, min_value=MIN_VALUE).ravel())
             flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
             flat_rect.set_fill(boosted_color, opacity=1)
             flat_rect.set_stroke(width=0)
@@ -491,7 +496,7 @@ class P31_61_1(InteractiveScene):
         for i, patch_index in enumerate(patches_indices_to_move_2):
 
             boosted_color=rgb_to_color(boost_colors_hsv(left_colors[patch_index+32].reshape(1,3)/255., 
-                                          saturation_boost=1.5, min_saturation=0.2, min_value=0.3).ravel())
+                                          saturation_boost=SATURATION_BOOST, min_saturation=MIN_SATURATION, min_value=MIN_VALUE).ravel())
             
             # boosted_color=rgb_to_color(left_colors[patch_index+32]/255.)
             flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
@@ -526,7 +531,7 @@ class P31_61_1(InteractiveScene):
             for _ in range(3)
         ])
         ellipsis_dots_2.arrange(DOWN, buff=0.035)
-        ellipsis_dots_2.next_to(embedding_rows_2[-1], DOWN, buff=0.15)
+        ellipsis_dots_2.next_to(embedding_rows_2[-1], DOWN, buff=0.1)
 
         self.play(Write(ellipsis_dots_2), run_time=2)
         # self.wait()
@@ -542,7 +547,7 @@ class P31_61_1(InteractiveScene):
         for i, patch_index in enumerate(patches_indices_to_move_3):
 
             boosted_color=rgb_to_color(boost_colors_hsv(right_colors[patch_index+32].reshape(1,3)/255., 
-                                          saturation_boost=1.5, min_saturation=0.2, min_value=0.3).ravel())
+                                          saturation_boost=SATURATION_BOOST, min_saturation=MIN_SATURATION, min_value=MIN_VALUE).ravel())
             
             # boosted_color=rgb_to_color(right_colors[patch_index+32]/255.)
             flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
@@ -655,9 +660,74 @@ class P31_61_1(InteractiveScene):
             run_time=5
         )
 
+        blue_text_embedding_arrow.set_color(BLUE)
+        blue_text_embedding_arrow.shift([-0.1, 0.05, 0])
 
-        self.add(blue_text_embedding_arrow)
-        self.add(embedding_brackets_2)
+        self.wait()
+        self.play(Write(blue_text_embedding_arrow))
+
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8),
+                  run_time=4)
+
+        embedding_out_arrow=all_svgs[7][-2:]
+        simple_llm_box=all_svgs[4]
+        embedding_out_arrow.shift([-0.13, 0.18, 0])
+   
+
+        full_gemma=Group(all_svgs[8], all_svgs[9], all_svgs[10], all_svgs[11], all_svgs[12], all_svgs[13])
+        full_gemma.shift([0.2, 0, 0])
+
+
+        # Ok, so I think the vibe is zoom and transform the outer box?
+        # Then we can fill stuff in!
+
+        # Zoom in, expand LLM box
+        self.wait()
+        self.play(ReplacementTransform(simple_llm_box[-1], all_svgs[8][0]),
+                  ReplacementTransform(simple_llm_box[0:3], all_svgs[8][1:4]),
+                  ReplacementTransform(simple_llm_box[3:-1], all_svgs[8][4:]),
+                  FadeIn(embedding_out_arrow),
+                  self.frame.animate.reorient(0, 0, 0, (3.08, 0.07, 0.0), 4.73),
+                 run_time=5)
+
+        self.wait()
+        self.play(Write(all_svgs[9]), Write(all_svgs[13]), run_time=3)
+        # self,add(all_svgs[12])
+        self.wait()
+
+        self.play(Write(all_svgs[10]), Write(all_svgs[11]), Write(all_svgs[12]), run_time=7)
+        
+
+        # Hmm do we "zoom out" before "zooming in" on the attention head?
+        # Hmm ok this might be annoying lol, but what about fading out 
+        # everything except the attention heads, then fade out all but one
+        # Then I can do a nice zoom out and expand the attention head at the 
+        # same time deal?
+
+        self.wait()
+        self.remove(pi0_logo)
+        self.play(FadeOut(all_svgs[8]), 
+                  FadeOut(all_svgs[9]), 
+                  FadeOut(all_svgs[10]), 
+                  FadeOut(all_svgs[13]), 
+                  run_time=3)
+        
+
+        # Now blow up a single attention head box as we zoom back out!
+        # P40 Shorty
+        h6_label=all_svgs[12][1:]
+        self.wait()
+        self.play(FadeOut(all_svgs[11]), run_time=1.5)
+        # self.remove(all_svgs[11]) #Probably remove here instead of fade?
+        self.play(ReplacementTransform(all_svgs[12][0], all_svgs[14][-1]),
+                  h6_label.animate.scale(1.5).move_to([6.4, -3.4, 0]),
+                  self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8),
+                  run_time=5)
+
+        self.wait()
+
+        self.play(Write(all_svgs[15]), run_time=5)
 
 
 
