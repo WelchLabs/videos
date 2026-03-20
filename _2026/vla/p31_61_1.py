@@ -1000,8 +1000,8 @@ class P31_61_1(InteractiveScene):
         self.wait()
         self.play(ReplacementTransform(attn_numbers[0].copy(), magenta_overlays[0][0].set_opacity(0.2)), 
                   ReplacementTransform(attn_numbers[1].copy(), magenta_overlays[1][85]), #.copy().set_opacity(0.5)), 
-                  ReplacementTransform(attn_numbers[2].copy(), magenta_overlays[1][86]), #.copy().set_opacity(0.5)), 
-                  ReplacementTransform(attn_numbers[3].copy(), magenta_overlays[1][87]), #.copy().set_opacity(0.5)), 
+                  ReplacementTransform(attn_numbers[2].copy(), magenta_overlays[1][86].set_opacity(0.7)), #.copy().set_opacity(0.5)), 
+                  ReplacementTransform(attn_numbers[3].copy(), magenta_overlays[1][87].set_opacity(0.7)), #.copy().set_opacity(0.5)), 
                   ReplacementTransform(attn_numbers[4].copy(), magenta_overlays[1][88]), #.copy().set_opacity(0.5)), 
                   self.frame.animate.reorient(0, 0, 0, (0.67, 0.02, 0.0), 8.60),
                   FadeIn(magenta_overlays[0][1:]), 
@@ -1016,11 +1016,64 @@ class P31_61_1(InteractiveScene):
         #           run_time=3)
 
         # P43 Ok this next bit is going to be tricky, especially cleanup, but I think 
-        # Claude can help!
         
+        # Ok Claude can use your help on this scene! We've got 3 images on the left side 
+        # of the canvas, broken into patches, with magenta overlays on them controlled by 
+        # all_attn_values. I want to fade out everything else on the canvas (maybe group it or 
+        # something so we can bring it back in easily!) and move the three images front and center
+        # of the canvas, with the overhead image on the left, left wrist image in the center
+        # and right wrist image on the right. This is going to set us up to "play the video"
+        # By stepping through FRAME_IDX values, updating all patches and magenta overlays. 
 
-        # self.add(magenta_overlays)
-        # self.remove(magenta_overlays)
+        # Gather everything else on screen into a group we can fade out and bring back
+        background_stuff = Group(
+            all_svgs[15], all_svgs[17], all_svgs[18], all_svgs[19], all_svgs[21],
+            queries, keys, values, attn_dots,
+            dp_title, dp_underline, dp_numbers,
+            attn_title, attn_underline, attn_numbers,
+            embedding_brackets_2, embedding_rows_1, embedding_rows_2, embedding_rows_3, embedding_rows_4,
+            ellipsis_dots, ellipsis_dots_2,
+            blue_text_embedding_arrow, embedding_out_arrow,
+            lil_arrows_pair_1, lil_arrows_pair_2, lil_arrows_pair_3,
+            siglip_1, siglip_2, siglip_3, image_encoders_label,
+            tokenized_prompt, all_svgs[6][1:7]
+        )
+
+        # self.wait()
+        # self.remove(background_stuff)
+
+        # Target positions: centered, side by side
+        # Each image is ~2.72 manim units tall; let's space them with a small gap
+        img_gap = 0.2
+        img_y = 0.0  # vertically centered
+
+        # We need to move both pixel_squares AND magenta_overlays together
+        # Group each image's patches + overlays so they move as one unit
+        combined_images = []
+        for k in range(3):
+            combo = Group(pixel_squares[k], magenta_overlays[k])
+            combined_images.append(combo)
+
+        # Compute target x positions
+        total_width = pixel_squares[0].get_width()  # all three are same width
+        center_x = 0.0
+        target_xs = [
+            center_x - total_width - img_gap,   # overhead (left)
+            center_x,                             # left wrist (center)
+            center_x + total_width + img_gap,    # right wrist (right)
+        ]
+
+        self.wait()
+        self.play(
+            FadeOut(background_stuff),
+            combined_images[0].animate.move_to([target_xs[0], img_y, 0]),
+            combined_images[1].animate.move_to([target_xs[1], img_y, 0]),
+            combined_images[2].animate.move_to([target_xs[2], img_y, 0]),
+            self.frame.animate.reorient(0, 0, 0, (-0.02, -0.07, 0.0), 5.62),
+            run_time=4,
+        )
+
+
 
         self.wait()
 
