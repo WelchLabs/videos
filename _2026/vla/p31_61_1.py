@@ -3,7 +3,10 @@ from tqdm import tqdm
 from pathlib import Path
 import matplotlib.pyplot as plt
 import colorsys
-
+# import gc
+# import resource
+import shutil
+import tempfile
 
 CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
@@ -1073,7 +1076,13 @@ class P31_61_1(InteractiveScene):
             run_time=4,
         )
 
+        self.wait()
 
+        ## Annoying, but not a big deal, cut to separate p43a/b/c scenes!
+        ## then come back here!
+
+
+ 
 
         self.wait()
 
@@ -1086,12 +1095,196 @@ class P31_61_1(InteractiveScene):
 
 
 
+class P43a(InteractiveScene):
+    def construct(self):
+        hacking_dir = Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/hackin')
+        composited_dir = hacking_dir / 'p43_patchified'
+
+        total_height = 2.72
+        grid_n = 16
+        patch_size = total_height / grid_n
+        gap_factor = 0.12
+        scale = 1 + gap_factor
+
+        all_attn_values = np.load(hacking_dir / 'p42_1/p42_1.npy')
+        max_opacities = [0.5, 0.95, 0.95]
+
+        # Compute canvas dimensions in manim units (must match Jupyter export)
+        xs = [(j - 8 + 0.5) * patch_size * scale for j in range(16)]
+        ys = [-(i - 8 + 0.5) * patch_size * scale for i in range(2, 14)]
+        canvas_w_manim = (max(xs) - min(xs)) + patch_size
+        canvas_h_manim = (max(ys) - min(ys)) + patch_size
+
+        # Create initial 3 images
+        display_imgs = Group()
+        img_gap = 0.3
+        target_h = 3.5  # pick a nice display height
+        for k in range(3):
+            img = ImageMobject(str(composited_dir / f'0_{k}.png'))
+            img.set_height(target_h)
+            display_imgs.add(img)
+
+        w = display_imgs[0].get_width()
+        display_imgs[0].move_to([-(w + img_gap), 0, 0])
+        display_imgs[1].move_to([0, 0, 0])
+        display_imgs[2].move_to([(w + img_gap), 0, 0])
+
+        # Scale factor: displayed image height / original canvas height in manim units
+        s = target_h / canvas_h_manim
+        scaled_patch = patch_size * s
+
+        # Build magenta overlays aligned to actual image pixels
+        magenta_overlays = Group()
+        for k in range(3):
+            overlays_k = Group()
+            img_center = display_imgs[k].get_center()
+            for i in range(2, 14):
+                for j in range(16):
+                    cx = (j - 8 + 0.5) * patch_size * scale * s
+                    cy = -(i - 8 + 0.5) * patch_size * scale * s
+                    sq = Square(side_length=scaled_patch)
+                    sq.set_fill(MAGENTA, opacity=0)
+                    sq.set_stroke(width=0)
+                    sq.move_to(img_center + np.array([cx, cy, 0]))
+                    overlays_k.add(sq)
+            magenta_overlays.add(overlays_k)
+
+        self.add(display_imgs, magenta_overlays)
+
+        for frame_idx in range(150,300):
+            attn_row = all_attn_values[frame_idx]
+            cams = [attn_row[:256].reshape(16, 16), attn_row[256:512].reshape(16, 16), attn_row[512:768].reshape(16, 16)]
+
+            for k in range(3):
+                path = composited_dir / f'{frame_idx}_{k}.png'
+                if not path.exists():
+                    continue
+
+                pos = display_imgs[k].get_center()
+                h = display_imgs[k].get_height()
+                old_img = display_imgs[k]
+                
+                # Close the PIL file handle before discarding
+                if hasattr(old_img, 'image') and hasattr(old_img.image, 'close'):
+                    old_img.image.close()
+                self.remove(old_img)
+
+                new_img = ImageMobject(str(path))
+                new_img.set_height(h)
+                new_img.move_to(pos)
+                display_imgs.submobjects[k] = new_img
+                self.add(new_img)
+                self.remove(magenta_overlays); self.add(magenta_overlays)
+                del old_img
+
+                cam = cams[k][2:14, :]
+                sc = cam.max() if cam.max() > 0 else 1.0
+                mo = max_opacities[k]
+                for idx in range(len(magenta_overlays[k])):
+                    row, col = idx // 16, idx % 16
+                    attn_val = cam[row, col]
+                    opacity = min(mo, mo * (attn_val / sc))
+                    magenta_overlays[k][idx].set_fill(opacity=float(opacity))
+
+            self.wait(1 / 15)
+
+        self.wait()
 
 
+class P43b(InteractiveScene):
+    def construct(self):
+        hacking_dir = Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/hackin')
+        composited_dir = hacking_dir / 'p43_patchified'
 
+        total_height = 2.72
+        grid_n = 16
+        patch_size = total_height / grid_n
+        gap_factor = 0.12
+        scale = 1 + gap_factor
 
+        all_attn_values = np.load(hacking_dir / 'p42_1/p42_1.npy')
+        max_opacities = [0.5, 0.95, 0.95]
 
+        # Compute canvas dimensions in manim units (must match Jupyter export)
+        xs = [(j - 8 + 0.5) * patch_size * scale for j in range(16)]
+        ys = [-(i - 8 + 0.5) * patch_size * scale for i in range(2, 14)]
+        canvas_w_manim = (max(xs) - min(xs)) + patch_size
+        canvas_h_manim = (max(ys) - min(ys)) + patch_size
 
+        # Create initial 3 images
+        display_imgs = Group()
+        img_gap = 0.3
+        target_h = 3.5  # pick a nice display height
+        for k in range(3):
+            img = ImageMobject(str(composited_dir / f'0_{k}.png'))
+            img.set_height(target_h)
+            display_imgs.add(img)
+
+        w = display_imgs[0].get_width()
+        display_imgs[0].move_to([-(w + img_gap), 0, 0])
+        display_imgs[1].move_to([0, 0, 0])
+        display_imgs[2].move_to([(w + img_gap), 0, 0])
+
+        # Scale factor: displayed image height / original canvas height in manim units
+        s = target_h / canvas_h_manim
+        scaled_patch = patch_size * s
+
+        # Build magenta overlays aligned to actual image pixels
+        magenta_overlays = Group()
+        for k in range(3):
+            overlays_k = Group()
+            img_center = display_imgs[k].get_center()
+            for i in range(2, 14):
+                for j in range(16):
+                    cx = (j - 8 + 0.5) * patch_size * scale * s
+                    cy = -(i - 8 + 0.5) * patch_size * scale * s
+                    sq = Square(side_length=scaled_patch)
+                    sq.set_fill(MAGENTA, opacity=0)
+                    sq.set_stroke(width=0)
+                    sq.move_to(img_center + np.array([cx, cy, 0]))
+                    overlays_k.add(sq)
+            magenta_overlays.add(overlays_k)
+
+        self.add(display_imgs, magenta_overlays)
+
+        for frame_idx in range(0, 151):
+            attn_row = all_attn_values[frame_idx]
+            cams = [attn_row[:256].reshape(16, 16), attn_row[256:512].reshape(16, 16), attn_row[512:768].reshape(16, 16)]
+
+            for k in range(3):
+                path = composited_dir / f'{frame_idx}_{k}.png'
+                if not path.exists():
+                    continue
+
+                pos = display_imgs[k].get_center()
+                h = display_imgs[k].get_height()
+                old_img = display_imgs[k]
+                
+                # Close the PIL file handle before discarding
+                if hasattr(old_img, 'image') and hasattr(old_img.image, 'close'):
+                    old_img.image.close()
+                self.remove(old_img)
+
+                new_img = ImageMobject(str(path))
+                new_img.set_height(h)
+                new_img.move_to(pos)
+                display_imgs.submobjects[k] = new_img
+                self.add(new_img)
+                self.remove(magenta_overlays); self.add(magenta_overlays)
+                del old_img
+
+                cam = cams[k][2:14, :]
+                sc = cam.max() if cam.max() > 0 else 1.0
+                mo = max_opacities[k]
+                for idx in range(len(magenta_overlays[k])):
+                    row, col = idx // 16, idx % 16
+                    attn_val = cam[row, col]
+                    opacity = min(mo, mo * (attn_val / sc))
+                    magenta_overlays[k][idx].set_fill(opacity=float(opacity))
+
+            self.wait(1 / 15)
+
+        self.wait()
 
 
 
