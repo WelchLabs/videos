@@ -713,7 +713,7 @@ class P31_61_1(InteractiveScene):
                   FadeOut(all_svgs[13]), 
                   run_time=3)
         
-
+ 
         # Now blow up a single attention head box as we zoom back out!
         # P40 Shorty
         h6_label=all_svgs[12][1:]
@@ -725,9 +725,169 @@ class P31_61_1(InteractiveScene):
                   self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8),
                   run_time=5)
 
+
+        queries=Group(); keys=Group(); values=Group(); 
+        attn_dots=VGroup()
+        q_spacing=0.15
+        for i in range(11):
+            q=ImageMobject(str(hacking_dir/('p40_1/queries_'+ str(i).zfill(2) +'.png')))
+            q.scale(0.022)
+            q.move_to([3.5, 3.2-i*q_spacing, 0])
+            queries.add(q)
+            if i==1 or i==6:
+                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(DOWN, buff=0.012)
+                e.move_to(q)
+                attn_dots.add(e)
+
+        for i in range(11):
+            k=ImageMobject(str(hacking_dir/('p40_1/keys_'+ str(i).zfill(2) +'.png')))
+            k.scale(0.022)
+            k.move_to([3.5, 0.9-i*q_spacing, 0])
+            keys.add(k)
+            if i==1 or i==6:
+                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(DOWN, buff=0.012)
+                e.move_to(k)
+                attn_dots.add(e)
+
+        for i in range(11):
+            v=ImageMobject(str(hacking_dir/('p40_1/values_'+ str(i).zfill(2) +'.png')))
+            v.scale(0.022)
+            v.move_to([3.5, -1.37-i*q_spacing, 0])
+            values.add(v)
+            if i==1 or i==6:
+                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(DOWN, buff=0.012)
+                e.move_to(v)
+                attn_dots.add(e)
+
+        all_svgs[17].shift([0.04, 0.03, 0])
+        all_svgs[18].shift([0.04, 0.00, 0])
+        all_svgs[19].shift([0.04, 0.00, 0])
+
+        self.wait()
+        self.play(Write(all_svgs[15]), run_time=5)
+
         self.wait()
 
-        self.play(Write(all_svgs[15]), run_time=5)
+        self.play(FadeIn(queries), FadeIn(all_svgs[17]), FadeIn(attn_dots[:2]), run_time=2)
+        self.play(FadeIn(keys), FadeIn(all_svgs[18]), FadeIn(attn_dots[:2]), run_time=2)
+        self.play(FadeIn(values), FadeIn(all_svgs[19]), FadeIn(attn_dots[:2]), run_time=2)
+
+
+        all_svgs[20].scale(1.015)
+        all_svgs[20].shift([0.2, 0.03, 0])
+
+        self.wait()
+        self.play(Write(all_svgs[20]))
+
+        #Ok for the middle of this paragraph we’ll rely on some illustrator overlays to call out connections etc → I think that will work better than animation? 
+        #And we’ll do one zoom in/out when we talk about the light/dark regions of the vectors.
+
+        self.remove(all_svgs[20])
+        self.play(self.frame.animate.reorient(0, 0, 0, (3.47, 2.5, 0.0), 2.97), run_time=5)
+
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), run_time=4)
+
+    
+        self.wait()
+
+        self.remove(attn_dots); self.add(attn_dots) #Occluserns
+
+
+        #P41 
+        #Slow zoom on Queries and keys
+        self.play(self.frame.animate.reorient(0, 0, 0, (3.63, 1.2, 0.0), 4.37), 
+                 FadeOut(all_svgs[14][-1]),#Attention head boarder
+                 run_time=10) 
+
+
+        self.wait()
+
+        #Reduce opacity on all but final query row
+        self.play(Group(*[queries[i] for i in [0, 2, 3, 4, 5, 7, 8, 9]]).animate.set_opacity(0.35), run_time=3)
+
+
+        #Move copies on top of every key, adding numerical results -> i thnk one at a time. 
+
+        # Add a column of Dot product results to the right of the keys matrix:
+        # -27.49
+
+        # -48.69
+        #  36.30
+        #  41.04
+        # -42.65
+
+        # -19.15
+        # -19.71
+        # -29.76
+        # -43.39
+
+        # Title on top of this column "DOT PRODUCT" with a line under it. Dot product is myriad pro, numbers are standard font
+
+        # Dot product column
+        dot_product_values = {
+            0: "-27.49",
+            2: "-48.69",
+            3: " 36.30",
+            4: " 41.04",
+            5: "-42.65",
+            7: "-19.15",
+            8: "-19.71",
+            9: "-29.76",
+            10: "-43.39",
+        }
+
+        dp_x = 6.3  # tweak to sit right of keys
+
+        dp_title = Text("DOT PRODUCT", font="Myriad Pro", weight='bold', font_size=14)
+        dp_title.set_color(FRESH_TAN)
+        dp_title.move_to([dp_x, 0.9 + 0.22, 0])  # just above first key row
+
+        dp_underline = Line(
+            dp_title.get_left() + DOWN * 0.08,
+            dp_title.get_right() + DOWN * 0.08,
+        )
+        dp_underline.set_stroke(FRESH_TAN, width=2)
+
+        dp_numbers = VGroup()
+        for i in range(11):
+            y = 0.9 - i * q_spacing
+            if i in dot_product_values:
+                num = Text(dot_product_values[i], font_size=14)
+                num.set_color(YELLOW)
+                num.move_to([dp_x, y, 0])
+                dp_numbers.add(num)
+
+        # self.add(dp_title, dp_underline, dp_numbers)
+
+        self.play(Write(dp_title), ShowCreation(dp_underline), run_time=1.5)
+
+        self.wait()
+
+        query_copy=queries[-1].copy()
+        query_copy.set_opacity(0.8)
+        self.add(query_copy)
+
+        self.play(query_copy.animate.move_to(keys[0]), run_time=3)
+        self.play(Write(dp_numbers[0]))
+        self.play(FadeOut(query_copy))
+
+        animations=[]
+        query_copies=Group()
+        for i in [2, 3, 4, 5, 7, 8, 9, 10]:
+            query_copy=queries[-1].copy()
+            query_copy.set_opacity(0.8)
+            query_copies.add(query_copy)
+            animations.append(query_copy.animate.move_to(keys[i]))
+
+        self.add(query_copies)
+        #ok this is pretty good now gotta add lag ratio and drawing in results. 
+        self.play(*animations, run_time=5)
+
+
 
 
 
@@ -748,35 +908,6 @@ class P31_61_1(InteractiveScene):
 
 
 
-        # self.add(starting_squares_1); 
-        # self.remove(pixel_squares[0]); self.add(pixel_squares[0])
-        # self.play(
-        #     LaggedStart(
-        #         *[ReplacementTransform(starting_squares_1[i], embedding_rows_1[i]) 
-        #           for i in range(len(embedding_rows_1))],
-        #         lag_ratio=1.0,  # 1.5 would be very slow — start small
-        #     ),
-        #     run_time=6
-        # )
-
-
-        # self.add(color_square)
-        # self.play(Transform(color_square, flat_rect), run_time=3)
-        # self.remove(pixel_squares[0][0])
-
-
-        #Somethign like:
-        # self.play(self.frame.animate.reorient(0, 0, 0, (-3.07, 2.22, 0.0), 4.53))
-
-
-
-
-
-
-
-
-
-        # self.wait()
 
 
 
