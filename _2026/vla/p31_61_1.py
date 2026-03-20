@@ -857,7 +857,7 @@ class P31_61_1(InteractiveScene):
             y = 0.9 - i * q_spacing
             if i in dot_product_values:
                 num = Text(dot_product_values[i], font_size=14)
-                num.set_color(YELLOW)
+                num.set_color(MAGENTA)
                 num.move_to([dp_x, y, 0])
                 dp_numbers.add(num)
 
@@ -877,17 +877,83 @@ class P31_61_1(InteractiveScene):
 
         animations=[]
         query_copies=Group()
-        for i in [2, 3, 4, 5, 7, 8, 9, 10]:
+        for count, i in enumerate([2, 3, 4, 5, 7, 8, 9, 10]):
             query_copy=queries[-1].copy()
-            query_copy.set_opacity(0.8)
+            query_copy.set_opacity(0.5)
             query_copies.add(query_copy)
             animations.append(query_copy.animate.move_to(keys[i]))
+            animations.append(Write(dp_numbers[count+1]))
 
         self.add(query_copies)
         #ok this is pretty good now gotta add lag ratio and drawing in results. 
-        self.play(*animations, run_time=5)
+        self.play(LaggedStart(*animations, lag_ratio=0.4), run_time=10)
+
+        self.wait()
+        self.play(FadeOut(query_copies), run_time=3)
+
+        #P42 - Will need a little Illustrator overlay here to point to those two large results - no problem
+
+        attn_values = {
+            0: "0.000",
+            2: "0.000",
+            3: "0.030",
+            4: "0.041",
+            5: "0.001",
+            7: "0.001",
+            8: "0.001",
+            9: "0.000",
+            10: "0.000",
+        }
+
+        attn_x = 7.5  #
+
+        attn_title = Text("ATTENTION VALUE", font="Myriad Pro", weight='bold', font_size=14)
+        attn_title.set_color(FRESH_TAN)
+        attn_title.move_to([attn_x, 0.9 + 0.22, 0])  # just above first key row
+
+        attn_underline = Line(
+            attn_title.get_left() + DOWN * 0.08,
+            attn_title.get_right() + DOWN * 0.08,
+        )
+        attn_underline.set_stroke(FRESH_TAN, width=2)
+
+        attn_numbers = VGroup()
+        for i in range(11):
+            y = 0.9 - i * q_spacing
+            if i in attn_values:
+                num = Text(attn_values[i], font_size=14)
+                num.set_color(MAGENTA)
+                num.move_to([attn_x, y, 0])
+                attn_numbers.add(num)
+
+        all_svgs[21].scale(0.8) #Softmax arrow
+        all_svgs[21].move_to([6.93, 0.1, 0])
+
+        self.wait()
+        self.add(all_svgs[21])
+        self.play(self.frame.animate.reorient(0, 0, 0, (4.56, 1.1, 0.0), 4.22), 
+                  Write(attn_title), 
+                  ShowCreation(attn_underline), 
+                  Write(attn_numbers),
+            )
+        self.remove(h6_label) #Probably add back later when we do the big zoom out. 
+
+        self.wait()
 
 
+        # Ok mid P42 now, this on is going to be a little tricky
+        # So we're building up to bringing the three tiled images
+        # front and center, for that animation, we're probably not rendering
+        # in manim right? It will be maptotlib, probably like very close
+        # to the demo I already rendered?
+        # Ok ok ok ok ok ok ok ok ok ok ok ok ok ok 
+        # So I think the move is to pretend like we're adding a magenta layer
+        # on top of the patches in manim, but like actually just do a switcheroo 
+        # kidna thing? baking in the magenta values from matplotlib into a 
+        # Different set of image patches? It also might not be terrible, form that 
+        # perspective to actually play the animation in matplotlib, 
+        # just would be resampling the cached colored patches in a loop
+        # let's do that as plan A, and fall back if that's problematic. 
 
 
 
