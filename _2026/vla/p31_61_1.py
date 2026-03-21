@@ -1219,26 +1219,48 @@ class P31_61_1(InteractiveScene):
 
         self.play(FadeOut(all_svgs[12]),
                   self.frame.animate.reorient(0, 0, 0, (4.1, -2.97, 0.0), 4.76),
-                attn_dots.animate.move_to([5.5 , 0.39, 0.  ]), #+2
-                values.animate.move_to([5.5, -2.12, 0]),
-                all_svgs[19].animate.move_to([5.5, -3.04, 0]),
-                attn_pattern.animate.scale(0.41).move_to([2.1, -2.12, 0]),
-                all_svgs[23].animate.scale(0.9).move_to([2.12, -1.15, 0]),
-                all_svgs[24].animate.scale(0.9).move_to([2.6, -3.08, 0]),
-                run_time=5
+                  attn_dots.animate.move_to([5.5 , 0.39, 0.  ]), #+2
+                  values.animate.move_to([5.5, -2.12, 0]),
+                  all_svgs[19].animate.move_to([5.5, -3.04, 0]),
+                  attn_pattern.animate.scale(0.41).move_to([2.1, -2.12, 0]),
+                  all_svgs[23].animate.scale(0.9).move_to([2.12, -1.15, 0]),
+                  all_svgs[24].animate.scale(0.9).move_to([2.6, -3.08, 0]),
+                  run_time=5
             )
 
         # Ok getting big equals sign on the bottom row vibes here. 
         # I think that will work!
 
-
-
-
         self.wait()
 
 
+        head_outs=Group(); 
+        head_out_dots=VGroup()
+        out_spacing=0.15
+        for i in range(11):
+            o=ImageMobject(str(hacking_dir/('p45/out_'+ str(i).zfill(2) +'.png')))
+            o.scale(0.022)
+            o.move_to([5.5, -3.4-i*out_spacing, 0])
+            head_outs.add(o)
+            if i==1 or i==6:
+                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(DOWN, buff=0.012)
+                e.move_to(o)
+                head_out_dots.add(e)
 
-        
+        all_svgs[25].move_to([5.5, -5.1, 0])
+        self.add(head_outs, head_out_dots)
+        self.add(all_svgs[25])
+
+        self.wait()
+
+        big_erquals=Text('=', font="Myriad Pro", weight='bold', font_size=42)
+        big_erquals.set_color(CHILL_BROWN)
+        big_erquals.move_to(([2.8, -4.2, 0]))
+        big_erquals.set_opacity(0.7)
+
+
+        self.add(big_erquals)
 
 
 
