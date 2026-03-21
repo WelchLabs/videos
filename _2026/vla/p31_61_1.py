@@ -1185,11 +1185,60 @@ class P31_61_1(InteractiveScene):
 
 
         #P45
-        
+        self.play(FadeOut(attn_pattern), 
+                  # FadeOut(all_svgs[22]),
+                  FadeOut(all_svgs[23]),
+                  FadeOut(all_svgs[24]),
+                  run_time=2)
+        self.wait()
+        self.play(FadeIn(queries),
+                  FadeIn(keys),
+                  FadeIn(all_svgs[17]),
+                  FadeIn(all_svgs[18]),
+                  # FadeIn(attn_dots[:4]),
+                  run_time=3)
+        self.wait()
+
+        self.play(FadeOut(queries),
+                  FadeOut(keys),
+                  FadeOut(all_svgs[17]),
+                  FadeOut(all_svgs[18]),
+                  # FadeIn(attn_dots[:4]),
+                  run_time=3)
+
+        self.wait()
+        self.play(FadeIn(attn_pattern), 
+                  # FadeIn(all_svgs[22]),
+                  FadeIn(all_svgs[23]),
+                  FadeIn(all_svgs[24]),
+                  run_time=2)
+
+
+        self.wait()
+
+
+        self.play(FadeOut(all_svgs[12]),
+                  self.frame.animate.reorient(0, 0, 0, (4.1, -2.97, 0.0), 4.76),
+                attn_dots.animate.move_to([5.5 , 0.39, 0.  ]), #+2
+                values.animate.move_to([5.5, -2.12, 0]),
+                all_svgs[19].animate.move_to([5.5, -3.04, 0]),
+                attn_pattern.animate.scale(0.41).move_to([2.1, -2.12, 0]),
+                all_svgs[23].animate.scale(0.9).move_to([2.12, -1.15, 0]),
+                all_svgs[24].animate.scale(0.9).move_to([2.6, -3.08, 0]),
+                run_time=5
+            )
+
+        # Ok getting big equals sign on the bottom row vibes here. 
+        # I think that will work!
+
 
 
 
         self.wait()
+
+
+
+        
 
 
 
