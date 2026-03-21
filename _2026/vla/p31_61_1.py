@@ -22,6 +22,9 @@ MAGENTA='#FF00FF'
 svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/graphics/to_manim/')
 hacking_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/hackin')
 
+# Might need to run this to allow for opening enough files
+# before rendering:
+# ulimit -n 4096
 
 SATURATION_BOOST=1.5 #1.3
 MIN_SATURATION=0.2 #0.1
@@ -1030,10 +1033,8 @@ class P31_61_1(InteractiveScene):
 
         # Gather everything else on screen into a group we can fade out and bring back
         background_stuff = Group(
-            all_svgs[15], all_svgs[17], all_svgs[18], all_svgs[19], all_svgs[21],
+            all_svgs[15], all_svgs[17], all_svgs[18], all_svgs[19], 
             queries, keys, values, attn_dots,
-            dp_title, dp_underline, dp_numbers,
-            attn_title, attn_underline, attn_numbers,
             embedding_brackets_2, embedding_rows_1, embedding_rows_2, embedding_rows_3, embedding_rows_4,
             ellipsis_dots, ellipsis_dots_2,
             blue_text_embedding_arrow, embedding_out_arrow,
@@ -1041,6 +1042,8 @@ class P31_61_1(InteractiveScene):
             siglip_1, siglip_2, siglip_3, image_encoders_label,
             tokenized_prompt, all_svgs[6][1:7]
         )
+        background_stuff_2=Group(all_svgs[21], dp_title, dp_underline, dp_numbers,
+                                 attn_title, attn_underline, attn_numbers)
 
         # self.wait()
         # self.remove(background_stuff)
@@ -1053,9 +1056,12 @@ class P31_61_1(InteractiveScene):
         # We need to move both pixel_squares AND magenta_overlays together
         # Group each image's patches + overlays so they move as one unit
         combined_images = []
+        combined_image_start_centers=[]
         for k in range(3):
             combo = Group(pixel_squares[k], magenta_overlays[k])
             combined_images.append(combo)
+            combined_image_start_centers.append(combo.get_center())
+        combined_image_start_centers=copy.deepcopy(np.array(combined_image_start_centers))
 
         # Compute target x positions
         total_width = pixel_squares[0].get_width()  # all three are same width
@@ -1069,6 +1075,7 @@ class P31_61_1(InteractiveScene):
         self.wait()
         self.play(
             FadeOut(background_stuff),
+            FadeOut(background_stuff_2),
             combined_images[0].animate.move_to([target_xs[0], img_y, 0]),
             combined_images[1].animate.move_to([target_xs[1], img_y, 0]),
             combined_images[2].animate.move_to([target_xs[2], img_y, 0]),
@@ -1076,10 +1083,115 @@ class P31_61_1(InteractiveScene):
             run_time=4,
         )
 
-        self.wait()
+        
 
         ## Annoying, but not a big deal, cut to separate p43a/b/c scenes!
         ## then come back here!
+        ## P44 Ok now we need to get back to the full attention head scene 
+        ## with Queries, Keys, and Vectors
+
+        self.wait()
+        all_svgs[12].set_opacity(0.6) #h6 box and label
+        self.play(
+            FadeIn(background_stuff),
+            FadeIn(all_svgs[12]),
+            combined_images[0].animate.move_to(combined_image_start_centers[0]),
+            combined_images[1].animate.move_to(combined_image_start_centers[1]),
+            combined_images[2].animate.move_to(combined_image_start_centers[2]),
+            self.frame.animate.reorient(0, 0, 0, (0, 0, 0.0), 8),
+            run_time=4,
+        )
+
+        #Kinda subtle, but I feel like let's fade back in all queries here
+        self.play(queries[:-1].animate.set_opacity(1.0), run_time=3)
+        self.remove(attn_dots); self.add(attn_dots) #Occlusions
+
+        # Ok I wish I had a cooler way of doing this swap, but I think 
+        # it's just going to be a kinda cheesy crossfade. 
+        # That's ok tho. 
+
+        
+        attn_pattern=ImageMobject(str(hacking_dir/('p44/attn_pattern_1.png')))
+        attn_pattern.scale(1.3)
+        attn_pattern.move_to([3.3, 1.2, 0])
+        all_svgs[22].scale(0.9)
+        all_svgs[22].move_to([3.6, 1.38, 0])
+        all_svgs[23].move_to([2.2, -1, 0])
+        all_svgs[24].move_to([4.98, -0.98, 0])
+
+        self.wait()
+        self.play(FadeOut(queries),
+                  FadeOut(keys),
+                  FadeOut(all_svgs[17]),
+                  FadeOut(all_svgs[18]),
+                  FadeOut(attn_dots[:4]),
+                  run_time=3)
+
+
+        self.play(FadeIn(attn_pattern), 
+                  Write(all_svgs[22]),
+                  Write(all_svgs[23]),
+                  Write(all_svgs[24]),
+                  run_time=2)
+
+        self.wait()
+
+        #Eh?
+        self.play(FadeOut(all_svgs[22]),
+                  attn_pattern.animate.set_opacity(0.2))
+
+
+        # Ok Claude, so I now have this attention pattern matrix, 
+        # and I want to move all my magenta attention squares over 
+        # to land on the bottom row of the matrix. This is a little 
+        # tricky b/c the matrix is just an image eported with imshow.
+        # Let's assume some final row vector position on the right 
+        # side of the canvas that we can tweak. From here I want to 
+        # move all magenta squares into this row -> they will get 
+        # scaled down quite a bit, I think that's ok. 
+               
+        # --- Move magenta squares into bottom-row strip ---
+        # Tweak these to align with your attn_pattern image
+        row_center_y = -0.81   # y position of the target row (bottom of attn matrix)
+        row_left_x = 1.37      # left edge
+        row_right_x = 5.35     # right edge  
+        target_h = 0.02        # height of each mini-square
+
+        # Flatten all magenta squares in token order: overhead → left → right
+        all_magenta_squares = [sq for k in range(3) for sq in magenta_overlays[k]]
+        all_opacities=[sq.get_opacity() for sq in all_magenta_squares]
+        n = len(all_magenta_squares)
+        strip_w = row_right_x - row_left_x
+        cell_w = strip_w / n
+
+        move_anims = []
+        for idx, sq in enumerate(all_magenta_squares):
+            tx = row_left_x + (idx + 0.5) * cell_w
+            move_anims.append(
+                sq.animate.move_to([tx, row_center_y, 0])
+                  .set_height(target_h)
+                  .set_width(cell_w, stretch=True)
+                  .set_opacity(all_opacities[idx]*5)
+            )
+
+        self.wait()
+        self.play(
+            LaggedStart(*move_anims, lag_ratio=0.005),
+            run_time=5,
+        )
+        self.play(attn_pattern.animate.set_opacity(1.0),
+                  FadeOut(magenta_overlays))
+        self.wait()
+
+
+        #P45
+        
+
+
+
+        self.wait()
+
+
 
 
  
@@ -1089,6 +1201,16 @@ class P31_61_1(InteractiveScene):
 
         self.wait(20)
         self.embed()
+
+
+
+
+
+
+
+
+
+
 
 
 
