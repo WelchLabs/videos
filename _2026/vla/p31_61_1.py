@@ -1231,9 +1231,6 @@ class P31_61_1(InteractiveScene):
         # Ok getting big equals sign on the bottom row vibes here. 
         # I think that will work!
 
-        self.wait()
-
-
         head_outs=Group(); 
         head_out_dots=VGroup()
         out_spacing=0.15
@@ -1249,18 +1246,52 @@ class P31_61_1(InteractiveScene):
                 head_out_dots.add(e)
 
         all_svgs[25].move_to([5.5, -5.1, 0])
-        self.add(head_outs, head_out_dots)
-        self.add(all_svgs[25])
-
-        self.wait()
 
         big_erquals=Text('=', font="Myriad Pro", weight='bold', font_size=42)
         big_erquals.set_color(CHILL_BROWN)
         big_erquals.move_to(([2.8, -4.2, 0]))
         big_erquals.set_opacity(0.7)
 
+        self.wait()
 
-        self.add(big_erquals)
+        self.play(FadeIn(head_outs), 
+                  FadeIn(head_out_dots), 
+                  FadeIn(all_svgs[25]), 
+                  FadeIn(big_erquals),
+                  run_time=2)
+
+
+        # self.add(head_outs, head_out_dots)
+        # self.add(all_svgs[25])
+
+        #ok now moving row copies down. 
+        value_row_copy_1=values[3].copy()
+        value_row_copy_1.set_opacity(0.8)
+
+        value_row_copy_2=values[4].copy()
+        value_row_copy_2.set_opacity(0.8)
+
+        self.add(value_row_copy_1)
+        self.add(value_row_copy_2)
+
+        # self.play(value_row_copy_1.animate.move_to(head_outs[-1]), run_time=5)
+        # self.remove(value_row_copy_1)
+
+        # self.play(value_row_copy_2.animate.move_to(head_outs[-1]), run_time=5)
+        # self.remove(value_row_copy_2)
+
+        self.play(LaggedStart(value_row_copy_2.animate.move_to(head_outs[-1]), 
+                             value_row_copy_1.animate.move_to(head_outs[-1]),
+                lag_ratio=0.1), run_time=5)
+        self.remove(value_row_copy_1, value_row_copy_2)
+
+        self.wait()
+
+        # P47 - Ok time to start zooming out - that's as deep as we're going to 
+        # go!
+
+
+
 
 
 
