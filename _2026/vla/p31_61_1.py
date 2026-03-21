@@ -1288,14 +1288,83 @@ class P31_61_1(InteractiveScene):
         self.wait()
 
         # P47 - Ok time to start zooming out - that's as deep as we're going to 
-        # go!
+        # go! So there's kinda a 2 step option, where we go to the head first
+        # and then the full network -> or we try to do in one go, and use the 
+        # attention pattern as the really clear link. Also I do think i want 
+        # to render out all the real attention patterns that shouldn't be too bad
+        # I'll go do that first and then work on the rest. 
+
+        all_attn_patterns=[]
+        for layer in range(18):
+            all_attn_patterns.append([])
+            for head in range(8):
+                im=ImageMobject(str(hacking_dir/('p47/attn_pattern_'+str(layer)+'_'+str(head)+'.png')))
+                all_attn_patterns[-1].append(im)
+
+
+        #Ok let's figure out what we gotta remove first
+        fadeout_group_3=Group(values, head_outs, all_svgs[25], big_erquals, all_svgs[23], 
+                             all_svgs[24], all_svgs[19], all_svgs[15], attn_dots, head_out_dots)
+
+        all_svgs[26].shift([0.19, 0, 0])
+        gemma=Group(all_svgs[8:11], all_svgs[13], all_svgs[26])
+
+        attn_patterns_to_show=Group()
+        for i in range(8):
+            all_attn_patterns[0][i].scale(0.096)
+            all_attn_patterns[0][i].move_to([0.25, 1.5-0.358*i, 0])
+            attn_patterns_to_show.add(all_attn_patterns[0][i])
+
+        for i in range(8):
+            if i==6: continue
+            all_attn_patterns[1][i].scale(0.096)
+            all_attn_patterns[1][i].move_to([2.65, 1.5-0.358*i, 0])
+            attn_patterns_to_show.add(all_attn_patterns[1][i])
+
+        for i in range(8):
+            all_attn_patterns[-1][i].scale(0.096)
+            all_attn_patterns[-1][i].move_to([5.05, 1.5-0.358*i, 0])
+            attn_patterns_to_show.add(all_attn_patterns[-1][i])
+
+
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
+                attn_pattern.animate.scale(0.18).move_to([2.65, 1.5-0.358*6, 0]), 
+                FadeOut(fadeout_group_3),
+                FadeIn(gemma),
+                FadeIn(attn_patterns_to_show),
+                run_time=8)
+        self.remove(all_svgs[26]); self.add(all_svgs[26]) 
 
 
 
+        # attn_pattern.scale(0.18)
+        # attn_pattern.move_to([2.65, 1.5-0.358*6, 0])
+
+        # self.remove(fadeout_group_3)
+        # self.add(gemma)
+
+        # self.add(attn_patterns_to_show)
+        # self.remove(all_svgs[26]); self.add(all_svgs[26])
 
 
+        # all_attn_patterns[0][1].scale(0.096)
+        # all_attn_patterns[0][1].move_to([0.25, 1.15, 0])
+
+        # all_attn_patterns[1][0].scale(0.096)
+        # all_attn_patterns[1][0].move_to([2.65, 1.5, 0])
+
+        # self.add(all_attn_patterns[0][0])
+        # self.add(all_attn_patterns[0][1])
+        # self.add(all_attn_patterns[1][0])
+
+        # self.remove(all_svgs[14])
+
+        self.wait()
 
 
+        
+        # self.remove(all_svgs[15])
  
 
         self.wait()
