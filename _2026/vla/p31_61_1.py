@@ -1303,8 +1303,6 @@ class P31_61_1(InteractiveScene):
 
 
         #Ok let's figure out what we gotta remove first
-        fadeout_group_3=Group(values, head_outs, all_svgs[25], big_erquals, all_svgs[23], 
-                             all_svgs[24], all_svgs[19], all_svgs[15], attn_dots, head_out_dots)
 
         all_svgs[26].shift([0.19, 0, 0])
         gemma=Group(all_svgs[8:11], all_svgs[13], all_svgs[26])
@@ -1327,10 +1325,16 @@ class P31_61_1(InteractiveScene):
             attn_patterns_to_show.add(all_attn_patterns[-1][i])
 
 
+
+        fadeout_group_3=Group(values, head_outs, all_svgs[25], big_erquals, all_svgs[23], 
+                             all_svgs[24], all_svgs[19], all_svgs[15], attn_dots, head_out_dots)
+
+
         self.wait()
+        self.remove(fadeout_group_3)
         self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
                 attn_pattern.animate.scale(0.18).move_to([2.65, 1.5-0.358*6, 0]), 
-                FadeOut(fadeout_group_3),
+                # FadeOut(fadeout_group_3),
                 FadeIn(gemma),
                 FadeIn(attn_patterns_to_show),
                 run_time=8)
@@ -1338,27 +1342,75 @@ class P31_61_1(InteractiveScene):
 
 
 
-        # attn_pattern.scale(0.18)
-        # attn_pattern.move_to([2.65, 1.5-0.358*6, 0])
+        action_expert_box.set_color(CHILL_BROWN)
+        action_expert_label.set_color(CHILL_BROWN)
 
-        # self.remove(fadeout_group_3)
-        # self.add(gemma)
+        action_expert_group=VGroup(action_expert_box, action_expert_label)
+        action_expert_group.scale(0.9)
 
-        # self.add(attn_patterns_to_show)
-        # self.remove(all_svgs[26]); self.add(all_svgs[26])
+        action_expert_group.move_to([3.3, -2.9, 0])
+        # action_expert_box.set_width(())
+
+        self.wait()
+        self.play(ShowCreation(action_expert_box), 
+                  Write(action_expert_label), 
+                  FadeIn(pi0_logo), 
+                  run_time=3)
+
+        # self.add(action_expert_box)
+        # self.add(action_expert_label)
+        # self.add(pi0_logo)
+
+        all_svgs[27].move_to([-5.2, -6, 0])
+        # action_expert_group.move_to([-1.9, -6, 0])
+        lil_arrow=all_svgs[1][-2:].copy()
+        lil_arrow.move_to([-3.6, -6, 0])
+        # self.add(lil_arrow)
+
+        arm_img=ImageMobject(str(hacking_dir/'arm_1.png'))
+        arm_img_flipped=ImageMobject(str(hacking_dir/'arm_1_flipped.png'))
+
+        arm_img_flipped.scale(0.52)
+        arm_img_flipped.move_to([-5.78, -5.97, 0])
+
+        arm_img.scale(0.52)
+        arm_img.move_to([-4.6, -5.97, 0])
+
+        all_svgs[28].move_to([-5.2, -6, 0])
 
 
-        # all_attn_patterns[0][1].scale(0.096)
-        # all_attn_patterns[0][1].move_to([0.25, 1.15, 0])
+        self.wait()
+        self.play(FadeOut(pi0_logo), 
+                  self.frame.animate.reorient(0, 0, 0, (-3.52, -5.97, 0.0), 3.73),
+                  FadeIn(all_svgs[27]),
+                  Write(lil_arrow),
+                  action_expert_group.animate.move_to([-1.9, -6, 0]),
+                  FadeIn(arm_img), 
+                  FadeIn(arm_img_flipped),
+                  run_time=5)
 
-        # all_attn_patterns[1][0].scale(0.096)
-        # all_attn_patterns[1][0].move_to([2.65, 1.5, 0])
+        #Add joints as we talk about dems
+        self.add(all_svgs[28])
 
-        # self.add(all_attn_patterns[0][0])
-        # self.add(all_attn_patterns[0][1])
-        # self.add(all_attn_patterns[1][0])
+        self.remove(all_svgs[28])
 
-        # self.remove(all_svgs[14])
+
+
+
+
+
+
+
+
+
+
+        self.wait()
+
+
+
+
+
+
 
         self.wait()
 
@@ -1372,6 +1424,10 @@ class P31_61_1(InteractiveScene):
 
         self.wait(20)
         self.embed()
+
+
+
+
 
 
 
