@@ -18,6 +18,7 @@ CHILL_BLUE='#3d5c6f'
 FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
+PINK='#FAD0E2'
 
 svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/graphics/to_manim/')
 hacking_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/hackin')
@@ -1387,18 +1388,95 @@ class P31_61_1(InteractiveScene):
                   action_expert_group.animate.move_to([-1.9, -6, 0]),
                   FadeIn(arm_img), 
                   FadeIn(arm_img_flipped),
+                  FadeIn(all_svgs[28][-40:-15]), #State
+                  FadeIn(all_svgs[28][-58:-40]), #Image Credit
                   run_time=5)
 
         #Add joints as we talk about dems
-        self.add(all_svgs[28])
 
-        self.remove(all_svgs[28])
+        self.wait()
+        self.add(all_svgs[28][-79:-76]) #Waist
+        self.wait()
+        self.add(all_svgs[28][-61:-58]) #Shoulder
+        self.wait()
+        self.add(all_svgs[28][-64:-61]) #Elbow
+        self.wait()
+        self.add(all_svgs[28][-67:-64]) #Forearm rotation
+        self.wait()
+        self.add(all_svgs[28][-70:-67]) #Wrist
+        self.wait()
+        self.add(all_svgs[28][-73:-70]) #Wrist rotation
+        self.wait()
+        self.add(all_svgs[28][-76:-73]) #Gripper
+        self.wait()
+
+        self.add(all_svgs[28][:-76]) #Right erm
+        self.wait()
+
+        self.play(Write(all_svgs[28][-15:]), run_time=3) # Matrix
+        self.wait()
+
+
+        all_svgs[29].move_to([-3.05, -4.8, 0]) #Matrix box
+        all_svgs[30].move_to([-1.53, -6.7, 0]) #Expert embeddings
+        all_svgs[31].move_to([-4.25, -6.765, 0]) #Actions
+
+        self.wait()
+
+        self.play(self.frame.animate.reorient(0, 0, 0, (3.41, -1.81, 0.0), 12.27), 
+                 run_time=5)
+
+        self.wait()
+        self.remove(action_expert_group, lil_arrow)
+        self.play(self.frame.animate.reorient(0, 0, 0, (-2.03, -6.66, 0.0), 5.33), 
+                  Write(all_svgs[29]),
+                  Write(all_svgs[30]), 
+                  run_time=5)
+
+
+        self.wait()
+        # Red matrix transforms into embedding vector line
+        # Go ahead and make embedding vector lines
+        # Lines or rectangles? Not sure how much it matters here
+
+        embedding_rows_action_expert=VGroup()
+        vertical_spacing=0.2
+        for i in range(20):
+            if i==9:
+                ellipsis_dots_action_expert_1 = VGroup(*[
+                    Dot(radius=0.02).set_color(CHILL_BROWN)
+                    for _ in range(3)
+                ])
+                ellipsis_dots_action_expert_1.arrange(DOWN, buff=0.03)
+                ellipsis_dots_action_expert_1.next_to(flat_rect, DOWN, buff=0.09)
+                embedding_rows_action_expert.add(ellipsis_dots_action_expert_1)
+                continue
+            flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
+            if i==0: 
+                flat_rect.set_fill(RED, opacity=1)
+            else:
+                flat_rect.set_fill(PINK, opacity=1)
+            flat_rect.set_stroke(width=0)
+            flat_rect.move_to([-1.5, -4.7-i*vertical_spacing, 0])  
+
+            embedding_rows_action_expert.add(flat_rect)
+
+        self.wait()
+        self.play(ReplacementTransform(all_svgs[28][-15:].copy(), embedding_rows_action_expert[0]),
+                 run_time=3)
+
+        self.wait()
+
+        self.play(Write(all_svgs[31]),
+                  ShowCreation(embedding_rows_action_expert[1:]),
+                  # ShowCreation(ellipsis_dots_action_expert_1),
+                  run_time=5)
+
+        # self.remove(embedding_rows_action_expert, ellipsis_dots_action_expert_1)
 
 
 
-
-
-
+        self.wait()
 
 
 
