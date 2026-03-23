@@ -66,7 +66,342 @@ def boost_colors_hsv(colors, saturation_boost=1.0, min_saturation=0.0, min_value
         out[i] = colorsys.hsv_to_rgb(h, s, v)
     return out
 
-class P31_61_1(InteractiveScene):
+class P52_61(InteractiveScene):
+    def construct(self): 
+        '''
+        Clean break/pickup from P49.
+        '''
+
+        # ── Load SVGs (same as P31_49) ──
+        svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
+        svg_files=list(sorted(svg_dir.glob('*.svg')))
+        all_svgs=Group()
+        for i, svg_file in enumerate(svg_files): 
+            if i in svgs_to_skip: continue
+            svg_image=SVGMobject(str(svg_file))
+            svg_image.scale(3.9)
+            all_svgs.add(svg_image[1:])
+
+        # ── Set frame to end-of-P49 state ──
+        self.frame.reorient(0, 0, 0, (-2.03, -6.66, 0.0), 5.33)
+
+        # ── Constants ──
+        FRAME_IDX = 150
+        total_height = 2.72
+        grid_n = 16
+        patch_size = total_height / grid_n
+        gap_factor = 0.12
+        vertical_spacing = 0.2
+
+        # ═══════════════════════════════════════════════════
+        # 1. IMAGE PATCHES (with gap expansion baked in)
+        # ═══════════════════════════════════════════════════
+        patch_centers = [
+            [-5.23, 2.58, 0],      # overhead (no shift)
+            [-5.23, 0.175, 0],     # left wrist (0.375 - 0.2 shift)
+            [-5.23, -2.22, 0],     # right wrist (-1.82 - 0.4 shift)
+        ]
+        pixel_squares = Group()
+        for k, image_name in enumerate(['base_0_rgb', 'left_wrist_0_rgb', 'right_wrist_0_rgb']):
+            pixel_squares.add(Group())
+            patch_dir = hacking_dir / f'p35/{FRAME_IDX}/{image_name}'
+            for i in range(2, 14):
+                for j in range(grid_n):
+                    patch_mob = ImageMobject(str(patch_dir / f'patch_{i}_{j}.png'))
+                    patch_mob.set_height(patch_size)
+                    patch_mob.set_width(patch_size, stretch=True)
+                    # Bake in gap expansion: offset * (1 + gap_factor)
+                    x_pos = (j - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
+                    y_pos = -(i - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
+                    patch_mob.move_to([x_pos, y_pos, 0])
+                    pixel_squares[-1].add(patch_mob)
+            pixel_squares[k].move_to(patch_centers[k])
+
+        # ═══════════════════════════════════════════════════
+        # 2. SIGLIP ENCODERS + LIL ARROWS
+        # ═══════════════════════════════════════════════════
+        siglip_1 = all_svgs[2][:13]
+        siglip_2 = all_svgs[2][13:26]
+        siglip_3 = all_svgs[2][26:39]
+        image_encoders_label = all_svgs[2][39:]
+
+        siglip_1.scale(1.1).move_to([-3.0, 2.6, 0])
+        siglip_2.scale(1.1).move_to([-3.0, 0.2, 0])
+        siglip_3.scale(1.1).move_to([-3.0, -2.1, 0])
+        image_encoders_label.scale(1.1).move_to([-3.0, 3.5, 0])
+
+        lil_arrows_pair_1 = all_svgs[5]
+        lil_arrows_pair_2 = lil_arrows_pair_1.copy()
+        lil_arrows_pair_3 = lil_arrows_pair_1.copy()
+        lil_arrows_pair_1.move_to([-3.0, 2.57, 0])
+        lil_arrows_pair_2.move_to([-3.0, 0.18, 0])
+        lil_arrows_pair_3.move_to([-3.0, -2.18, 0])
+
+        # ═══════════════════════════════════════════════════
+        # 3. EMBEDDING BRACKETS + ARROWS
+        # ═══════════════════════════════════════════════════
+        # all_svgs[6] remnants (indices that weren't ReplacementTransformed away)
+        all_svgs[6].shift([0.08, 0, 0])
+        bracket_remnants = all_svgs[6][1:7]
+
+        # all_svgs[7] splits
+        embedding_brackets_2 = all_svgs[7][2:8]
+        embedding_brackets_2.shift([0.08, 0, 0])
+
+        blue_text_embedding_arrow = all_svgs[7][:2]
+        blue_text_embedding_arrow.shift([0.08, 0, 0])
+        blue_text_embedding_arrow.shift([-0.1, 0.05, 0])
+        blue_text_embedding_arrow.set_color(BLUE)
+
+        embedding_out_arrow = all_svgs[7][-2:]
+        embedding_out_arrow.shift([-0.13, 0.18, 0])
+
+        # ═══════════════════════════════════════════════════
+        # 4. EMBEDDING ROWS (colored barcode lines)
+        # ═══════════════════════════════════════════════════
+        overhead_im = np.load(hacking_dir / 'p35/150_overhead.npy')
+        left_im = np.load(hacking_dir / 'p35/150_left.npy')
+        right_im = np.load(hacking_dir / 'p35/150_right.npy')
+
+        overhead_colors = patch_bright_average(overhead_im, exponent=2.0).reshape(-1, 3)
+        left_colors = patch_bright_average(left_im, exponent=2.0).reshape(-1, 3)
+        right_colors = patch_bright_average(right_im, exponent=2.0).reshape(-1, 3)
+
+        def make_embedding_row(color_arr, patch_index, y_pos):
+            bc = rgb_to_color(boost_colors_hsv(
+                color_arr[patch_index + 32].reshape(1, 3) / 255.,
+                saturation_boost=SATURATION_BOOST, min_saturation=MIN_SATURATION, min_value=MIN_VALUE).ravel())
+            r = Rectangle(width=1.1, height=0.03)
+            r.set_fill(bc, opacity=1).set_stroke(width=0)
+            r.move_to([-1.5, y_pos, 0])
+            return r
+
+        # Overhead embeddings
+        embedding_rows_1 = VGroup()
+        for i, pi in enumerate([0, 1, 2, 3, 4, 5, 6, 7, 8]):
+            embedding_rows_1.add(make_embedding_row(overhead_colors, pi, 3.15 - i * vertical_spacing))
+
+        ellipsis_dots = VGroup(*[Dot(radius=0.025).set_color(CHILL_BROWN) for _ in range(3)])
+        ellipsis_dots.arrange(DOWN, buff=0.035)
+        ellipsis_dots.next_to(embedding_rows_1[-1], DOWN, buff=0.15)
+
+        # Left wrist embeddings
+        embedding_rows_2 = VGroup()
+        for i, pi in enumerate([82, 83, 84, 85, 86, 87, 88, 89, 90, 91]):
+            embedding_rows_2.add(make_embedding_row(left_colors, pi, 1.0 - i * vertical_spacing))
+
+        ellipsis_dots_2 = VGroup(*[Dot(radius=0.025).set_color(CHILL_BROWN) for _ in range(3)])
+        ellipsis_dots_2.arrange(DOWN, buff=0.035)
+        ellipsis_dots_2.next_to(embedding_rows_2[-1], DOWN, buff=0.1)
+
+        # Right wrist embeddings
+        embedding_rows_3 = VGroup()
+        for i, pi in enumerate([186, 186, 187, 188, 189, 190, 191]):
+            embedding_rows_3.add(make_embedding_row(right_colors, pi, -1.3 - i * vertical_spacing))
+
+        # Text token embeddings (blue)
+        embedding_rows_4 = VGroup()
+        for i in range(4):
+            l = Line(LEFT * 0.55, RIGHT * 0.55)
+            l.set_stroke(BLUE, width=4)
+            l.move_to([-1.5, -2.75 - i * vertical_spacing, 0])
+            embedding_rows_4.add(l)
+
+        # ═══════════════════════════════════════════════════
+        # 5. TOKENIZED PROMPT
+        # ═══════════════════════════════════════════════════
+        tokenized_prompt = Text('Un  cap  the  pen', font="Myriad Pro", weight='bold', font_size=25)
+        tokenized_prompt.set_color(BLUE)
+        tokenized_prompt.set_stroke(BLUE, width=0.1)
+        # Position: started at [-5.5, -3.34], then shifted [0.2, -0.3]
+        tokenized_prompt.move_to([-5.3, -3.64, 0])
+
+        # ═══════════════════════════════════════════════════
+        # 6. GEMMA NETWORK
+        # ═══════════════════════════════════════════════════
+        # Apply the [0.2, 0, 0] shift to all gemma internals (incl hidden ones)
+        full_gemma = Group(all_svgs[8], all_svgs[9], all_svgs[10], 
+                           all_svgs[11], all_svgs[12], all_svgs[13])
+        full_gemma.shift([0.2, 0, 0])
+        all_svgs[26].shift([0.19, 0, 0])
+
+        # Only these are visible at end of P49:
+        gemma = Group(all_svgs[8], all_svgs[9], all_svgs[10], all_svgs[13], all_svgs[26])
+
+        # ═══════════════════════════════════════════════════
+        # 7. ATTENTION PATTERNS GRID
+        # ═══════════════════════════════════════════════════
+        all_attn_patterns = []
+        for layer in range(18):
+            all_attn_patterns.append([])
+            for head in range(8):
+                im = ImageMobject(str(hacking_dir / f'p47/attn_pattern_{layer}_{head}.png'))
+                all_attn_patterns[-1].append(im)
+
+        attn_patterns_to_show = Group()
+        for i in range(8):
+            all_attn_patterns[0][i].scale(0.096).move_to([0.25, 1.5 - 0.358 * i, 0])
+            attn_patterns_to_show.add(all_attn_patterns[0][i])
+        for i in range(8):
+            if i == 6: continue  # slot reserved for the zoomed-in pattern
+            all_attn_patterns[1][i].scale(0.096).move_to([2.65, 1.5 - 0.358 * i, 0])
+            attn_patterns_to_show.add(all_attn_patterns[1][i])
+        for i in range(8):
+            all_attn_patterns[-1][i].scale(0.096).move_to([5.05, 1.5 - 0.358 * i, 0])
+            attn_patterns_to_show.add(all_attn_patterns[-1][i])
+
+        # The single pattern that was shrunk into the layer-1/head-6 slot
+        attn_pattern = ImageMobject(str(hacking_dir / 'p44/attn_pattern_1.png'))
+        attn_pattern.scale(1.3 * 0.41 * 0.18)  # cumulative relative scales
+        attn_pattern.move_to([2.65, 1.5 - 0.358 * 6, 0])
+
+        # ═══════════════════════════════════════════════════
+        # 8. ACTION EXPERT AREA (bottom of canvas)
+        # ═══════════════════════════════════════════════════
+        all_svgs[27].move_to([-5.2, -6, 0])
+        all_svgs[28].move_to([-5.2, -6, 0])
+        all_svgs[29].move_to([-3.05, -4.7, 0])
+        all_svgs[30].move_to([-1.53, -6.7, 0])
+        all_svgs[31].move_to([-4.25, -6.765, 0])
+
+        arm_img = ImageMobject(str(hacking_dir / 'arm_1.png'))
+        arm_img.scale(0.52).move_to([-4.6, -5.97, 0])
+        arm_img_flipped = ImageMobject(str(hacking_dir / 'arm_1_flipped.png'))
+        arm_img_flipped.scale(0.52).move_to([-5.78, -5.97, 0])
+
+        # Action expert embedding rows (red/pink)
+        embedding_rows_action_expert = VGroup()
+        for i in range(20):
+            if i == 9:
+                dots = VGroup(*[Dot(radius=0.02).set_color(CHILL_BROWN) for _ in range(3)])
+                dots.arrange(DOWN, buff=0.03)
+                dots.next_to(embedding_rows_action_expert[-1], DOWN, buff=0.09)
+                embedding_rows_action_expert.add(dots)
+                continue
+            r = Rectangle(width=1.1, height=0.03)
+            r.set_fill(RED if i == 0 else PINK, opacity=1)
+            r.set_stroke(width=0)
+            r.move_to([-1.5, -4.7 - i * vertical_spacing, 0])
+            embedding_rows_action_expert.add(r)
+
+        # ═══════════════════════════════════════════════════
+        # ADD EVERYTHING TO SCENE
+        # ═══════════════════════════════════════════════════
+        self.add(
+            # Image patches
+            pixel_squares,
+            # SigLIP encoders + arrows
+            siglip_1, siglip_2, siglip_3, image_encoders_label,
+            lil_arrows_pair_1, lil_arrows_pair_2, lil_arrows_pair_3,
+            # Embedding column
+            bracket_remnants, embedding_brackets_2,
+            blue_text_embedding_arrow, embedding_out_arrow,
+            embedding_rows_1, ellipsis_dots,
+            embedding_rows_2, ellipsis_dots_2,
+            embedding_rows_3, embedding_rows_4,
+            # Prompt
+            tokenized_prompt,
+            # Gemma network
+            gemma,
+            # Attention patterns
+            attn_patterns_to_show, attn_pattern,
+            # Action expert area
+            all_svgs[27], all_svgs[28], all_svgs[29], all_svgs[30], all_svgs[31],
+            arm_img, arm_img_flipped,
+            embedding_rows_action_expert,
+        )
+        # Occlusion fix: gemma connector labels on top
+        self.remove(all_svgs[26]); self.add(all_svgs[26])
+
+        # self.add(all_svgs[28])
+
+        # Ok wow I think i can pickup here pretty cleanly! Dope. 
+        # P53
+
+        # Ok let me load up the action images.
+        diffusion_images=Group()
+        for i in range(11):
+            im=ImageMobject(str(hacking_dir/('p51/'+str(i).zfill(2)+'.png')))
+            diffusion_images.add(im)
+
+
+        action_expert_box = RoundedRectangle(
+            width=2.5,
+            height=1.5,
+            corner_radius=0.1,
+            stroke_color=CHILL_BROWN,
+            stroke_width=2,
+            fill_opacity=0,
+        )
+
+        action_expert_label=Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=24)
+        action_expert_label.set_color(CHILL_BROWN)
+        action_expert_label.move_to(action_expert_box)
+
+        action_expert_box_group=VGroup(action_expert_box, action_expert_label)
+
+
+        action_expert_box_group.move_to([1, -6.5, 0])
+        
+
+        # self.add(all_svgs[31])
+        
+        all_svgs[33].scale(0.7)
+        all_svgs[33].move_to([-4.2, -6.9, 0])
+        diffusion_images.move_to([-4.2, -6.9, 0])
+        diffusion_images.scale(0.25)
+
+
+        self.remove(all_svgs[31])
+        self.add(action_expert_box_group)
+        self.add(all_svgs[33])
+        self.add(diffusion_images[0])
+
+
+
+
+
+
+
+        self.wait()
+
+
+        self.wait(20)
+        self.embed()
+
+
+
+# class P52_61(InteractiveScene):
+#     def construct(self): 
+#         '''
+#         Clean break/pickup from P49.
+#         '''
+
+#         svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
+#         svg_files=list(sorted(svg_dir.glob('*.svg')))
+#         all_svgs=Group()
+#         for i, svg_file in enumerate(svg_files): 
+#             if i in svgs_to_skip: continue
+#             svg_image=SVGMobject(str(svg_file))
+#             svg_image.scale(3.9)
+#             all_svgs.add(svg_image[1:]) #Thowout background
+
+
+
+
+
+
+
+#         self.wait(20)
+#         self.embed()
+
+
+
+
+
+
+
+class P31_49(InteractiveScene):
     def construct(self): 
         '''
         Ok not sure how I want to break stuff up just yet - lets start hacking
@@ -1473,29 +1808,9 @@ class P31_61_1(InteractiveScene):
                   run_time=5)
 
         # self.remove(embedding_rows_action_expert, ellipsis_dots_action_expert_1)
+        # ok, so the load time of this sucker is obviously getting silly. 
+        # The cuts at P50-52 may be a good chance to start a clean scane here. 
 
-
-
-        self.wait()
-
-
-
-
-
-        self.wait()
-
-
-
-
-
-
-
-        self.wait()
-
-
-        
-        # self.remove(all_svgs[15])
- 
 
         self.wait()
 
