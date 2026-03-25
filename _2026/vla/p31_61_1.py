@@ -339,14 +339,22 @@ class P52_61(InteractiveScene):
             fill_opacity=0,
         )
 
+        manual_action_expert_box=all_svgs[4][-1].copy()
+        manual_action_expert_box.scale(0.6)
+        manual_action_expert_box.set_color(CHILL_BROWN)
+        # manual_action_expert_box.move_to(action_expert_label)
+
+        # self.add(manual_action_expert_box)
+
         action_expert_label=Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=22)
         action_expert_label.set_color(CHILL_BROWN)
-        action_expert_label.move_to(action_expert_box)
+        action_expert_label.move_to(manual_action_expert_box)
+        action_expert_label.shift([0, -0.05, 0])
 
-        action_expert_box_group=VGroup(action_expert_box, action_expert_label)
+        action_expert_box_group=Group(manual_action_expert_box, action_expert_label)
 
 
-        action_expert_box_group.move_to([0.6, -6.5, 0])
+        action_expert_box_group.move_to([0.57, -6.45, 0])
         
 
         # self.add(all_svgs[31])
@@ -422,11 +430,12 @@ class P52_61(InteractiveScene):
         # a bit, and I need to make the whole LLM bigger. 
         # That's a lot of work, but we hitting the "final ascent here!"
 
-        action_expert_group_1=Group(all_svgs[27], all_svgs[28], all_svgs[29], all_svgs[30], all_svgs[31],
-                                    all_svgs[32], all_svgs[33], all_svgs[34], all_svgs[35],
+        action_expert_group_1=Group(all_svgs[27], all_svgs[28], all_svgs[29], all_svgs[30], #all_svgs[31],
+                                    all_svgs[32], all_svgs[33], all_svgs[34], #all_svgs[35],
                                     arm_img, arm_img_flipped, tmp_diffusion_images,
                                     embedding_rows_action_expert, 
-                                    action_expert_box_group, diffusion_images, 
+                                    # action_expert_box_group, 
+                                    # diffusion_images, 
                                     )
         
 
@@ -455,31 +464,57 @@ class P52_61(InteractiveScene):
 
 
         
-
-        self.remove(diffusion_images[:10]) #Cleanup
         final_actions_text=Text('ACTIONS', font="Myriad Pro", weight='bold', font_size=28)
         final_actions_text.set_color(PINK)
         # final_actions_text.next_to(diffusion_images[10], DOWN, buff=0.2)
         final_actions_text.move_to([12.4, -5.906, 0])
 
+        # Hmm ok running into kinda the same problem from earlier
+        # I need an svg exported rounded box with a tiny slit 
+        # for the action expert border to make the transition smooth. 
+        # Ok yeah so I think like svg[5]?
+
+
+        # self.add(all_svgs[4][-1])
+        # all_svgs[4].move_to([ 0.6, -6.5,  0. ])
+
+        # self.remove(all_svgs[4])
+
+        # action_expert_label.set_color(YELLOW)
+        # action_expert_label.scale(1.2)
+        # action_expert_label.move_to([4.95, -8.28, 0])
+
+        self.remove(diffusion_images[:10]) #Cleanup
+
+        #Hmm just need to figure out how to nudge temp diffion image on left - 
+        # which one it is?
 
         self.wait()
+        self.remove(all_svgs[35])
+        self.play(ReplacementTransform(action_expert_box_group[0], all_svgs[36][0]), 
+                  action_expert_label.animate.scale(1.25).set_color(YELLOW).move_to([4.95, -8.28, 0]),
+                  action_expert_group_1.animate.shift([0, 0.5, 0]),  #Nudge  right next to LLM
+                  self.frame.animate.reorient(0, 0, 0, (4.34, -2.34, 0.0), 13.00),
+                  all_svgs[34][1].animate.move_to([10.8, -5.2, 0]), #Arrow from action expert to output
+                  diffusion_images[10].animate.move_to([12.4, -5.2, 0]), #ouput difussion image
+                  run_time=7)
+        self.add(final_actions_text)
 
-        self.play(ReplacementTransform(action_expert_box_group[0], ))
+        # self.remove(all_svgs[31])
 
-        action_expert_group_1.shift([0, 0.5, 0])  #Nudge  right next to LLM 
-        self.add(action_expert_full_2)
-        self.add(all_svgs[36]) #Adjusted boarder
+         
+        # self.add(action_expert_full_2)
+        # self.add(all_svgs[36]) #Adjusted boarder
 
-        self.frame.reorient(0, 0, 0, (4.34, -2.34, 0.0), 13.00)
 
 
         self.remove(all_svgs[34][1]); self.add(all_svgs[34][1])
-        all_svgs[34][1].move_to([10.8, -5.2, 0]) #Arrow from action expert to output
-        diffusion_images[10].move_to([12.4, -5.2, 0]) #ouput difussion image
 
 
-        self.add(final_actions_text)
+
+        # self.remove(tmp_diffusion_images[0])
+
+        # self.remove(all_svgs[36][0])
 
         self.wait()
 
