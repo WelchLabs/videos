@@ -231,8 +231,6 @@ class P52_61(InteractiveScene):
 
         action_expert_full = full_gemma.copy()
 
-
-
         # ═══════════════════════════════════════════════════
         # 7. ATTENTION PATTERNS GRID
         # ═══════════════════════════════════════════════════
@@ -430,9 +428,13 @@ class P52_61(InteractiveScene):
         # a bit, and I need to make the whole LLM bigger. 
         # That's a lot of work, but we hitting the "final ascent here!"
 
+        # self.add(action_expert_group_1[4])
+
         action_expert_group_1=Group(all_svgs[27], all_svgs[28], all_svgs[29], all_svgs[30], #all_svgs[31],
-                                    all_svgs[32], all_svgs[33], all_svgs[34], #all_svgs[35],
-                                    arm_img, arm_img_flipped, tmp_diffusion_images,
+                                    # all_svgs[32], 
+                                    all_svgs[33], all_svgs[34], #all_svgs[35],
+                                    arm_img, arm_img_flipped, 
+                                    tmp_diffusion_images,
                                     embedding_rows_action_expert, 
                                     # action_expert_box_group, 
                                     # diffusion_images, 
@@ -464,10 +466,10 @@ class P52_61(InteractiveScene):
 
 
         
-        final_actions_text=Text('ACTIONS', font="Myriad Pro", weight='bold', font_size=28)
+        final_actions_text=Text('ACTIONS', font="Myriad Pro", weight='bold', font_size=26)
         final_actions_text.set_color(PINK)
         # final_actions_text.next_to(diffusion_images[10], DOWN, buff=0.2)
-        final_actions_text.move_to([12.4, -5.906, 0])
+        final_actions_text.move_to([12.4, -5.8, 0])
 
         # Hmm ok running into kinda the same problem from earlier
         # I need an svg exported rounded box with a tiny slit 
@@ -485,6 +487,7 @@ class P52_61(InteractiveScene):
         # action_expert_label.move_to([4.95, -8.28, 0])
 
         self.remove(diffusion_images[:10]) #Cleanup
+        # self.remove(tmp_diffusion_images[:8])
 
         #Hmm just need to figure out how to nudge temp diffion image on left - 
         # which one it is?
@@ -500,57 +503,117 @@ class P52_61(InteractiveScene):
                   run_time=7)
         self.add(final_actions_text)
 
-        # self.remove(all_svgs[31])
-
-         
-        # self.add(action_expert_full_2)
-        # self.add(all_svgs[36]) #Adjusted boarder
-
-
-
-        self.remove(all_svgs[34][1]); self.add(all_svgs[34][1])
-
-
-
-        # self.remove(tmp_diffusion_images[0])
-
-        # self.remove(all_svgs[36][0])
 
         self.wait()
+        self.play(Write(action_expert_full_2[0]), 
+                  Write(action_expert_full_2[1]),
+                  Write(action_expert_full_2[2]),
+                  Write(action_expert_full_2[3]),
+                  run_time=6
+                  )
 
-
+        # Ok we're into p58 now
+        # I think a zoom into action expert?
+        # might cut this in the edit, but probably not a terrible option to have
+        self.play(self.frame.animate.reorient(0, 0, 0, (5.13, -5.51, 0.0), 6.41), run_time=6)
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (4.34, -2.34, 0.0), 13.00), run_time=6)
         self.wait()
 
+        # Ok so now I need to zoom into a head on the LLM, like we did before in P31_49
+        # and then zoom into a head on the action expert. Let me see if Claude can help on 
+        # replicating the Gemma attention head zoom in we did in P31_49. 
+       
+
+
+        # h6_label=all_svgs[12][1:]
+        # self.wait()
+
+        # Hmm ok yeah a little tricky here - 
+        # Gotta figure out which box to zoom in on 
+        # And what all I need to fade out. 
+        # Some kinda SYSIWYG + manim deal would be nice woudln't it?
+
+
+        # gemma
+        # all_attn_patterns
+        # attn_pattern
+        gemma_h6_border=gemma_group[0][4][50]
+
+
+        self.remove(gemma_group[0][4][50])
+        self.add(gemma_group[0])
 
 
 
-        # self.add(all_svgs[36])
-
-
-
-
-        # self.remove(action_expert_full[-1])
-
-        # self.remove(all_svgs[13])
-
-        # action_expert.scale(1.5)
-        # action_expert.move_to([5.1, -5.5, 0])
-
-        # self.add(action_expert)
-
-        # self.remove(action_expert[2])
-
-
-        # action_expert[2].scale(1.5)
-
-        # full_gemma.shift([0.2, 0, 0])
-        # all_svgs[26].shift([0.19, 0, 0])
 
 
 
 
 
-        self.add(all_svgs[8])
+
+        # self.play(FadeOut(all_svgs[11]), run_time=1.5)
+        # # self.remove(all_svgs[11]) #Probably remove here instead of fade?
+        # self.play(ReplacementTransform(all_svgs[12][0], all_svgs[14][-1]),
+        #           h6_label.animate.scale(1.5).move_to([6.4, -3.4, 0]),
+        #           self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8),
+        #           run_time=5)
+
+
+        # queries=Group(); keys=Group(); values=Group(); 
+        # attn_dots=VGroup()
+        # q_spacing=0.15
+        # for i in range(11):
+        #     q=ImageMobject(str(hacking_dir/('p40_1/queries_'+ str(i).zfill(2) +'.png')))
+        #     q.scale(0.022)
+        #     q.move_to([3.5, 3.2-i*q_spacing, 0])
+        #     queries.add(q)
+        #     if i==1 or i==6:
+        #         e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+        #         e.arrange(DOWN, buff=0.012)
+        #         e.move_to(q)
+        #         attn_dots.add(e)
+
+        # for i in range(11):
+        #     k=ImageMobject(str(hacking_dir/('p40_1/keys_'+ str(i).zfill(2) +'.png')))
+        #     k.scale(0.022)
+        #     k.move_to([3.5, 0.9-i*q_spacing, 0])
+        #     keys.add(k)
+        #     if i==1 or i==6:
+        #         e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+        #         e.arrange(DOWN, buff=0.012)
+        #         e.move_to(k)
+        #         attn_dots.add(e)
+
+        # for i in range(11):
+        #     v=ImageMobject(str(hacking_dir/('p40_1/values_'+ str(i).zfill(2) +'.png')))
+        #     v.scale(0.022)
+        #     v.move_to([3.5, -1.37-i*q_spacing, 0])
+        #     values.add(v)
+        #     if i==1 or i==6:
+        #         e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+        #         e.arrange(DOWN, buff=0.012)
+        #         e.move_to(v)
+        #         attn_dots.add(e)
+
+        # all_svgs[17].shift([0.04, 0.03, 0])
+        # all_svgs[18].shift([0.04, 0.00, 0])
+        # all_svgs[19].shift([0.04, 0.00, 0])
+
+        # self.wait()
+        # self.play(Write(all_svgs[15]), run_time=5)
+
+        # self.wait()
+
+        # self.play(FadeIn(queries), FadeIn(all_svgs[17]), FadeIn(attn_dots[:2]), run_time=2)
+        # self.play(FadeIn(keys), FadeIn(all_svgs[18]), FadeIn(attn_dots[:2]), run_time=2)
+        # self.play(FadeIn(values), FadeIn(all_svgs[19]), FadeIn(attn_dots[:2]), run_time=2)
+
+
+
+
+
+
 
 
 
@@ -561,30 +624,7 @@ class P52_61(InteractiveScene):
         self.embed()
 
 
-
-# class P52_61(InteractiveScene):
-#     def construct(self): 
-#         '''
-#         Clean break/pickup from P49.
-#         '''
-
-#         svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
-#         svg_files=list(sorted(svg_dir.glob('*.svg')))
-#         all_svgs=Group()
-#         for i, svg_file in enumerate(svg_files): 
-#             if i in svgs_to_skip: continue
-#             svg_image=SVGMobject(str(svg_file))
-#             svg_image.scale(3.9)
-#             all_svgs.add(svg_image[1:]) #Thowout background
-
-
-
-
-
-
-
-#         self.wait(20)
-#         self.embed()
+ 
 
 
 
@@ -1247,6 +1287,7 @@ class P31_49(InteractiveScene):
                   run_time=3)
         
  
+
         # Now blow up a single attention head box as we zoom back out!
         # P40 Shorty
         h6_label=all_svgs[12][1:]
