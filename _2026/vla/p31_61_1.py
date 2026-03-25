@@ -155,7 +155,8 @@ class P52_61(InteractiveScene):
         blue_text_embedding_arrow.set_color(BLUE)
 
         embedding_out_arrow = all_svgs[7][-2:]
-        embedding_out_arrow.shift([-0.13, 0.18, 0])
+        # embedding_out_arrow.shift([-0.13, 0.18, 0])
+        embedding_out_arrow.move_to([-0.64, 0.28, 0])
 
         # ═══════════════════════════════════════════════════
         # 4. EMBEDDING ROWS (colored barcode lines)
@@ -538,86 +539,153 @@ class P52_61(InteractiveScene):
         # gemma
         # all_attn_patterns
         # attn_pattern
-        gemma_h6_border=gemma_group[0][4][50]
 
 
-        self.remove(gemma_group[0][4][50])
-        self.add(gemma_group[0])
-
-
-
-
-
-
-
-
-
-        # self.play(FadeOut(all_svgs[11]), run_time=1.5)
-        # # self.remove(all_svgs[11]) #Probably remove here instead of fade?
+        # Ok cool so this nicely leaves us with just gemma_h6_border
+        # Alright let me work on adding the attention head
+        # then will switch to the action expert!
+        # Should be able to follow a pretty similar approach!
         # self.play(ReplacementTransform(all_svgs[12][0], all_svgs[14][-1]),
         #           h6_label.animate.scale(1.5).move_to([6.4, -3.4, 0]),
         #           self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8),
         #           run_time=5)
 
 
-        # queries=Group(); keys=Group(); values=Group(); 
-        # attn_dots=VGroup()
-        # q_spacing=0.15
-        # for i in range(11):
-        #     q=ImageMobject(str(hacking_dir/('p40_1/queries_'+ str(i).zfill(2) +'.png')))
-        #     q.scale(0.022)
-        #     q.move_to([3.5, 3.2-i*q_spacing, 0])
-        #     queries.add(q)
-        #     if i==1 or i==6:
-        #         e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-        #         e.arrange(DOWN, buff=0.012)
-        #         e.move_to(q)
-        #         attn_dots.add(e)
+        queries=Group(); keys=Group(); values=Group(); 
+        attn_dots=VGroup()
+        q_spacing=0.135
+        for i in range(11):
+            q=ImageMobject(str(hacking_dir/('p40_1/queries_'+ str(i).zfill(2) +'.png')))
+            q.scale(0.022)
+            q.move_to([3.5, 2.8-i*q_spacing, 0])
+            queries.add(q)
+            if i==1 or i==6:
+                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(DOWN, buff=0.012)
+                e.move_to(q)
+                attn_dots.add(e)
 
-        # for i in range(11):
-        #     k=ImageMobject(str(hacking_dir/('p40_1/keys_'+ str(i).zfill(2) +'.png')))
-        #     k.scale(0.022)
-        #     k.move_to([3.5, 0.9-i*q_spacing, 0])
-        #     keys.add(k)
-        #     if i==1 or i==6:
-        #         e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-        #         e.arrange(DOWN, buff=0.012)
-        #         e.move_to(k)
-        #         attn_dots.add(e)
+        for i in range(11):
+            k=ImageMobject(str(hacking_dir/('p40_1/keys_'+ str(i).zfill(2) +'.png')))
+            k.scale(0.022)
+            k.move_to([3.5, 1.0-i*q_spacing, 0])
+            keys.add(k)
+            if i==1 or i==6:
+                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(DOWN, buff=0.012)
+                e.move_to(k)
+                attn_dots.add(e)
 
-        # for i in range(11):
-        #     v=ImageMobject(str(hacking_dir/('p40_1/values_'+ str(i).zfill(2) +'.png')))
-        #     v.scale(0.022)
-        #     v.move_to([3.5, -1.37-i*q_spacing, 0])
-        #     values.add(v)
-        #     if i==1 or i==6:
-        #         e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-        #         e.arrange(DOWN, buff=0.012)
-        #         e.move_to(v)
-        #         attn_dots.add(e)
+        for i in range(11):
+            v=ImageMobject(str(hacking_dir/('p40_1/values_'+ str(i).zfill(2) +'.png')))
+            v.scale(0.022)
+            v.move_to([3.5, -0.8-i*q_spacing, 0])
+            values.add(v)
+            if i==1 or i==6:
+                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(DOWN, buff=0.012)
+                e.move_to(v)
+                attn_dots.add(e)
 
-        # all_svgs[17].shift([0.04, 0.03, 0])
-        # all_svgs[18].shift([0.04, 0.00, 0])
-        # all_svgs[19].shift([0.04, 0.00, 0])
-
-        # self.wait()
-        # self.play(Write(all_svgs[15]), run_time=5)
-
-        # self.wait()
-
-        # self.play(FadeIn(queries), FadeIn(all_svgs[17]), FadeIn(attn_dots[:2]), run_time=2)
-        # self.play(FadeIn(keys), FadeIn(all_svgs[18]), FadeIn(attn_dots[:2]), run_time=2)
-        # self.play(FadeIn(values), FadeIn(all_svgs[19]), FadeIn(attn_dots[:2]), run_time=2)
+        all_svgs[17].next_to(q, DOWN, buff=0.05)
+        all_svgs[18].next_to(k, DOWN, buff=0.05)
+        all_svgs[19].next_to(v, DOWN, buff=0.05)
+        all_svgs[37].move_to([0.2, 0.3, 0])
 
 
+        # self.add(all_svgs[37]) #WQ QK QV Arrows
+        all_svgs[14].scale([0.93, 0.77, 1]) #Attention head border
+        all_svgs[14].move_to([2.8, 0.3, 0]) 
 
 
+        gemma_h6_border=gemma_group[0][4][50].copy()
+        self.add(gemma_h6_border)
 
+        # Hmm ok so I think if I'm going to show the QKV zoom in on 
+        # Gemma first I should just zoom in - it's just so little!
 
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (5.15, 0.71, 0.0), 7.01), 
+                  run_time=4)
 
+        gemma_attn_head_group=Group(all_svgs[37], queries, all_svgs[17], keys, all_svgs[18], 
+              values, all_svgs[19], attn_dots)
+        
+        gemma_attn_head_group.scale(0.08)
+        gemma_attn_head_group.move_to([4.25, -0.48, 0])
+        # self.add(gemma_attn_head_group)
 
 
         self.wait()
+        self.play(FadeOut(gemma_group), 
+                  FadeIn(gemma_attn_head_group), run_time=3)
+
+        self.play(ReplacementTransform(gemma_h6_border, all_svgs[14][-1]), 
+                  gemma_attn_head_group.animate.scale(1.0/0.08).move_to([2.7000403 , 0.22694729, 0.]),
+                  run_time=5)
+
+        #Scooch arrow over before we zoom out and it's visible again. 
+        lil_arrow_2.shift([-0.05, 0, 0])
+
+        #Pan down to action expert
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (5.26, -5.43, 0.0), 6.99),
+                  run_time=4)
+
+
+        # Ok so now we gotta to the same zoom in action onto 
+        # a single attention head
+        # Let me work on the box first, then fill in the full size
+        # QKV deal, then figure out the zoom in step. 
+        action_expert_h6_border=action_expert_full_2[3][0].copy()
+        self.add(action_expert_h6_border)
+
+        #Action exper model and border - swtich to fade out. 
+        action_expert_attn_head_border=all_svgs[14][-1].copy()
+        action_expert_attn_head_border.move_to([2.8, -5.5, 0])
+
+        action_expert_qkv_flow=all_svgs[38]
+        action_expert_qkv_flow.move_to([0.2, -5.5, 0])
+
+        self.remove(action_expert_full_2, action_expert_label, all_svgs[36][0],
+                    all_svgs[34][1], diffusion_images[10])
+
+        self.add(action_expert_qkv_flow)
+        self.add(action_expert_attn_head_border)
+
+        # So i think the cool move here is probably bringing in 
+        # Flow arrows, queries, keys, and values separately
+
+
+
+
+
+
+
+
+
+
+
+
+
+        # self.play(FadeIn(all_svgs[37]), FadeIn(queries), FadeIn(all_svgs[17]), 
+        #             FadeIn(keys), FadeIn(all_svgs[18]),
+        #             FadeIn(values), FadeIn(all_svgs[19]), 
+        #             FadeIn(attn_dots), run_time=2)
+
+        # self.add(attn_dots)
+        # self.add(embedding_out_arrow)
+        # embedding_out_arrow.move_to([-0.64, 0.28, 0])
+        # gemma_h6_border.scale((8, 4, 1))
+        # all_svgs[14].scale([0.95, 0.77, 1])
+        # all_svgs[14].move_to([2.8, 0.3, 0])
+        # self.add(all_svgs[14][-1])
+
+        # self.remove(all_svgs[14])
+
+        self.wait()
+
+
 
 
         self.wait(20)
@@ -625,6 +693,11 @@ class P52_61(InteractiveScene):
 
 
  
+
+
+
+
+
 
 
 
