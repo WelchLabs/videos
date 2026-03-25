@@ -12,6 +12,7 @@ CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
 YELLOW_FADE='#7f6a2d'
 BLUE='#65c8d0'
+BLUE2='#00AEEF'
 GREEN='#00a14b' 
 CHILL_GREEN='#6c946f'
 CHILL_BLUE='#3d5c6f'
@@ -228,6 +229,10 @@ class P52_61(InteractiveScene):
         # Only these are visible at end of P49:
         gemma = Group(all_svgs[8], all_svgs[9], all_svgs[10], all_svgs[13], all_svgs[26])
 
+        action_expert_full = full_gemma.copy()
+
+
+
         # ═══════════════════════════════════════════════════
         # 7. ATTENTION PATTERNS GRID
         # ═══════════════════════════════════════════════════
@@ -321,12 +326,12 @@ class P52_61(InteractiveScene):
         # Ok let me load up the action images.
         diffusion_images=Group()
         for i in range(11):
-            im=ImageMobject(str(hacking_dir/('p51/'+str(i).zfill(2)+'.png')))
+            im=ImageMobject(str(hacking_dir/('p51b/'+str(i).zfill(2)+'.png')))
             diffusion_images.add(im)
 
 
         action_expert_box = RoundedRectangle(
-            width=2.5,
+            width=1.9,
             height=1.5,
             corner_radius=0.1,
             stroke_color=CHILL_BROWN,
@@ -334,22 +339,32 @@ class P52_61(InteractiveScene):
             fill_opacity=0,
         )
 
-        action_expert_label=Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=24)
+        action_expert_label=Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=22)
         action_expert_label.set_color(CHILL_BROWN)
         action_expert_label.move_to(action_expert_box)
 
         action_expert_box_group=VGroup(action_expert_box, action_expert_label)
 
 
-        action_expert_box_group.move_to([1, -6.5, 0])
+        action_expert_box_group.move_to([0.6, -6.5, 0])
         
 
         # self.add(all_svgs[31])
-        
         all_svgs[33].scale(0.7)
         all_svgs[33].move_to([-4.2, -6.9, 0])
-        diffusion_images.move_to([-4.2, -6.9, 0])
-        diffusion_images.scale(0.25)
+
+        all_svgs[34].move_to([0.85, -6.5, 0])
+        lil_arrow_2=all_svgs[34][0]
+        # lil_arrow_2b=lil_arrow_2.copy()
+        lil_arrow_2b=all_svgs[34][1]
+        lil_arrow_2b.move_to([1.75, -6.5, 0])
+        
+        diffusion_images.scale(0.19)
+        diffusion_images[0].move_to([-5.18, -8.0, 0])
+        diffusion_images[1].move_to([3.53, -6.5, 0])
+
+        all_svgs[35].move_to([3.2, -6.75, 0])
+        all_svgs[35][5:].move_to([3.5, -7.05, 0]) #Timestemp label 
 
 
         self.remove(all_svgs[31])
@@ -357,9 +372,150 @@ class P52_61(InteractiveScene):
         self.add(all_svgs[33])
         self.add(diffusion_images[0])
 
+        self.add(lil_arrow_2, lil_arrow_2b)
+        self.frame.reorient(0, 0, 0, (-0.88, -7.24, 0.0), 6.82)
+
+        self.wait()
+
+        self.play(FadeIn(diffusion_images[1]),
+                  FadeIn(all_svgs[35]), 
+                  run_time=3)
+
+        self.wait()
+        self.play(diffusion_images[1].animate.move_to(diffusion_images[0]),
+                  run_time=4)
+
+        # Hmmmmm this is annoying - realizing that I don't have the sum/inputs
+        # to actually show here. I could sorta fake this, hmm would this be insane:
+        diffusion_images[1].set_opacity(0.5)
+
+        diffusion_images[2].move_to([3.53, -6.5, 0])
+        self.play(FadeIn(diffusion_images[2]), run_time=2)
+
+        self.play(diffusion_images[2].animate.move_to(diffusion_images[0]),
+                  run_time=4)
+        diffusion_images[2].set_opacity(0.2)
+        self.remove(diffusion_images[2]); self.add(diffusion_images[2])
+
+        diffusion_images[3].move_to([3.53, -6.5, 0])
+        self.play(FadeIn(diffusion_images[3]), run_time=2)
+
+        tmp_diffusion_images=Group()
+        for i in range(3, 10):
+            tmp_1=diffusion_images[i].copy()
+            tmp_1.move_to([-5.18, -8.0, 0])
+            tmp_diffusion_images.add(tmp_1)
+            diffusion_images[i+1].move_to([3.53, -6.5, 0])
+            self.add(tmp_1, diffusion_images[i+1])
+            self.wait(0.5)
+
+        # P58
+        # ok so were' not actualy showing the sum on the left, 
+        # I'm going to let that go for now. 
+        # Hmm can't see all my notes right now on the plane, 
+        # but it looks like we jump right to P58 here?
+        # Ok yeah that's what illustrator is suggesting to. 
+        # Ok so my intuition here is that I should do a zoom out from 
+        # this current position, or something pretty close to it, 
+        # Expand the action expert box etc. 
+        # Now, I think I do need to "shift up" all the action expert stuff 
+        # a bit, and I need to make the whole LLM bigger. 
+        # That's a lot of work, but we hitting the "final ascent here!"
+
+        action_expert_group_1=Group(all_svgs[27], all_svgs[28], all_svgs[29], all_svgs[30], all_svgs[31],
+                                    all_svgs[32], all_svgs[33], all_svgs[34], all_svgs[35],
+                                    arm_img, arm_img_flipped, tmp_diffusion_images,
+                                    embedding_rows_action_expert, 
+                                    action_expert_box_group, diffusion_images, 
+                                    )
+        
+
+        # self.add(action_expert_group_1)
+        gemma_group=Group(gemma, attn_patterns_to_show, attn_pattern)
+        gemma_group.scale(1.5)
+        gemma_group.move_to([5.1, 0.6, 0])
+
+        # ok so we'll do a zoom out and expand the action expert kinda deal. 
+        # Do I want to draw in the full action exprt network first, and then 
+        # Figure out how to animate to it? That's probably the move? 
+        # I think at this pahse we just want the h1/h2 etc attention head 
+        # labels. Let's try adopting the blue and yellow borders now too
+        # I think that helps with the visual overwhelm, and we'll see how it
+        # feels. 
+
+        all_svgs[8].set_color(BLUE2)
+
+        # action_expert_full.add(all_svgs[36])
+        action_expert_full.scale(1.5)
+        action_expert_full.move_to([5.1, -5.4, 0])
+        action_expert_full_2=Group(*[action_expert_full[i] for i in [1, 2, 3, 4]])
+
+        all_svgs[36].scale([1.5, 1.4, 1])
+        all_svgs[36].move_to([5.1, -5.5, 0])
+
+
+        
+
+        self.remove(diffusion_images[:10]) #Cleanup
+        final_actions_text=Text('ACTIONS', font="Myriad Pro", weight='bold', font_size=28)
+        final_actions_text.set_color(PINK)
+        # final_actions_text.next_to(diffusion_images[10], DOWN, buff=0.2)
+        final_actions_text.move_to([12.4, -5.906, 0])
+
+
+        self.wait()
+
+        self.play(ReplacementTransform(action_expert_box_group[0], ))
+
+        action_expert_group_1.shift([0, 0.5, 0])  #Nudge  right next to LLM 
+        self.add(action_expert_full_2)
+        self.add(all_svgs[36]) #Adjusted boarder
+
+        self.frame.reorient(0, 0, 0, (4.34, -2.34, 0.0), 13.00)
+
+
+        self.remove(all_svgs[34][1]); self.add(all_svgs[34][1])
+        all_svgs[34][1].move_to([10.8, -5.2, 0]) #Arrow from action expert to output
+        diffusion_images[10].move_to([12.4, -5.2, 0]) #ouput difussion image
+
+
+        self.add(final_actions_text)
+
+        self.wait()
+
+
+        self.wait()
 
 
 
+
+        # self.add(all_svgs[36])
+
+
+
+
+        # self.remove(action_expert_full[-1])
+
+        # self.remove(all_svgs[13])
+
+        # action_expert.scale(1.5)
+        # action_expert.move_to([5.1, -5.5, 0])
+
+        # self.add(action_expert)
+
+        # self.remove(action_expert[2])
+
+
+        # action_expert[2].scale(1.5)
+
+        # full_gemma.shift([0.2, 0, 0])
+        # all_svgs[26].shift([0.19, 0, 0])
+
+
+
+
+
+        self.add(all_svgs[8])
 
 
 
