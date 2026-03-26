@@ -756,13 +756,22 @@ class P52_61(InteractiveScene):
                  run_time=5)
 
         self.wait()
+        self.play(FadeOut(all_svgs[42]), run_time=2)
+
+        self.wait()
         self.play(self.frame.animate.reorient(0, 0, 0, (-0.12, -5.59, 0.0), 7.51),
-                  FadeOut(all_svgs[42]),
+                  # FadeOut(all_svgs[42]),
                   run_time=5)
 
         # ok so I think zooming in and out here is reasonable/nice
         # I'l need to add some premiere arrows etc, but I think this can 
         # work!
+        # Zoom out to setup P59!
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (4.14, -2.4, 0.0), 12.75), 
+                 run_time=6)
+
+
 
         #P59 - final push!
 
