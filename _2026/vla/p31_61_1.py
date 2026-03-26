@@ -607,6 +607,7 @@ class P52_61(InteractiveScene):
         self.wait()
         self.play(self.frame.animate.reorient(0, 0, 0, (5.15, 0.71, 0.0), 7.01), 
                   run_time=4)
+        self.remove(final_actions_text)
 
         gemma_attn_head_group=Group(all_svgs[37], queries, all_svgs[17], keys, all_svgs[18], 
               values, all_svgs[19], attn_dots)
@@ -691,8 +692,11 @@ class P52_61(InteractiveScene):
 
 
         queries_ae.move_to([3.5, -3.7, 0])
+        attn_dots_ae[0].move_to([3.5, -3.7, 0])
         keys_ae.move_to([3.5, -5.5, 0])
+        attn_dots_ae[1].move_to([3.5, -5.5, 0])
         values_ae.move_to([3.5, -7.3, 0])
+        attn_dots_ae[2].move_to([3.5, -7.3, 0])
 
         all_svgs[39].scale(0.88)
         all_svgs[39].move_to([3.5, -4.3, 0])
@@ -707,7 +711,7 @@ class P52_61(InteractiveScene):
         # the attention head again. 
 
         ae_attn_head_group=Group(action_expert_qkv_flow, 
-                                 action_expert_attn_head_border,
+                                 # action_expert_attn_head_border,
                                  queries_ae, 
                                  keys_ae, 
                                  values_ae, 
@@ -716,6 +720,14 @@ class P52_61(InteractiveScene):
                                  all_svgs[40],
                                  all_svgs[41]
                                  )
+
+        self.wait()
+
+        #[ 2.7000403 ,-5.6124,  0.        ]
+
+        # self.add(ae_attn_head_group)
+        # self.add(attn_dots_ae)
+
 
         ae_attn_head_group.scale(0.08)
         ae_attn_head_group.move_to([4.3, -6.38, 0])
@@ -729,34 +741,58 @@ class P52_61(InteractiveScene):
                   FadeIn(ae_attn_head_group),
                   run_time=2)
 
+        self.wait()
+        self.play(ReplacementTransform(action_expert_h6_border, action_expert_attn_head_border), 
+                  ae_attn_head_group.animate.scale(1/0.08).move_to([ 2.7 , -5.6124,  0.]),
+                  self.frame.animate.reorient(0, 0, 0, (-0.12, -5.59, 0.0), 7.51),
+                  run_time=5)
+
+        # Ok yeah I think i like this sliding to the side thing
+        # Goes nicely with "different set of inputs"
+
+        self.wait()
+        self.play(Write(all_svgs[42]), 
+                 self.frame.animate.reorient(0, 0, 0, (3.41, -5.6, 0.0), 5.31), 
+                 run_time=5)
+
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (-0.12, -5.59, 0.0), 7.51),
+                  FadeOut(all_svgs[42]),
+                  run_time=5)
+
+        # ok so I think zooming in and out here is reasonable/nice
+        # I'l need to add some premiere arrows etc, but I think this can 
+        # work!
+
+        #P59 - final push!
+
+
+
+
+
+
+
 
         # self.remove(action_expert_full_2, action_expert_label, all_svgs[36][0],
         #             all_svgs[34][1], diffusion_images[10])
 
-        self.add(action_expert_qkv_flow)
-        self.add(action_expert_attn_head_border)
-        self.add(queries_ae)
-        self.add(keys_ae)
-        self.add(values_ae, attn_dots_ae)
+        # self.add(action_expert_qkv_flow)
+        # self.add(action_expert_attn_head_border)
+        # self.add(queries_ae)
+        # self.add(keys_ae)
+        # self.add(values_ae, attn_dots_ae)
+
+        # self.add(all_svgs[39])
+        # self.add(all_svgs[40]) 
+        # self.add(all_svgs[41])
+        
 
 
-        self.add(all_svgs[39])
-        self.add(all_svgs[40]) 
-        self.add(all_svgs[41])
-        self.add(all_svgs[42])
 
-
-
-        self.wait()
+        # self.wait()
 
 
         # self.remove(queries_ae, keys_ae, values_ae, attn_dots_ae)
-
-
-
-
-
-
 
 
 
@@ -775,7 +811,7 @@ class P52_61(InteractiveScene):
 
         # self.remove(all_svgs[14])
 
-        self.wait()
+        # self.wait()
 
 
 
