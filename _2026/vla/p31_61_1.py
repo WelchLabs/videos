@@ -594,8 +594,8 @@ class P52_61(InteractiveScene):
 
 
         # self.add(all_svgs[37]) #WQ QK QV Arrows
-        all_svgs[14].scale([0.93, 0.77, 1]) #Attention head border
-        all_svgs[14].move_to([2.8, 0.3, 0]) 
+        all_svgs[14].scale([0.95, 0.77, 1]) #Attention head border
+        all_svgs[14].move_to([2.88, 0.3, 0]) 
 
 
         gemma_h6_border=gemma_group[0][4][50].copy()
@@ -642,23 +642,115 @@ class P52_61(InteractiveScene):
 
         #Action exper model and border - swtich to fade out. 
         action_expert_attn_head_border=all_svgs[14][-1].copy()
-        action_expert_attn_head_border.move_to([2.8, -5.5, 0])
+        action_expert_attn_head_border.move_to([2.88, -5.5, 0])
 
         action_expert_qkv_flow=all_svgs[38]
         action_expert_qkv_flow.move_to([0.2, -5.5, 0])
 
-        self.remove(action_expert_full_2, action_expert_label, all_svgs[36][0],
-                    all_svgs[34][1], diffusion_images[10])
+        # So i think the cool move here is probably bringing in 
+        # Flow arrows, queries, keys, and values separately
+        # Ok cool so still gotta figure out transition 
+        # but yeah let's go ahead and build out keys queries and values here
+        # Then come back and figure out the transition!
+
+        queries_ae=Group(); keys_ae=Group(); values_ae=Group(); 
+        attn_dots_ae=VGroup()
+        q_spacing=0.135
+        for i in range(7):
+            q=ImageMobject(str(hacking_dir/('p58/queries_'+ str(i).zfill(2) +'.png')))
+            q.scale(0.022)
+            q.move_to([3.5, -i*q_spacing, 0])
+            queries_ae.add(q)
+            if i==3:
+                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(DOWN, buff=0.012)
+                e.move_to(q)
+                attn_dots_ae.add(e)
+
+        for i in range(7):
+            k=ImageMobject(str(hacking_dir/('p58/keys_'+ str(i).zfill(2) +'.png')))
+            k.scale(0.022)
+            k.move_to([3.5, -i*q_spacing, 0])
+            keys_ae.add(k)
+            if i==3:
+                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(DOWN, buff=0.012)
+                e.move_to(k)
+                attn_dots_ae.add(e)
+
+        for i in range(7):
+            v=ImageMobject(str(hacking_dir/('p58/values_'+ str(i).zfill(2) +'.png')))
+            v.scale(0.022)
+            v.move_to([3.5, -i*q_spacing, 0])
+            values_ae.add(v)
+            if i==3:
+                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(DOWN, buff=0.012)
+                e.move_to(v)
+                attn_dots_ae.add(e)
+
+
+        queries_ae.move_to([3.5, -3.7, 0])
+        keys_ae.move_to([3.5, -5.5, 0])
+        values_ae.move_to([3.5, -7.3, 0])
+
+        all_svgs[39].scale(0.88)
+        all_svgs[39].move_to([3.5, -4.3, 0])
+        all_svgs[40].scale(0.88)
+        all_svgs[40].move_to([3.5, -6.1, 0])
+        all_svgs[41].scale(0.88)
+        all_svgs[41].move_to([3.5, -7.9, 0])
+        all_svgs[42].scale(0.89)
+        all_svgs[42].move_to([6.08, -5.5, 0])
+
+        # Ah yeah I want the little baby version of 
+        # the attention head again. 
+
+        ae_attn_head_group=Group(action_expert_qkv_flow, 
+                                 action_expert_attn_head_border,
+                                 queries_ae, 
+                                 keys_ae, 
+                                 values_ae, 
+                                 attn_dots_ae,
+                                 all_svgs[39],
+                                 all_svgs[40],
+                                 all_svgs[41]
+                                 )
+
+        ae_attn_head_group.scale(0.08)
+        ae_attn_head_group.move_to([4.3, -6.38, 0])
+
+        self.wait()
+        self.play(FadeOut(action_expert_full_2), 
+                  FadeOut(action_expert_label),
+                  FadeOut(all_svgs[36][0]),
+                  FadeOut(all_svgs[34][1]),
+                  FadeOut(diffusion_images[10]),
+                  FadeIn(ae_attn_head_group),
+                  run_time=2)
+
+
+        # self.remove(action_expert_full_2, action_expert_label, all_svgs[36][0],
+        #             all_svgs[34][1], diffusion_images[10])
 
         self.add(action_expert_qkv_flow)
         self.add(action_expert_attn_head_border)
-
-        # So i think the cool move here is probably bringing in 
-        # Flow arrows, queries, keys, and values separately
-
-
+        self.add(queries_ae)
+        self.add(keys_ae)
+        self.add(values_ae, attn_dots_ae)
 
 
+        self.add(all_svgs[39])
+        self.add(all_svgs[40]) 
+        self.add(all_svgs[41])
+        self.add(all_svgs[42])
+
+
+
+        self.wait()
+
+
+        # self.remove(queries_ae, keys_ae, values_ae, attn_dots_ae)
 
 
 
