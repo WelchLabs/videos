@@ -225,6 +225,7 @@ class P52_61(InteractiveScene):
         full_gemma = Group(all_svgs[8], all_svgs[9], all_svgs[10], 
                            all_svgs[11], all_svgs[12], all_svgs[13])
         full_gemma.shift([0.2, 0, 0])
+        full_gemma_copy=full_gemma.copy()
         all_svgs[26].shift([0.19, 0, 0])
 
         # Only these are visible at end of P49:
@@ -465,7 +466,6 @@ class P52_61(InteractiveScene):
         all_svgs[36].scale([1.5, 1.4, 1])
         all_svgs[36].move_to([5.1, -5.5, 0])
 
-
         
         final_actions_text=Text('ACTIONS', font="Myriad Pro", weight='bold', font_size=26)
         final_actions_text.set_color(PINK)
@@ -525,7 +525,6 @@ class P52_61(InteractiveScene):
         # and then zoom into a head on the action expert. Let me see if Claude can help on 
         # replicating the Gemma attention head zoom in we did in P31_49. 
        
-
 
         # h6_label=all_svgs[12][1:]
         # self.wait()
@@ -592,7 +591,6 @@ class P52_61(InteractiveScene):
         all_svgs[19].next_to(v, DOWN, buff=0.05)
         all_svgs[37].move_to([0.2, 0.3, 0])
 
-
         # self.add(all_svgs[37]) #WQ QK QV Arrows
         all_svgs[14].scale([0.95, 0.77, 1]) #Attention head border
         all_svgs[14].move_to([2.88, 0.3, 0]) 
@@ -640,6 +638,8 @@ class P52_61(InteractiveScene):
         # QKV deal, then figure out the zoom in step. 
         action_expert_h6_border=action_expert_full_2[3][0].copy()
         self.add(action_expert_h6_border)
+
+        action_expert_h6_border_copy=action_expert_h6_border.copy()
 
         #Action exper model and border - swtich to fade out. 
         action_expert_attn_head_border=all_svgs[14][-1].copy()
@@ -772,8 +772,131 @@ class P52_61(InteractiveScene):
                  run_time=6)
 
 
+        # P59 - final push!
+        # Ok so now we bring down a copy of the keys, and then values
+        # A bit messy but we're really close!
+        # Let me get everything positioned where we want here. 
+        keys_to_move=Group(keys.copy(), attn_dots[2].copy(), attn_dots[3].copy())
+        values_to_move=Group(values.copy(), attn_dots[4].copy(), attn_dots[5].copy())
 
-        #P59 - final push!
+        self.add(keys_to_move)
+        self.add(values_to_move)
+
+        
+        #Hmm sliding a copy out to the right might be kinda nice?
+        # keys_to_move.move_to([9, 0.325, 0])
+        # values_to_move.move_to([9, -1.474, 0])
+
+        self.wait()
+        self.play(keys_to_move.animate.move_to([9, 0.325, 0]),
+                  values_to_move.animate.move_to([9 ,-1.474, 0]),
+                  run_time=4)
+
+        # Ok I think simulatenously move down camera
+        # move down keys/values copy, and makes space. 
+        # Then we can slide things in nicely. 
+        WV_box=action_expert_qkv_flow[33:]
+        all_svgs[43].scale(0.89)
+        # all_svgs[43].next_to(keys_to_move, DOWN, buff=0.08)
+        all_svgs[43].move_to([ 3.49996001, -7.58181244,  0.])
+        all_svgs[44].scale(0.89)
+        # all_svgs[44].next_to(values_to_move, DOWN, buff=0.08)
+        all_svgs[44].move_to([  3.5       , -10.48167058,   0.])
+        self.wait()
+        self.remove(all_svgs[40]) #AE keys label. 
+        self.remove(all_svgs[41]) #AE values label. 
+        self.play(keys_to_move.animate.move_to([9, -6.717, 0]),
+                  values_to_move.animate.move_to([9 ,-9.62, 0]),
+                  values_ae.animate.move_to([ 3.5, -8.4,  0. ]),
+                  action_expert_attn_head_border.animate.scale([1, 1.35, 1]).move_to([2.88, -6.89, 0]),
+                  WV_box.animate.move_to([0.416, -8.4, 0]),
+                  action_expert_qkv_flow[31].animate.scale([1.0, 1.8, 1.0]).move_to([-0.2478, -6.83, 0]), 
+                  action_expert_qkv_flow[32].animate.move_to([-0.134, -8.4, 0]),
+                  self.frame.animate.reorient(0, 0, 0, (5.87, -6.61, 0.0), 8.18),
+                  run_time=6)
+
+        self.play(keys_to_move.animate.next_to(keys_ae, DOWN, buff=0.05), 
+                  values_to_move.animate.move_to([3.5, -9.62,  0.]), 
+                  run_time=3)
+        self.add(all_svgs[43], all_svgs[44])
+
+        # values_ae.move_to([ 3.5, -8.4,  0. ]) #Move AE values down
+
+        # action_expert_attn_head_border.scale([1, 1.35, 1])
+        # action_expert_attn_head_border.move_to([2.88, -6.89, 0])
+
+        # keys_to_move.next_to(keys_ae, DOWN, buff=0.05)
+        # values_to_move.next_to(values_ae, DOWN, buff=0.05)
+        # values_to_move.move_to([3.5, -9.62,  0.])
+
+        # Ok I think we do a little illustrator overlay at this point
+        # Can add yellow row count brackets, and maybe call outs 
+        # for which rows come from where
+
+        # P60 
+        # Ok so now we "zoom back out" to the full transformer
+        # Just for action expert first, then zoom out to full system. 
+
+
+        ae_attn_head_group_2=Group(action_expert_qkv_flow, 
+                                 # action_expert_attn_head_border,
+                                 queries_ae, 
+                                 keys_ae, 
+                                 values_ae, 
+                                 values_to_move,
+                                 keys_to_move,
+                                 attn_dots_ae,
+                                 all_svgs[39],
+                                 all_svgs[43],
+                                 all_svgs[44]
+                                 )
+
+        # self.add(action_expert_h6_border_copy)
+        # ae_attn_head_group_2.move_to([4.3, -6.5, 0])
+
+        self.wait()
+        self.play(ReplacementTransform(action_expert_attn_head_border, action_expert_h6_border_copy), 
+                  ae_attn_head_group_2.animate.scale(0.055).move_to([4.3, -6.47, 0]),
+                  self.frame.animate.reorient(0, 0, 0, (5.18, -5.78, 0.0), 6.52),
+                  run_time=6)
+
+        # self.wait()
+        self.play(FadeIn(action_expert_full_2), 
+                  FadeIn(action_expert_label),
+                  FadeIn(all_svgs[36][0]),
+                  FadeIn(all_svgs[34][1]),
+                  FadeIn(diffusion_images[10]),
+                  FadeOut(ae_attn_head_group_2),
+                  run_time=3)
+
+
+
+        # Swap in full Gemma for attention head, then zoom out 
+        # to reveal it. 
+        self.remove(keys, queries, values, all_svgs[17], all_svgs[18], all_svgs[19], all_svgs[37], all_svgs[14][-1], attn_dots)
+        self.add(full_gemma_copy)
+        full_gemma_copy.scale(1.5)
+        full_gemma_copy.move_to([5.1, 0.6, 0])
+        full_gemma_copy[0].set_color(BLUE2)
+
+        #Make outputs actions a little bigger and add title. 
+        diffusion_images[-1].scale(1.3)
+        diffusion_images[-1].move_to([12.8, -5.2,  0.])
+        final_actions_text.scale(1.1)
+        final_actions_text.next_to(diffusion_images[-1], DOWN, buff=0.1)
+
+        self.add(final_actions_text)
+
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (4.04, -2.31, 0.0), 13.17),
+                  run_time=8)
+
+        #Ok getting close!
+        
+
+
+
+        self.wait()
 
 
 
@@ -795,8 +918,6 @@ class P52_61(InteractiveScene):
         # self.add(all_svgs[40]) 
         # self.add(all_svgs[41])
         
-
-
 
         # self.wait()
 
