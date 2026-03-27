@@ -113,8 +113,24 @@ class P52Part1(InteractiveScene):
         self.embed()
 
 
+ROBOT_CROP_DIR = '/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/vla/hackin/p52_robot_cropped'
+
+
 class P52Part2(InteractiveScene):
     def construct(self):
+        import os
+        os.makedirs(ROBOT_CROP_DIR, exist_ok=True)
+
+        robot_src_dirs = [ROBOT_VID_DIR_1, ROBOT_VID_DIR_2]
+        for di, src_dir in enumerate(robot_src_dirs):
+            out_dir = f'{ROBOT_CROP_DIR}/ep{di}'
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir, exist_ok=True)
+                for fi in range(300):
+                    img = PILImage.open(f'{src_dir}/{fi:03d}.png')
+                    lower = img.crop((0, img.height // 2, img.width, img.height))
+                    lower.save(f'{out_dir}/{fi:03d}.png')
+
         frame_w = self.camera.get_frame_width()
         frame_h = self.camera.get_frame_height()
         half_w = frame_w / 2
@@ -124,69 +140,49 @@ class P52Part2(InteractiveScene):
             stroke_width=1
         ).set_color(CHILL_BROWN)
 
-        cat_rows, cat_cols = 4, 8
-        cat_grid_w = half_w - 0.6
-        cat_grid_h = frame_h - 0.6
-        cell_w = cat_grid_w / cat_cols
-        cell_h = cat_grid_h / cat_rows
-        cat_cell_size = min(cell_w, cell_h) * 0.9
+        rows, cols = 4, 4
+        cat_grid_w = half_w
+        cat_grid_h = frame_h
+        cell_w = cat_grid_w / cols
+        cell_h = cat_grid_h / rows
 
         cat_step_indices = list(range(0, 100))
         cat_step_paths = [f'{CAT_DIR}/step_{idx:03d}.png' for idx in cat_step_indices]
 
-        cat_grid_center_x = -half_w / 2
-
         cat_grid_cells = []
-        for r in range(cat_rows):
-            for c in range(cat_cols):
-                cx = cat_grid_center_x + (c - (cat_cols - 1) / 2) * cell_w
-                cy = (cat_rows - 1) / 2 * cell_h - r * cell_h
-                cat_grid_cells.append((r, c, np.array([cx, cy, 0])))
-
-        cat_frame_images = []
-        for path in cat_step_paths:
-            img = ImageMobject(path)
-            img.set_height(cat_cell_size)
-            cat_frame_images.append(img)
+        for r in range(rows):
+            for c in range(cols):
+                cx = -half_w / 2 + (c - (cols - 1) / 2) * cell_w
+                cy = (rows - 1) / 2 * cell_h - r * cell_h
+                cat_grid_cells.append(np.array([cx, cy, 0]))
 
         cat_grid_mobjects = []
-        for r, c, pos in cat_grid_cells:
+        for pos in cat_grid_cells:
             img = ImageMobject(cat_step_paths[0])
-            img.set_height(cat_cell_size)
+            img.set_height(cell_h)
+            img.set_width(cell_w, stretch=True)
             img.move_to(pos)
             cat_grid_mobjects.append(img)
 
-        robot_rows, robot_cols = 4, 4
-        robot_grid_w = half_w - 0.6
-        robot_grid_h = frame_h - 0.6
-        rcell_w = robot_grid_w / robot_cols
-        rcell_h = robot_grid_h / robot_rows
-        robot_cell_size = min(rcell_w, rcell_h) * 0.9
-        robot_cell_h = robot_cell_size * (480 / 640)
-
-        robot_grid_center_x = half_w / 2
-
         robot_frame_indices = list(range(0, 300))
-
-        robot_dirs = []
-        for i in range(robot_rows * robot_cols):
-            if i % 2 == 0:
-                robot_dirs.append(ROBOT_VID_DIR_1)
-            else:
-                robot_dirs.append(ROBOT_VID_DIR_2)
+        num_episodes = len(robot_src_dirs)
+        robot_ep_dirs = [f'{ROBOT_CROP_DIR}/ep{i}' for i in range(num_episodes)]
 
         robot_grid_cells = []
-        for r in range(robot_rows):
-            for c in range(robot_cols):
-                cx = robot_grid_center_x + (c - (robot_cols - 1) / 2) * rcell_w
-                cy = (robot_rows - 1) / 2 * rcell_h - r * rcell_h
-                robot_grid_cells.append((r, c, np.array([cx, cy, 0])))
+        robot_ep_assignments = []
+        for r in range(rows):
+            for c in range(cols):
+                cx = half_w / 2 + (c - (cols - 1) / 2) * cell_w
+                cy = (rows - 1) / 2 * cell_h - r * cell_h
+                robot_grid_cells.append(np.array([cx, cy, 0]))
+                robot_ep_assignments.append((r * cols + c) % num_episodes)
 
         robot_grid_mobjects = []
-        for idx, (r, c, pos) in enumerate(robot_grid_cells):
-            vid_dir = robot_dirs[idx]
-            img = ImageMobject(f'{vid_dir}/{robot_frame_indices[0]:03d}.png')
-            img.set_height(robot_cell_h)
+        for idx, pos in enumerate(robot_grid_cells):
+            ep = robot_ep_assignments[idx]
+            img = ImageMobject(f'{robot_ep_dirs[ep]}/{robot_frame_indices[0]:03d}.png')
+            img.set_height(cell_h)
+            img.set_width(cell_w, stretch=True)
             img.move_to(pos)
             robot_grid_mobjects.append(img)
 
@@ -209,21 +205,23 @@ class P52Part2(InteractiveScene):
             if target_cat_idx != current_cat_idx:
                 current_cat_idx = target_cat_idx
                 new_cat_path = cat_step_paths[current_cat_idx]
-                for cell_idx, (r, c, pos) in enumerate(cat_grid_cells):
+                for cell_idx, pos in enumerate(cat_grid_cells):
                     old = cat_grid_mobjects[cell_idx]
                     new_img = ImageMobject(new_cat_path)
-                    new_img.set_height(cat_cell_size)
+                    new_img.set_height(cell_h)
+                    new_img.set_width(cell_w, stretch=True)
                     new_img.move_to(pos)
                     self.remove(old)
                     self.add(new_img)
                     cat_grid_mobjects[cell_idx] = new_img
 
-            for cell_idx, (r, c, pos) in enumerate(robot_grid_cells):
-                vid_dir = robot_dirs[cell_idx]
+            for cell_idx, pos in enumerate(robot_grid_cells):
+                ep = robot_ep_assignments[cell_idx]
                 fi = robot_frame_indices[frame_i]
                 old = robot_grid_mobjects[cell_idx]
-                new_img = ImageMobject(f'{vid_dir}/{fi:03d}.png')
-                new_img.set_height(robot_cell_h)
+                new_img = ImageMobject(f'{robot_ep_dirs[ep]}/{fi:03d}.png')
+                new_img.set_height(cell_h)
+                new_img.set_width(cell_w, stretch=True)
                 new_img.move_to(pos)
                 self.remove(old)
                 self.add(new_img)
