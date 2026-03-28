@@ -194,38 +194,37 @@ class P51v2(InteractiveScene):
         axes_grp = VGroup(graph_box, y_axis, y_ticks, y_labels, x_ticks, x_labels)
 
         self.play(FadeIn(svg_02))
-        self.play(GrowArrow(arrow_02_03))
-        self.play(FadeIn(svg_03))
-        self.play(FadeIn(colorbar_10))
+        self.play(GrowArrow(arrow_02_03), FadeIn(svg_03), run_time=0.8)
+        self.play(FadeIn(colorbar_10), ShowCreation(svg_04), run_time=0.8)
         self.add(col_rect)
-        self.play(ShowCreation(svg_04))
-        self.play(FadeIn(colorbar_vert), ShowCreation(colorbar_vert_outline))
-        self.play(FadeIn(svg_05), run_time=0.6)
-        self.play(FadeIn(axes_grp), run_time=0.6)
-        self.play(GrowArrow(arrow_05_left))
-
-        self.play(col_rect.animate.move_to([line_cx, line_cy, 0]).set_width(line_width), run_time=1.0)
+        self.play(FadeIn(colorbar_vert), ShowCreation(colorbar_vert_outline), run_time=0.6)
+        self.play(FadeIn(svg_05), run_time=0.8)
+        self.play(FadeIn(axes_grp), run_time=1.2)
 
         pin_w = line_width / len(col_vals)
         pins = VGroup()
         for i in range(len(col_vals)):
             pin = Rectangle(width=pin_w * 0.85, height=row_h)
             pin.set_fill(ROW_COLOR, opacity=1).set_stroke(width=0)
-            pin.move_to([x_pts[i], line_cy, 0])
+            pin.move_to([x_pts[i], colorbar_10.get_top()[1] - row_h * (ROW_IDX + 0.5), 0])
             pins.add(pin)
         self.remove(col_rect)
         self.add(pins)
 
+        pin_anims = LaggedStart(
+            *[pin.animate.move_to([x_pts[i], y_pts[i], 0]).set_height(0.06)
+              for i, pin in enumerate(pins)],
+            lag_ratio=0.04,
+        )
         self.play(
-            LaggedStart(
-                *[pin.animate.move_to([x_pts[i], y_pts[i], 0]).set_height(0.06)
-                  for i, pin in enumerate(pins)],
-                lag_ratio=0.04,
-            ),
-            run_time=2.0,
+            LaggedStart(pin_anims, ShowCreation(shoulder_line), lag_ratio=0.6),
+            run_time=3.5,
         )
 
-        self.play(FadeIn(shoulder_line), run_time=0.6)
-        self.play(FadeOut(pins), run_time=0.5)
+        self.wait(1.0)
+        self.play(FadeOut(pins), run_time=1.0)
+        self.wait(0.5)
+        self.play(GrowArrow(arrow_05_left), run_time=1.5)
+        self.wait(1.0)
 
         self.embed()
