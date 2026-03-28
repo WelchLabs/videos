@@ -225,13 +225,15 @@ class P52_61(InteractiveScene):
         full_gemma = Group(all_svgs[8], all_svgs[9], all_svgs[10], 
                            all_svgs[11], all_svgs[12], all_svgs[13])
         full_gemma.shift([0.2, 0, 0])
-        full_gemma_copy=full_gemma.copy()
+        full_gemma_copy=Group(all_svgs[8].copy(), all_svgs[9].copy(), all_svgs[10].copy(), 
+                           all_svgs[45], all_svgs[46], all_svgs[13].copy())
         all_svgs[26].shift([0.19, 0, 0])
 
         # Only these are visible at end of P49:
         gemma = Group(all_svgs[8], all_svgs[9], all_svgs[10], all_svgs[13], all_svgs[26])
 
         action_expert_full = full_gemma.copy()
+        action_expert_full_copy = full_gemma_copy.copy()
 
         # ═══════════════════════════════════════════════════
         # 7. ATTENTION PATTERNS GRID
@@ -462,6 +464,12 @@ class P52_61(InteractiveScene):
         action_expert_full.scale(1.5)
         action_expert_full.move_to([5.1, -5.4, 0])
         action_expert_full_2=Group(*[action_expert_full[i] for i in [1, 2, 3, 4]])
+
+        action_expert_full_copy[3].shift([0.2, 0, 0])
+        action_expert_full_copy[4].shift([0.2, 0, 0])
+        action_expert_full_copy.scale(1.5)
+        action_expert_full_copy.move_to([5.1, -5.4, 0])
+        
 
         all_svgs[36].scale([1.5, 1.4, 1])
         all_svgs[36].move_to([5.1, -5.5, 0])
@@ -875,6 +883,8 @@ class P52_61(InteractiveScene):
         # to reveal it. 
         self.remove(keys, queries, values, all_svgs[17], all_svgs[18], all_svgs[19], all_svgs[37], all_svgs[14][-1], attn_dots)
         self.add(full_gemma_copy)
+        all_svgs[45].shift([0.2, 0, 0])
+        all_svgs[46].shift([0.2, 0, 0])
         full_gemma_copy.scale(1.5)
         full_gemma_copy.move_to([5.1, 0.6, 0])
         full_gemma_copy[0].set_color(BLUE2)
@@ -892,8 +902,110 @@ class P52_61(InteractiveScene):
                   run_time=8)
 
         #Ok getting close!
-        
+        #P60 
+        #Zoom in on Gemma, and add lines for QKVs
+        #Hmm just dropping the letters is not trivial -> tempted to make 
+        # another svg I guess...
 
+
+
+        self.frame.reorient(0, 0, 0, (4.27, 0.69, 0.0), 7.52)
+
+        self.wait()
+        self.play(FadeOut(all_svgs[46])) #Fade out h labels
+
+        #Swap these while we're focused on Gemma
+        action_expert_full_copy_2=VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3, 4]])
+        self.remove(action_expert_h6_border_copy) #, action_expert_full_2[3], action_expert_full_2[2])
+        self.remove(action_expert_full)
+        self.add(action_expert_full_copy_2) #[3], action_expert_full_copy[4])
+
+        self.remove(action_expert_full_copy_2[3]) #h labels
+
+        # Now get all my little lines in place in my attention heads across
+        # both networks, then figure out how to animate
+
+        full_gemma_copy.set_opacity(0.6) #Theres so much going on, this kinda helps!
+        action_expert_full_copy.set_opacity(0.6)
+        all_svgs[36][0].set_opacity(0.6)
+        action_expert_label.set_opacity(0.6)
+
+        all_svgs[27].set_opacity(0.85) #Lower opacity of robot background so it jumps out less
+
+
+        # self.remove(action_expert_full)
+
+
+        llm_attn_rows_tmp=VGroup() #Text ones
+        for i in range(8):
+            flat_line = Line(LEFT * 0.45, RIGHT * 0.45)
+            flat_line.set_stroke(GREEN, width=3)
+            llm_attn_rows_tmp.add(flat_line)
+
+        llm_attn_rows_1=VGroup(llm_attn_rows_tmp, llm_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy())
+        
+        llm_attn_rows_1[0].arrange(DOWN, buff=0.53) 
+        llm_attn_rows_1[0].move_to([0.7, 0.98, 0])
+
+        llm_attn_rows_1[1].arrange(DOWN, buff=0.53)
+        llm_attn_rows_1[1].set_color(ORANGE) 
+        llm_attn_rows_1[1].move_to([0.7, 0.86, 0])
+
+        llm_attn_rows_1[2].arrange(DOWN, buff=0.53) 
+        llm_attn_rows_1[2].set_color(BLUE) 
+        llm_attn_rows_1[2].move_to([0.7, 0.74, 0])
+
+        llm_attn_rows_2=llm_attn_rows_1.copy()
+        llm_attn_rows_3=llm_attn_rows_1.copy()
+
+        llm_attn_rows_2.move_to([4.3, 0.86, 0])
+        llm_attn_rows_3.move_to([7.9, 0.85, 0])
+
+
+        self.add(llm_attn_rows_1, llm_attn_rows_2, llm_attn_rows_3)
+
+        # Ok i think we make like the full 5 rows down here 
+        # And then Replacement Transform
+        ae_attn_rows_tmp=VGroup() #Text ones
+        for i in range(8):
+            flat_line = Line(LEFT * 0.45, RIGHT * 0.45)
+            flat_line.set_stroke(RED, width=3)
+            ae_attn_rows_tmp.add(flat_line)
+
+        ae_attn_rows_1=VGroup(ae_attn_rows_tmp, ae_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy(), 
+                              ae_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy())
+        
+        ae_attn_rows_1[0].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[0].move_to([0.7, -4.98, 0])
+
+        ae_attn_rows_1[1].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[3].set_color(PINK) 
+        ae_attn_rows_1[1].move_to([0.7, -5.06, 0])
+
+        ae_attn_rows_1[2].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[3].set_color(GREEN) 
+        ae_attn_rows_1[2].move_to([0.7, -5.14, 0])
+
+        ae_attn_rows_1[3].arrange(DOWN, buff=0.53)
+        ae_attn_rows_1[3].set_color(ORANGE) 
+        ae_attn_rows_1[3].move_to([0.7, -5.22, 0])
+
+        ae_attn_rows_1[4].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[4].set_color(BLUE) 
+        ae_attn_rows_1[4].move_to([0.7, -5.30, 0])
+
+
+        ae_attn_rows_2=ae_attn_rows_1.copy()
+        ae_attn_rows_3=ae_attn_rows_1.copy()
+
+        ae_attn_rows_2.move_to([4.3, -5.14, 0])
+        ae_attn_rows_3.move_to([7.9, -5.15, 0])
+
+
+        self.add(ae_attn_rows_1, ae_attn_rows_2, ae_attn_rows_3)
+
+
+        # self.remove(ae_attn_rows_1)
 
 
         self.wait()
