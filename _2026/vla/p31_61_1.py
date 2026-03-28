@@ -376,6 +376,9 @@ class P52_61(InteractiveScene):
         all_svgs[35].move_to([3.2, -6.75, 0])
         all_svgs[35][5:].move_to([3.5, -7.05, 0]) #Timestemp label 
 
+        diffusion_images_copy=diffusion_images.copy()
+        diffusion_images_copy_2=diffusion_images.copy()
+
 
         self.remove(all_svgs[31])
         self.add(action_expert_box_group)
@@ -1045,83 +1048,56 @@ class P52_61(InteractiveScene):
         # flow one last time for P61 - includeing switching to a new image
         # and moving the cache over again!
 
+        
+        # diffusion_images_copy=diffusion_images.copy() #Actually we want to copy earlier
 
+        diffusion_images_copy.set_opacity(1.0)
+        for i in range(len(diffusion_images_copy)):
+            diffusion_images_copy[i].move_to(tmp_diffusion_images[-1])
 
-
-
-
-
-
-
-
-
-        # Now get all my little lines in place in my attention heads across
-        # both networks, then figure out how to animate
-
-        # full_gemma_copy.set_opacity(0.6) #Theres so much going on, this kinda helps!
-        # action_expert_full_copy.set_opacity(0.6)
-        # all_svgs[36][0].set_opacity(0.6)
-        # action_expert_label.set_opacity(0.6)
-
-        # all_svgs[27].set_opacity(0.85) #Lower opacity of robot background so it jumps out less
-
-
-        # self.remove(action_expert_full)
-
-
-        # self.add(llm_attn_rows_1, llm_attn_rows_2, llm_attn_rows_3)
-
-
-
-        # self.add(ae_attn_rows_1, ae_attn_rows_2, ae_attn_rows_3)
-
-
-        # self.remove(ae_attn_rows_1)
-
-
-        # self.wait()
-
-
-
-
-
-        # self.remove(action_expert_full_2, action_expert_label, all_svgs[36][0],
-        #             all_svgs[34][1], diffusion_images[10])
-
-        # self.add(action_expert_qkv_flow)
-        # self.add(action_expert_attn_head_border)
-        # self.add(queries_ae)
-        # self.add(keys_ae)
-        # self.add(values_ae, attn_dots_ae)
-
-        # self.add(all_svgs[39])
-        # self.add(all_svgs[40]) 
-        # self.add(all_svgs[41])
+        diffusion_images_copy_2.set_opacity(1.0)
+        for i in range(len(diffusion_images_copy_2)):
+            diffusion_images_copy_2[i].scale(1.3)
+            diffusion_images_copy_2[i].move_to(diffusion_images[-1])
         
 
-        # self.wait()
+        self.remove(tmp_diffusion_images, diffusion_images)
+        self.add(diffusion_images_copy[0]) #, diffusion_images_copy_2[1])
+
+        self.wait()
+        self.play(FadeIn(diffusion_images_copy_2[1]))
+
+        self.wait()
+        self.play(diffusion_images_copy_2[1].animate.scale(1/1.3).move_to(diffusion_images_copy[0]),
+                  run_time=4)
+
+        self.play(FadeIn(diffusion_images_copy_2[2]))
+
+        #Now just step through the rest:
+        for i in range(2, len(diffusion_images_copy_2)):
+            self.add(diffusion_images_copy[i-1])
+            self.wait()
+            self.add(diffusion_images_copy_2[i])
+            self.wait()
+
+        # Ok cool now I have the option to use that!
+        # P61
+        # Alright putting everthing together into a few steps now!
+        # 1. Update input image patches 
+        # 2. Draw all the llm_attn_rows -> this can just repeat exaclty what we did above
+        # 3. Move down the attention rows to the action expert, as we did above
+        # 4. Step throug the diffusion process -> probably skipping bring over the output. 
+        # 5. Bonus points for doing all of this 2x. Then we're done!
 
 
-        # self.remove(queries_ae, keys_ae, values_ae, attn_dots_ae)
 
 
 
-        # self.play(FadeIn(all_svgs[37]), FadeIn(queries), FadeIn(all_svgs[17]), 
-        #             FadeIn(keys), FadeIn(all_svgs[18]),
-        #             FadeIn(values), FadeIn(all_svgs[19]), 
-        #             FadeIn(attn_dots), run_time=2)
 
-        # self.add(attn_dots)
-        # self.add(embedding_out_arrow)
-        # embedding_out_arrow.move_to([-0.64, 0.28, 0])
-        # gemma_h6_border.scale((8, 4, 1))
-        # all_svgs[14].scale([0.95, 0.77, 1])
-        # all_svgs[14].move_to([2.8, 0.3, 0])
-        # self.add(all_svgs[14][-1])
 
-        # self.remove(all_svgs[14])
 
-        # self.wait()
+
+
 
 
 
