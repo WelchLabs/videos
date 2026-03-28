@@ -113,23 +113,13 @@ class P52Part1(InteractiveScene):
         self.embed()
 
 
-ROBOT_CROP_DIR = '/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/vla/hackin/p52_robot_cropped'
+P52_ASSETS = '/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/vla/hackin/pranav_mar_27/p52_assets'
+NUM_GRID = 16
 
 
 class P52Part2(InteractiveScene):
     def construct(self):
         import os
-        os.makedirs(ROBOT_CROP_DIR, exist_ok=True)
-
-        robot_src_dirs = [ROBOT_VID_DIR_1, ROBOT_VID_DIR_2]
-        for di, src_dir in enumerate(robot_src_dirs):
-            out_dir = f'{ROBOT_CROP_DIR}/ep{di}'
-            if not os.path.exists(out_dir):
-                os.makedirs(out_dir, exist_ok=True)
-                for fi in range(300):
-                    img = PILImage.open(f'{src_dir}/{fi:03d}.png')
-                    lower = img.crop((0, img.height // 2, img.width, img.height))
-                    lower.save(f'{out_dir}/{fi:03d}.png')
 
         frame_w = self.camera.get_frame_width()
         frame_h = self.camera.get_frame_height()
@@ -141,13 +131,14 @@ class P52Part2(InteractiveScene):
         ).set_color(CHILL_BROWN)
 
         rows, cols = 4, 4
-        cat_grid_w = half_w
-        cat_grid_h = frame_h
-        cell_w = cat_grid_w / cols
-        cell_h = cat_grid_h / rows
+        cell_w = half_w / cols
+        cell_h = frame_h / rows
 
-        cat_step_indices = list(range(0, 100))
-        cat_step_paths = [f'{CAT_DIR}/step_{idx:03d}.png' for idx in cat_step_indices]
+        cat_seq_dirs = [f'{P52_ASSETS}/cat_seq{i}' for i in range(NUM_GRID)]
+        robot_ep_dirs = [f'{P52_ASSETS}/robot_ep{i}' for i in range(NUM_GRID)]
+
+        num_cat_steps = 100
+        num_robot_frames = 300
 
         cat_grid_cells = []
         for r in range(rows):
@@ -156,38 +147,30 @@ class P52Part2(InteractiveScene):
                 cy = (rows - 1) / 2 * cell_h - r * cell_h
                 cat_grid_cells.append(np.array([cx, cy, 0]))
 
-        cat_grid_mobjects = []
-        for pos in cat_grid_cells:
-            img = ImageMobject(cat_step_paths[0])
-            img.set_height(cell_h)
-            img.set_width(cell_w, stretch=True)
-            img.move_to(pos)
-            cat_grid_mobjects.append(img)
-
-        robot_frame_indices = list(range(0, 300))
-        num_episodes = len(robot_src_dirs)
-        robot_ep_dirs = [f'{ROBOT_CROP_DIR}/ep{i}' for i in range(num_episodes)]
-
         robot_grid_cells = []
-        robot_ep_assignments = []
         for r in range(rows):
             for c in range(cols):
                 cx = half_w / 2 + (c - (cols - 1) / 2) * cell_w
                 cy = (rows - 1) / 2 * cell_h - r * cell_h
                 robot_grid_cells.append(np.array([cx, cy, 0]))
-                robot_ep_assignments.append((r * cols + c) % num_episodes)
+
+        cat_grid_mobjects = []
+        for cell_idx, pos in enumerate(cat_grid_cells):
+            img = ImageMobject(f'{cat_seq_dirs[cell_idx]}/step_000.png')
+            img.set_height(cell_h)
+            img.set_width(cell_w, stretch=True)
+            img.move_to(pos)
+            cat_grid_mobjects.append(img)
 
         robot_grid_mobjects = []
-        for idx, pos in enumerate(robot_grid_cells):
-            ep = robot_ep_assignments[idx]
-            img = ImageMobject(f'{robot_ep_dirs[ep]}/{robot_frame_indices[0]:03d}.png')
+        for cell_idx, pos in enumerate(robot_grid_cells):
+            img = ImageMobject(f'{robot_ep_dirs[cell_idx]}/000.png')
             img.set_height(cell_h)
             img.set_width(cell_w, stretch=True)
             img.move_to(pos)
             robot_grid_mobjects.append(img)
 
         self.play(ShowCreation(div_line))
-
         self.play(
             *[FadeIn(img) for img in cat_grid_mobjects],
             *[FadeIn(img) for img in robot_grid_mobjects],
@@ -195,19 +178,15 @@ class P52Part2(InteractiveScene):
         )
         self.wait(0.5)
 
-        num_cat = len(cat_step_indices)
-        num_robot = len(robot_frame_indices)
         current_cat_idx = 0
-
-        for frame_i in range(1, num_robot):
-            target_cat_idx = min(int(frame_i / (num_robot - 1) * (num_cat - 1)), num_cat - 1)
+        for frame_i in range(1, num_robot_frames):
+            target_cat_idx = min(int(frame_i / (num_robot_frames - 1) * (num_cat_steps - 1)), num_cat_steps - 1)
 
             if target_cat_idx != current_cat_idx:
                 current_cat_idx = target_cat_idx
-                new_cat_path = cat_step_paths[current_cat_idx]
                 for cell_idx, pos in enumerate(cat_grid_cells):
                     old = cat_grid_mobjects[cell_idx]
-                    new_img = ImageMobject(new_cat_path)
+                    new_img = ImageMobject(f'{cat_seq_dirs[cell_idx]}/step_{current_cat_idx:03d}.png')
                     new_img.set_height(cell_h)
                     new_img.set_width(cell_w, stretch=True)
                     new_img.move_to(pos)
@@ -216,10 +195,8 @@ class P52Part2(InteractiveScene):
                     cat_grid_mobjects[cell_idx] = new_img
 
             for cell_idx, pos in enumerate(robot_grid_cells):
-                ep = robot_ep_assignments[cell_idx]
-                fi = robot_frame_indices[frame_i]
                 old = robot_grid_mobjects[cell_idx]
-                new_img = ImageMobject(f'{robot_ep_dirs[ep]}/{fi:03d}.png')
+                new_img = ImageMobject(f'{robot_ep_dirs[cell_idx]}/{frame_i:03d}.png')
                 new_img.set_height(cell_h)
                 new_img.set_width(cell_w, stretch=True)
                 new_img.move_to(pos)
