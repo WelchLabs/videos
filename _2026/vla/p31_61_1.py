@@ -67,6 +67,179 @@ def boost_colors_hsv(colors, saturation_boost=1.0, min_saturation=0.0, min_value
         out[i] = colorsys.hsv_to_rgb(h, s, v)
     return out
 
+class P61a(InteractiveScene):
+    def construct(self): 
+
+        '''
+        Ok this is kinda dirty - but ok. 
+        I'll splice in the image changes in the upper right in premiere. 
+        '''
+
+        # ── Load SVGs (same as P31_49) ──
+        svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
+        svg_files=list(sorted(svg_dir.glob('*.svg')))
+        all_svgs=Group()
+        for i, svg_file in enumerate(svg_files): 
+            if i in svgs_to_skip: continue
+            svg_image=SVGMobject(str(svg_file))
+            svg_image.scale(3.9)
+            all_svgs.add(svg_image[1:])
+
+        # ── Set frame to end-of-P52_60 state ──
+        self.frame.reorient(0, 0, 0, (4.04, -2.31, 0.0), 13.17)
+
+        # ── Constants ──
+        FRAME_IDX = 160
+        total_height = 2.72
+        grid_n = 16
+        patch_size = total_height / grid_n
+        gap_factor = 0.12
+        vertical_spacing = 0.2
+        UP_SHIFT = np.array([0, 0.5, 0])  # Applied to action expert area during P52_60
+
+        # ═══════════════════════════════════════════════════
+        # 1. IMAGE PATCHES (with gap expansion baked in)
+        #    Unchanged from P52_60 setup
+        # ═══════════════════════════════════════════════════
+        patch_centers = [
+            [-5.23, 2.58, 0],      # overhead
+            [-5.23, 0.175, 0],     # left wrist
+            [-5.23, -2.22, 0],     # right wrist
+        ]
+        pixel_squares = Group()
+        for k, image_name in enumerate(['base_0_rgb', 'left_wrist_0_rgb', 'right_wrist_0_rgb']):
+            pixel_squares.add(Group())
+            patch_dir = hacking_dir / f'p35/{FRAME_IDX}/{image_name}'
+            for i in range(2, 14):
+                for j in range(grid_n):
+                    patch_mob = ImageMobject(str(patch_dir / f'patch_{i}_{j}.png'))
+                    patch_mob.set_height(patch_size)
+                    patch_mob.set_width(patch_size, stretch=True)
+                    x_pos = (j - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
+                    y_pos = -(i - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
+                    patch_mob.move_to([x_pos, y_pos, 0])
+                    pixel_squares[-1].add(patch_mob)
+            pixel_squares[k].move_to(patch_centers[k])
+
+        # ═══════════════════════════════════════════════════
+        # 2. SIGLIP ENCODERS + LIL ARROWS
+        #    Unchanged from P52_60 setup
+        # ═══════════════════════════════════════════════════
+        siglip_1 = all_svgs[2][:13]
+        siglip_2 = all_svgs[2][13:26]
+        siglip_3 = all_svgs[2][26:39]
+        image_encoders_label = all_svgs[2][39:]
+        siglip_1.scale(1.1).move_to([-3.0, 2.6, 0])
+        siglip_2.scale(1.1).move_to([-3.0, 0.2, 0])
+        siglip_3.scale(1.1).move_to([-3.0, -2.1, 0])
+        image_encoders_label.scale(1.1).move_to([-3.0, 3.5, 0])
+
+        lil_arrows_pair_1 = all_svgs[5]
+        lil_arrows_pair_2 = lil_arrows_pair_1.copy()
+        lil_arrows_pair_3 = lil_arrows_pair_1.copy()
+        lil_arrows_pair_1.move_to([-3.0, 2.57, 0])
+        lil_arrows_pair_2.move_to([-3.0, 0.18, 0])
+        lil_arrows_pair_3.move_to([-3.0, -2.18, 0])
+
+        self.add(
+            # Image patches
+            pixel_squares,
+            # SigLIP encoders + arrows
+            siglip_1, siglip_2, siglip_3, image_encoders_label,
+            lil_arrows_pair_1, lil_arrows_pair_2, lil_arrows_pair_3,
+        )
+
+
+        self.wait(20)
+        self.embed()
+
+class P61b(InteractiveScene):
+    def construct(self): 
+
+        '''
+        Ok this is kinda dirty - but ok. 
+        I'll splice in the image changes in the upper right in premiere. 
+        '''
+
+        # ── Load SVGs (same as P31_49) ──
+        svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
+        svg_files=list(sorted(svg_dir.glob('*.svg')))
+        all_svgs=Group()
+        for i, svg_file in enumerate(svg_files): 
+            if i in svgs_to_skip: continue
+            svg_image=SVGMobject(str(svg_file))
+            svg_image.scale(3.9)
+            all_svgs.add(svg_image[1:])
+
+        # ── Set frame to end-of-P52_60 state ──
+        self.frame.reorient(0, 0, 0, (4.04, -2.31, 0.0), 13.17)
+
+        # ── Constants ──
+        FRAME_IDX = 170
+        total_height = 2.72
+        grid_n = 16
+        patch_size = total_height / grid_n
+        gap_factor = 0.12
+        vertical_spacing = 0.2
+        UP_SHIFT = np.array([0, 0.5, 0])  # Applied to action expert area during P52_60
+
+        # ═══════════════════════════════════════════════════
+        # 1. IMAGE PATCHES (with gap expansion baked in)
+        #    Unchanged from P52_60 setup
+        # ═══════════════════════════════════════════════════
+        patch_centers = [
+            [-5.23, 2.58, 0],      # overhead
+            [-5.23, 0.175, 0],     # left wrist
+            [-5.23, -2.22, 0],     # right wrist
+        ]
+        pixel_squares = Group()
+        for k, image_name in enumerate(['base_0_rgb', 'left_wrist_0_rgb', 'right_wrist_0_rgb']):
+            pixel_squares.add(Group())
+            patch_dir = hacking_dir / f'p35/{FRAME_IDX}/{image_name}'
+            for i in range(2, 14):
+                for j in range(grid_n):
+                    patch_mob = ImageMobject(str(patch_dir / f'patch_{i}_{j}.png'))
+                    patch_mob.set_height(patch_size)
+                    patch_mob.set_width(patch_size, stretch=True)
+                    x_pos = (j - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
+                    y_pos = -(i - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
+                    patch_mob.move_to([x_pos, y_pos, 0])
+                    pixel_squares[-1].add(patch_mob)
+            pixel_squares[k].move_to(patch_centers[k])
+
+        # ═══════════════════════════════════════════════════
+        # 2. SIGLIP ENCODERS + LIL ARROWS
+        #    Unchanged from P52_60 setup
+        # ═══════════════════════════════════════════════════
+        siglip_1 = all_svgs[2][:13]
+        siglip_2 = all_svgs[2][13:26]
+        siglip_3 = all_svgs[2][26:39]
+        image_encoders_label = all_svgs[2][39:]
+        siglip_1.scale(1.1).move_to([-3.0, 2.6, 0])
+        siglip_2.scale(1.1).move_to([-3.0, 0.2, 0])
+        siglip_3.scale(1.1).move_to([-3.0, -2.1, 0])
+        image_encoders_label.scale(1.1).move_to([-3.0, 3.5, 0])
+
+        lil_arrows_pair_1 = all_svgs[5]
+        lil_arrows_pair_2 = lil_arrows_pair_1.copy()
+        lil_arrows_pair_3 = lil_arrows_pair_1.copy()
+        lil_arrows_pair_1.move_to([-3.0, 2.57, 0])
+        lil_arrows_pair_2.move_to([-3.0, 0.18, 0])
+        lil_arrows_pair_3.move_to([-3.0, -2.18, 0])
+
+        self.add(
+            # Image patches
+            pixel_squares,
+            # SigLIP encoders + arrows
+            siglip_1, siglip_2, siglip_3, image_encoders_label,
+            lil_arrows_pair_1, lil_arrows_pair_2, lil_arrows_pair_3,
+        )
+
+
+        self.wait(20)
+        self.embed()
+
+
 class P52_61(InteractiveScene):
     def construct(self): 
         '''
@@ -378,6 +551,8 @@ class P52_61(InteractiveScene):
 
         diffusion_images_copy=diffusion_images.copy()
         diffusion_images_copy_2=diffusion_images.copy()
+        diffusion_images_copy_3=diffusion_images.copy()
+        diffusion_images_copy_4=diffusion_images.copy()
 
 
         self.remove(all_svgs[31])
@@ -1088,17 +1263,97 @@ class P52_61(InteractiveScene):
         # 3. Move down the attention rows to the action expert, as we did above
         # 4. Step throug the diffusion process -> probably skipping bring over the output. 
         # 5. Bonus points for doing all of this 2x. Then we're done!
+        # Ok now leanign towards P61 in a separate scene if Claude can get 
+        # me a clean starting point!
+        # I think I'll kinda try both here - the thing I can't do well here is swap the image patches!
+
+        self.wait()
+        self.remove(diffusion_images_copy_2)
+        self.remove(diffusion_images_copy)
+        self.add(diffusion_images_copy[0])
+
+        self.remove(ae_attn_rows_1[4], ae_attn_rows_1[3], ae_attn_rows_1[2])
+        self.remove(ae_attn_rows_2[4], ae_attn_rows_2[3], ae_attn_rows_2[2])
+        self.remove(ae_attn_rows_3[4], ae_attn_rows_3[3], ae_attn_rows_3[2])
+
+    
+        def _make_lines(color, n=8):
+            return VGroup(*[
+                Line(LEFT * 0.45, RIGHT * 0.45).set_stroke(color, width=3)
+                for _ in range(n)
+            ])
+
+        _l1 = VGroup(_make_lines(GREEN), _make_lines(ORANGE), _make_lines(BLUE))
+        _l1[0].arrange(DOWN, buff=0.53).move_to([0.7, 0.98, 0])
+        _l1[1].arrange(DOWN, buff=0.53).move_to([0.7, 0.86, 0])
+        _l1[2].arrange(DOWN, buff=0.53).move_to([0.7, 0.74, 0])
+        _l2 = _l1.copy().move_to([4.3, 0.86, 0])
+        _l3 = _l1.copy().move_to([7.9, 0.85, 0])
+
+        self.wait()
+
+        self.play(
+            *[ShowCreation(_l1[c][j]) for c in range(3) for j in range(8)],
+            run_time=3,
+        )
+        self.play(
+            *[ShowCreation(_l2[c][j]) for c in range(3) for j in range(8)],
+            run_time=3,
+        )
+        self.play(
+            *[ShowCreation(_l3[c][j]) for c in range(3) for j in range(8)],
+            run_time=3,
+        )
+
+        _a1 = VGroup(
+            _make_lines(RED), _make_lines(PINK),
+            _make_lines(GREEN), _make_lines(ORANGE), _make_lines(BLUE),
+        )
+        _a1[0].arrange(DOWN, buff=0.53).move_to([0.7, -4.98, 0])
+        _a1[1].arrange(DOWN, buff=0.53).move_to([0.7, -5.06, 0])
+        _a1[2].arrange(DOWN, buff=0.53).move_to([0.7, -5.14, 0])
+        _a1[3].arrange(DOWN, buff=0.53).move_to([0.7, -5.22, 0])
+        _a1[4].arrange(DOWN, buff=0.53).move_to([0.7, -5.30, 0])
+        _a2 = _a1.copy().move_to([4.3, -5.14, 0])
+        _a3 = _a1.copy().move_to([7.9, -5.15, 0])
+
+        # Red + pink rows appear directly
+        self.add(_a1[0], _a2[0], _a3[0])
+        self.add(_a1[1], _a2[1], _a3[1])
+
+        # Green/orange/blue slide down from LLM → action expert
+        self.wait()
+        self.play(
+            *[ReplacementTransform(_l1[c], _a1[c + 2]) for c in range(3)],
+            *[ReplacementTransform(_l2[c], _a2[c + 2]) for c in range(3)],
+            *[ReplacementTransform(_l3[c], _a3[c + 2]) for c in range(3)],
+            run_time=5,
+        )
 
 
 
+        # self.add(diffusion_images_copy[0]) #, diffusion_images_copy_2[1])
+        # diffusion_images_copy_2.set_opacity(1.0)
+        # self.remove(diffusion_images_copy)
 
+        self.wait()
 
+        diffusion_images_copy_3.set_opacity(1.0)
+        for i in range(len(diffusion_images_copy)):
+            diffusion_images_copy_3[i].move_to(tmp_diffusion_images[-1])
 
+        diffusion_images_copy_4.set_opacity(1.0)
+        for i in range(len(diffusion_images_copy_4)):
+            diffusion_images_copy_4[i].scale(1.3)
+            diffusion_images_copy_4[i].move_to(diffusion_images[-1])
+    
 
-
-
-
-
+        #Now just step through the rest:
+        for i in range(1, len(diffusion_images_copy_4)):
+            self.add(diffusion_images_copy_3[i-1])
+            self.wait()
+            self.add(diffusion_images_copy_4[i])
+            self.wait()
 
 
 
