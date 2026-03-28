@@ -907,34 +907,19 @@ class P52_61(InteractiveScene):
         #Hmm just dropping the letters is not trivial -> tempted to make 
         # another svg I guess...
 
-
-
-        self.frame.reorient(0, 0, 0, (4.27, 0.69, 0.0), 7.52)
-
         self.wait()
-        self.play(FadeOut(all_svgs[46])) #Fade out h labels
+        self.play(self.frame.animate.reorient(0, 0, 0, (4.27, 0.69, 0.0), 7.52), 
+                  FadeOut(all_svgs[46]), 
+                  run_time=4)
 
         #Swap these while we're focused on Gemma
         action_expert_full_copy_2=VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3, 4]])
         self.remove(action_expert_h6_border_copy) #, action_expert_full_2[3], action_expert_full_2[2])
         self.remove(action_expert_full)
         self.add(action_expert_full_copy_2) #[3], action_expert_full_copy[4])
-
         self.remove(action_expert_full_copy_2[3]) #h labels
 
-        # Now get all my little lines in place in my attention heads across
-        # both networks, then figure out how to animate
-
-        full_gemma_copy.set_opacity(0.6) #Theres so much going on, this kinda helps!
-        action_expert_full_copy.set_opacity(0.6)
-        all_svgs[36][0].set_opacity(0.6)
-        action_expert_label.set_opacity(0.6)
-
-        all_svgs[27].set_opacity(0.85) #Lower opacity of robot background so it jumps out less
-
-
-        # self.remove(action_expert_full)
-
+        # VGroup(*[action_expert_full_copy[i] for i in [0, 1, 2, 3, 5]]).set_opacity(0.6)
 
         llm_attn_rows_tmp=VGroup() #Text ones
         for i in range(8):
@@ -960,9 +945,6 @@ class P52_61(InteractiveScene):
 
         llm_attn_rows_2.move_to([4.3, 0.86, 0])
         llm_attn_rows_3.move_to([7.9, 0.85, 0])
-
-
-        self.add(llm_attn_rows_1, llm_attn_rows_2, llm_attn_rows_3)
 
         # Ok i think we make like the full 5 rows down here 
         # And then Replacement Transform
@@ -1001,17 +983,103 @@ class P52_61(InteractiveScene):
         ae_attn_rows_2.move_to([4.3, -5.14, 0])
         ae_attn_rows_3.move_to([7.9, -5.15, 0])
 
+        # VGroup(*[full_gemma_copy[i] for i in [0, 1, 2, 3, 5]]).set_opacity(0.6)
+        # VGroup(*[action_expert_full_copy[i] for i in [0, 1, 2, 3, 5]]).set_opacity(0.6)
+        # all_svgs[36][0].set_opacity(0.6)
+        # action_expert_label.set_opacity(0.6)
 
-        self.add(ae_attn_rows_1, ae_attn_rows_2, ae_attn_rows_3)
+        # self.add(action_expert_full_copy)
+        # self.remove(action_expert_full_copy[5])
+
+
+        self.wait()
+        self.remove(action_expert_full_copy[4])
+        all_svgs[27].set_opacity(0.85) #Lower opacity of robot background so it jumps out less
+        self.play(VGroup(*[full_gemma_copy[i] for i in [0, 1, 2, 3, 5]]).animate.set_opacity(0.6), 
+                  VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3]]).animate.set_opacity(0.6),
+                  all_svgs[36][0].animate.set_opacity(0.6),
+                  action_expert_label.animate.set_opacity(0.6),
+                  *[ShowCreation(llm_attn_rows_1[0][j]) for j in range(8)],
+                  *[ShowCreation(llm_attn_rows_1[1][j]) for j in range(8)],
+                  *[ShowCreation(llm_attn_rows_1[2][j]) for j in range(8)],
+                  run_time=4)
+        self.play(*[ShowCreation(llm_attn_rows_2[0][j]) for j in range(8)],
+                  *[ShowCreation(llm_attn_rows_2[1][j]) for j in range(8)],
+                  *[ShowCreation(llm_attn_rows_2[2][j]) for j in range(8)],
+                  run_time=4)
+        self.play(*[ShowCreation(llm_attn_rows_3[0][j]) for j in range(8)],
+                  *[ShowCreation(llm_attn_rows_3[1][j]) for j in range(8)],
+                  *[ShowCreation(llm_attn_rows_3[2][j]) for j in range(8)],
+                  run_time=4)
+
+
+        self.add(ae_attn_rows_1[0], ae_attn_rows_2[0], ae_attn_rows_3[0])
+        self.add(ae_attn_rows_1[1], ae_attn_rows_2[1], ae_attn_rows_3[1])
+
+        self.play(self.frame.animate.reorient(0, 0, 0, (4.29, -5.41, 0.0), 7.52),
+                  *[ReplacementTransform(llm_attn_rows_1[0], ae_attn_rows_1[2])], 
+                  *[ReplacementTransform(llm_attn_rows_1[1], ae_attn_rows_1[3])],
+                  *[ReplacementTransform(llm_attn_rows_1[2], ae_attn_rows_1[4])],
+                  *[ReplacementTransform(llm_attn_rows_2[0], ae_attn_rows_2[2])], 
+                  *[ReplacementTransform(llm_attn_rows_2[1], ae_attn_rows_2[3])],
+                  *[ReplacementTransform(llm_attn_rows_2[2], ae_attn_rows_2[4])],
+                  *[ReplacementTransform(llm_attn_rows_3[0], ae_attn_rows_3[2])], 
+                  *[ReplacementTransform(llm_attn_rows_3[1], ae_attn_rows_3[3])],
+                  *[ReplacementTransform(llm_attn_rows_3[2], ae_attn_rows_3[4])],
+                  run_time=7)
+
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (4.16, -2.38, 0.0), 12.91), 
+                  VGroup(*[full_gemma_copy[i] for i in [0, 1, 2, 3, 5]]).animate.set_opacity(1.0), 
+                  VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3]]).animate.set_opacity(1.0),
+                  all_svgs[36][0].animate.set_opacity(1.0),
+                  action_expert_label.animate.set_opacity(1.0),
+                  run_time=8)
+
+
+        # Hmm so for "running mulitple times" do I want to move outputs to 
+        # inputs again?
+        # Ok so getting really close here
+        # I do think it makes sense to have the option in editing
+        # to move outputs to inputs etc, and then update the whole 
+        # flow one last time for P61 - includeing switching to a new image
+        # and moving the cache over again!
+
+
+
+
+
+
+
+
+
+
+
+        # Now get all my little lines in place in my attention heads across
+        # both networks, then figure out how to animate
+
+        # full_gemma_copy.set_opacity(0.6) #Theres so much going on, this kinda helps!
+        # action_expert_full_copy.set_opacity(0.6)
+        # all_svgs[36][0].set_opacity(0.6)
+        # action_expert_label.set_opacity(0.6)
+
+        # all_svgs[27].set_opacity(0.85) #Lower opacity of robot background so it jumps out less
+
+
+        # self.remove(action_expert_full)
+
+
+        # self.add(llm_attn_rows_1, llm_attn_rows_2, llm_attn_rows_3)
+
+
+
+        # self.add(ae_attn_rows_1, ae_attn_rows_2, ae_attn_rows_3)
 
 
         # self.remove(ae_attn_rows_1)
 
 
-        self.wait()
-
-
-
+        # self.wait()
 
 
 
