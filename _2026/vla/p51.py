@@ -120,8 +120,31 @@ class P51v2(InteractiveScene):
     def construct(self):
         VGroup(svg_02, svg_03, svg_04, svg_05).set_width(self.camera.get_frame_width()-1).move_to(ORIGIN)
 
+        _ts = VGroup(*svg_03[0:8])
+        _ts_orig_h = _ts.get_height()
+        _ts.scale(1.5, about_point=_ts.get_center())
+        _ts.shift(DOWN * (_ts.get_height() - _ts_orig_h))
+
+        _ae_text = VGroup(*svg_02[1:])
+        _ae_text.scale(1.5, about_point=_ae_text.get_center())
+
+        _joint = VGroup(*svg_03[8:13])
+        _joint_orig_w = _joint.get_width()
+        _joint.scale(1.5, about_point=_joint.get_center())
+        svg_02.shift(LEFT * (_joint.get_width() - _joint_orig_w))
+
+        _ts5 = VGroup(*svg_05[0:8])
+        _ts5_orig_h = _ts5.get_height()
+        _ts5.scale(1.5, about_point=_ts5.get_center())
+        _ts5.shift(DOWN * (_ts5.get_height() - _ts5_orig_h))
+
+        _jp = VGroup(*svg_05[8:21])
+        _jp_orig_w = _jp.get_width()
+        _jp.scale(1.5, about_point=_jp.get_center())
+        _jp.shift(LEFT * (_jp.get_width() - _jp_orig_w))
+
         arrow_02_03 = Arrow(svg_02.get_center()+(RIGHT*svg_02.get_width()/2), svg_02.get_center()+(RIGHT*svg_02.get_width()/2)+RIGHT * 0.5, buff=0.1, thickness=1).set_color(CHILL_BROWN)
-        arrow_05_left = Arrow(svg_05.get_center()+(LEFT*svg_05.get_width()/2)+UP*0.3, svg_05.get_center()+(LEFT*svg_05.get_width()/2)+LEFT * 1.1+UP*0.3, buff=0.1, thickness=1).set_color('#8B0000')
+        arrow_05_left = Arrow(_jp.get_left()+UP*0.3, _jp.get_left()+LEFT*1.1+UP*0.3, buff=0.1, thickness=3).set_color('#8B0000')
 
         colorbar_frame = svg_03[13]
         colorbar_10.stretch_to_fit_width(colorbar_frame.get_width() * (966.16 / 972.16))
@@ -176,7 +199,7 @@ class P51v2(InteractiveScene):
         for yv in [0.2, 0.3, 0.4, 0.5, 0.6]:
             ty = line_bottom + (yv - y_data_min) / (y_data_max - y_data_min) * line_height
             tick = Line([line_left - 0.08, ty, 0], [line_left, ty, 0]).set_stroke(color=ax_color, width=ax_stroke)
-            lbl = DecimalNumber(yv, num_decimal_places=1, font_size=14).set_color(ax_color)
+            lbl = DecimalNumber(yv, num_decimal_places=1, font_size=22).set_color(ax_color)
             lbl.next_to(tick, LEFT, buff=0.05)
             y_ticks.add(tick)
             y_labels.add(lbl)
@@ -186,7 +209,7 @@ class P51v2(InteractiveScene):
         for ji in range(0, len(col_vals), 10):
             tx = x_pts[ji]
             tick = Line([tx, line_bottom, 0], [tx, line_bottom - 0.06, 0]).set_stroke(color=ax_color, width=ax_stroke)
-            lbl = Integer(ji, font_size=12).set_color(ax_color)
+            lbl = Integer(ji, font_size=20).set_color(ax_color)
             lbl.next_to(tick, DOWN, buff=0.04)
             x_ticks.add(tick)
             x_labels.add(lbl)
@@ -195,6 +218,8 @@ class P51v2(InteractiveScene):
 
         self.play(FadeIn(svg_02))
         self.play(GrowArrow(arrow_02_03), FadeIn(svg_03), run_time=0.8)
+        for hide_idx in [14, 15, 16, 17, 18, 19]:
+            svg_03[hide_idx].set_opacity(0)
         self.play(FadeIn(colorbar_10), ShowCreation(svg_04), run_time=0.8)
         self.add(col_rect)
         self.play(FadeIn(colorbar_vert), ShowCreation(colorbar_vert_outline), run_time=0.6)
@@ -218,13 +243,12 @@ class P51v2(InteractiveScene):
         )
         self.play(
             LaggedStart(pin_anims, ShowCreation(shoulder_line), lag_ratio=0.6),
-            run_time=3.5,
+            run_time=5.5,
         )
 
-        self.wait(1.0)
-        self.play(FadeOut(pins), run_time=1.0)
         self.wait(0.5)
+        self.play(FadeOut(pins), run_time=1.0)
         self.play(GrowArrow(arrow_05_left), run_time=1.5)
-        self.wait(1.0)
+        self.wait(2.0)
 
         self.embed()

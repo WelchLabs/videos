@@ -41,6 +41,29 @@ class P52Part1(InteractiveScene):
     def construct(self):
         VGroup(svg_02, svg_03, svg_04, svg_05).set_width(self.camera.get_frame_width()-1).move_to(ORIGIN)
 
+        _ts = VGroup(*svg_03[0:8])
+        _ts_orig_h = _ts.get_height()
+        _ts.scale(1.5, about_point=_ts.get_center())
+        _ts.shift(DOWN * (_ts.get_height() - _ts_orig_h))
+
+        _ae_text = VGroup(*svg_02[1:])
+        _ae_text.scale(1.5, about_point=_ae_text.get_center())
+
+        _joint = VGroup(*svg_03[8:13])
+        _joint_orig_w = _joint.get_width()
+        _joint.scale(1.5, about_point=_joint.get_center())
+        svg_02.shift(LEFT * (_joint.get_width() - _joint_orig_w))
+
+        _ts5 = VGroup(*svg_05[0:8])
+        _ts5_orig_h = _ts5.get_height()
+        _ts5.scale(1.5, about_point=_ts5.get_center())
+        _ts5.shift(DOWN * (_ts5.get_height() - _ts5_orig_h))
+
+        _jp = VGroup(*svg_05[8:21])
+        _jp_orig_w = _jp.get_width()
+        _jp.scale(1.5, about_point=_jp.get_center())
+        _jp.shift(LEFT * (_jp.get_width() - _jp_orig_w))
+
         arrow_02_03 = Arrow(
             svg_02.get_center() + RIGHT * svg_02.get_width()/2,
             svg_02.get_center() + RIGHT * svg_02.get_width()/2 + RIGHT * 0.5,
@@ -85,12 +108,11 @@ class P52Part1(InteractiveScene):
             heatmap_frames.append(img)
 
         self.play(FadeIn(svg_02))
-        self.play(GrowArrow(arrow_02_03))
-        self.play(FadeIn(svg_03))
-        self.add(heatmap_frames[0])
-        self.play(FadeIn(heatmap_frames[0]))
-        self.play(ShowCreation(svg_04))
-        self.play(FadeIn(colorbar_vert), ShowCreation(colorbar_vert_outline))
+        self.play(GrowArrow(arrow_02_03), FadeIn(svg_03), run_time=0.8)
+        for hide_idx in [14, 15, 16, 17, 18, 19]:
+            svg_03[hide_idx].set_opacity(0)
+        self.play(FadeIn(heatmap_frames[0]), ShowCreation(svg_04), run_time=0.8)
+        self.play(FadeIn(colorbar_vert), ShowCreation(colorbar_vert_outline), run_time=0.6)
 
         self.play(FadeIn(cat_images[0]))
 
@@ -119,7 +141,9 @@ NUM_GRID = 16
 
 class P52Part2(InteractiveScene):
     def construct(self):
-        import os
+        import os, resource
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        resource.setrlimit(resource.RLIMIT_NOFILE, (min(hard, 65536), hard))
 
         frame_w = self.camera.get_frame_width()
         frame_h = self.camera.get_frame_height()
