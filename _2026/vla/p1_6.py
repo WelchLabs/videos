@@ -38,7 +38,7 @@ class P1_6a(InteractiveScene):
 
         coke_start_img=ImageMobject(str(graphics_dir / 'coke_can_start_frame.png'))
         coke_end_img=ImageMobject(str(graphics_dir / 'coke_can_end.png'))
-        keyring_start_img=ImageMobject(str(graphics_dir / 'Keyring.mp4.00_00_22_03.Still001.png'))
+        keyring_start_img=ImageMobject(str(graphics_dir / 'scratch2.00_00_47_06.Still001.png'))
         room_end_img=ImageMobject(str(graphics_dir / 'processed_5xspeed_maybe_best_fully_autonomous_bedroom_lowres.mp4.00_00_44_02.Still001.png'))
 
 
@@ -95,17 +95,54 @@ class P1_6a(InteractiveScene):
         self.play(FadeIn(quote_group[1:]), run_time=2)
 
 
+        # self.add(all_svgs[-1][0])
+
+        manual_box_2 = RoundedRectangle(
+            width=all_svgs[-1][0].get_width(),
+            height=all_svgs[-1][0].get_height(),
+            corner_radius=0.025,
+            stroke_color=CHILL_BROWN,
+            stroke_width=4,
+            fill_opacity=0,
+        )
+        manual_box_2.move_to(all_svgs[-1][0].get_center())
+
+        keyring_start_img.scale(0.745)
+        keyring_start_img.move_to(manual_box_2.get_center())
+
+        room_end_img.scale(0.745)
+        room_end_img.move_to(manual_box_2.get_center())
+
+        # self.add(all_svgs[4][:-1])
+        # self.add(all_svgs[6][77:89])
+
+        # self.frame.reorient(0, 0, 0, (3.24, -1.45, 0.0), 3.94)
+        # self.add(keyring_start_img)
+        # self.add(manual_box_2)
+        # self.add(all_svgs[6]); self.add(all_svgs[7])
+        all_svgs[7].set_opacity(0.0)
+
+        self.wait() 
+        self.play(self.frame.animate.reorient(0, 0, 0, (3.29, -1.6, 0.0), 4.23),
+                  ShowCreation(manual_box_2),
+                  ReplacementTransform(all_svgs[4][:-1].copy(), all_svgs[6][77:89]),
+                  all_svgs[7].animate.set_opacity(0.5),
+                  Write(all_svgs[6][:77]),
+                  Write(all_svgs[6][89:]),
+                  run_time=6)
 
 
+        self.play(FadeIn(keyring_start_img), run_time=3)
+        self.remove(manual_box_2); self.add(manual_box_2)
+        self.wait()
+
+        self.remove(keyring_start_img)
+        self.add(room_end_img)
         self.wait()
 
 
-
-
-
-
-
-
+        self.play(self.frame.animate.reorient(0, 0, 0, (0.24, 0.03, 0.0), 7.63), 
+                 run_time=8)
 
 
 
