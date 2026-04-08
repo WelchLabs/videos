@@ -1,17 +1,32 @@
 import numpy as np
+import pickle
+import gymnasium as gym
+import ale_py
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import gymnasium as gym
-import ale_py
-import pickle
-import os
 
 gym.register_envs(ale_py)
 
+# Auto-detect best available device
+if torch.backends.mps.is_available():
+    device = torch.device('mps')
+elif torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    device = torch.device('cpu')
+
+# Enable TF32 on CUDA for faster matmuls
+if device.type == 'cuda':
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    torch.backends.cudnn.benchmark = True
+
 H = 200
-n_envs = 8
+batch_size = 10
 learning_rate = 1e-4
+resume = True
 render = False
 
 D = 80 * 80
@@ -19,12 +34,6 @@ n_actions = 4
 save_file = 'breakout_v2.p'
 best_save_file = 'breakout_v2_best.p'
 
-device = torch.device("mps") if torch.backends.mps.is_available() else \
-         torch.device("cuda") if torch.cuda.is_available() else \
-         torch.device("cpu")
-print(f"Using device: {device}")
-
-# Model
 model = nn.Sequential(
     nn.Linear(D, H),
     nn.ReLU(),
@@ -37,6 +46,15 @@ running_reward = None
 episode_number = 0
 best_reward = 0
 
+if resume and os.path.exists(save_file):
+    print(f"Loading model from {save_file}")
+    checkpoint = pickle.load(open(save_file, 'rb'))
+    model.load_state_dict(checkpoint['model'])
+    running_reward = checkpoint['running_reward']
+    episode_number = checkpoint['episode_number']
+    best_reward = checkpoint.get('best_reward', 0)
+    print(f"Resumed at episode {episode_number}, running reward: {running_reward:.2f}")
+
 
 def prepro(I):
     I = I[32:192]
@@ -45,89 +63,85 @@ def prepro(I):
     return I.astype(np.float32).ravel()
 
 
-# Parallel environments
-envs = [gym.make("ALE/Breakout-v5") for _ in range(n_envs)]
-observations = [env.reset()[0] for env in envs]
-prev_xs = [None] * n_envs
+def save_checkpoint(filename, is_best=False):
+    checkpoint = {
+        'model': {k: v.cpu() for k, v in model.state_dict().items()},
+        'running_reward': running_reward,
+        'episode_number': episode_number,
+        'best_reward': best_reward,
+    }
+    pickle.dump(checkpoint, open(filename, 'wb'))
+    if is_best:
+        pickle.dump(checkpoint, open(best_save_file, 'wb'))
 
-# Per-env buffers: store log probs and raw rewards
-buffers = [{'log_probs': [], 'rewards': []} for _ in range(n_envs)]
-reward_sums = [0.0] * n_envs
 
-print(f"Starting training... H={H}, lr={learning_rate}, n_envs={n_envs}, device={device}")
-print("No discounting, no RMSProp — plain SGD on raw episode reward")
+env = gym.make("ALE/Breakout-v5", render_mode="human" if render else None)
+observation, info = env.reset()
+prev_x = None
+log_probs, drs = [], []
+reward_sum = 0
+
+# Pre-allocate reusable tensors on device
+zero_input = torch.zeros(D, dtype=torch.float32, device=device)
+
+print(f"Starting training... H={H}, lr={learning_rate}, batch={batch_size}, device={device}")
 
 try:
     while True:
-        # Build input batch
-        cur_xs = [prepro(observations[i]) for i in range(n_envs)]
-        xs = np.stack([
-            cur_xs[i] - prev_xs[i] if prev_xs[i] is not None else np.zeros(D, dtype=np.float32)
-            for i in range(n_envs)
-        ])
-        xs_t = torch.tensor(xs, device=device)
+        cur_x = prepro(observation)
+        if prev_x is not None:
+            x_t = torch.as_tensor(cur_x - prev_x, device=device)
+        else:
+            x_t = zero_input
+        prev_x = cur_x
 
-        # Forward pass
-        logits = model(xs_t)                              # (n_envs, n_actions)
-        probs = F.softmax(logits, dim=1)
+        logits = model(x_t)
+        probs = F.softmax(logits, dim=0)
         dist = torch.distributions.Categorical(probs)
-        actions = dist.sample()                           # (n_envs,)
-        log_probs = dist.log_prob(actions)                # (n_envs,)
+        action = dist.sample()
+        log_probs.append(dist.log_prob(action))
 
-        for i in range(n_envs):
-            prev_xs[i] = cur_xs[i]
+        observation, reward, terminated, truncated, info = env.step(action.item())
+        done = terminated or truncated
+        reward_sum += reward
+        drs.append(reward)
 
-            buffers[i]['log_probs'].append(log_probs[i])
+        if done:
+            episode_number += 1
 
-            obs, reward, terminated, truncated, info = envs[i].step(actions[i].item())
-            done = terminated or truncated
-            reward_sums[i] += reward
-            buffers[i]['rewards'].append(reward)
-            observations[i] = obs
+            # Loss: scale all log probs by total episode reward (no discounting)
+            total_reward = reward_sum
+            loss = -(torch.stack(log_probs) * total_reward).sum()
 
-            if done:
-                episode_number += 1
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-                # Loss: scale all log probs by total episode reward (no discounting)
-                total_reward = reward_sums[i]
-                ep_log_probs = torch.stack(buffers[i]['log_probs'])
-                loss = -(ep_log_probs * total_reward).sum()
+            log_probs, drs = [], []
 
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+            if running_reward is None:
+                running_reward = reward_sum
+            else:
+                running_reward = 0.99 * running_reward + 0.01 * reward_sum
 
-                buffers[i] = {'log_probs': [], 'rewards': []}
+            is_best = running_reward > best_reward
+            if is_best:
+                best_reward = running_reward
 
-                if running_reward is None:
-                    running_reward = reward_sums[i]
-                else:
-                    running_reward = 0.99 * running_reward + 0.01 * reward_sums[i]
+            print(f'Ep {episode_number} | Reward: {reward_sum:+.0f} | Running: {running_reward:.2f} | Best: {best_reward:.2f} | Loss: {loss.item():.2f}')
 
-                is_best = running_reward > best_reward
-                if is_best:
-                    best_reward = running_reward
+            if episode_number % 50 == 0:
+                save_checkpoint(save_file, is_best=is_best)
+                print(f'Checkpoint saved at episode {episode_number}')
+            elif is_best:
+                save_checkpoint(save_file, is_best=True)
+                print(f'New best model saved! Running reward: {running_reward:.2f}')
 
-                print(f'Ep {episode_number} | Reward: {reward_sums[i]:+.0f} | Running: {running_reward:.2f} | Best: {best_reward:.2f} | Loss: {loss.item():.2f}')
-
-                if episode_number % 50 == 0 or is_best:
-                    checkpoint = {'model': model.state_dict(), 'running_reward': running_reward, 'episode_number': episode_number}
-                    pickle.dump(checkpoint, open(save_file, 'wb'))
-                    if is_best:
-                        pickle.dump(checkpoint, open(best_save_file, 'wb'))
-                        print(f'New best model saved! Running reward: {running_reward:.2f}')
-                    else:
-                        print(f'Checkpoint saved at episode {episode_number}')
-
-                reward_sums[i] = 0.0
-                observations[i] = envs[i].reset()[0]
-                prev_xs[i] = None
+            reward_sum = 0
+            observation, info = env.reset()
+            prev_x = None
 
 except KeyboardInterrupt:
-    print(f'\nInterrupted at episode {episode_number}')
-    checkpoint = {'model': model.state_dict(), 'running_reward': running_reward, 'episode_number': episode_number, 'best_reward': best_reward}
-    pickle.dump(checkpoint, open(save_file, 'wb'))
-    print('Checkpoint saved.')
-finally:
-    for env in envs:
-        env.close()
+    print(f'\nInterrupted! Saving checkpoint at episode {episode_number}...')
+    save_checkpoint(save_file)
+    print('Checkpoint saved. Exiting.')
