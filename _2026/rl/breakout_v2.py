@@ -82,13 +82,8 @@ envs = gym.make_vec("ALE/Breakout-v5",
 
 observations, infos = envs.reset()
 prev_x = [None] * num_envs
-# Per-env episode buffers
 env_log_probs = [[] for _ in range(num_envs)]
 env_rewards = [0.0] * num_envs
-
-# Accumulate episode losses across a batch before stepping optimizer
-batch_losses = []
-episodes_in_batch = 0
 
 zero_input = np.zeros(D, dtype=np.float32)
 
@@ -106,7 +101,7 @@ try:
                 diffs.append(zero_input)
             prev_x[i] = cur_xs[i]
 
-        # Batched forward pass
+        # Batched forward pass — one call for all envs
         x_batch = torch.as_tensor(np.stack(diffs), device=device)
         logits = model(x_batch)
         probs = F.softmax(logits, dim=1)
@@ -125,7 +120,8 @@ try:
         for i in range(num_envs):
             env_rewards[i] += rewards[i]
 
-        # Handle finished episodes
+        # Collect losses for all episodes that finished this step
+        step_losses = []
         for i in range(num_envs):
             if not dones[i]:
                 continue
@@ -136,8 +132,7 @@ try:
             total_reward = env_rewards[i]
             ep_log_probs = torch.stack(env_log_probs[i])
             loss = -(ep_log_probs * total_reward).sum()
-            batch_losses.append(loss)
-            episodes_in_batch += 1
+            step_losses.append(loss)
 
             if running_reward is None:
                 running_reward = env_rewards[i]
@@ -162,14 +157,17 @@ try:
             env_rewards[i] = 0.0
             prev_x[i] = None
 
-        # Update weights after batch_size episodes complete
-        if episodes_in_batch >= batch_size:
-            total_loss = torch.stack(batch_losses).sum()
+        # If any episodes finished, backward + step immediately
+        if step_losses:
+            total_loss = torch.stack(step_losses).sum()
             optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
-            batch_losses = []
-            episodes_in_batch = 0
+
+            # Detach log probs for still-running envs (old graph is now freed)
+            for i in range(num_envs):
+                if env_log_probs[i]:
+                    env_log_probs[i] = [lp.detach() for lp in env_log_probs[i]]
 
 except KeyboardInterrupt:
     print(f'\nInterrupted! Saving checkpoint at episode {episode_number}...')
