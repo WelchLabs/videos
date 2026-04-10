@@ -1,4 +1,4 @@
-# SGD + discounting — same as v1 but swaps RMSProp for plain SGD
+# RMSProp + discounting — closest to original breakout.py, manual grads replaced with autograd
 
 import csv
 import os
@@ -26,7 +26,7 @@ render = False
 
 D = 80 * 80
 n_actions = 4
-VERSION = 'v2'
+VERSION = 'v1'
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RUNS_DIR = os.path.join(HERE, 'runs', VERSION)
@@ -54,7 +54,7 @@ log_file = os.path.join(run_dir, 'log.csv')
 plot_file = os.path.join(run_dir, 'plot.png')
 
 model = nn.Sequential(nn.Linear(D, H), nn.ReLU(), nn.Linear(H, n_actions))
-optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate, alpha=0.99)
 
 running_reward = None
 episode_number = 0
@@ -102,11 +102,11 @@ def discount_rewards(r):
 
 def save_plot():
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(log_episodes, log_rewards, alpha=0.3, color='darkorange', label='reward')
-    ax.plot(log_episodes, log_running, color='darkorange', linewidth=2, label='running reward')
+    ax.plot(log_episodes, log_rewards, alpha=0.3, color='steelblue', label='reward')
+    ax.plot(log_episodes, log_running, color='steelblue', linewidth=2, label='running reward')
     ax.set_xlabel('episode')
     ax.set_ylabel('reward')
-    ax.set_title('v2 — SGD + discount')
+    ax.set_title('v1 — RMSProp + discount')
     ax.legend()
     fig.tight_layout()
     fig.savefig(plot_file, dpi=120)
@@ -132,7 +132,7 @@ log_probs, rewards = [], []
 reward_sum = 0
 pending_losses = []
 
-print(f"H={H}, lr={learning_rate}, batch={batch_size}, SGD+discount")
+print(f"H={H}, lr={learning_rate}, batch={batch_size}, RMSProp+discount")
 
 try:
     while True:

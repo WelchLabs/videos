@@ -5,6 +5,7 @@
 *.json
 *.p
 qwen3*
+_2026/rl/rl_game_hacking/runs/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files

@@ -1,4 +1,4 @@
-# SGD + discounting — same as v1 but swaps RMSProp for plain SGD
+# SGD, no discounting, update every episode — absolute minimum policy gradient
 
 import csv
 import os
@@ -18,15 +18,13 @@ import ale_py
 gym.register_envs(ale_py)
 
 H = 200
-batch_size = 10
 learning_rate = 1e-4
-gamma = 0.99
 resume = True
 render = False
 
 D = 80 * 80
 n_actions = 4
-VERSION = 'v2'
+VERSION = 'v3'
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RUNS_DIR = os.path.join(HERE, 'runs', VERSION)
@@ -89,24 +87,13 @@ def prepro(I):
     return I.astype(np.float32).ravel()
 
 
-def discount_rewards(r):
-    discounted = np.zeros_like(r)
-    running_add = 0.0
-    for t in reversed(range(len(r))):
-        if r[t] != 0:
-            running_add = 0
-        running_add = running_add * gamma + r[t]
-        discounted[t] = running_add
-    return discounted
-
-
 def save_plot():
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(log_episodes, log_rewards, alpha=0.3, color='darkorange', label='reward')
-    ax.plot(log_episodes, log_running, color='darkorange', linewidth=2, label='running reward')
+    ax.plot(log_episodes, log_rewards, alpha=0.3, color='seagreen', label='reward')
+    ax.plot(log_episodes, log_running, color='seagreen', linewidth=2, label='running reward')
     ax.set_xlabel('episode')
     ax.set_ylabel('reward')
-    ax.set_title('v2 — SGD + discount')
+    ax.set_title('v3 — SGD, no discount, update every episode')
     ax.legend()
     fig.tight_layout()
     fig.savefig(plot_file, dpi=120)
@@ -128,11 +115,10 @@ def save_checkpoint(is_best=False):
 env = gym.make("ALE/Breakout-v5", render_mode="human" if render else None)
 observation, info = env.reset()
 prev_x = None
-log_probs, rewards = [], []
+log_probs = []
 reward_sum = 0
-pending_losses = []
 
-print(f"H={H}, lr={learning_rate}, batch={batch_size}, SGD+discount")
+print(f"H={H}, lr={learning_rate}, SGD+no_discount")
 
 try:
     while True:
@@ -148,19 +134,16 @@ try:
         observation, reward, terminated, truncated, info = env.step(action.item())
         done = terminated or truncated
         reward_sum += reward
-        rewards.append(reward)
 
         if done:
             episode_number += 1
 
-            epr = np.array(rewards, dtype=np.float32)
-            discounted = discount_rewards(epr)
-            discounted = (discounted - discounted.mean()) / (discounted.std() + 1e-8)
-            advantages = torch.from_numpy(discounted)
+            loss = -(torch.stack(log_probs).sum() * reward_sum)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-            loss = -(torch.stack(log_probs) * advantages).sum()
-            pending_losses.append(loss)
-            log_probs, rewards = [], []
+            log_probs = []
 
             if running_reward is None:
                 running_reward = reward_sum
@@ -178,12 +161,6 @@ try:
             csv_f.flush()
 
             print(f'Ep {episode_number} | Reward: {reward_sum:+.0f} | Running: {running_reward:.2f} | Best: {best_reward:.2f}')
-
-            if episode_number % batch_size == 0:
-                optimizer.zero_grad()
-                torch.stack(pending_losses).sum().backward()
-                optimizer.step()
-                pending_losses = []
 
             if episode_number % 50 == 0:
                 save_checkpoint(is_best=is_best)
