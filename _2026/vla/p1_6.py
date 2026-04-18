@@ -24,7 +24,7 @@ PINK='#FAD0E2'
 svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/graphics/p1_6_to_manim/')
 graphics_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/graphics')
 
-class P1_6a(InteractiveScene):
+class P1_6c(InteractiveScene):
     def construct(self): 
 
         svgs_to_skip=[0, 1]
@@ -42,7 +42,7 @@ class P1_6a(InteractiveScene):
         room_end_img=ImageMobject(str(graphics_dir / 'processed_5xspeed_maybe_best_fully_autonomous_bedroom_lowres.mp4.00_00_44_02.Still001.png'))
 
 
-        self.frame.reorient(0, 0, 0, (-3.14, 1.79, 0.0), 3.60)
+        
         
         all_svgs[0][1:].set_opacity(0.0)
         coke_start_img.scale(0.745)
@@ -60,13 +60,17 @@ class P1_6a(InteractiveScene):
         )
         manual_box.move_to(all_svgs[0][0].get_center())
 
-
+        self.frame.reorient(0, 0, 0, (-3.11, 1.82, 0.0), 3.99)
         self.wait()
         self.play(FadeIn(coke_start_img),
                   # Write(all_svgs[0][0]),
                   ShowCreation(manual_box),
                   all_svgs[0][1:].animate.set_opacity(0.5),
                   run_time=6)
+
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (-3.14, 1.79, 0.0), 3.60), run_time=6)
+
 
 
         self.wait()
@@ -77,6 +81,7 @@ class P1_6a(InteractiveScene):
 
         self.wait()
         self.remove(coke_start_img)
+        self.wait()
         self.add(coke_end_img)
         self.remove(manual_box); self.add(manual_box)
         self.remove(all_svgs[1]); self.add(all_svgs[1])
@@ -137,13 +142,13 @@ class P1_6a(InteractiveScene):
         self.wait()
 
         self.remove(keyring_start_img)
+        self.wait()
         self.add(room_end_img)
         self.wait()
 
 
         self.play(self.frame.animate.reorient(0, 0, 0, (0.24, 0.03, 0.0), 7.63), 
                  run_time=8)
-
 
 
 
