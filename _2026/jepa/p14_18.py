@@ -16,7 +16,7 @@ CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
 
-def wire_prism(dims, color=CHILL_BROWN, stroke_width=6.0):
+def wire_prism(dims, color=CHILL_BROWN, stroke_width=10.0):
     """Wireframe rectangular prism centered at origin.
     dims = [x_len, y_len, z_len] -> VGroup of 12 edges."""
     w, h, d = dims
@@ -36,7 +36,7 @@ def wire_prism(dims, color=CHILL_BROWN, stroke_width=6.0):
     return edges
 
 
-class LeNetSketch(InteractiveScene):
+class LeNetSketch2(InteractiveScene):
     def construct(self):
         # Tilted 3D view so the prisms read as boxes
         self.frame.reorient(-25, 65, 0)
@@ -69,7 +69,7 @@ class LeNetSketch(InteractiveScene):
 
 
 
-class AlexNetSketch(InteractiveScene):
+class AlexNetSketch3(InteractiveScene):
     def construct(self):
         # Tilted 3D view so the prisms read as boxes
         self.frame.reorient(-25, 65, 0)
@@ -79,7 +79,7 @@ class AlexNetSketch(InteractiveScene):
         img.move_to([-3.6, 0, 0])
 
         # Intermediate conv layer: roughly cubic, ~1/3 the spatial size
-        l2 = wire_prism([0.8, 1.1, 1.1])
+        l2 = wire_prism([0.8, 1.3, 1.3])
         l2.move_to([-2.8, 0, 0])
 
         # Deeper conv layer: elongated prism (lots of channels, small face)
@@ -89,8 +89,8 @@ class AlexNetSketch(InteractiveScene):
         l4 = wire_prism([1.0, 0.7, 0.7])
         l4.move_to([-0.3, 0, 0])
 
-        l5 = wire_prism([1.0, 0.7, 0.7])
-        l5.move_to([0.9, 0, 0])
+        l5 = wire_prism([0.7, 0.7, 0.7])
+        l5.move_to([0.8, 0, 0])
 
         layers = VGroup(img, l2, l3, l4, l5)
         # self.add(layers)
@@ -98,9 +98,13 @@ class AlexNetSketch(InteractiveScene):
         # self.frame.reorient(24, 64, 0, (-2.27, -0.11, 0.21), 6.55)
         self.frame.reorient(20, 63, 0, (-1.7, 0.08, -0.03), 6.55)
 
+        self.play(Write(layers), run_time=5)
 
 
         # self.frame.reorient(3, 65, 0, (-1.44, -0.02, -0.24), 7.21)
+        self.wait()
+        self.play(self.frame.animate.reorient(1, 62, 0, (-1.39, 0.05, -0.11), 6.55),
+                  run_time=5)
 
         self.embed()
         self.wait(20)
