@@ -16,7 +16,7 @@ CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
 
-def wire_prism(dims, color=CHILL_BROWN, stroke_width=10.0):
+def wire_prism(dims, color=CHILL_BROWN, stroke_width=1.5):
     """Wireframe rectangular prism centered at origin.
     dims = [x_len, y_len, z_len] -> VGroup of 12 edges."""
     w, h, d = dims
