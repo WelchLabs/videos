@@ -26,11 +26,14 @@ def wire_prism(dims, color=CHILL_BROWN, stroke_width=10.0):
     }
     edges = VGroup()
     keys = list(corners.keys())
+    overshoot = stroke_width / 400
     for i, k1 in enumerate(keys):
         for k2 in keys[i + 1:]:
             if sum(a != b for a, b in zip(k1, k2)) == 1:
+                p1, p2 = corners[k1], corners[k2]
+                v = normalize(p2 - p1)
                 edges.add(Line(
-                    corners[k1], corners[k2],
+                    p1 - v * overshoot, p2 + v * overshoot,
                     color=color, stroke_width=stroke_width,
                 ))
     return edges
@@ -65,7 +68,6 @@ class LeNetSketch2(InteractiveScene):
 
 
         self.embed()
-        self.wait(20)
 
 
 
@@ -107,7 +109,6 @@ class AlexNetSketch3(InteractiveScene):
                   run_time=5)
 
         self.embed()
-        self.wait(20)
 
 
 
