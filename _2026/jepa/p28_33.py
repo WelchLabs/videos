@@ -14,7 +14,7 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-
+svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/p28_33/')
 img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/hacking/overhead_ball_1a'
 
 
@@ -26,7 +26,14 @@ class P28_33b(InteractiveScene):
             imgs.add(ImageMobject(str(img_dir+'/overhead_ball_1'+str(i).zfill(3)+'.jpg')))
         # imgs.rotate(90*DEGREES, [1, 0, 0])
 
-        # self.add(imgs[-1])
+        svgs_to_skip=[0]
+        svg_files=list(sorted(svg_dir.glob('*.svg')))
+        all_svgs=Group()
+        for i, svg_file in enumerate(svg_files): 
+            if i in svgs_to_skip: continue
+            svg_image=SVGMobject(str(svg_file))
+            svg_image.scale(5.0)
+            all_svgs.add(svg_image[1:])
 
 
         # self.frame.reorient(0, 0, 0, (0.22, -0.06, 0.0), 3.92)
@@ -75,16 +82,40 @@ class P28_33b(InteractiveScene):
             b.set_stroke(opacity=0.8)
 
         # input_borders.set_stroke(opacity=0.0)
-        target.rotate(65*DEGREES, [0, 1, 0]).rotate(35*DEGREES, [1, 0, 0])
+        target.rotate(72*DEGREES, [0, 1, 0]).rotate(35*DEGREES, [1, 0, 0])
         # input_video_and_borders[0] is input_video; [5] is imgs[89] (last in indices_to_show)
         target[0][5].set_opacity(0.5)
 
         self.wait()
         self.play(
-            self.frame.animate.reorient(0, 0, 0, (2.78, -0.65, 0.0), 8.60),
+            # self.frame.animate.reorient(0, 0, 0, (2.78, -0.65, 0.0), 8.60),
+            self.frame.animate.reorient(0, 0, 0, (4.78, -0.39, 0.0), 10.52),
             Transform(input_video_and_borders, target),
             run_time=5,
         )
+
+
+
+        self.wait()
+
+        self.add(all_svgs[0])
+
+        all_svgs[0].move_to([5.5, -0.7, 0])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        # target.rotate(5*DEGREES, [0, 1, 0])
 
 
         # self.play(imgs[89].animate.set_opacity(0.5), run_time=2)
@@ -106,7 +137,7 @@ class P28_33b(InteractiveScene):
 
         # input_video_and_borders.rotate(5*DEGREES, [1, 0, 0])
         
-        self.wait()
+        # self.wait()
 
 
 
