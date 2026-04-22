@@ -664,31 +664,86 @@ class P20_23(InteractiveScene):
 
         svg_11_target = svg_11.copy().move_to(svg_05.get_center())
 
-        def _cx(m): return m.get_center()[0]
-        def _sort(mobs): return sorted(mobs, key=lambda m: (-round(_cx(m), 1), m.get_center()[1]))
-        def _sample(lst, n):
-            if len(lst) <= n: return lst
-            step = len(lst) / n
-            return [lst[int(i * step)] for i in range(n)]
+        def pair_group(svg_obj, pairs):
+            return [VGroup(svg_obj[a], svg_obj[b]) for a, b in pairs]
 
-        tgt_left  = _sort([m for m in svg_11_target if _cx(m) < -0.05])
-        tgt_mid   = _sort([m for m in svg_11_target if -0.05 <= _cx(m) <= 0.15])
-        tgt_right = _sort([m for m in svg_11_target if _cx(m) > 0.15])
+        # 8 circles (inner + outer ring pairs), spread across the full transformer.
+        src_circle_pairs = [
+            (219, 220),
+            (217, 218),
+            (225, 226),
+            (211, 212),
+            (675, 676),
+            (673, 674),
+            (681, 682),
+            (667, 668),
+        ]
+        tgt_circle_pairs = [
+            (12, 13),
+            (14, 15),
+            (16, 17),
+            (38, 39),
+            (28, 29),
+            (26, 27),
+            (36, 37),
+            (34, 35),
+        ]
 
-        src_left  = _sample(_sort([m for m in svg_05 if _cx(m) < -0.2]),  len(tgt_left))
-        src_mid   = _sample(_sort([m for m in svg_05 if -0.2 <= _cx(m) <= 0.2]), len(tgt_mid))
-        src_right = _sample(_sort([m for m in svg_05 if _cx(m) > 0.2]),   len(tgt_right))
+        # 12 line pairs chosen for angle/shape similarity to target edges.
+        src_line_pairs = [
+            (530, 531),  # ~155 deg
+            (587, 588),  # ~25 deg
+            (131, 132),  # ~25 deg
+            (631, 632),  # ~-25 deg
+            (364, 365),  # ~121 deg
+            (368, 369),  # ~59 deg
+            (74, 75),    # ~155 deg
+            (591, 592),  # ~-156 deg
+            (486, 487),  # ~-156 deg
+            (824, 825),  # ~-121 deg
+            (179, 180),  # ~-24 deg
+            (820, 821),  # ~121 deg
+        ]
+        tgt_line_pairs = [
+            (0, 1),
+            (2, 3),
+            (4, 5),
+            (6, 7),
+            (8, 9),
+            (10, 11),
+            (18, 19),
+            (20, 21),
+            (22, 23),
+            (24, 25),
+            (30, 31),
+            (32, 33),
+        ]
 
-        selected = {id(m) for m in src_left + src_mid + src_right}
-        fade_rest = VGroup(*[m for m in svg_05 if id(m) not in selected])
+        src_circles = pair_group(svg_05, src_circle_pairs)
+        tgt_circles = pair_group(svg_11_target, tgt_circle_pairs)
+        src_lines = pair_group(svg_05, src_line_pairs)
+        tgt_lines = pair_group(svg_11_target, tgt_line_pairs)
+
+        selected_indices = {
+            idx
+            for pair in (src_circle_pairs + src_line_pairs)
+            for idx in pair
+        }
+        fade_rest = VGroup(*[m for i, m in enumerate(svg_05) if i not in selected_indices])
 
         self.play(
-            ReplacementTransform(VGroup(*src_left),  VGroup(*tgt_left)),
-            ReplacementTransform(VGroup(*src_mid),   VGroup(*tgt_mid)),
-            ReplacementTransform(VGroup(*src_right), VGroup(*tgt_right)),
+            self.frame.animate.move_to(svg_05.get_center()).set_width(svg_05.get_width() + 2.0),
+            run_time=1.5,
+        )
+        self.play(
             FadeOut(fade_rest),
-            self.frame.animate.move_to(svg_05.get_center()).set_width(svg_11_target.get_width() + 4),
+            *[ReplacementTransform(src, tgt) for src, tgt in zip(src_lines, tgt_lines)],
+            *[ReplacementTransform(src, tgt) for src, tgt in zip(src_circles, tgt_circles)],
             run_time=2.0,
+        )
+        self.play(
+            self.frame.animate.move_to(svg_05.get_center()).set_width(svg_11_target.get_width() + 4),
+            run_time=1.5,
         )
 
         self.embed()
