@@ -550,13 +550,17 @@ class P20_23(InteractiveScene):
             font="Georgia", slant=ITALIC, font_size=32,
         ).move_to([english_text.get_center()[0], 0, 0]).set_color(YELLOW)
 
-        self.play(Write(svg_05), run_time=4.0)
+        self.play(Write(svg_05), run_time=10.0)
 
-        self.play(Write(german_text), run_time=3.0)
-        self.play(FadeIn(german_label), run_time=2.0)
-        self.play(FadeIn(io_arrows), run_time=2.0)
-        self.play(FadeIn(english_text), run_time=2.0)
-        self.play(FadeIn(english_label), run_time=2.0)
+        self.wait(1)
+
+        self.play(
+            Write(german_text),
+            Write(german_label),
+            Write(io_arrows),
+            Write(english_text),
+            Write(english_label),
+        )
 
         self.wait()
 
