@@ -25,7 +25,7 @@ class P53_60(InteractiveScene):
 
 
         imgs=Group()
-        for i in range(1,21):
+        for i in range(1,23):
             imgs.add(ImageMobject(str(img_dir+'/img_pairs-'+str(i).zfill(2)+'.png')))
 
 
@@ -104,7 +104,7 @@ class P53_60(InteractiveScene):
 
         embedding_network_2b=embedding_network_2.copy()
         embedding_network_2b.rotate(-90*DEGREES, [0, 0, 1])
-        embedding_network_2b.move_to([-3, -1.5, 0])
+        embedding_network_2b.move_to([-3, -2.0, 0])
         embedding_network_2b.scale(0.85)
 
         self.wait()
@@ -116,7 +116,7 @@ class P53_60(InteractiveScene):
                   Transform(embedding_network_1, embedding_network_1a),
                   Transform(embedding_network_2, embedding_network_2b),
                   image_border_group_0.animate.move_to([-5, 1.5, 0]),
-                  image_border_group_1.animate.move_to([-5, -1.5, 0]),
+                  image_border_group_1.animate.move_to([-5, -2.0, 0]),
                   run_time=5)
 
         # self.remove(all_svgs[4], all_svgs[3], all_svgs[2])
@@ -140,8 +140,8 @@ class P53_60(InteractiveScene):
 
         all_svgs[8].move_to([-1.65, 0.2, 0])
 
-        self.wait()
-        self.add(all_svgs[8][0])
+        # self.wait()
+        # self.add(all_svgs[8][0])
 
         axes = Axes(
             x_range=(0, 21, 5),
@@ -163,7 +163,7 @@ class P53_60(InteractiveScene):
         # self.add(axes)
 
         # Explicit but semi-random y values
-        y_values = [0.9, -0.8, 0.2, 0.5, -0.3, 0.7, 0.6, 0.1, 0.4, -0.5,
+        y_values = [0.9, -0.6, 0.2, 0.5, -0.3, 0.7, 0.6, 0.1, 0.4, -0.5,
                     0.75, -0.25, 0.55, 0.7, 0.3, -0.45, -0.6, -0.15, 0.8, 0.35]
         x_values = list(range(1, 21))
 
@@ -184,12 +184,84 @@ class P53_60(InteractiveScene):
                 lines.add(line)
 
         self.wait()
-
-        self.add(axes)
-        self.add(dots, lines)
+        self.play(Write(all_svgs[8][0]), ShowCreation(axes), run_time=3)
 
 
+        dashed_line_0 = DashedLine(
+            # image_border_group_0.get_bottom(),
+            [-0.73630941,  2.77874996,  0.        ],
+            dots[0].get_top(),
+            color=CHILL_BROWN,
+            stroke_width=3,
+            dash_length=0.03,
+        )
 
+
+        self.wait()
+        self.play(
+            image_border_group_0.animate.scale(0.4).next_to(dots[0], UP, buff=0.5),
+            ShowCreation(dots[0]),
+            ShowCreation(dashed_line_0),
+            run_time=4
+            )
+
+        #Maybe put cat pic in both places at once? That might be a fine workflow here
+        imgs[2].scale(0.5)
+        border_2=SurroundingRectangle(imgs[2], color=CHILL_BROWN, buff=0)
+        border_2.set_stroke(width=2, opacity=1.0)
+        image_border_group_2=Group(imgs[2], border_2)
+        image_border_group_2.move_to([-5, 1.5, 0])
+
+        image_border_group_2_copy=image_border_group_2.copy()
+        image_border_group_2_copy.scale(0.4).next_to(dots[1], DOWN, buff=0.2)
+
+        # self.wait()
+        # image_border_group_2_copy.get
+
+
+        dashed_line_1 = DashedLine(image_border_group_2_copy.get_top(), dots[1].get_bottom(),
+                                    color=CHILL_BROWN, stroke_width=3, dash_length=0.03)
+
+        self.wait()
+        self.play(ShowCreation(dots[1]), 
+                  FadeIn(image_border_group_2), 
+                  FadeIn(image_border_group_2_copy),
+                  ShowCreation(lines[0]), 
+                  ShowCreation(dashed_line_1), 
+                  run_time=3)
+
+
+        top_image_group=Group()
+        dot_indices=[3, 4, 6, 7, 10, 11, 13, 16, 18]
+        image_indices=[4, 6, 8, 10, 12, 14, 16, 18, 20]
+        for i in range(len(dot_indices)):
+            imgs[image_indices[i]].scale(0.4)
+            border=SurroundingRectangle(imgs[image_indices[i]], color=CHILL_BROWN, buff=0)
+            border.set_stroke(width=2, opacity=1.0)
+            ibg=Group(imgs[image_indices[i]], border)
+            if i % 2==0:
+                ibg.scale(0.5).next_to(dots[dot_indices[i]], UP, buff=0.2)
+                dashed_line = DashedLine(ibg.get_bottom(), dots[dot_indices[i]].get_top(),
+                        color=CHILL_BROWN, stroke_width=3, dash_length=0.03)
+            else:
+                ibg.scale(0.5).next_to(dots[dot_indices[i]], DOWN, buff=0.2)
+                dashed_line = DashedLine(ibg.get_top(), dots[dot_indices[i]].get_bottom(),
+                        color=CHILL_BROWN, stroke_width=3, dash_length=0.03)
+            ibg.add(dashed_line)
+            top_image_group.add(ibg)
+            self.add(ibg, dots[:dot_indices[i]], lines[:dot_indices[i]])
+            self.wait(0.1)
+
+        self.wait()
+
+        # self.play(ShowCreation(lines[1:]), 
+        #           ShowCreation(top_image_group))
+
+
+        # self.play(FadeIn(lines[1:]), 
+        #           FadeIn(dots[2:]),
+        #           FadeIn(top_image_group),
+        #           run_time=3)
 
 
 
