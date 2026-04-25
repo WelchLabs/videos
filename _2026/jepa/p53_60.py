@@ -51,9 +51,11 @@ class P53_60(InteractiveScene):
         border_0 = SurroundingRectangle(imgs[0], color=CHILL_BROWN, buff=0)
         border_0.set_stroke(width=2, opacity=1.0)
 
-        imgs[1].scale(0.5)
-        imgs[1].next_to(embedding_network_2, DOWN, buff=0.2)
-        border_1 = SurroundingRectangle(imgs[1], color=CHILL_BROWN, buff=0)
+        img_1_copy=imgs[1].copy()
+
+        img_1_copy.scale(0.5)
+        img_1_copy.next_to(embedding_network_2, DOWN, buff=0.2)
+        border_1 = SurroundingRectangle(img_1_copy, color=CHILL_BROWN, buff=0)
         border_1.set_stroke(width=2, opacity=1.0)
 
         self.wait()
@@ -61,12 +63,12 @@ class P53_60(InteractiveScene):
                   Write(embedding_network_2),
                   FadeIn(imgs[0]),
                   FadeIn(border_0),
-                  FadeIn(imgs[1]),
+                  FadeIn(img_1_copy),
                   FadeIn(border_1),
                   run_time=7)
 
         # self.add(embedding_network_1, embedding_network_2)
-        # self.add(imgs[0], imgs[1])
+        # self.add(imgs[0], img_1_copy)
         # self.add(border_0, border_1)
 
 
@@ -91,7 +93,7 @@ class P53_60(InteractiveScene):
         
 
         image_border_group_0=Group(imgs[0], border_0)
-        image_border_group_1=Group(imgs[1], border_1)
+        image_border_group_1=Group(img_1_copy, border_1)
 
         embedding_network_1a=embedding_network_1.copy()
         embedding_network_1a[75].set_color(CHILL_BROWN)
@@ -231,6 +233,9 @@ class P53_60(InteractiveScene):
                   run_time=3)
 
 
+        self.wait()
+        self.remove(image_border_group_2)
+
         top_image_group=Group()
         dot_indices=[3, 4, 6, 7, 10, 11, 13, 16, 18]
         image_indices=[4, 6, 8, 10, 12, 14, 16, 18, 20]
@@ -249,20 +254,117 @@ class P53_60(InteractiveScene):
                         color=CHILL_BROWN, stroke_width=3, dash_length=0.03)
             ibg.add(dashed_line)
             top_image_group.add(ibg)
-            self.add(ibg, dots[:dot_indices[i]], lines[:dot_indices[i]])
+            self.add(ibg, dots[:(dot_indices[i]+1)], lines[:dot_indices[i]])
+            self.wait(0.2)
+
+        self.wait()
+
+
+
+
+
+
+        y_values_2 = [0.8, -0.5, 0.25, 0.45, -0.1, 0.4, 0.4, 0.2, 0.5, -0.6,
+                    0.7, -0.2, 0.45, 0.71, 0.21, -0.55, -0.3, -0.21, 0.7, 0.28]
+
+        axes_2 = Axes(
+            x_range=(0, 21, 5),
+            y_range=(-1.2, 1.2, 0.5),
+            width=7.0,
+            height=2.0,
+            axis_config={
+                "color": CHILL_BROWN,
+                "stroke_width": 2,
+                "include_ticks": False,
+                "include_tip": True,
+                "tip_config": {
+                    "width": 0.15,
+                    "length": 0.15,
+                },
+            }
+        )
+        axes_2.move_to([2.4, -1.8, 0])
+        all_svgs[8][1].move_to([-1.624, -1.68, 0])
+        all_svgs[8][1].set_color(RED)
+
+        # Build dots and connecting lines up front
+        dots_2 = VGroup()
+        lines_2 = VGroup()
+        for i, (x, y) in enumerate(zip(x_values, y_values_2)):
+            dot = Dot(axes_2.c2p(x, y), radius=0.06)
+            dot.set_color(RED)
+            dots_2.add(dot)
+            if i > 0:
+                line = Line(
+                    axes_2.c2p(x_values[i-1], y_values_2[i-1]),
+                    axes_2.c2p(x, y),
+                    stroke_width=2,
+                )
+                line.set_color(RED)
+                lines_2.add(line)
+
+        self.wait()
+        self.play(ShowCreation(axes_2), 
+                  embedding_network_2[87].animate.set_color(RED),
+                  FadeIn(all_svgs[8][1]),
+                  run_time=2
+                 )
+
+        self.wait()
+
+        # Move dog picture over when we bring everything in!
+
+        dashed_line_0b = DashedLine(
+            # image_border_group_0.get_bottom(),
+            [-0.73630941, -0.79833341,  0.        ],
+            dots_2[0].get_top(),
+            color=CHILL_BROWN,
+            stroke_width=3,
+            dash_length=0.03,
+        )
+
+
+        self.wait()
+        self.play(
+            image_border_group_1.animate.scale(0.4).next_to(dots_2[0], UP, buff=0.4),
+            ShowCreation(dots_2[0]),
+            ShowCreation(dashed_line_0b),
+            run_time=2
+            )
+
+        self.wait()
+        bottom_image_group=Group()
+        dot_indices=[1, 3, 4, 6, 7, 10, 11, 13, 16, 18]
+        image_indices=[3, 5, 7, 9, 11, 13, 15, 17, 19, 21]
+        for i in range(len(dot_indices)):
+            imgs[image_indices[i]].scale(0.4)
+            border=SurroundingRectangle(imgs[image_indices[i]], color=CHILL_BROWN, buff=0)
+            border.set_stroke(width=2, opacity=1.0)
+            ibg=Group(imgs[image_indices[i]], border)
+            if i % 2==1:
+                ibg.scale(0.5).next_to(dots_2[dot_indices[i]], UP, buff=0.2)
+                dashed_line = DashedLine(ibg.get_bottom(), dots_2[dot_indices[i]].get_top(),
+                        color=CHILL_BROWN, stroke_width=3, dash_length=0.03)
+            else:
+                ibg.scale(0.5).next_to(dots_2[dot_indices[i]], DOWN, buff=0.2)
+                dashed_line = DashedLine(ibg.get_top(), dots_2[dot_indices[i]].get_bottom(),
+                        color=CHILL_BROWN, stroke_width=3, dash_length=0.03)
+            ibg.add(dashed_line)
+            bottom_image_group.add(ibg)
+
+            self.add(ibg, dots_2[:(dot_indices[i]+1)], lines_2[:dot_indices[i]])
             self.wait(0.1)
 
         self.wait()
 
-        # self.play(ShowCreation(lines[1:]), 
-        #           ShowCreation(top_image_group))
 
 
-        # self.play(FadeIn(lines[1:]), 
-        #           FadeIn(dots[2:]),
-        #           FadeIn(top_image_group),
-        #           run_time=3)
 
+        # self.add(dots_2, lines_2)
+        # self.add(bottom_image_group)
+
+
+        
 
 
 
