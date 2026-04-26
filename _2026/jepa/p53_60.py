@@ -260,10 +260,6 @@ class P53_60(InteractiveScene):
         self.wait()
 
 
-
-
-
-
         y_values_2 = [0.8, -0.5, 0.25, 0.45, -0.1, 0.4, 0.4, 0.2, 0.5, -0.6,
                     0.7, -0.2, 0.45, 0.71, 0.21, -0.55, -0.3, -0.21, 0.7, 0.28]
 
@@ -355,21 +351,170 @@ class P53_60(InteractiveScene):
             self.add(ibg, dots_2[:(dot_indices[i]+1)], lines_2[:dot_indices[i]])
             self.wait(0.1)
 
+
+        axis_0_group=Group(axes, dots, lines)
+        axis_1_group=Group(axes_2, dots_2, lines_2)
+
+        axis_0_group_copy=axis_0_group.copy()
+        axis_1_group_copy=axis_1_group.copy()
+
+        all_image_callouts=Group(image_border_group_1, dashed_line_0b, top_image_group, 
+                    bottom_image_group, image_border_group_2_copy, dashed_line_1, 
+                    image_border_group_0, dashed_line_0)
+
+        self.wait()
+        self.remove(all_image_callouts)
+        self.play(
+                axis_0_group.animate.move_to([2.4, -0.1, 0]),
+                axis_1_group.animate.move_to([2.4, -0.1, 0]),
+                self.frame.animate.reorient(0, 0, 0, (1.26, -0.25, 0.0), 6.70),
+                run_time=5
+                )
+
+        #More into one curve temporarily
+        y_values_average = (np.array(y_values)+np.array(y_values_2))/2.0
+        dots_average_1 = VGroup()
+        lines_average_1 = VGroup()
+        for i, (x, y) in enumerate(zip(x_values, y_values_average)):
+            dot = Dot(axes_2.c2p(x, y), radius=0.06)
+            dots_average_1.add(dot)
+            if i > 0:
+                line = Line(
+                    axes_2.c2p(x_values[i-1], y_values_average[i-1]),
+                    axes_2.c2p(x, y),
+                    stroke_width=2,
+                )
+                lines_average_1.add(line)
+
+        dots_average_1.set_color(YELLOW).set_opacity(0.7)
+        lines_average_1.set_color(YELLOW).set_opacity(0.7)
+        dots_average_2=dots_average_1.copy()
+        lines_average_2=lines_average_1.copy()
+        dots_average_2.set_color(RED).set_opacity(0.7)
+        lines_average_2.set_color(RED).set_opacity(0.7)
+
+
+        self.wait()
+        self.play(ReplacementTransform(dots,dots_average_1), 
+                  ReplacementTransform(dots_2,dots_average_2), 
+                  ReplacementTransform(lines,lines_average_1), 
+                  ReplacementTransform(lines_2,lines_average_2), 
+                  run_time=2)
+        # self.remove(dots_2, dots, lines, lines_2)
+
+        y_values_collapsed = np.ones(len(y_values))
+        dots_collapsed_1 = VGroup()
+        lines_collapsed_1 = VGroup()
+        for i, (x, y) in enumerate(zip(x_values, y_values_collapsed)):
+            dot = Dot(axes_2.c2p(x, y), radius=0.06)
+            dots_collapsed_1.add(dot)
+            if i > 0:
+                line = Line(
+                    axes_2.c2p(x_values[i-1], y_values_collapsed[i-1]),
+                    axes_2.c2p(x, y),
+                    stroke_width=2,
+                )
+                lines_collapsed_1.add(line)   
+        
+        dots_collapsed_1.set_color(YELLOW).set_opacity(0.7)
+        lines_collapsed_1.set_color(YELLOW).set_opacity(0.7)
+        dots_collapsed_2=dots_collapsed_1.copy()
+        lines_collapsed_2=lines_collapsed_1.copy()
+        dots_collapsed_2.set_color(RED).set_opacity(0.7)
+        lines_collapsed_2.set_color(RED).set_opacity(0.7)
+
+        self.wait()
+        self.play(ReplacementTransform(dots_average_1, dots_collapsed_1), 
+                  ReplacementTransform(dots_average_2, dots_collapsed_2), 
+                  ReplacementTransform(lines_average_1, lines_collapsed_1), 
+                  ReplacementTransform(lines_average_2, lines_collapsed_2), 
+                  run_time=3)
+
+        # Ok now I basically want to reverse the last few steps, 
+        # all in one go
+
+        self.wait()
+        self.play(ReplacementTransform(axes, axis_0_group_copy[0]),
+                  ReplacementTransform(dots_collapsed_1, axis_0_group_copy[1]),
+                  ReplacementTransform(lines_collapsed_1, axis_0_group_copy[2]),
+                  ReplacementTransform(axes_2, axis_1_group_copy[0]),
+                  ReplacementTransform(dots_collapsed_2, axis_1_group_copy[1]),
+                  ReplacementTransform(lines_collapsed_2, axis_1_group_copy[2]),
+                  FadeOut(embedding_network_1[0]), #Remove little arrow going into net
+                  FadeOut(embedding_network_2[0]),
+                  # self.frame.animate.reorient(0, 0, 0, (1.19, -0.08, 0.0)), 
+                  self.frame.animate.reorient(0, 0, 0, (1.48, 0.11, 0.0), 7.81),
+                  run_time=5
+                 )
+        self.add(all_image_callouts)
+
+
+        np.random.seed(5)
+        y_values_net_1_neuron_2=-0.6*np.array(y_values)+np.random.randn(len(y_values))/3.5
+        y_values_net_2_neuron_2=-0.6*np.array(y_values_2)+np.random.randn(len(y_values))/3.5
+
+        dots_net_1_neuron_2 = VGroup()
+        lines_net_1_neuron_2 = VGroup()
+        for i, (x, y) in enumerate(zip(x_values, y_values_net_1_neuron_2)):
+            dot = Dot(axes.c2p(x, y), radius=0.06)
+            dot.set_color(GREEN)
+            dots_net_1_neuron_2.add(dot)
+            if i > 0:
+                line = Line(
+                    axes.c2p(x_values[i-1], y_values_net_1_neuron_2[i-1]),
+                    axes.c2p(x, y),
+                    stroke_width=2,
+                )
+                line.set_color(GREEN)
+                lines_net_1_neuron_2.add(line)
+
+        self.add(dots_net_1_neuron_2, lines_net_1_neuron_2)
+
+
+        # axis_0_group_copy[1].set_opacity(0.5)
+        # axis_0_group_copy[2].set_opacity(0.5)
+        # imgs[6].set_opacity(0.1)
+        # self.remove(dashed_line_0b)
+
         self.wait()
 
+        self.remove(top_image_group, image_border_group_2_copy, dashed_line_0, image_border_group_0, dashed_line_1)
+
+        embedding_network_1[83].set_color(GREEN)
+
+        all_svgs[9][6:].move_to([-1.67, 1.54, 0])
+        self.add(all_svgs[9][6:])
+
+
+        # all_image_callouts=Group(image_border_group_1, dashed_line_0b,
+        #             bottom_image_group, image_border_group_2_copy, dashed_line_1, 
+        #            )
 
 
 
-        # self.add(dots_2, lines_2)
-        # self.add(bottom_image_group)
-
-
-        
 
 
 
         self.wait(20)
         self.embed()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
