@@ -49,6 +49,7 @@ class P75_80(InteractiveScene):
         # self.add(all_svgs[4]) #Labels
         # self.add(all_svgs[5]) #xs
 
+        #Paragraph 75
         self.wait()
         self.play(Write(all_svgs[0]), run_time=4)
 
@@ -79,6 +80,18 @@ class P75_80(InteractiveScene):
                   Write(all_svgs[3][4:6]),
                   run_time=3)
 
+        # Paragraph 76
+        # Let me get everything on the canvas here and then
+        # figure out how I want to bring it in
+        self.remove(all_svgs[5])
+        self.remove(all_svgs[4][:22])
+        self.remove(all_svgs[4][45:])
+        self.remove(all_svgs[3][4:6])
+        self.remove(all_svgs[19])
+        self.remove(all_svgs[3][6:10])
+
+        # Add other stuff, I think I'l want to scale down 
+        # the models a bit
 
 
 
@@ -88,3 +101,18 @@ class P75_80(InteractiveScene):
 
         self.wait(20)
         self.embed()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
