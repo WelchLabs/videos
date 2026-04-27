@@ -17,10 +17,10 @@ MAGENTA='#FF00FF'
 svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/p53_60/')
 
 ## SWITCH BACK TO FULL SIZE IMAGES FOR FINAL RENDER
-# img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/img_pairs'
+img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/img_pairs'
 
 #TINY IMAGES FOR DEV
-img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/img_pairs_tiny'
+# img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/img_pairs_tiny'
 
 
 def make_correlation_matrix(
@@ -82,7 +82,7 @@ def make_correlation_matrix(
 
 
 
-class P53_60(InteractiveScene):
+class P53_60b(InteractiveScene):
     def construct(self):
 
 
@@ -746,12 +746,12 @@ class P53_60(InteractiveScene):
         # self.add(grid_lines)
 
         self.wait()
-        self.play(embedding_network_1[1:].animate.scale(0.75).move_to([-0.15, -1.05, 0]),
+        self.play(embedding_network_1[1:].animate.scale(0.75).move_to([-0.05, -1.05, 0]),
                   ShowCreation(grid_lines), 
                   Write(all_svgs[10][6:]),
                   run_time=4)
 
-        self.play(embedding_network_2[1:].animate.scale(0.75).flip(UP).rotate(90*DEGREES, [0, 0, 1]).move_to([3.05, 2.15, 0]),
+        self.play(embedding_network_2[1:].animate.scale(0.75).flip(UP).rotate(90*DEGREES, [0, 0, 1]).move_to([3.05, 2.05, 0]),
                   Write(all_svgs[10][:6]),
                   self.frame.animate.reorient(0, 0, 0, (3.1, -0.15, 0.0), 6.72),
                   run_time=4
@@ -760,7 +760,9 @@ class P53_60(InteractiveScene):
         # embedding_network_2[1:].scale(0.75)
         # embedding_network_2[1:].flip(UP)
         # embedding_network_2[1:].rotate(90*DEGREES, [0, 0, 1])
-        # embedding_network_2[1:].move_to([3.05, 2.15, 0])
+        # embedding_network_2[1:].move_to([3.05, 2.05, 0])
+
+        # embedding_network_1[1:].move_to([-0.05, -1.05, 0])
 
         # self.add(off_diagonal_squares)
         # self.add(diagonal_squares)
@@ -816,7 +818,7 @@ class P53_60(InteractiveScene):
         # self.add(all_svgs[6]) #Title
         # self.add(all_svgs[7])
 
-
+        self.wait()
 
 
         self.wait(20)
