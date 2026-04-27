@@ -15,9 +15,12 @@ CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
 svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/p53_60/')
-img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/img_pairs'
 
+## SWITCH BACK TO FULL SIZE IMAGES FOR FINAL RENDER
+# img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/img_pairs'
 
+#TINY IMAGES FOR DEV
+img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/img_pairs_tiny'
 
 
 class P53_60(InteractiveScene):
@@ -468,30 +471,198 @@ class P53_60(InteractiveScene):
                 line.set_color(GREEN)
                 lines_net_1_neuron_2.add(line)
 
-        self.add(dots_net_1_neuron_2, lines_net_1_neuron_2)
+        dots_net_2_neuron_2 = VGroup()
+        lines_net_2_neuron_2 = VGroup()
+        for i, (x, y) in enumerate(zip(x_values, y_values_net_2_neuron_2)):
+            dot = Dot(axes_2.c2p(x, y), radius=0.06)
+            dot.set_color(BLUE)
+            dots_net_2_neuron_2.add(dot)
+            if i > 0:
+                line = Line(
+                    axes_2.c2p(x_values[i-1], y_values_net_2_neuron_2[i-1]),
+                    axes_2.c2p(x, y),
+                    stroke_width=2,
+                )
+                line.set_color(BLUE)
+                lines_net_2_neuron_2.add(line)
 
+
+        # self.remove(top_image_group, image_border_group_2_copy, dashed_line_0, image_border_group_0, dashed_line_1)
+        # self.remove(bottom_image_group, dashed_line_0b, image_border_group_1, dashed_line_1)
+        
+        self.wait()
+        self.play(FadeOut(all_image_callouts), run_time=2)
+
+
+        all_svgs[9][6:].move_to([-1.67, 1.54, 0])
+        embedding_network_1[83].set_color(GREEN)
+        self.wait(0.1)
+        self.add(all_svgs[9][6:])
+        self.wait(0.1)
+        for i in range(len(dots_net_1_neuron_2)):
+            self.add(dots_net_1_neuron_2[i])
+            if i>0:
+                self.add(lines_net_1_neuron_2[i-1])
+            self.wait(0.1)
+
+        # self.add(dots_net_1_neuron_2, lines_net_1_neuron_2)
+
+        all_svgs[9][4:6].move_to([-1.67, -1.95, 0])
+        all_svgs[9][4:6].set_color(BLUE)
+
+        embedding_network_2[83].set_color(BLUE)
+        self.wait(0.1)
+        self.add(all_svgs[9][4:6])
+        self.wait(0.1)
+        for i in range(len(dots_net_2_neuron_2)):
+            self.add(dots_net_2_neuron_2[i])
+            if i>0:
+                self.add(lines_net_2_neuron_2[i-1])
+            self.wait(0.1)
+
+        
+        # self.add(dots_net_2_neuron_2, lines_net_2_neuron_2)
 
         # axis_0_group_copy[1].set_opacity(0.5)
         # axis_0_group_copy[2].set_opacity(0.5)
         # imgs[6].set_opacity(0.1)
         # self.remove(dashed_line_0b)
 
+
+
+        self.wait()
+        self.play(FadeOut(all_svgs[9][6:]), 
+                  FadeOut(dots_net_1_neuron_2),
+                  FadeOut(lines_net_1_neuron_2),
+                  FadeOut(all_svgs[8][1]),
+                  FadeOut(axis_1_group_copy[1]), #Dots 
+                  FadeOut(axis_1_group_copy[2]), #lines
+                  run_time=2
+                  )
+
         self.wait()
 
-        self.remove(top_image_group, image_border_group_2_copy, dashed_line_0, image_border_group_0, dashed_line_1)
-
-        embedding_network_1[83].set_color(GREEN)
-
-        all_svgs[9][6:].move_to([-1.67, 1.54, 0])
-        self.add(all_svgs[9][6:])
+        # self.remove(all_svgs[9][4:6], all_svgs[8][0])
 
 
-        # all_image_callouts=Group(image_border_group_1, dashed_line_0b,
-        #             bottom_image_group, image_border_group_2_copy, dashed_line_1, 
-        #            )
+        #axis_0_group_copy
+        axis_1_group_b=Group(axis_1_group_copy[0], dots_net_2_neuron_2, lines_net_2_neuron_2)
+
+        self.wait()
+        self.play(
+                axis_0_group_copy.animate.move_to([2.4, -0.1, 0]),
+                axis_1_group_b.animate.move_to([2.4, -0.1, 0]),
+                FadeOut(all_svgs[9][4:6]),
+                FadeOut(all_svgs[8][0]),
+                # self.frame.animate.reorient(0, 0, 0, (1.26, -0.25, 0.0), 6.70),
+                run_time=3
+                )
+
+        #Ok now scaled versions! Factor of two here to make things land like i want on the axes
+        
+        helper_axes = Axes(
+            x_range=(0, 21, 5),
+            y_range=(-1.2, 1.2, 0.5),
+            width=7.0,
+            height=2.0,
+            axis_config={
+                "color": CHILL_BROWN,
+                "stroke_width": 2,
+                "include_ticks": False,
+                "include_tip": True,
+                "tip_config": {"width": 0.15, "length": 0.15},
+            },
+        )
+        helper_axes.move_to([2.4, -0.1, 0])
+
+        norm_1=np.linalg.norm(y_values)/3
+        norm_2=np.linalg.norm(y_values_net_2_neuron_2)/3
+
+        y_normed_1=y_values/norm_1
+        y_normed_2=y_values_net_2_neuron_2/norm_2
+
+        dots_norm_1 = VGroup()
+        lines_norm_1 = VGroup()
+        for i, (x, y) in enumerate(zip(x_values, y_normed_1)):
+            dot = Dot(helper_axes.c2p(x, y), radius=0.06)
+            dots_norm_1.add(dot)
+            if i > 0:
+                line = Line(
+                    helper_axes.c2p(x_values[i-1], y_normed_1[i-1]),
+                    helper_axes.c2p(x, y),
+                    stroke_width=2,
+                )
+                lines_norm_1.add(line)
+        dots_norm_1.set_color(YELLOW)
+        lines_norm_1.set_color(YELLOW)
+
+        dots_norm_2 = VGroup()
+        lines_norm_2 = VGroup()
+        for i, (x, y) in enumerate(zip(x_values, y_normed_2)):
+            dot = Dot(helper_axes.c2p(x, y), radius=0.06)
+            dots_norm_2.add(dot)
+            if i > 0:
+                line = Line(
+                    helper_axes.c2p(x_values[i-1], y_normed_2[i-1]),
+                    helper_axes.c2p(x, y),
+                    stroke_width=2,
+                )
+                lines_norm_2.add(line)
+        dots_norm_2.set_color(BLUE)
+        lines_norm_2.set_color(BLUE)
+
+
+        # self.remove(dots_norm_1)
+        # self.remove(dots_norm_2)
+
+        # self.add(axis_0_group_copy[1])
+        self.wait()
+        self.play(ReplacementTransform(axis_0_group_copy[1], dots_norm_1),
+                  ReplacementTransform(axis_0_group_copy[2], lines_norm_1),
+                  ReplacementTransform(dots_net_2_neuron_2, dots_norm_2),
+                  ReplacementTransform(lines_net_2_neuron_2, lines_norm_2),
+                  run_time=2)
+
+
+        correlation_number=Tex('-0.77', font_size=46)
+        correlation_number.set_color(MAGENTA)
+        correlation_number.move_to([7.5, -0.15, 0 ])
+
+
+        all_svgs[11].scale(1.9)
+        all_svgs[11].move_to([7.5, -1.85, 0])
+
+        all_svgs[12].scale(1.3)
+        all_svgs[12].move_to([7.3, -1.1, 0])
+
+        dots_norm_1_copy=dots_norm_1.copy()
+        lines_norm_1_copy=lines_norm_1.copy()
+        dots_norm_2_copy=dots_norm_2.copy()
+        lines_norm_2_copy=lines_norm_2.copy()
+
+
+        self.wait()
+        self.play(ReplacementTransform(dots_norm_1_copy, correlation_number),
+                  ReplacementTransform(lines_norm_1_copy, correlation_number),
+                  ReplacementTransform(dots_norm_2_copy, correlation_number),
+                  ReplacementTransform(lines_norm_2_copy, correlation_number),
+                  dots_norm_1.animate.set_opacity(0.5),
+                  lines_norm_1_copy.animate.set_opacity(0.5),
+                  dots_norm_2_copy.animate.set_opacity(0.5),
+                  lines_norm_2_copy.animate.set_opacity(0.5),
+                  self.frame.animate.reorient(0, 0, 0, (2.65, -0.2, 0.0), 7.81),
+                  run_time=3)
+
+        self.play(Write(all_svgs[11]),
+                  Write(all_svgs[12]),
+                  run_time=4)
+
+        # self.add(all_svgs[11])
+        # self.add(all_svgs[12])
 
 
 
+        self.wait(0)
 
 
 
