@@ -23,6 +23,65 @@ svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/p53_
 img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/img_pairs_tiny'
 
 
+def make_correlation_matrix(
+    N=20,
+    noise_scale=0.18,
+    total_size=3.0,
+    center=ORIGIN,
+    seed=42,
+    line_stroke_width=1.0,
+):
+    """
+    Returns:
+        M                    : (N, N) symmetric numpy matrix (identity + noise)
+        grid_lines           : VGroup of thin magenta cell outlines
+        diagonal_squares     : VGroup of N magenta squares on the diagonal
+        off_diagonal_squares : VGroup of N*(N-1) magenta squares off the diagonal
+                               (opacities = |M[i, j]|)
+    """
+    rng = np.random.default_rng(seed)
+    M = np.eye(N) + noise_scale * rng.standard_normal((N, N))
+    M = (M + M.T) / 2.0           # symmetrize across the diagonal
+    # np.fill_diagonal(M, 1.0)      # clean ones on the diagonal
+    M = np.clip(M, -1.0, 1.0)
+
+    cell = total_size / N
+    half = total_size / 2.0
+
+    # --- grid lines (N+1 verticals + N+1 horizontals) ---
+    grid_lines = VGroup()
+    for k in range(N + 1):
+        off = -half + k * cell
+        v = Line([off, -half, 0], [off,  half, 0], stroke_width=line_stroke_width)
+        h = Line([-half,   off, 0], [ half,  off, 0], stroke_width=line_stroke_width)
+        v.set_color(MAGENTA)
+        h.set_color(MAGENTA)
+        grid_lines.add(v, h)
+
+    # --- filled squares, split into diagonal vs off-diagonal ---
+    diagonal_squares = VGroup()
+    off_diagonal_squares = VGroup()
+    for i in range(N):                # row (top -> bottom)
+        for j in range(N):            # col (left -> right)
+            x = -half + (j + 0.5) * cell
+            y =  half - (i + 0.5) * cell
+            sq = Square(side_length=cell)
+            sq.move_to([x, y, 0])
+            sq.set_stroke(width=0)
+            sq.set_fill(MAGENTA, opacity=float(abs(M[i, j])))
+            if i == j:
+                diagonal_squares.add(sq)
+            else:
+                off_diagonal_squares.add(sq)
+
+    full = VGroup(off_diagonal_squares, diagonal_squares, grid_lines)
+    full.move_to(center)              # squares behind, lines on top
+
+    return M, grid_lines, diagonal_squares, off_diagonal_squares
+
+
+
+
 class P53_60(InteractiveScene):
     def construct(self):
 
@@ -647,9 +706,9 @@ class P53_60(InteractiveScene):
                   ReplacementTransform(dots_norm_2_copy, correlation_number),
                   ReplacementTransform(lines_norm_2_copy, correlation_number),
                   dots_norm_1.animate.set_opacity(0.5),
-                  lines_norm_1_copy.animate.set_opacity(0.5),
-                  dots_norm_2_copy.animate.set_opacity(0.5),
-                  lines_norm_2_copy.animate.set_opacity(0.5),
+                  lines_norm_1.animate.set_opacity(0.5),
+                  dots_norm_2.animate.set_opacity(0.5),
+                  lines_norm_2.animate.set_opacity(0.5),
                   self.frame.animate.reorient(0, 0, 0, (2.65, -0.2, 0.0), 7.81),
                   run_time=3)
 
@@ -657,12 +716,106 @@ class P53_60(InteractiveScene):
                   Write(all_svgs[12]),
                   run_time=4)
 
+
         # self.add(all_svgs[11])
         # self.add(all_svgs[12])
 
+        # self.add(embedding_network_2, embedding_network_1)
+
+        M, grid_lines, diagonal_squares, off_diagonal_squares=make_correlation_matrix(N=20, noise_scale=0.8, center=[3, -1, 0], total_size=4.0, seed=42, line_stroke_width=1.0)
+
+        # self.add(grid_lines, diagonal_squares, off_diagonal_squares)
+        # self.remove(grid_lines, diagonal_squares, off_diagonal_squares)
+
+        self.wait()
+        self.remove(dots_norm_1, lines_norm_1, dots_norm_2, lines_norm_2,
+                   axis_0_group_copy[0], axis_1_group_b[0])
 
 
-        self.wait(0)
+        # self.remove(grid_lines)
+
+        all_svgs[10].scale(0.83)
+        all_svgs[10][:6].move_to([3.01, 1.25, 0])
+        all_svgs[10][6:].move_to([0.75, -1, 0])
+
+
+        # embedding_network_1.scale(0.75)
+        # embedding_network_1.move_to([-0.15, -1.05, 0])
+        # self.add(all_svgs[10][:6]) #Top 3 arrows
+        # self.add(all_svgs[10][6:])
+        # self.add(grid_lines)
+
+        self.wait()
+        self.play(embedding_network_1[1:].animate.scale(0.75).move_to([-0.15, -1.05, 0]),
+                  ShowCreation(grid_lines), 
+                  Write(all_svgs[10][6:]),
+                  run_time=4)
+
+        self.play(embedding_network_2[1:].animate.scale(0.75).flip(UP).rotate(90*DEGREES, [0, 0, 1]).move_to([3.05, 2.15, 0]),
+                  Write(all_svgs[10][:6]),
+                  self.frame.animate.reorient(0, 0, 0, (3.1, -0.15, 0.0), 6.72),
+                  run_time=4
+                  )
+
+        # embedding_network_2[1:].scale(0.75)
+        # embedding_network_2[1:].flip(UP)
+        # embedding_network_2[1:].rotate(90*DEGREES, [0, 0, 1])
+        # embedding_network_2[1:].move_to([3.05, 2.15, 0])
+
+        # self.add(off_diagonal_squares)
+        # self.add(diagonal_squares)
+        # self.add(grid_lines)
+
+
+        self.wait()
+        self.play(ReplacementTransform(correlation_number, off_diagonal_squares[0]), 
+                  FadeOut(all_svgs[12]),
+                  FadeOut(all_svgs[11]),
+                 run_time=3)
+        self.play(FadeIn(off_diagonal_squares[1:]),
+                  FadeIn(diagonal_squares),
+                  run_time=3)
+    
+
+        self.wait()
+        self.play(FadeOut(off_diagonal_squares), run_time=3)
+
+        self.wait()
+        self.play(FadeIn(off_diagonal_squares), 
+                  FadeOut(diagonal_squares), run_time=3)
+
+
+
+        M, grid_lines_2, diagonal_squares_2, off_diagonal_squares_2=make_correlation_matrix(N=20, noise_scale=0.0, center=[8, -1, 0], total_size=4.0, seed=42, line_stroke_width=1.0)
+
+        all_svgs[13].scale(1.1)
+        all_svgs[13].move_to([5.5, -3.2, 0])
+        # self.add(grid_lines_2)
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (4.93, -0.31, 0.0), 6.84),
+                  ShowCreation(grid_lines_2),
+                  ShowCreation(diagonal_squares_2),
+                  FadeIn(diagonal_squares),
+                  Write(all_svgs[13]),
+                  run_time=4)
+
+        all_svgs[7].scale(1.1)
+        all_svgs[7].next_to(grid_lines_2, UP, buff=0.5)
+
+        self.wait()
+        self.play(Write(all_svgs[7]), run_time=5)
+
+        all_svgs[6].move_to([5.3, 3.3, 0])
+
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (5.2, 0.12, 0.0), 7.71),
+                  Write(all_svgs[6]), 
+                  run_time=4)
+
+
+        # self.add(all_svgs[6]) #Title
+        # self.add(all_svgs[7])
+
 
 
 
