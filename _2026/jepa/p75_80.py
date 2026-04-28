@@ -90,26 +90,6 @@ class P75_80(InteractiveScene):
             imgs.add(ImageMobject(str(img_dir+'/overhead_ball_3'+str(i).zfill(3)+'.jpg')))
 
 
-        self.remove(all_svgs[5])
-        self.remove(all_svgs[4][:22])
-        self.remove(all_svgs[4][45:])
-        self.remove(all_svgs[3][4:6])
-        self.remove(all_svgs[19])
-        self.remove(all_svgs[3][6:10])
-
-        # Add other stuff, I think I'l want to scale down 
-        # the models a bit
- 
-        self.frame.reorient(0, 0, 0, (0.0, -0.17, 0.0), 7.17)
-
-        all_svgs[0].move_to([0, 2.85, 0]) #Move down title a little
-
-        all_svgs[1].scale(0.8) #Encoder 1
-        all_svgs[17].scale(0.8) #Predictor
-        all_svgs[18].scale(0.8) #Encoder 2
-        all_svgs[3].scale(0.9) #Arrows
-        all_svgs[4].scale(0.9) #Labels
-
         # self.add(all_svgs[7])
         embedding_1=Tex(r'\begin{bmatrix} 0.21, \ -0.11, \ \dots, \ 0.32 \end{bmatrix}')
         embedding_1.set_color(BLUE)
@@ -126,84 +106,183 @@ class P75_80(InteractiveScene):
         embedding_3.scale(0.65)
         embedding_3.move_to([2.6, 1.0, 0])
 
-        self.add(embedding_1, embedding_2, embedding_3)
+        input_video=Group()
+        input_borders = Group()
+        spacing=0.6
+        indices_to_show=[0, 1, 2, 3, 4]
+        for count, i in enumerate(indices_to_show):
+            imgs[i].move_to([0, 0, -spacing*(len(indices_to_show)-1)+spacing*count])
+            imgs[i].set_opacity(0.5)
+            border = SurroundingRectangle(imgs[i], color=CHILL_BROWN, buff=0)
+            border.set_stroke(width=2, opacity=0.5)
+            input_video.add(imgs[i])
+            input_borders.add(border)
+        
+        input_video_and_borders=Group(input_video, input_borders)
 
-        # self.add(all_svgs[8])
-        self.add(all_svgs[9])
+        input_video_and_borders.scale(0.38)
+        input_video_and_borders.move_to([-2.5, -2.1, 0])
+        input_video_and_borders.rotate(70*DEGREES, [0, 1, 0])
 
-        self.add(all_svgs[6][0]) #Little arrows
-        self.add(all_svgs[6][1]) #Little arrows
-        self.add(all_svgs[6][3]) #ittle arrows
+        
+        imgs[5].scale(0.45)
+        imgs[5].move_to([2.72, -2.15, 0])
+        border_next_frame = SurroundingRectangle(imgs[5], color=CHILL_BROWN, buff=0)
+        border_next_frame.set_stroke(width=2, opacity=0.5)
 
-        all_svgs[1].move_to([-2.68, -0.2, 0]) #Encoder 1
-        # all_svgs[4][22:29].next_to(all_svgs[1], LEFT, buff=0.5) #Encoder 1 label
-        all_svgs[4][22:29].move_to([-4.19,  -0.2,  0. ]) #Encoder 1 label
+
+        group_to_remove=Group(all_svgs[5],
+                              all_svgs[4][:22],
+                              all_svgs[4][45:],
+                              # all_svgs[4][:22],#Do all labels and bring back selectively
+                              # all_svgs[4][45:],
+                              # all_svgs[4],
+                              # all_svgs[3][4:6], #Let's do all arrows and bring back selectively
+                              all_svgs[3],
+                              all_svgs[19],
+                              all_svgs[3][6:10])
+        
+
+        self.wait()
+        self.play(FadeOut(group_to_remove), 
+                 self.frame.animate.reorient(0, 0, 0, (0.0, -0.17, 0.0), 7.17),
+                 all_svgs[0].animate.move_to([0, 2.85, 0]), #Move down title a little
+                 all_svgs[1].animate.scale(0.8).move_to([-2.68, -0.2, 0]), #Encoder 1
+                 all_svgs[17].animate.scale(0.8).move_to([-0.14, 1.35, 0]), #Predictor
+                 all_svgs[18].animate.scale(0.8).move_to([2.72, -0.2, 0]), #Encoder 2
+                 all_svgs[4][22:29].animate.scale(0.9).move_to([-4.19,  -0.2,  0. ]), #Encoder 1 label
+                 all_svgs[4][36:45].animate.scale(0.9).move_to([-0.14, 2.2, 0]), 
+                 all_svgs[4][29:36].animate.scale(0.9).move_to([4.19,  -0.2,  0. ]), #Encoder 2 label
+                 run_time=2
+                )
+
+
+        all_svgs[3].scale(0.9) #Arrows
         all_svgs[3][:2].set_color(CHILL_BROWN).move_to([-2.68, -1.0, 0]) #Encoder 1 arrow in
-        all_svgs[6][1].move_to([-2.68, 0.69, 0]) #Encoder 1 arrow out
-
-
-        all_svgs[18].move_to([2.72, -0.2, 0]) #Encoder 2
-        all_svgs[4][29:36].move_to([4.19,  -0.2,  0. ]) #Encoder 2 label
         all_svgs[3][2:4].set_color(CHILL_BROWN).move_to([2.72, -1.0, 0]) #Encoder 2 arrow in
         all_svgs[3][10:12].set_color(CHILL_BROWN).move_to([2.72, 0.55, 0])
 
-        all_svgs[9].move_to([5.0, 1.3, 0]) #Minimze Prediction error
-
-
-        all_svgs[17].move_to([-0.14, 1.35, 0]) #Predictor
-        all_svgs[6][3].move_to([0.7, 1.5, 0]) #Predictor arrow out
-        all_svgs[4][36:46].move_to([-0.14, 1.1, 0]) #Predictor label 
-        all_svgs[6][0].move_to([-0.85, 1.34, 0]) #Predcitor Arrow in 
-
-        self.add(all_svgs[8][:5]) #Video label
-        self.add(all_svgs[8][5:14]) #Next frame label
-        self.add(all_svgs[8][14:]) #Embedding label
+        all_svgs[6][1].move_to([-2.68, 0.69, 0]), #Encoder 1 arrow out
+        all_svgs[6][3].move_to([0.7, 1.5, 0]), #Predictor arrow out
+        all_svgs[6][0].move_to([-0.85, 1.34, 0]), #Predcitor Arrow in 
 
         all_svgs[8][14:].move_to([-5.1, 1.33, 0]) #Embedding label
-        all_svgs[8][5:14].move_to([2.75, -3.26, 0]) #Next frame label
-        all_svgs[8][:5].move_to([-5.0, -2.52, 0]) #Bideo label
+        all_svgs[8][5:14].move_to([2.8, -3.26, 0]) #Next frame label
+        all_svgs[8][:5].move_to([-5.0, -2.52, 0]) #Video label
+
+        all_svgs[9].move_to([5.0, 1.3, 0]), #Minimze Prediction error
 
 
+        self.wait()
+        self.play(FadeIn(input_video_and_borders),
+                  FadeIn(border_next_frame),
+                  FadeIn(imgs[5]),
+                  FadeIn(all_svgs[3][:2]), 
+                  FadeIn(all_svgs[3][2:4]),
+                  run_time=3)
+        self.add(all_svgs[8][:5], #Video label
+                  all_svgs[8][5:14]) #Next frame label
 
 
-        # input_video=Group()
-        # input_borders = Group()
-        # spacing=0.6
-        # # indices_to_show=[-40, -35, -30, -25, -20, -15, -10, -5]
-        # indices_to_show=[79, 81, 83, 85, 87, 89]
-        # for count, i in enumerate(indices_to_show):
-        #     imgs[i].move_to([0, 0, -spacing*(len(indices_to_show)-1)+spacing*count])
-        #     imgs[i].set_opacity(0.5)
-        #     border = SurroundingRectangle(imgs[i], color=CHILL_BROWN, buff=0)
-        #     border.set_stroke(width=2, opacity=0.0)
-        #     input_video.add(imgs[i])
-        #     # border.set_opacity(0.0)
-        #     input_borders.add(border)
+        self.wait()
+        self.play(Write(embedding_1),
+                  Write(embedding_3),
+                  Write(all_svgs[3][10:12]),
+                  Write(all_svgs[6][1]),
+                  FadeIn(all_svgs[8][14:]),
+                  run_time=3)
+
+        self.wait()
+        self.play(Write(embedding_2),
+                  Write(all_svgs[6][0]),
+                  Write(all_svgs[6][3]),
+                  # Write(all_svgs[9]),
+                  # Write(all_svgs[8][14:]),
+                  run_time=4
+                  )
+        self.add(all_svgs[9])
+
+        '''
+        Ok Claude, could use some help here. At this point I want to animate this 
+        scene in the following way. I want to step through all imgs, and each step 
+        replacing the current img[5] with the latest image, moving img[5] to where
+        img[4] is, img[4] to where img[3] is and so on. While doing that I also 
+        want to make updates the the 3 numbers in each the three embedding vectors. 
+
+        To keep this realistic, I don't want the numbers to change too quickly. I think 
+        the ideal thing would be to send all three vectors on the same random walk, and 
+        add a little noise to each vector after the main walk step to the resultin vectors
+        are not identical. 
         
-        # input_video_and_borders=Group(input_video, input_borders)
+        '''
 
-        # self.add(input_video_and_borders)
-        # imgs[89].set_opacity(1.0)
-        # self.remove(imgs[89]); self.add(imgs[89])
 
-        
 
-        # # imgs[89].set_opacity(0.5)
-        # # self.add(input_borders)
-        # # self.frame.reorient(0, 0, 0, (2.78, -0.65, 0.0), 8.60)
-        # # input_video_and_borders.rotate(65*DEGREES, [0, 1, 0]).rotate(35*DEGREES, [1, 0, 0])
 
-        # # input_video_and_borders.rotate(5*DEGREES, [0, 1, 0])
 
-        
-        # target = input_video_and_borders.copy()
-        # for b in target[1]:
-        #     b.set_stroke(opacity=0.8)
 
-        # # input_borders.set_stroke(opacity=0.0)
-        # target.rotate(72*DEGREES, [0, 1, 0]).rotate(35*DEGREES, [1, 0, 0])
-        # # input_video_and_borders[0] is input_video; [5] is imgs[89] (last in indices_to_show)
-        # target[0][5].set_opacity(0.5)
+
+
+
+
+
+
+
+        # self.add(all_svgs[6][0], #Little arrows
+                 # all_svgs[6][1], #Little arrows
+                 # all_svgs[6][3], #ittle arrows
+                 # embedding_1, 
+                 # embedding_2, 
+                 # embedding_3,
+                 # all_svgs[9],
+                 # all_svgs[8][:5], #Video label
+                 # all_svgs[8][5:14], #Next frame label
+                 # all_svgs[8][14:],
+                 # all_svgs[3][:2],
+                 # all_svgs[3][2:4],
+                 # all_svgs[3][10:12],
+                 # )
+
+
+        # self.wait()
+
+
+
+        # self.add(all_svgs[8])
+        # self.add(all_svgs[9])
+
+        # all_svgs[1].move_to([-2.68, -0.2, 0]) #Encoder 1
+        # all_svgs[4][22:29].next_to(all_svgs[1], LEFT, buff=0.5) #Encoder 1 label
+        #all_svgs[4][22:29].move_to([-4.19,  -0.2,  0. ]) #Encoder 1 label
+        #all_svgs[3][:2].set_color(CHILL_BROWN).move_to([-2.68, -1.0, 0]) #Encoder 1 arrow in
+        # all_svgs[6][1].move_to([-2.68, 0.69, 0]) #Encoder 1 arrow out
+
+
+        # all_svgs[18].move_to([2.72, -0.2, 0]) #Encoder 2
+        # all_svgs[4][29:36].move_to([4.19,  -0.2,  0. ]) #Encoder 2 label
+        # all_svgs[3][2:4].set_color(CHILL_BROWN).move_to([2.72, -1.0, 0]) #Encoder 2 arrow in
+        # all_svgs[3][10:12].set_color(CHILL_BROWN).move_to([2.72, 0.55, 0])
+
+        # all_svgs[9].move_to([5.0, 1.3, 0]) #Minimze Prediction error
+
+
+        # all_svgs[17].move_to([-0.14, 1.35, 0]) #Predictor
+        # all_svgs[6][3].move_to([0.7, 1.5, 0]) #Predictor arrow out
+        # all_svgs[4][36:46].move_to([-0.14, 1.1, 0]) #Predictor label 
+        # all_svgs[6][0].move_to([-0.85, 1.34, 0]) #Predcitor Arrow in 
+
+        # self.add(all_svgs[8][:5]) #Video label
+        # self.add(all_svgs[8][5:14]) #Next frame label
+        # self.add(all_svgs[8][14:]) #Embedding label
+
+        # all_svgs[8][14:].move_to([-5.1, 1.33, 0]) #Embedding label
+        # all_svgs[8][5:14].move_to([2.75, -3.26, 0]) #Next frame label
+        # all_svgs[8][:5].move_to([-5.0, -2.52, 0]) #Video label
+
+
+
+
+
 
 
 
