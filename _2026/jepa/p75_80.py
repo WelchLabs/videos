@@ -14,7 +14,7 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-NUM_FRAME_TO_RENDER=100 #CRANK UP FOR FINAL VIZ
+NUM_FRAME_TO_RENDER=450 #CRANK UP FOR FINAL VIZ
 svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/p75_80_manim/')
 img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/hacking/overhead_ball_3'
 
@@ -216,9 +216,85 @@ class P75_80(InteractiveScene):
         
         '''
 
+  # ----- Play frames in place + hard-swap embeddings -----
 
+        emb1_pos = embedding_1.get_center().copy()
+        emb2_pos = embedding_2.get_center().copy()
+        emb3_pos = embedding_3.get_center().copy()
 
+        stack_world_positions = [imgs[i].get_center().copy() for i in range(5)]
+        next_frame_world_pos  = imgs[5].get_center().copy()
 
+        # ---- Embedding random walk: shared drift + per-vector noise
+        np.random.seed(42)
+        walk_std  = 0.012
+        noise_std = 0.006
+
+        n_steps = NUM_FRAME_TO_RENDER - 6
+
+        base_e1 = np.array([0.21, -0.11, 0.32])
+        base_e2 = np.array([0.22, -0.13, 0.31])
+        base_e3 = np.array([0.21, -0.10, 0.35])
+
+        true_walk = [np.zeros(3)]
+        for _ in range(n_steps):
+            true_walk.append(true_walk[-1] + np.random.randn(3) * walk_std)
+
+        e1_seq = [base_e1 + tw + np.random.randn(3) * noise_std for tw in true_walk]
+        e2_seq = [base_e2 + tw + np.random.randn(3) * noise_std for tw in true_walk]
+        e3_seq = [base_e3 + tw + np.random.randn(3) * noise_std for tw in true_walk]
+
+        def make_emb_tex(vals, color, position, scale=0.65):
+            s = (r'\begin{bmatrix} '
+                 + f'{vals[0]:.2f}' + r', \ '
+                 + f'{vals[1]:.2f}' + r', \ \dots, \ '
+                 + f'{vals[2]:.2f}'
+                 + r' \end{bmatrix}')
+            e = Tex(s)
+            e.set_color(color)
+            e.scale(scale)
+            e.move_to(position)
+            return e
+
+        current_stack = [imgs[i] for i in range(5)]   # slots 0..4 (already configured)
+        current_next  = imgs[5]                        # next-frame slot (already configured)
+
+        step_run_time = 0.1
+
+        for step in range(n_steps):
+            # 1. Fresh image into next-frame slot (only fresh images get full configure)
+            new_next = imgs[step + 6]
+            new_next.scale(0.45)
+            new_next.move_to(next_frame_world_pos)
+
+            # 2. Promote old next-frame -> stack slot 4
+            #    Delta from (0.45, no rot, opacity 1) to (0.38, 70deg y-rot, opacity 0.5)
+            promoted = current_next
+            promoted.scale(0.38 / 0.45)
+            promoted.rotate(70 * DEGREES, axis=[0, 1, 0])
+            promoted.set_opacity(0.5)
+            promoted.move_to(stack_world_positions[4])
+
+            # 3. Shift existing stack: slots 1..4 -> slots 0..3 (just translate)
+            for slot_idx in range(1, 5):
+                current_stack[slot_idx].move_to(stack_world_positions[slot_idx - 1])
+
+            # 4. Update embeddings
+            new_e1 = make_emb_tex(e1_seq[step + 1], BLUE,   emb1_pos)
+            new_e2 = make_emb_tex(e2_seq[step + 1], BLUE,   emb2_pos)
+            new_e3 = make_emb_tex(e3_seq[step + 1], YELLOW, emb3_pos)
+
+            # 5. Scene swap: drop the oldest stack image + old embeddings; add new next + new embeddings.
+            #    The promoted image is already in the scene (was current_next), so don't re-add.
+            self.remove(current_stack[0], embedding_1, embedding_2, embedding_3, input_borders)
+            self.add(new_next, new_e1, new_e2, new_e3, input_borders)
+
+            # 6. Roll tracking forward
+            current_stack = current_stack[1:] + [promoted]
+            current_next  = new_next
+            embedding_1, embedding_2, embedding_3 = new_e1, new_e2, new_e3
+
+            self.wait(step_run_time)
 
 
 
