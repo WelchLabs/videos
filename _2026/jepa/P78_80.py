@@ -47,9 +47,90 @@ class P78_80(InteractiveScene):
         # I do think that would be easier. 
         # Ok improtant thing for now then is figuring out a reasonable
         # set of curves in matplotlib!
+        # Ok done! Now bring in pictures. 
+
+        imgs=Group()
+        NUM_FRAMES=124
+        for i in range(NUM_FRAMES):
+            imgs.add(ImageMobject(str(img_dir+'/VJEPA_AC_CLIPS'+str(i).zfill(3)+'.jpg')))
+
+
+        imgs[0].scale(0.42)
+        imgs[0].move_to([-3.2, -1.7, 0])
+        imgs[0].set_opacity(0.5)
+        imgs[1].scale(0.42)
+        imgs[1].move_to([-3.1, -1.8, 0])
+        imgs[1].set_opacity(0.5)
+        imgs[2].scale(0.42)
+        imgs[2].move_to([-3.0, -1.9, 0])
+
+        latest_img_copy=imgs[3].copy()
+        imgs[3].scale(0.47)
+        imgs[3].move_to([2.45, -1.77, 0])
+
+
+        self.wait()
+        #Bring in actuator signals first. 
+        self.remove(all_svgs[6][1:])
+        self.play(Write(all_svgs[8][1:]),
+                 all_svgs[6][0].animate.move_to([-0.233, 0.95, 0]),
+                 run_time=3)
+
+        self.play(self.frame.animate.reorient(0, 0, 0, (-0.19, 0.27, 0.0), 7.43),
+                  FadeOut(all_svgs[1]),
+                  run_time=2)
+
+        #Stack that videer
+        self.add(imgs[0])
+        self.wait(0.2)
+        self.add(imgs[1])
+        self.wait(0.2)
+        self.add(imgs[2])
+        self.wait(0.2)
+        self.add(imgs[3])
+        self.add(all_svgs[7])
+
+        self.wait()
+        self.remove(imgs[2],imgs[3])
+        for i in range(4, NUM_FRAMES):
+            # promote imgs[i-1] from right (0.47) to front-left (0.42)
+            imgs[i-1].scale(0.42 / 0.47).move_to([-3.0, -1.9, 0])
+            # evict the old front-left
+            self.remove(imgs[i-2])
+            # bring in the new most-recent on the right
+            imgs[i].scale(0.47).move_to([2.45, -1.77, 0])
+            self.add(imgs[i])
+            self.wait(0.1)
+
+
+
+
+            
+
+
+            
+
+
+
+
+        
+
+
 
 
 
         self.embed()
         self.wait(20)
+
+
+
+
+
+
+
+
+
+
+
+
 
