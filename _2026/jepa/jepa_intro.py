@@ -64,13 +64,55 @@ class Intro(InteractiveScene):
                   # ReplacementTransform(all_svgs[0][1], all_svgs[3][1]), #y
                   FadeIn(all_svgs[4][1:-2]),
                   Write(all_svgs[5][:-5]),
-                  self.frame.animate.reorient(0, 0, 0, (-0.35, 1.35, 0.0), 6.07),
+                  self.frame.animate.reorient(0, 0, 0, (-0.32, 1.35, 0.0), 6.20),
                   run_time=4)
 
+        self.wait()
+        self.play(ReplacementTransform(all_svgs[0][1], all_svgs[3][1]),
+                  Write(all_svgs[5][-5:]),
+                  run_time=3)
+
+
+        self.wait()
+        self.play(Write(all_svgs[7]),
+                  self.frame.animate.reorient(0, 0, 0, (-0.24, -0.02, 0.0), 6.87),
+                  run_time=4)
+
+        cat_img.scale(0.52)
+        cat_img.move_to([-3.4, -1.3, 0])
+        self.play(FadeIn(cat_img), FadeIn(all_svgs[6][0]))
+
+        self.play(Write(all_svgs[8]), 
+                  FadeIn(all_svgs[6][1]),
+                  run_time=2)
+
+
+
+        self.wait()
+        self.remove(all_svgs[3], all_svgs[4], all_svgs[5], all_svgs[7], cat_img, all_svgs[8])
+        self.play(Write(all_svgs[9]),
+                  self.frame.animate.reorient(0, 0, 0, (-0.07, 0.23, 0.0), 7.27),
+                  ReplacementTransform(all_svgs[6][0], all_svgs[10][0]),
+                  ReplacementTransform(all_svgs[6][1], all_svgs[10][1]),
+                  run_time=4)
+
+        self.wait()
+        self.play(Write(all_svgs[11]),run_time=3)
+
+        self.wait()
+        self.play(Write(all_svgs[12]),run_time=3)
+
+        self.wait()
+        self.play(Write(all_svgs[13]),run_time=3)
+
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (0.01, 0.3, 0.0), 7.57), run_time=4)
+
+
+
+        # self.add(all_svgs[6])
+
         # self.add(all_svgs[5][:-5])
-
-
-
         # self.add(all_svgs[4][0]) #Berx
         # self.add(all_svgs[4][-2:]) #Arrows
 
@@ -89,11 +131,6 @@ class Intro(InteractiveScene):
 
         # self.add(all_svgs[1][0])
 
-
-
-
-
-        self.wait()
 
 
 
