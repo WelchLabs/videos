@@ -172,7 +172,7 @@ class P78_80(InteractiveScene):
         # Then one more robot sequence I think to play while Yann is 
         # talking!
 
-        num_steps=NUM_FRAMES-3
+        num_steps=NUM_FRAMES
         s1=np.linspace(0.22, 0.05, num_steps)
         s2=np.linspace(-0.13, -0.02, num_steps)
         s3=np.linspace(0.31, 0.5, num_steps)

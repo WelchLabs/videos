@@ -82,7 +82,7 @@ def make_correlation_matrix(
 
 
 
-class P53_60b(InteractiveScene):
+class P53_60c(InteractiveScene):
     def construct(self):
 
 
