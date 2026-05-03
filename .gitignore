@@ -5,7 +5,7 @@
 *.json
 *.p
 qwen3*
-_2026/rl/rl_game_hacking/runs/
+_2026/rl/rl_game_hacking/breakout/runs
 _2026/jepa/runs/
 
 ### Python ###
