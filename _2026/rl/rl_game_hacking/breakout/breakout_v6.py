@@ -1,30 +1,32 @@
-# Simple policy gradient — PyTorch autograd, SGD, no reward discounting
+# PyTorch policy gradient - Adam, raw episode-return baseline, explicit Atari frame repeat
 
 import csv
 import os
 import pickle
 from datetime import datetime
 
+import ale_py
+import gymnasium as gym
 import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import gymnasium as gym
-import ale_py
+
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 gym.register_envs(ale_py)
 
 H = 200
-learning_rate = 1e-4
+learning_rate = 3e-4
+action_repeat = 4
 resume = True
 render = False
 
 D = 80 * 80
 n_actions = 4
-VERSION = 'v5'
+VERSION = 'v6'
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RUNS_DIR = os.path.join(HERE, 'runs', VERSION)
@@ -52,7 +54,7 @@ log_file = os.path.join(run_dir, 'log.csv')
 plot_file = os.path.join(run_dir, 'plot.png')
 
 model = nn.Sequential(nn.Linear(D, H), nn.ReLU(), nn.Linear(H, n_actions))
-optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 running_reward = None
 episode_number = 0
@@ -61,6 +63,7 @@ best_reward = 0
 if resume and os.path.exists(checkpoint_file):
     checkpoint = pickle.load(open(checkpoint_file, 'rb'))
     model.load_state_dict(checkpoint['model'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
     running_reward = checkpoint['running_reward']
     episode_number = checkpoint['episode_number']
     best_reward = checkpoint.get('best_reward', 0)
@@ -87,13 +90,30 @@ def prepro(I):
     return I.astype(np.float32).ravel()
 
 
+def step_repeat(env, action):
+    total_reward = 0.0
+    frames = []
+    info = {}
+    terminated = truncated = False
+
+    for _ in range(action_repeat):
+        observation, reward, terminated, truncated, info = env.step(action)
+        total_reward += reward
+        frames.append(observation)
+        if terminated or truncated:
+            break
+
+    observation = np.maximum(frames[-1], frames[-2]) if len(frames) >= 2 else frames[-1]
+    return observation, total_reward, terminated, truncated, info
+
+
 def save_plot():
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(log_episodes, log_rewards, alpha=0.3, color='crimson', label='reward')
-    ax.plot(log_episodes, log_running, color='crimson', linewidth=2, label='running reward')
+    ax.plot(log_episodes, log_rewards, alpha=0.3, color='teal', label='reward')
+    ax.plot(log_episodes, log_running, color='teal', linewidth=2, label='running reward')
     ax.set_xlabel('episode')
     ax.set_ylabel('reward')
-    ax.set_title('v5 — SGD, no discount')
+    ax.set_title('v6 - Adam, raw return baseline, no-frameskip max-repeat')
     ax.legend()
     fig.tight_layout()
     fig.savefig(plot_file, dpi=120)
@@ -103,22 +123,25 @@ def save_plot():
 def save_checkpoint(is_best=False):
     data = {
         'model': model.state_dict(),
+        'optimizer': optimizer.state_dict(),
         'running_reward': running_reward,
         'episode_number': episode_number,
         'best_reward': best_reward,
+        'action_repeat': action_repeat,
+        'env_id': 'BreakoutNoFrameskip-v4',
     }
     pickle.dump(data, open(checkpoint_file, 'wb'))
     if is_best:
         pickle.dump(data, open(best_checkpoint_file, 'wb'))
 
 
-env = gym.make("ALE/Breakout-v5", render_mode="human" if render else None, frameskip=1)
+env = gym.make('BreakoutNoFrameskip-v4', render_mode='human' if render else None)
 observation, info = env.reset()
 prev_x = None
 log_probs = []
-reward_sum = 0
+reward_sum = 0.0
 
-print(f"H={H}, lr={learning_rate}, SGD, no discount")
+print(f"H={H}, lr={learning_rate}, Adam, raw return baseline, repeat={action_repeat}")
 
 try:
     while True:
@@ -131,15 +154,14 @@ try:
         action = dist.sample()
         log_probs.append(dist.log_prob(action))
 
-        observation, reward, terminated, truncated, info = env.step(action.item())
-        done = terminated or truncated
+        observation, reward, terminated, truncated, info = step_repeat(env, action.item())
         reward_sum += reward
 
-        if done:
+        if terminated or truncated:
             episode_number += 1
 
-            # Use the same episode return for every action in that episode.
-            loss = -torch.stack(log_probs).sum() * reward_sum
+            baseline = 0.0 if running_reward is None else running_reward
+            loss = -torch.stack(log_probs).sum() * (reward_sum - baseline)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -168,7 +190,7 @@ try:
             elif is_best:
                 save_checkpoint(is_best=True)
 
-            reward_sum = 0
+            reward_sum = 0.0
             observation, info = env.reset()
             prev_x = None
 
@@ -177,3 +199,4 @@ except KeyboardInterrupt:
     save_checkpoint()
     save_plot()
     csv_f.close()
+    env.close()
