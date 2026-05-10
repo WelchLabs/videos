@@ -1,8 +1,12 @@
 import os
 import pickle
 import sys
+import time
 
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import gymnasium as gym
 import ale_py
 
@@ -37,8 +41,6 @@ def load_checkpoint(path):
     if isinstance(m, dict) and 'W1' in m:
         return 'karpathy', m, data
     else:
-        import torch
-        import torch.nn as nn
         model = nn.Sequential(nn.Linear(D, H), nn.ReLU(), nn.Linear(H, n_actions))
         model.load_state_dict(m)
         model.eval()
@@ -59,10 +61,10 @@ def act_karpathy(model, x):
 
 
 def act_pytorch(model, x):
-    import torch
     with torch.no_grad():
         logits = model(torch.from_numpy(x))
-        return int(logits.argmax().item())
+        dist = torch.distributions.Categorical(F.softmax(logits, dim=0))
+        return int(dist.sample().item())
 
 
 def prepro(I):
@@ -82,12 +84,14 @@ def main():
     kind, model, data = load_checkpoint(path)
     ep = data.get('episode_number', '?')
     rr = data.get('running_reward', None)
-    print(f"Type: {kind} | Episode: {ep} | Running reward: {rr:.2f if rr else '?'}")
+    print(f"Type: {kind} | Episode: {ep} | Running reward: {f'{rr:.2f}' if rr else '?'}")
 
     act = act_karpathy if kind == 'karpathy' else act_pytorch
 
     env = gym.make('BreakoutNoFrameskip-v4', render_mode='human')
-    observation, _ = env.reset()
+    observation, info = env.reset()
+    lives = info.get('lives', 0)
+    observation, _, _, _, _ = env.step(1)  # FIRE to launch ball
     prev_x = None
     episode = 0
     score = 0
@@ -99,14 +103,23 @@ def main():
             prev_x = cur_x
 
             action = act(model, x)
-            observation, reward, terminated, truncated, _ = env.step(action)
+            observation, reward, terminated, truncated, info = env.step(action)
             score += reward
+            time.sleep(1/60)
+
+            new_lives = info.get('lives', lives)
+            if new_lives < lives:
+                observation, _, _, _, _ = env.step(1)  # FIRE after life lost
+                prev_x = None
+            lives = new_lives
 
             if terminated or truncated:
                 episode += 1
                 print(f'Episode {episode} | Score: {score:.0f}')
                 score = 0
-                observation, _ = env.reset()
+                observation, info = env.reset()
+                lives = info.get('lives', 0)
+                observation, _, _, _, _ = env.step(1)  # FIRE to launch ball
                 prev_x = None
 
     except KeyboardInterrupt:
