@@ -104,7 +104,9 @@ def save_checkpoint():
 
 
 env = gym.make('BreakoutNoFrameskip-v4', render_mode='human' if render else None)
-observation, _ = env.reset()
+observation, info = env.reset()
+lives = info.get('lives', 0)
+observation, _, _, _, _ = env.step(1)  # FIRE to launch ball
 prev_x = None
 log_probs = []
 reward_sum = 0.0
@@ -122,8 +124,14 @@ try:
         action = dist.sample()
         log_probs.append(dist.log_prob(action))
 
-        observation, reward, terminated, truncated, _ = env.step(action.item())
+        observation, reward, terminated, truncated, info = env.step(action.item())
         reward_sum += reward
+
+        new_lives = info.get('lives', lives)
+        if new_lives < lives:
+            observation, _, _, _, _ = env.step(1)  # FIRE after life lost
+            prev_x = None
+        lives = new_lives
 
         if terminated or truncated:
             episode_number += 1
@@ -150,7 +158,9 @@ try:
                 save_plot()
 
             reward_sum = 0.0
-            observation, _ = env.reset()
+            observation, info = env.reset()
+            lives = info.get('lives', 0)
+            observation, _, _, _, _ = env.step(1)  # FIRE to launch ball
             prev_x = None
 
 except KeyboardInterrupt:
