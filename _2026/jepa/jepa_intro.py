@@ -18,7 +18,7 @@ svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/jepa
 img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/img_pairs'
 
 
-class Intro(InteractiveScene):
+class IntroC(InteractiveScene):
     def construct(self):
 
         svgs_to_skip=[0, 1, 2]
@@ -63,13 +63,13 @@ class Intro(InteractiveScene):
         self.play(ReplacementTransform(all_svgs[0][0], all_svgs[3][0]), #X
                   # ReplacementTransform(all_svgs[0][1], all_svgs[3][1]), #y
                   FadeIn(all_svgs[4][1:-2]),
-                  Write(all_svgs[5][:-5]),
+                  Write(all_svgs[5][5:]),
                   self.frame.animate.reorient(0, 0, 0, (-0.32, 1.35, 0.0), 6.20),
                   run_time=4)
 
         self.wait()
         self.play(ReplacementTransform(all_svgs[0][1], all_svgs[3][1]),
-                  Write(all_svgs[5][-5:]),
+                  Write(all_svgs[5][:5]),
                   run_time=3)
 
 

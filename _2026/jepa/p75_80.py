@@ -21,7 +21,7 @@ svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/p75_
 img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/hacking/overhead_ball_3'
 
 
-class P75_80(InteractiveScene):
+class P75_80B(InteractiveScene):
     def construct(self):
 
 

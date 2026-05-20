@@ -31,7 +31,7 @@ def make_emb_tex(vals, color, position, scale=0.65):
     e.move_to(position)
     return e
 
-class P78_80(InteractiveScene):
+class P78_80B(InteractiveScene):
     def construct(self):
 
         svgs_to_skip=[0, 1, 2]
