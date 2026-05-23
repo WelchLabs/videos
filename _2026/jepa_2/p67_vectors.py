@@ -19,14 +19,14 @@ MAGENTA='#FF00FF'
 
 
 
-class p61_vectors(InteractiveScene):
+class p67_vectors(InteractiveScene):
     def construct(self):
 
         n_steps=100
         dt=0.2
         vec_len=5
         step_size=0.35
-        seed=0
+        seed=25
         position=ORIGIN
         font_size=48
 
