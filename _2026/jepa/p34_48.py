@@ -35,7 +35,7 @@ class p34_48(InteractiveScene):
             all_svgs.add(svg_image[1:])
 
 
-        mushroom=ImageMobject(str(img_dir+'/Omphalotus_olearius_Mallorca.jpg'))
+        mushroom=ImageMobject(str(img_dir+'/AdobeStock_93352397.jpeg'))
         two_cats=ImageMobject(str(img_dir+'/AdobeStock_240682884.jpeg'))
         gqa_image=ImageMobject(str(img_dir+'/gqa_img.jpg'))
         
@@ -64,8 +64,8 @@ class p34_48(InteractiveScene):
         
 
         all_svgs[5].move_to([-0.2, -0.25, 0])
-        mushroom.scale(0.5)
-        mushroom.move_to([-5.4, 0.6, 0])
+        mushroom.scale(0.47)
+        mushroom.move_to([-5.45, 0.6, 0])
 
         #P36
         self.wait()
@@ -81,13 +81,80 @@ class p34_48(InteractiveScene):
                   run_time=3)
 
 
+        #P37
+        vla_bottom=Group(all_svgs[0], all_svgs[1], all_svgs[5], mushroom)
+        vlm_text=all_svgs[2][3:6]
+
         self.wait()
+        self.remove(all_svgs[2]) #Remove border
+        self.play(vla_bottom.animate.scale(0.86).move_to([0.2, -2.3, 0]),
+                  ReplacementTransform(vlm_text, all_svgs[7]),
+                  self.frame.animate.reorient(0, 0, 0, (-0.01, 0.14, 0.0), 7.98),
+                  run_time=4)
+        self.play(Write(all_svgs[6]), 
+                  Write(all_svgs[8]),
+                  Write(all_svgs[9]),
+                  Write(all_svgs[10]), 
+                  run_time=4)
+
+        self.play(Write(all_svgs[11]), run_time=3)
+
+        self.wait()
+        self.add(all_svgs[10])
+
+
+        right_side_copy=Group(all_svgs[9].copy(), all_svgs[10][:-1].copy())
+        definitely_not=all_svgs[5][-16:-2].copy()
+
+
+        self.wait()
+        self.add(right_side_copy, definitely_not)
+        self.play(right_side_copy.animate.move_to([4.8, 1.7, 0]), 
+                  run_time=4)
+        self.play(definitely_not.animate.move_to([5.1, 0, 0]), run_time=3)
+
+
+        jepa_left_side_copy=all_svgs[8][:53].copy()
+        self.add(jepa_left_side_copy)
+        
+        mushroom_copy = mushroom.copy()
+        self.add(mushroom_copy)
+
+        self.wait()
+        self.play(jepa_left_side_copy.animate.move_to([1.8, 1.43, 0]), 
+                  run_time=4)
+        self.play(mushroom_copy.animate.scale(0.5).move_to([2.05, -0.18, 0]),
+                  jepa_left_side_copy[:2].animate.shift([0, 0.06, 0]), #Scrooch up arrow
+                  run_time=4)
+        
+
+        lil_arrow=jepa_left_side_copy[:2].copy()
+        lil_arrow.move_to([3.63, 1.82, 0])
+
+        eat_this=all_svgs[5][:17].copy()
+        self.add(eat_this)
+
+        self.wait()
+        self.play(eat_this.animate.scale(0.9).move_to([3.63, 1.47, 0]),
+                 FadeIn(lil_arrow), 
+                 FadeOut(right_side_copy[0][-9:]),
+                 run_time=4)
 
 
 
 
+        self.remove()
+
+        # self.remove(all_svgs[10][-1])
+
+        # self.play()
 
 
+
+
+        self.wait()
+        
+        
 
 
 
