@@ -141,18 +141,21 @@ class p34_48(InteractiveScene):
                  run_time=4)
 
 
-
-
-        self.remove()
-
-        # self.remove(all_svgs[10][-1])
-
-        # self.play()
-
-
+        #P40
+        # self.add(all_svgs[11]) #JEPA VLM title
+        group_to_fade = Group(all_svgs[0], all_svgs[1], all_svgs[5], all_svgs[6], all_svgs[7], all_svgs[8], all_svgs[9], all_svgs[10], mushroom)
 
 
         self.wait()
+        self.play(FadeOut(group_to_fade), 
+                  self.frame.animate.reorient(0, 0, 0, (3.7, 1.45, 0.0), 5.53),
+                  run_time=5)
+
+        self.wait()
+
+        # Ok things are getting unusably slow here -> i think asking Claude for 
+        # a fresh start on this scene will speed thigns up, and I have a hard
+        # cut before P43, so a little change is no big deal. 
         
         
 
