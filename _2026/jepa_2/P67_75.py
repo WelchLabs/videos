@@ -60,23 +60,31 @@ class p67_75(InteractiveScene):
 
 
         #Hmm don't see embeddings, might just stick with random walk for these
+        actions_scaled=episode_1_np['action']/np.max(np.abs(episode_1_np['action']), 0)
+        
+        # self.add(all_svgs[6][0]) #Left Fill 
+        # self.add(all_svgs[6][1]) #Down
+        # self.add(all_svgs[6][2]) #Right
+        # self.add(all_svgs[6][3]) #Up
+
 
         self.add(all_svgs[5]) #Keyboard
+        all_svgs[6].set_opacity(0.0)
+        self.add(all_svgs[6]) #Keyboard fills 
 
-        all_svgs[6].set_opacity(0.5)
-        self.add(all_svgs[6][0]) #Left Fill 
-        self.add(all_svgs[6][1]) #Down
-        self.add(all_svgs[6][2]) #Right
-        self.add(all_svgs[6][3]) #Up
+        self.add(all_svgs[0]) #Left frame
+        self.add(all_svgs[1]) #Right frame
+        self.add(all_svgs[2]) #X encoder
+        self.add(all_svgs[3]) #Y encoder
+        self.add(all_svgs[4]) #predictor
 
-        actions_scaled=episode_1_np['action']/np.max(np.abs(episode_1_np['action']), 0)
+        #Hmm ok ok ok ok ok ok now we need some vector
+        
 
-        color_keyboard(actions_scaled[5])
-        self.add(all_svgs[5])
-        self.add(all_svgs[6])
+        color_keyboard(actions_scaled[2])
 
 
-        len(episode_1_imgs)
+
 
         self.add(episode_1_imgs[0])
 
