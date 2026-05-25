@@ -37,6 +37,8 @@ class p43_48(InteractiveScene):
         two_cats=ImageMobject(str(img_dir+'/AdobeStock_240682884.jpeg'))
         gqa_image=ImageMobject(str(img_dir+'/gqa_img.jpg'))
         gqa_table=ImageMobject(str(img_dir+'/vl_jepa_gqa_plot'))
+        v_jepa_cats=ImageMobject(str(img_dir+'/P19_22_3db.mp4.00_00_10_29.Still001 copy.jpg'))
+        v_jepa_cats_2=ImageMobject(str(img_dir+'/P19_22_3db.mp4.00_00_13_27.Still002 copy.jpg'))
 
         mushroom_copy=mushroom.copy() 
         mushroom_copy.scale(0.28)
@@ -108,7 +110,7 @@ class p43_48(InteractiveScene):
         self.remove(all_svgs[47][45:47], all_svgs[47][-19:], mushroom_copy, all_svgs[16][:-7], all_svgs[18][-22:], all_svgs[47][49])
         self.play(right_network.animate.scale(1.1).move_to([2.8, -1.1, 0]),
                   left_network.animate.scale(1.1).move_to([-0.6, 1.1, 0]),
-                  vl_jepa_label.animate.scale(1.1).move_to([1, 3.3, 0]),
+                  vl_jepa_label.animate.scale(1.1).move_to([1, 3.2, 0]),
                   self.frame.animate.reorient(0, 0, 0, (0.64, -0.15, 0.0)),
                   run_time=4)
         self.add(two_cats)
@@ -120,17 +122,49 @@ class p43_48(InteractiveScene):
 
 
         self.wait()
+        all_svgs[28].set_color(GREEN)
 
-
-
-
-
+        self.wait()
+        self.play(FadeOut(all_svgs[27]), FadeOut(all_svgs[28]), FadeOut(all_svgs[29]))
+        self.play(right_network.animate.shift([0, 0.6, 0]), 
+                  Write(all_svgs[30]),
+                  run_time=4)
 
         self.wait()
 
+        #P47
 
+        self.wait()
 
+        self.remove(all_svgs[30], two_cats, all_svgs[25], all_svgs[26],left_network[54:57], right_network[0])
+        # self.add(left_network)
 
+        # self.add(all_svgs[31], all_svgs[32], all_svgs[33], all_svgs[34], all_svgs[35], all_svgs[36], all_svgs[37], all_svgs[38])
+        mushroom_copy.move_to([2.55, -3.1, 0])
+
+        v_jepa_cats.scale(0.35)
+        v_jepa_cats.move_to([-5.4, -2.9, 0])
+        v_jepa_cats_2.scale(0.35)
+        v_jepa_cats_2.move_to([-3.4, -2.9, 0])
+
+        self.wait()
+        self.play(ReplacementTransform(left_network[57:], all_svgs[36]), #, run_time=3)
+                  ReplacementTransform(left_network[:54], all_svgs[37][:-2]), 
+                  ReplacementTransform(right_network[1], all_svgs[38][:45]),
+                  ReplacementTransform(vl_jepa_label, all_svgs[35][-7:]),
+                  self.frame.animate.reorient(0, 0, 0, (0.03, -0.17, 0.0)),
+                  run_time=5)
+        self.add(all_svgs[35], all_svgs[36], all_svgs[37], all_svgs[38], mushroom_copy)
+
+        self.play(FadeIn(all_svgs[39]), FadeIn(v_jepa_cats), FadeIn(v_jepa_cats_2),
+                  FadeIn(all_svgs[31]), FadeIn(all_svgs[32]), FadeIn(all_svgs[33]))
+        self.play(Write(all_svgs[34]),run_time=3)
+
+        # self.wait()
+        # self.play(Write(all_svgs[31]), Write(all_svgs[32]), Write(all_svgs[33]), Write(all_svgs[34]), run_time=4)
+
+        #P48
+        
 
 
         self.wait(20)
