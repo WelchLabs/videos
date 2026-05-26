@@ -220,7 +220,138 @@ class p69_75(InteractiveScene):
         self.remove(next_frame_copy); self.add(next_frame_copy)
 
         
+        step=2
+        horizontal_offset=6.7
+
+        predictor_copy_b=predictor_copy.copy()
+        predictor_out_arrow_copy_b=predictor_out_arrow_copy.copy()
+        decoder_copy_b=decoder_copy.copy()
+        next_frame_copy_b=next_frame_copy.copy()
+        keyboard_copy_b=keyboard_copy.copy()
+        keyboard_fill_copy_b=keyboard_fill_copy.copy()
+        keyboard_fill_copy_b.set_opacity(0.0)
+
+        values_4=values_3+np.random.randn(5)/12
+        s = f"[ {values_4[0]:.1f}, {values_4[1]:.1f}, ... , {values_4[-1]:.1f} ]"
+        emb_vector_4 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_4.set_color(FRESH_TAN)
+        emb_vector_4.move_to([3.35+step*horizontal_offset, 2.55, 0])
+
+        rollout_group=Group(predictor_copy_b, predictor_out_arrow_copy_b, decoder_copy_b, next_frame_copy_b,  keyboard_copy_b)
+
+        episode_imgs[step+1].scale(0.7)
+        episode_imgs[step+1].move_to([3.45+step*horizontal_offset, -1.95, 0])
+
+        step_actions=ep_data['action_blocks'][step].reshape(5,2) #Not sure if this is the right reshape
+        aggregate_actions=step_actions.mean(0)
+
         self.wait()
+        self.add(rollout_group)
+        color_keyboard(aggregate_actions, keyboard_fill_copy) #Opaicty
+
+        self.play(self.frame.animate.reorient(0, 0, 0, (6.64, -0.08, 0.0), 14.45), 
+                  rollout_group.animate.shift([horizontal_offset, 0.0, 0]),
+                  run_time=5
+                  )
+        keyboard_fill_copy_b.shift([horizontal_offset, 0.0, 0])
+        self.add(keyboard_fill_copy_b)
+        color_keyboard(aggregate_actions, keyboard_fill_copy_b)
+        self.add(emb_vector_4)
+        self.add(episode_imgs[step+1])
+        self.remove(next_frame_copy_b); self.add(next_frame_copy_b)
+
+        #Ok last one I think
+        step=3
+        horizontal_offset=6.7
+
+        predictor_copy_c=predictor_copy_b.copy()
+        predictor_out_arrow_copy_c=predictor_out_arrow_copy_b.copy()
+        decoder_copy_c=decoder_copy_b.copy()
+        next_frame_copy_c=next_frame_copy_b.copy()
+        keyboard_copy_c=keyboard_copy_b.copy()
+        keyboard_fill_copy_c=keyboard_fill_copy_b.copy()
+        keyboard_fill_copy_c.set_opacity(0.0)
+
+        values_5=values_4+np.random.randn(5)/12
+        s = f"[ {values_5[0]:.1f}, {values_5[1]:.1f}, ... , {values_5[-1]:.1f} ]"
+        emb_vector_5 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_5.set_color(FRESH_TAN)
+        emb_vector_5.move_to([3.35+step*horizontal_offset, 2.55, 0])
+
+        rollout_group=Group(predictor_copy_c, predictor_out_arrow_copy_c, decoder_copy_c, next_frame_copy_c,  keyboard_copy_c)
+
+        episode_imgs[step+1].scale(0.7)
+        episode_imgs[step+1].move_to([3.45+step*horizontal_offset, -1.95, 0])
+
+        step_actions=ep_data['action_blocks'][step].reshape(5,2) #Not sure if this is the right reshape
+        aggregate_actions=step_actions.mean(0)
+
+        self.wait()
+        self.add(rollout_group)
+        color_keyboard(aggregate_actions, keyboard_fill_copy) #Opaicty
+
+        self.play(self.frame.animate.reorient(0, 0, 0, (9.97, -0.09, 0.0), 18.35),
+                  rollout_group.animate.shift([horizontal_offset, 0.0, 0]),
+                  run_time=5
+                  )
+        keyboard_fill_copy_c.shift([horizontal_offset, 0.0, 0])
+        self.add(keyboard_fill_copy_c)
+        color_keyboard(aggregate_actions, keyboard_fill_copy_c)
+        self.add(emb_vector_5)
+        self.add(episode_imgs[step+1])
+        self.remove(next_frame_copy_c); self.add(next_frame_copy_c)
+
+
+        # Ok ok ok maybe I'm getting too crazy here, but I think i want to do one more
+        # I think I'll have time with the VO
+        step=4
+        horizontal_offset=6.7
+
+        predictor_copy_d=predictor_copy_c.copy()
+        predictor_out_arrow_copy_d=predictor_out_arrow_copy_c.copy()
+        decoder_copy_d=decoder_copy_c.copy()
+        next_frame_copy_d=next_frame_copy_c.copy()
+        keyboard_copy_d=keyboard_copy_c.copy()
+        keyboard_fill_copy_d=keyboard_fill_copy_c.copy()
+        keyboard_fill_copy_d.set_opacity(0.0)
+
+        values_6=values_5+np.random.randn(5)/12
+        s = f"[ {values_6[0]:.1f}, {values_6[1]:.1f}, ... , {values_6[-1]:.1f} ]"
+        emb_vector_6 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_6.set_color(FRESH_TAN)
+        emb_vector_6.move_to([3.35+step*horizontal_offset, 2.55, 0])
+
+        rollout_group=Group(predictor_copy_d, predictor_out_arrow_copy_d, decoder_copy_d, next_frame_copy_d,  keyboard_copy_d)
+
+        episode_imgs[step+1].scale(0.7)
+        episode_imgs[step+1].move_to([3.45+step*horizontal_offset, -1.95, 0])
+
+        step_actions=ep_data['action_blocks'][step].reshape(5,2) #Not sure if this is the right reshape
+        aggregate_actions=step_actions.mean(0)
+
+        self.wait()
+        self.add(rollout_group)
+        color_keyboard(aggregate_actions, keyboard_fill_copy) #Opaicty
+
+        self.play(self.frame.animate.reorient(0, 0, 0, (13.37, 0.08, 0.0), 21.66),
+                  rollout_group.animate.shift([horizontal_offset, 0.0, 0]),
+                  run_time=5
+                  )
+        keyboard_fill_copy_d.shift([horizontal_offset, 0.0, 0])
+        self.add(keyboard_fill_copy_d)
+        color_keyboard(aggregate_actions, keyboard_fill_copy_d)
+        self.add(emb_vector_6)
+        self.add(episode_imgs[step+1])
+        self.remove(next_frame_copy_d); self.add(next_frame_copy_d)
+
+
+        self.wait()
+
+
+        # P72 Ok so little chnange of plan here
+        # i think i just want to bring these six frames togheter 
+        # and play as a video. I think that will be more clear!
+
 
 
 
