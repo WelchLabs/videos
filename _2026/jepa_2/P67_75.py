@@ -56,12 +56,17 @@ class p69_75(InteractiveScene):
             all_svgs.add(svg_image[1:])
 
 
-        p69_start=ImageMobject(str(hackin_dir+'/p69/start.png'))
-        p69_left=ImageMobject(str(hackin_dir+'/p69/move_left.png'))
-        p69_right=ImageMobject(str(hackin_dir+'/p69/move_right.png'))
-        p69_up=ImageMobject(str(hackin_dir+'/p69/move_up.png'))
-        p69_down=ImageMobject(str(hackin_dir+'/p69/move_down.png'))
+        # p69_start=ImageMobject(str(hackin_dir+'/p69/start.png'))
+        # p69_left=ImageMobject(str(hackin_dir+'/p69/move_left.png'))
+        # p69_right=ImageMobject(str(hackin_dir+'/p69/move_right.png'))
+        # p69_up=ImageMobject(str(hackin_dir+'/p69/move_up.png'))
+        # p69_down=ImageMobject(str(hackin_dir+'/p69/move_down.png'))
 
+        p69_start=ImageMobject(str(hackin_dir+'/p71/ep_18002/before.png'))
+        p69_left=ImageMobject(str(hackin_dir+'/p71/ep_18002/left.png'))
+        p69_right=ImageMobject(str(hackin_dir+'/p71/ep_18002/right.png'))
+        p69_up=ImageMobject(str(hackin_dir+'/p71/ep_18002/up.png'))
+        p69_down=ImageMobject(str(hackin_dir+'/p71/ep_18002/down.png'))
 
         seed=2
         np.random.seed(seed)
@@ -73,7 +78,6 @@ class p69_75(InteractiveScene):
         emb_vector_1.move_to([-3.35, 2.5, 0])
 
         values_2=values_1+np.random.randn(5)/12
-        values_3=values_2+np.random.randn(5)/12
 
         s = f"[ {values_2[0]:.1f}, {values_2[1]:.1f}, ... , {values_2[-1]:.1f} ]"
         emb_vector_2 = Text(s, color=FRESH_TAN, font_size=35)
@@ -84,9 +88,19 @@ class p69_75(InteractiveScene):
         p69_start.scale(0.7)
         p69_start.move_to([-3.4, -1.95, 0])
 
-        for im in [p69_left, p69_right, p69_up, p69_down]:
-            im.scale(0.7)
-            im.move_to([3.4, -1.95, 0])
+        p69_up.scale(0.7)
+        p69_up.move_to([3.45, -1.95, 0])
+
+        p69_down.scale(0.7)
+        p69_down.move_to([3.45, -1.95, 0])
+
+        p69_left.scale(0.7)
+        p69_left.move_to([3.45, -1.95, 0])
+
+        p69_right.scale(0.7)
+        p69_right.move_to([3.45, -1.95, 0])
+
+        all_svgs[9].shift([0, -0.07, 0])
 
 
         self.wait()
@@ -112,36 +126,100 @@ class p69_75(InteractiveScene):
         self.wait()
         self.play(FadeIn(all_svgs[6]))
 
+        self.wait()
+        self.play(Write(emb_vector_2), run_time=3)
+
+        self.wait()
+        self.play(Write(all_svgs[11]),
+                  Write(all_svgs[9]),
+                  run_time=3)
+        self.add(p69_up)
+        self.remove(all_svgs[9]); self.add(all_svgs[9])
+
+
+        #P70
+        self.wait()
+        self.remove(p69_up)
+        self.add(p69_left)
+        color_keyboard([-0.8, 0.0], keyboard_fill_svg=all_svgs[6])
+        self.remove(all_svgs[9]); self.add(all_svgs[9])
+
+        self.wait()
+        self.remove(p69_left)
+        self.add(p69_right)
+        color_keyboard([0.8, 0.0], keyboard_fill_svg=all_svgs[6])
+        self.remove(all_svgs[9]); self.add(all_svgs[9])
+
+        self.wait()
+        self.remove(p69_right)
+        self.add(p69_down)
+        color_keyboard([0.0, 0.8], keyboard_fill_svg=all_svgs[6])
+        self.remove(all_svgs[9]); self.add(all_svgs[9])
+
+        # P71 - Roll this sucker out!
+        # Need to load in the real actions here
+        # And change first to setp to the actualy first step, then
+        # I can rollout to the next step! 
+        episode_imgs=Group()
+        for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_18002/wm/').glob('*.png'))):
+            episode_imgs.add(ImageMobject(str(p)))
+
+        episode_imgs[1].scale(0.7)
+        episode_imgs[1].move_to([3.45, -1.95, 0])
+
+        step=0
+        ep_data=np.load(hackin_dir+'/p71/ep_18002/wm/data.npz')
+        step_actions=ep_data['action_blocks'][step].reshape(5,2) #Not sure if this is the right reshape
+        aggregate_actions=step_actions.mean(0)
+
+        self.wait()
+        color_keyboard(aggregate_actions, keyboard_fill_svg=all_svgs[6])
+        self.remove(p69_down)
+        self.add(episode_imgs[1])
+        self.remove(all_svgs[9]); self.add(all_svgs[9])
+
 
         self.wait()
 
-        # all_svgs[6][3].set_opacity(0)
+        # self.add(all_svgs[4])
 
+        step=1
+        horizontal_offset=6.7
 
-        # color_keyboard(actions_scaled[0], keyboard_fill_svg=all_svgs[6])
+        #First follout step:
+        predictor_copy=all_svgs[4][:-2].copy()
+        predictor_out_arrow_copy=all_svgs[12].copy()
+        decoder_copy=all_svgs[11].copy()
+        next_frame_copy=all_svgs[9].copy()
+        keyboard_copy=all_svgs[5].copy()
+        keyboard_fill_copy=all_svgs[6].copy()
+        keyboard_fill_copy.set_opacity(0.0)
 
-        # self.wait()
-        # self.play(Write(all_svgs[2]), Write(all_svgs[3]), Write(all_svgs[4]),
-        #           Write(emb_vector_1), Write(emb_vector_2), Write(emb_vector_3),
-        #           Write(all_svgs[7]),
-        #           run_time=4
-        #           )
+        values_3=values_2+np.random.randn(5)/12
+        s = f"[ {values_3[0]:.1f}, {values_3[1]:.1f}, ... , {values_3[-1]:.1f} ]"
+        emb_vector_3 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_3.set_color(FRESH_TAN)
+        emb_vector_3.move_to([3.35, 2.55, 0])
 
-        # self.play(FadeIn(episode_1_imgs[0]), FadeIn(episode_1_imgs[1]),
-        #           Write(all_svgs[0]), Write(all_svgs[1]),
-        #           run_time=3)
+        rollout_group=Group(predictor_copy, predictor_out_arrow_copy, decoder_copy, next_frame_copy,  keyboard_copy, keyboard_fill_copy, emb_vector_3)
+        
+        episode_imgs[step+1].scale(0.7)
+        episode_imgs[step+1].move_to([3.45+horizontal_offset*(step), -1.95, 0])
 
-        # self.play(Write(all_svgs[5]), run_time=2)
-        # self.play(FadeIn(all_svgs[6]))
+        step_actions=ep_data['action_blocks'][step].reshape(5,2) #Not sure if this is the right reshape
+        aggregate_actions=step_actions.mean(0)
 
+        self.wait()
+        self.add(rollout_group)
+        self.play(self.frame.animate.reorient(0, 0, 0, (3.41, -0.07, 0.0), 10.30), 
+                  rollout_group.animate.shift([horizontal_offset*(step), 0.0, 0]),
+                  run_time=5
+                  )
+        color_keyboard(aggregate_actions, keyboard_fill_copy)
+        self.add(episode_imgs[step+1])
+        self.remove(next_frame_copy); self.add(next_frame_copy)
 
-
-
-        # Pre-scale frames 2..N (0 and 1 already scaled above)
-        for i in range(2, len(episode_1_imgs)):
-            episode_1_imgs[i].scale(0.7)
-
-
+        
         self.wait()
 
 
