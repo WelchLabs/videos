@@ -345,13 +345,151 @@ class p69_75(InteractiveScene):
         self.remove(next_frame_copy_d); self.add(next_frame_copy_d)
 
 
-        self.wait()
-
-
         # P72 Ok so little chnange of plan here
         # i think i just want to bring these six frames togheter 
         # and play as a video. I think that will be more clear!
 
+# Group everything currently on screen for removal before P72
+        everything_on_screen = Group(
+            # Original elements
+            all_svgs[2],
+            all_svgs[4][:-2],
+            all_svgs[5],
+            all_svgs[6],
+            all_svgs[9][:-1],
+            all_svgs[10][:-1],
+            all_svgs[11],
+            all_svgs[12],
+            emb_vector_1,
+            emb_vector_2,
+            # p69_start,
+            # episode_imgs[1],
+            # Step 1 rollout
+            predictor_copy,
+            predictor_out_arrow_copy,
+            decoder_copy,
+            next_frame_copy[:-1],
+            keyboard_copy,
+            keyboard_fill_copy,
+            emb_vector_3,
+            # episode_imgs[2],
+            # Step 2 rollout
+            predictor_copy_b,
+            predictor_out_arrow_copy_b,
+            decoder_copy_b,
+            next_frame_copy_b[:-1],
+            keyboard_copy_b,
+            keyboard_fill_copy_b,
+            emb_vector_4,
+            # episode_imgs[3],
+            # Step 3 rollout
+            predictor_copy_c,
+            predictor_out_arrow_copy_c,
+            decoder_copy_c,
+            next_frame_copy_c[:-1],
+            keyboard_copy_c,
+            keyboard_fill_copy_c,
+            emb_vector_5,
+            # episode_imgs[4],
+
+            # Step 4 rollout
+            predictor_copy_d,
+            predictor_out_arrow_copy_d,
+            decoder_copy_d,
+            next_frame_copy_d[:-1],
+            keyboard_copy_d,
+            keyboard_fill_copy_d,
+            emb_vector_6,
+            # episode_imgs[5],
+        )
+        all_svgs[13].scale(3.0)
+        all_svgs[13].move_to([26.5, 0, 0])
+
+        env_imgs=Group()
+        for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_18002/real/').glob('*.png'))):
+            env_imgs.add(ImageMobject(str(p)))
+
+        for img in env_imgs:
+            img.scale(2).move_to([13.4, -4.4, 0])
+
+        self.wait()
+        self.remove(everything_on_screen)
+        self.play(p69_start.animate.scale(2.9).move_to([13.4, 4, 0]),
+                  episode_imgs[1].animate.scale(2.9).move_to([13.4, 4, 0]),
+                  episode_imgs[2].animate.scale(2.9).move_to([13.4, 4, 0]),
+                  episode_imgs[3].animate.scale(2.9).move_to([13.4, 4, 0]),
+                  episode_imgs[4].animate.scale(2.9).move_to([13.4, 4, 0]),
+                  episode_imgs[5].animate.scale(2.9).move_to([13.4, 4, 0]),
+                  all_svgs[9][-1].animate.scale(2.9).move_to([13.4, 4, 0]),
+                  all_svgs[10][-1].animate.scale(2.9).move_to([13.4, 4, 0]),
+                  next_frame_copy[-1].animate.scale(2.9).move_to([13.4, 4, 0]),
+                  next_frame_copy_b[-1].animate.scale(2.9).move_to([13.4, 4, 0]),
+                  next_frame_copy_c[-1].animate.scale(2.9).move_to([13.4, 4, 0]),
+                  next_frame_copy_d[-1].animate.scale(2.9).move_to([13.4, 4, 0]),
+                  run_time=8)
+
+        self.remove(p69_start, episode_imgs[1], episode_imgs[2], episode_imgs[3], episode_imgs[4],
+                    all_svgs[9][-1], all_svgs[10][-1], next_frame_copy[-1], next_frame_copy_b[-1], 
+                    next_frame_copy_c[-1], next_frame_copy_d[-1])
+
+
+        self.add(env_imgs[5])
+        self.add(all_svgs[13][:16]) #Just first 2 panels
+
+        step=5
+        prev_step_count=Text('Step count = '+str(step), font_size=64, font='Myriad Pro')
+        prev_step_count.set_color(CHILL_BROWN)
+        prev_step_count.move_to([13.6, -9, 0])
+        self.add(prev_step_count)
+
+        # P72a. Loop from 5-> 18, then from 0 to 18 again. I think hard cut 
+        # to P72b 
+        episode_imgs_2=Group()
+        for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_18002/real/').glob('*.png'))):
+            episode_imgs_2.add(ImageMobject(str(p)))
+
+        for img in episode_imgs_2:
+            img.scale(2).move_to([13.4, 4, 0])
+
+        # P72a: Loop 5 -> end, then 0 -> end
+        max_frames = min(len(env_imgs), len(episode_imgs_2))
+        print(f"env_imgs: {len(env_imgs)}, episode_imgs_2: {len(episode_imgs_2)}, using: {max_frames}")
+
+        # Prepare remaining episode_imgs_2 that haven't been scaled/positioned yet
+        # for i in range(len(episode_imgs_2)):
+        #     if i == 0 or i >= 6:
+        #         episode_imgs_2[i].scale(2.9).move_to([13.4, 4, 0])
+
+        last = max_frames - 1  # final valid index
+        step_sequence = list(range(6, last + 1)) + list(range(0, last + 1))
+
+        current_env = env_imgs[5]
+        current_episode = episode_imgs_2[5]
+        current_step_count = prev_step_count
+
+        self.wait(0.1)
+        # self.add(episode_imgs_2[5])
+
+        for step in step_sequence:
+            new_step_count = Text('Step count = '+str(step), font_size=64, font='Myriad Pro')
+            new_step_count.set_color(CHILL_BROWN)
+            new_step_count.move_to([13.6, -9, 0])
+
+            self.remove(current_env, current_episode, current_step_count)
+            self.add(env_imgs[step], episode_imgs_2[step], new_step_count)
+            self.remove(all_svgs[13][:16]); self.add(all_svgs[13][:16])
+
+            current_env = env_imgs[step]
+            current_episode = episode_imgs_2[step]
+            current_step_count = new_step_count
+            self.wait(0.5)
+
+            
+
+
+
+
+        self.wait()
 
 
 
