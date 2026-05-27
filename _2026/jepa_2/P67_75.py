@@ -2,6 +2,7 @@ from manimlib import *
 from tqdm import tqdm
 from pathlib import Path
 import matplotlib.pyplot as plt
+import json
 
 CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
@@ -41,6 +42,108 @@ svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/p6
 img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics'
 push_t_dir_1='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/hackin/push_t_episodes'
 hackin_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/hackin'
+
+
+
+class p75(InteractiveScene):
+    def construct(self):
+
+
+        svgs_to_skip=[0]
+        svg_files=list(sorted(svg_dir.glob('*.svg')))
+        all_svgs=Group()
+        for i, svg_file in enumerate(svg_files): 
+            if i in svgs_to_skip: continue
+            svg_image=SVGMobject(str(svg_file))
+            svg_image.scale(4.0)
+            all_svgs.add(svg_image[1:])
+
+        start_im=ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5/start_img.png')
+        goal_im=ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5/goal_img_ps.png')
+
+        start_im.scale(1.38)
+        start_im.move_to([-2.85, 0.05, 0])
+
+        goal_im.scale(1.37)
+        goal_im.move_to([3.25, 0.1, 0])
+
+
+        self.wait()
+        self.play(Write(all_svgs[14]), run_time=3)
+
+        self.wait()
+        self.play(FadeIn(all_svgs[15]), FadeIn(all_svgs[16]), run_time=3)
+        self.add(start_im, goal_im)
+        self.add(all_svgs[15], all_svgs[16])
+
+        # self.add(all_svgs[15]) #Start frame
+        # self.add(all_svgs[16]) #Goal Frame
+        # self.add(all_svgs[14]) #CEM
+
+        d=np.load(hackin_dir+'/p75b/ep2167_off25_h5/iterations.npz')
+        # for k in d.keys(): print(k, d[k].shape) 
+        # paths_all (30, 500, 25, 2)                                                         
+        # paths_elite (30, 30, 25, 2)                                                
+        # paths_mean (30, 25, 2)
+        # costs (30, 500)                     
+        # topk_inds (30, 30)
+        # cum_sigma (30, 25, 2)                           
+        # raw_means (30, 1, 5, 10)
+        # raw_vars (30, 1, 5, 10)  
+
+        # Map 512-space (origin lower-left) to scene coords using start_im's bounds
+        ll = start_im.get_corner(DL)
+        ur = start_im.get_corner(UR)
+        im_w = ur[0] - ll[0]
+        im_h = ur[1] - ll[1]
+
+        IMG_SIZE = 224  # not 512
+
+        def path_to_scene(pt):
+            return np.array([
+                ll[0] + (pt[0] / IMG_SIZE) * im_w,
+                ll[1] + ((IMG_SIZE - pt[1]) / IMG_SIZE) * im_h,   # flip y
+                0.0,
+            ])
+
+        step=0
+        path_index=45
+        path = d['paths_all'][step, path_index]
+        # array([[ 30.286108, 156.19762 ],
+        #        [ 35.81527 , 156.61841 ],                                                   
+        #        [ 34.62877 , 154.36847 ],
+        #        [ 34.440853, 153.49341 ],
+        #        [ 31.434057, 155.25998 ], ...
+
+        # --- draw one CEM path on start_im ---
+
+        config = json.load(open(hackin_dir + '/p75b/ep2167_off25_h5/config.json'))
+        agent_xy_img = np.array(config['agent_xy_img'])  # (2,) in 224-px space
+
+        path = d['paths_all'][step, path_index]                    # (25, 2)
+        path_with_start = np.concatenate([agent_xy_img[None], path], axis=0)  # (26, 2)
+        scene_pts = [path_to_scene(p) for p in path_with_start]
+
+
+        path_line = VMobject()
+        path_line.set_points_as_corners(scene_pts)
+        path_line.set_stroke(MAGENTA, width=2)
+
+        path_dots = Group(*[Dot(p, radius=0.02, color=YELLOW) for p in scene_pts])
+        path_dots.set_color(MAGENTA)
+        self.add(path_line) #, path_dots)
+        self.add(path_dots)
+
+
+        self.wait()
+
+
+
+        self.wait(20)
+        self.embed()
+
+
+
 
 
 class p71b(InteractiveScene):
