@@ -42,7 +42,179 @@ img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics'
 push_t_dir_1='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/hackin/push_t_episodes'
 hackin_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/hackin'
 
-class p69_75(InteractiveScene):
+
+class p71b(InteractiveScene):
+    def construct(self):
+
+        # Ok yeah I think i want to run some other variants, but this is good enough for 
+        # now going to be. Also annoying tha the final column isnt' finishing, should address that. 
+
+        episodes=[363, 2319, 7965, 10722] #Might want to try some variants
+
+
+        svgs_to_skip=[0]
+        svg_files=list(sorted(svg_dir.glob('*.svg')))
+        all_svgs=Group()
+        for i, svg_file in enumerate(svg_files): 
+            if i in svgs_to_skip: continue
+            svg_image=SVGMobject(str(svg_file))
+            svg_image.scale(4.0)
+            all_svgs.add(svg_image[1:])
+
+        imgs_1=[Group(), Group()]
+        for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[0]).zfill(4)+'/wm/').glob('*.png'))):
+            imgs_1[0].add(ImageMobject(str(p)))
+        for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[0]).zfill(4)+'/real/').glob('*.png'))):
+            imgs_1[1].add(ImageMobject(str(p)))
+
+        imgs_2=[Group(), Group()]
+        for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[1]).zfill(4)+'/wm/').glob('*.png'))):
+            imgs_2[0].add(ImageMobject(str(p)))
+        for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[1]).zfill(4)+'/real/').glob('*.png'))):
+            imgs_2[1].add(ImageMobject(str(p)))
+
+        imgs_3=[Group(), Group()]
+        for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[2]).zfill(4)+'/wm/').glob('*.png'))):
+            imgs_3[0].add(ImageMobject(str(p)))
+        for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[2]).zfill(4)+'/real/').glob('*.png'))):
+            imgs_3[1].add(ImageMobject(str(p)))
+
+        imgs_4=[Group(), Group()]
+        for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[3]).zfill(4)+'/wm/').glob('*.png'))):
+            imgs_4[0].add(ImageMobject(str(p)))
+        for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[3]).zfill(4)+'/real/').glob('*.png'))):
+            imgs_4[1].add(ImageMobject(str(p)))
+
+        print(len(imgs_1[0]), len(imgs_2[0]), len(imgs_3[0]), len(imgs_4[0]))
+        print(len(imgs_1[1]), len(imgs_2[1]), len(imgs_3[1]), len(imgs_4[1]))
+
+        for img in imgs_1[0]:
+            img.scale(0.67).move_to([-4.65, 1.38, 0])
+
+        for img in imgs_1[1]:
+            img.scale(0.67).move_to([-4.65, -1.41, 0])
+
+        for img in imgs_2[0]:
+            img.scale(0.67).move_to([-1.59, 1.38, 0])
+
+        for img in imgs_2[1]:
+            img.scale(0.67).move_to([-1.59, -1.41, 0])
+
+        for img in imgs_3[0]:
+            img.scale(0.67).move_to([-1.59+2.96, 1.39, 0])
+
+        for img in imgs_3[1]:
+            img.scale(0.67).move_to([-1.59+2.99, -1.41, 0])
+
+        for img in imgs_4[0]:
+            img.scale(0.67).move_to([-1.59+2*3.01, 1.39, 0])
+
+        for img in imgs_4[1]:
+            img.scale(0.67).move_to([-1.59+2*3.03, -1.41, 0])
+        
+        # imgs_1[0][0].scale(0.67)
+        # imgs_1[0][0].move_to([-4.65, 1.38, 0])
+        # self.add(imgs_1[0][0])
+
+        # imgs_1[1][0].scale(0.67)
+        # imgs_1[1][0].move_to([-4.65, -1.41, 0])
+        # self.add(imgs_1[1][0])
+
+        # imgs_2[0][0].scale(0.67)
+        # imgs_2[0][0].move_to([-1.59, 1.38, 0])
+        # self.add(imgs_2[0][0])
+
+        # imgs_2[1][0].scale(0.67)
+        # imgs_2[1][0].move_to([-1.59, -1.41, 0])
+        # self.add(imgs_2[1][0])
+
+        # imgs_3[0][0].scale(0.67)
+        # imgs_3[0][0].move_to([-1.59+2.96, 1.39, 0])
+        # self.add(imgs_3[0][0])
+
+        # imgs_3[1][0].scale(0.67)
+        # imgs_3[1][0].move_to([-1.59+2.99, -1.41, 0])
+        # self.add(imgs_3[1][0])
+
+        # imgs_4[0][0].scale(0.67)
+        # imgs_4[0][0].move_to([-1.59+2*3.01, 1.39, 0])
+        # self.add(imgs_4[0][0])
+
+        # imgs_4[1][0].scale(0.67)
+        # imgs_4[1][0].move_to([-1.59+2*3.03, -1.41, 0])
+        # self.add(imgs_4[1][0])
+
+        count=0
+        self.add(imgs_1[0][count], imgs_1[1][count],
+                imgs_2[0][count], imgs_2[1][count],
+                imgs_3[0][count], imgs_3[1][count],
+                imgs_4[0][count], imgs_4[1][count])
+        self.add(all_svgs[13])
+
+        prev_step_count_1=Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
+        prev_step_count_1.set_color(CHILL_BROWN)
+        prev_step_count_1.move_to([-4.6, -3, 0])
+        self.add(prev_step_count_1)
+
+#       Step counts beneath the other three pairs
+        prev_step_count_2 = Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
+        prev_step_count_2.set_color(CHILL_BROWN)
+        prev_step_count_2.move_to([-1.59, -3, 0])
+        self.add(prev_step_count_2)
+
+        prev_step_count_3 = Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
+        prev_step_count_3.set_color(CHILL_BROWN)
+        prev_step_count_3.move_to([-1.59+3.0, -3, 0])
+        self.add(prev_step_count_3)
+
+        prev_step_count_4 = Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
+        prev_step_count_4.set_color(CHILL_BROWN)
+        prev_step_count_4.move_to([-1.59+2*3.01, -3, 0])
+        self.add(prev_step_count_4)
+
+        self.wait(0.3)
+
+        # Loop through frames, holding last frame for sets that end early
+        all_imgs = [imgs_1, imgs_2, imgs_3, imgs_4]
+        prev_step_counts = [prev_step_count_1, prev_step_count_2,
+                            prev_step_count_3, prev_step_count_4]
+        x_positions = [-4.6, -1.59, -1.59+2.96, -1.59+2*3.01]
+        max_length = max(len(imgs[0]) for imgs in all_imgs)
+
+        for step in range(1, max_length):
+            # Lift the svg overlay so swapped images don't sit on top of it
+            self.remove(all_svgs[13])
+
+            for i, imgs in enumerate(all_imgs):
+                prev_idx = min(step - 1, len(imgs[0]) - 1)
+                curr_idx = min(step, len(imgs[0]) - 1)
+
+                # Only swap if this set hasn't ended yet
+                if prev_idx != curr_idx:
+                    self.remove(imgs[0][prev_idx], imgs[1][prev_idx])
+                    self.add(imgs[0][curr_idx], imgs[1][curr_idx])
+
+                    new_sc = Text('Step count = '+str(curr_idx),
+                                  font_size=24, font='Myriad Pro')
+                    new_sc.set_color(CHILL_BROWN)
+                    new_sc.move_to([x_positions[i], -3, 0])
+                    self.remove(prev_step_counts[i])
+                    self.add(new_sc)
+                    prev_step_counts[i] = new_sc
+
+            # Put the frame svg back on top
+            self.add(all_svgs[13])
+            self.wait(0.3)
+
+        self.wait()
+
+
+        self.wait(20)
+        self.embed()
+
+
+
+class p69_71a(InteractiveScene):
     def construct(self):
 
 
@@ -483,9 +655,6 @@ class p69_75(InteractiveScene):
             current_episode = episode_imgs_2[step]
             current_step_count = new_step_count
             self.wait(0.5)
-
-            
-
 
 
 
