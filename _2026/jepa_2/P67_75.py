@@ -196,7 +196,7 @@ class p75(InteractiveScene):
         step=0
         path_index=45 #Random sample 002
         path = d['paths_all'][step, path_index]
-        path = d['paths_all'][step, path_index]                    # (25, 2)
+        # path = d['paths_all'][step, path_index]                    # (25, 2)
         path_with_start = np.concatenate([agent_xy_img[None], path], axis=0)  # (26, 2)
         scene_pts = [path_to_scene(p) for p in path_with_start]
 
@@ -361,12 +361,15 @@ class p75(InteractiveScene):
 
         # self.remove(group_to_remove)
         self.wait()
-        self.play(FadeOut(group_to_remove), 
-                  self.frame.animate.reorient(0, 0, 0, (-2.79, -1.02, 0.0), 3.58),
+        self.play(#FadeOut(group_to_remove), 
+                  # self.frame.animate.reorient(0, 0, 0, (-2.79, -1.02, 0.0), 3.58),
+                  self.frame.animate.reorient(0, 0, 0, (-4.81, -1.02, 0.0), 2.66),
                   all_path_lines.animate.set_stroke(opacity=0.2),
                   start_im.animate.set_opacity(0.25),
+                  all_svgs[15].animate.set_opacity(0.2),
                   run_time=6
                   )
+        self.remove(group_to_remove)
 
 
         # Ok ok ok ok ok ok ok 
@@ -382,47 +385,76 @@ class p75(InteractiveScene):
         # Ok i thnk we increase stroke and size
         # Bit of a problem here though, the path is going the wrong direction!
         # Gotta debub that first. 
+        # Hmm unless this is the right first step - let me compare to
+        # the rollut - I think i have the best rendered.... 
 
-
-        costs_step = d['costs'][step, :num_paths_to_render]                    # (N,)
-        cmap = plt.get_cmap('viridis_r')                                       # smallest cost → yellow
+        costs_step = d['costs'][step, :num_paths_to_render]               # (N,)
+        cmap = plt.get_cmap('viridis_r')
         norm = plt.Normalize(vmin=costs_step.min(), vmax=costs_step.max())
-        path_colors_rgb = cmap(norm(costs_step))[:, :3]                        # (N, 3) in [0, 1]
+        path_colors_rgb = cmap(norm(costs_step))[:, :3]
 
         def rgb_to_hex(rgb):
             return '#{:02x}{:02x}{:02x}'.format(*(int(c * 255) for c in rgb))
-        path_hex = [rgb_to_hex(c) for c in path_colors_rgb]
+        path_hex  = [rgb_to_hex(c) for c in path_colors_rgb]
+        # opacities = 0.05 + 0.25 * (1.0 - norm(costs_step))                # worst→best: 0.05→0.30
+        opacities = 0.2 + 0.8 * (1.0 - norm(costs_step))
+        opacities = [float(o) for o in opacities]   # ← unwrap 0-d numpy scalars
+
+        # Reorder lines + parallel arrays: worst cost first, best last (drawn on top)
+        order = np.argsort(-costs_step)
+        all_path_lines.submobjects = [all_path_lines.submobjects[i] for i in order]
+        path_hex  = [path_hex[i]  for i in order]
+        opacities = [opacities[i] for i in order]
 
         self.wait()
-
-
-        opacities = 0.05 + 0.85 * (1.0 - norm(costs_step))   # 0.05 (worst) → 0.30 (best)
         self.play(
             *[line.animate.set_stroke(color=hc, opacity=op)
-              for line, hc, op in zip(all_path_lines, path_hex, opacities.tolist())],
-            run_time=3,
+              for line, hc, op in zip(all_path_lines, path_hex, opacities)],
+            run_time=5,
         )
+        self.add(all_path_lines[-1])
 
-        self.remove(all_path_lines)
-        self.add(all_path_lines[207])
 
-        # all_path_lines[416].set_stroke(color=WHITE, opacity=1.0)
+        # Ok so this might be the right path, but I can't quite tell
+        # Let me go ahead and get the dots on there
 
-        # self.wait()
-        # self.play(
-        #     *[line.animate.set_stroke(color=hc)
-        #       for line, hc in zip(all_path_lines, path_hex)],
-        #     run_time=3,
-        # )
+        path_index=207 #Best path for step 0
+        path = d['paths_all'][step, path_index]                   # (25, 2)
+        path_with_start = np.concatenate([agent_xy_img[None], path], axis=0)  # (26, 2)
+        scene_pts_best_0 = [path_to_scene(p) for p in path_with_start]
 
-        order = np.argsort(-costs_step)           # high→low
-        all_path_lines.submobjects = [all_path_lines.submobjects[i] for i in order]
+        path_dots_best_0 = Group(*[Dot(p, radius=0.022, color=YELLOW) for p in scene_pts_best_0])
+        path_dots_best_0.set_color(YELLOW)
+
+
+        self.wait()
+        self.play(all_path_lines[:-1].animate.set_stroke(opacity=0.08),
+                  FadeIn(path_dots_best_0[0]),
+                  FadeIn(path_dots_best_0[5]),
+                  FadeIn(path_dots_best_0[10]),
+                  FadeIn(path_dots_best_0[15]),
+                  FadeIn(path_dots_best_0[20]),
+                  FadeIn(path_dots_best_0[25]),
+                  run_time=5)
+        self.add(all_path_lines[-1])
+        
+
+
+
+
+
+
+
+
+
 
 
 
         self.wait()
 
         
+
+
 
 
 
