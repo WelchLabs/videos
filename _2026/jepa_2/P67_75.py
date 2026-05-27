@@ -106,9 +106,9 @@ class p75(InteractiveScene):
                 0.0,
             ])
 
-        step=0
-        path_index=45
-        path = d['paths_all'][step, path_index]
+        # step=0
+        # path_index=45
+        # path = d['paths_all'][step, path_index]
         # array([[ 30.286108, 156.19762 ],
         #        [ 35.81527 , 156.61841 ],                                                   
         #        [ 34.62877 , 154.36847 ],
@@ -117,26 +117,196 @@ class p75(InteractiveScene):
 
         # --- draw one CEM path on start_im ---
 
-        config = json.load(open(hackin_dir + '/p75b/ep2167_off25_h5/config.json'))
-        agent_xy_img = np.array(config['agent_xy_img'])  # (2,) in 224-px space
+        # config = json.load(open(hackin_dir + '/p75b/ep2167_off25_h5/config.json'))
+        # agent_xy_img = np.array(config['agent_xy_img'])  # (2,) in 224-px space
 
+        # step=0
+        # all_path_lines=VGroup()
+        # for path_index in range(500):
+        #     path = d['paths_all'][step, path_index]
+        #     path = d['paths_all'][step, path_index]                    # (25, 2)
+        #     path_with_start = np.concatenate([agent_xy_img[None], path], axis=0)  # (26, 2)
+        #     scene_pts = [path_to_scene(p) for p in path_with_start]
+
+        #     path_line = VMobject()
+        #     path_line.set_points_as_corners(scene_pts)
+        #     path_line.set_stroke(MAGENTA, width=1.5)  
+        #     all_path_lines.add(path_line)
+
+        # #So we want to animate these in growing out from the center!
+        # all_path_lines.set_stroke(opacity=0.2)
+        # # self.add(all_path_lines)
+        # for i in range(26):
+        #     for p in all_path_lines:
+        #         self.add()
+
+
+        # import json
+
+        config = json.load(open(hackin_dir + '/p75b/ep2167_off25_h5/config.json'))
+        agent_xy_img = np.array(config['agent_xy_img'])
+        step = 0
+
+        # 1. Pre-compute the full 26-point scene-space path for every sample.
+        num_paths_to_render=500
+        all_full_pts = []
+        for path_index in range(num_paths_to_render):
+            path = d['paths_all'][step, path_index]                   # (25, 2)
+            path_with_start = np.concatenate([agent_xy_img[None], path], axis=0)  # (26, 2)
+            scene_pts = np.array([path_to_scene(p) for p in path_with_start])
+            all_full_pts.append(scene_pts)
+
+        # 2. Build path lines as degenerate (start->start) so they're invisible at t=0.
+        all_path_lines = VGroup()
+        for full_pts in all_full_pts:
+            line = VMobject()
+            line.set_points_as_corners([full_pts[0], full_pts[0]])
+            line.set_stroke(MAGENTA, width=2.0, opacity=0.2)
+            all_path_lines.add(line)
+
+        # 3. Fade the backdrop so the cloud pops.
+        self.add(all_path_lines)
+        self.wait()
+
+        # start_im.set_opacity(0.15)
+        self.play(start_im.animate.set_opacity(0.1),
+                  all_svgs[15].animate.set_opacity(0.1),
+                  self.frame.animate.reorient(0, 0, 0, (-4.79, -1.12, 0.0), 3.10),
+                  run_time=5)
+
+        # 4. Grow one step at a time.
+        n_corners  = 26          # 1 start + 25 path steps
+        total_time = 4.0         # tune to taste
+        dt = total_time / (n_corners - 1)
+        for k in range(2, n_corners + 1):
+            for line, full_pts in zip(all_path_lines, all_full_pts):
+                line.set_points_as_corners(full_pts[:k])
+            self.wait(dt)
+
+
+        # self.wait()
+
+        step=0
+        path_index=45 #Random sample 002
+        path = d['paths_all'][step, path_index]
         path = d['paths_all'][step, path_index]                    # (25, 2)
         path_with_start = np.concatenate([agent_xy_img[None], path], axis=0)  # (26, 2)
         scene_pts = [path_to_scene(p) for p in path_with_start]
 
-
         path_line = VMobject()
         path_line.set_points_as_corners(scene_pts)
-        path_line.set_stroke(MAGENTA, width=2)
+        path_line.set_stroke(YELLOW, width=4)
 
-        path_dots = Group(*[Dot(p, radius=0.02, color=YELLOW) for p in scene_pts])
-        path_dots.set_color(MAGENTA)
-        self.add(path_line) #, path_dots)
-        self.add(path_dots)
+        path_dots = Group(*[Dot(p, radius=0.022, color=YELLOW) for p in scene_pts])
+        path_dots.set_color(YELLOW)
+        # self.add(path_line) #, path_dots)
+        # self.add(path_dots)
+
+        # all_path_lines.set_stroke(opacity=0.05)
+        self.wait()
+        self.play(all_path_lines.animate.set_stroke(opacity=0.05), 
+                  self.frame.animate.reorient(0, 0, 0, (-4.35, -1.36, 0.0), 0.93),
+                  FadeIn(path_line),
+                  FadeIn(path_dots[0]),
+                  run_time=6)
+
+        # self.wait()
+        # self.play(#self.frame.animate.reorient(0, 0, 0, (-3.66, -0.93, 0.0), 1.83),
+        #           self.frame.animate.reorient(0, 0, 0, (-4.35, -1.36, 0.0), 0.93),
+        #           FadeIn(path_dots[0]),
+        #           run_time=5)
+
+        self.wait()
+        #Dot moves along path actually? Micky mouse style?
+        self.play(ReplacementTransform(path_dots[0].copy(), path_dots[1]))
+        self.play(ReplacementTransform(path_dots[1], path_dots[2]))
+        self.play(ReplacementTransform(path_dots[2], path_dots[3]))
+        self.play(ReplacementTransform(path_dots[3], path_dots[4]))
+        self.play(ReplacementTransform(path_dots[4], path_dots[5]))
+
+        # use this framing to draw the prediction steps on to of, 
+        # then I can zoom in how ever I want. 
+        # self.add(path_dots[10])
+        # self.add(path_dots[15])
+        # self.add(path_dots[20])
+        # self.add(path_dots[25])
+
+        rollout_ims_1=Group()
+        for i in range(6):
+            rollout_ims_1.add(ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5/wm_rollouts/iter_000/sample_002/frame_'+str(i).zfill(2)+'.png'))
+
+        for r in rollout_ims_1:
+            r.scale(0.105)
+
+        # self.frame.reorient(0, 0, 0, (-3.11, -0.83, 0.0), 2.35)
+
+        # rollout_ims_1.scale(0.105)
+        rollout_ims_1[0].move_to([-4.855, -0.706, 0])
+        rollout_ims_1[1].move_to([-4.17, -0.706, 0])
+        rollout_ims_1[2].move_to([-3.47, -0.706, 0])
+        rollout_ims_1[3].move_to([-2.75, -0.706, 0])
+        rollout_ims_1[4].move_to([-2.05, -0.706, 0])
+        rollout_ims_1[5].move_to([-1.33, -0.706, 0])
+
+        # self.add(rollout_ims_1)
+
+        rollout_group=Group(*[all_svgs[i] for i in [17, 18, 19, 20, 21, 22, 23, 24, 25, 26]])
+
+        rollout_group[1].set_opacity(0.15)
+        rollout_group[3].set_opacity(0.4)
+        rollout_group[5].set_opacity(0.3)
+        rollout_group[7].set_opacity(0.4)
+        rollout_group[9].set_opacity(0.5)
+
+        # self.add(rollout_group)
+        rollout_group.scale(0.29)
+        rollout_group.move_to([-3.1, -0.858, 0])
+
+        self.wait()
+        self.play(FadeIn(rollout_group[0]), 
+                  FadeIn(rollout_group[1]),
+                  self.frame.animate.reorient(0, 0, 0, (-3.55, -0.85, 0.0), 1.87),
+                  FadeIn(rollout_ims_1[0]),
+                  FadeIn(rollout_ims_1[1]),
+                  run_time=5)
+        self.add(rollout_group[0])
+
+        self.wait()
+        self.play(FadeIn(rollout_group[2]), 
+                  FadeIn(path_dots[10]),
+                  FadeIn(rollout_group[3]), 
+                  FadeIn(rollout_ims_1[2]),
+                  run_time=4)
+        self.add(rollout_group[2])
+
+        self.wait()
+        self.play(FadeIn(rollout_group[4]), 
+                  FadeIn(path_dots[15]),
+                  FadeIn(rollout_group[5]), 
+                  FadeIn(rollout_ims_1[3]),
+                  run_time=4)
+        self.add(rollout_group[4])
+
+        self.wait()
+        self.play(FadeIn(rollout_group[6]), 
+                  FadeIn(path_dots[20]),
+                  FadeIn(rollout_group[7]), 
+                  FadeIn(rollout_ims_1[4]),
+                  self.frame.animate.reorient(0, 0, 0, (-3.46, -0.83, 0.0), 1.95),
+                  run_time=4)
+        self.add(rollout_group[6])
+
+        self.wait()
+        self.play(FadeIn(rollout_group[8]), 
+                  FadeIn(path_dots[25]),
+                  FadeIn(rollout_group[9]), 
+                  FadeIn(rollout_ims_1[5]),
+                  self.frame.animate.reorient(0, 0, 0, (-3.11, -0.81, 0.0), 2.38),
+                  run_time=4)
+        self.add(rollout_group[8])
 
 
         self.wait()
-
 
 
         self.wait(20)
