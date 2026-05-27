@@ -49,6 +49,7 @@ class p75(InteractiveScene):
     def construct(self):
 
         num_paths_to_render=500 ## 500 for full redner
+        planning_steps_to_render=30 ### 30 for full render, very slow
 
 
         svgs_to_skip=[0]
@@ -437,23 +438,192 @@ class p75(InteractiveScene):
                   FadeIn(path_dots_best_0[25]),
                   run_time=5)
         self.add(all_path_lines[-1])
-        
 
 
+        best_rollout_0=Group()
+        for i in range(6):
+            best_rollout_0.add(ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5/wm_rollouts/iter_000/best/frame_'+str(i).zfill(2)+'.png'))
+
+        for o in best_rollout_0:
+            o.scale(0.18)
+
+        best_rollout_0[0].move_to([-5.345, -0.31, 0])
+        best_rollout_0[1].move_to([-5.57, -1.9, 0])
+        best_rollout_0[2].move_to([-4.3, -1.92, 0])
+        best_rollout_0[3].move_to([-5.86, -1.1, 0])
+        best_rollout_0[4].move_to([-4.25, -0.25, 0])
+        best_rollout_0[5].move_to([-3.8, -1.1, 0])
+
+        all_svgs[30].scale(0.33)
+        all_svgs[30].move_to([-4.83, -1.09, 0])
+
+        self.wait()
+        self.play(FadeIn(best_rollout_0), 
+                  FadeIn(all_svgs[30]), 
+                  self.frame.animate.reorient(0, 0, 0, (-4.75, -1.11, 0.0), 2.66), 
+                  run_time=4)
+        self.add(all_svgs[30])
 
 
-
-
-
-
-
+        self.wait()
+        self.remove(best_rollout_0, all_svgs[30], path_dots_best_0)
+        self.play(
+            *[line.animate.set_stroke(color=hc, opacity=op)
+              for line, hc, op in zip(all_path_lines[-30:], path_hex[-30:], opacities[-30:])],
+            run_time=5,
+        )
+        self.add(all_path_lines[-1])
 
 
 
         self.wait()
+        self.remove(all_path_lines)
 
-        
+        # Ok now draw in all paths in step from their starting points
+        # Start with them already colored by cost
+        # Then drop the opacity on all but top 30. 
 
+        # === Step 1: CEM iteration 1 paths ===
+        step = 1
+
+        # 1. Pre-compute scene-space paths
+        all_full_pts_1 = []
+        for path_index in range(num_paths_to_render):
+            path = d['paths_all'][step, path_index]
+            path_with_start = np.concatenate([agent_xy_img[None], path], axis=0)
+            scene_pts = np.array([path_to_scene(p) for p in path_with_start])
+            all_full_pts_1.append(scene_pts)
+
+        # 2. Costs → colors + opacities (re-normalize per step so contrast doesn't collapse)
+        costs_step_1 = d['costs'][step, :num_paths_to_render]
+        norm_1 = plt.Normalize(vmin=costs_step_1.min()*1.4, vmax=costs_step_1.max()) #SWAG adjustement here
+        path_hex_1  = [rgb_to_hex(c) for c in cmap(norm_1(costs_step_1))[:, :3]]
+        opacities_1 = [float(o) for o in (0.1 + 0.7 * (1.0 - norm_1(costs_step_1)))]
+
+        # 3. Sort worst→best so best draws on top
+        order_1       = np.argsort(-costs_step_1)
+        all_full_pts_1 = [all_full_pts_1[i] for i in order_1]
+        path_hex_1     = [path_hex_1[i]     for i in order_1]
+        opacities_1    = [opacities_1[i]    for i in order_1]
+
+        # 4. Build lines degenerate but already colored
+        all_path_lines_1 = VGroup()
+        for full_pts, hc, op in zip(all_full_pts_1, path_hex_1, opacities_1):
+            line = VMobject()
+            line.set_points_as_corners([full_pts[0], full_pts[0]])
+            line.set_stroke(color=hc, width=2.0, opacity=op)
+            all_path_lines_1.add(line)
+
+        self.add(all_path_lines_1)
+
+        # 5. Grow corner-by-corner
+        n_corners  = 26
+        total_time = 4.0
+        dt = total_time / (n_corners - 1)
+        for k in range(2, n_corners + 1):
+            for line, full_pts in zip(all_path_lines_1, all_full_pts_1):
+                line.set_points_as_corners(full_pts[:k])
+            self.wait(dt)
+
+        # 6. Fade everything except top-30 (sorted worst-first, so top-30 = last 30)
+        self.wait()
+        self.play(
+            *[line.animate.set_stroke(opacity=0.05)
+              for line in all_path_lines_1[:-30]],
+            run_time=3,
+        )
+        self.add(all_path_lines_1[-30:])  # keep elites on top after the fade
+
+        # === Steps 2..29: same pattern, automated ===
+
+        # Pacing knobs (tune these to taste; lower = snappier)
+        GROW_TIME       = 1.2   # how long the corner-by-corner reveal takes
+        FADE_TIME       = 0.8   # fade non-elites to bg
+        INTER_STEP_WAIT = 0.2   # breath between iterations
+
+        # Hold a reference to the previous step's group so we can swap cleanly
+        prev_lines = all_path_lines_1
+
+        for step in range(2, planning_steps_to_render):
+            # 1. Scene-space paths
+            all_full_pts_k = []
+            for path_index in range(num_paths_to_render):
+                path = d['paths_all'][step, path_index]
+                path_with_start = np.concatenate([agent_xy_img[None], path], axis=0)
+                scene_pts = np.array([path_to_scene(p) for p in path_with_start])
+                all_full_pts_k.append(scene_pts)
+
+            # 2. Per-step colors + opacities
+            costs_step_k = d['costs'][step, :num_paths_to_render]
+            norm_k = plt.Normalize(vmin=costs_step_k.min()*1.4, vmax=costs_step_k.max()) #Keeping my swag adjustement
+            path_hex_k  = [rgb_to_hex(c) for c in cmap(norm_k(costs_step_k))[:, :3]]
+            opacities_k = [float(o) for o in (0.2 + 0.8 * (1.0 - norm_k(costs_step_k)))]
+
+            # 3. Sort worst→best
+            order_k        = np.argsort(-costs_step_k)
+            all_full_pts_k = [all_full_pts_k[i] for i in order_k]
+            path_hex_k     = [path_hex_k[i]     for i in order_k]
+            opacities_k    = [opacities_k[i]    for i in order_k]
+
+            # 4. Build degenerate, already-colored lines
+            all_path_lines_k = VGroup()
+            for full_pts, hc, op in zip(all_full_pts_k, path_hex_k, opacities_k):
+                line = VMobject()
+                line.set_points_as_corners([full_pts[0], full_pts[0]])
+                line.set_stroke(color=hc, width=2.0, opacity=op)
+                all_path_lines_k.add(line)
+
+            # 5. Swap: remove previous step, add this step
+            self.remove(prev_lines)
+            self.add(all_path_lines_k)
+
+            # 6. Grow corner-by-corner
+            n_corners = 26
+            dt = GROW_TIME / (n_corners - 1)
+            for kk in range(2, n_corners + 1):
+                for line, full_pts in zip(all_path_lines_k, all_full_pts_k):
+                    line.set_points_as_corners(full_pts[:kk])
+                self.wait(dt)
+
+            # 7. Fade non-elites, elites on top
+            self.play(
+                *[line.animate.set_stroke(opacity=0.05)
+                  for line in all_path_lines_k[:-30]],
+                run_time=FADE_TIME,
+            )
+            self.add(all_path_lines_k[-30:])
+
+            self.wait(INTER_STEP_WAIT)
+
+            prev_lines = all_path_lines_k
+
+
+        # === Final executed path on the real environment ===
+        rollout = np.load(hackin_dir + '/p75b/ep2167_off25_h5_rollout/rollout.npz')
+
+        SCALE_512_TO_224 = IMG_SIZE / 512.0   # 224/512 = 0.4375
+        agent_path_224 = rollout['states'][:, :2] * SCALE_512_TO_224   # (26, 2)
+        final_scene_pts = [path_to_scene(p) for p in agent_path_224]
+
+        final_path_line = VMobject()
+        final_path_line.set_points_as_corners(final_scene_pts)
+        final_path_line.set_stroke(YELLOW, width=4)
+
+        final_path_dots = Group(*[Dot(p, radius=0.022, color=YELLOW) for p in final_scene_pts])
+        final_path_dots.set_color(YELLOW)
+
+        # Swap: planned cloud out, final plan in
+        self.wait()
+        self.play(
+            FadeOut(prev_lines),
+            FadeIn(final_path_line),
+            FadeIn(final_path_dots),
+            run_time=3,
+        )
+
+        start_im
+
+        self.wait()
 
 
 
