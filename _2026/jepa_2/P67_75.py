@@ -330,7 +330,7 @@ class p75(InteractiveScene):
         self.play(self.frame.animate.reorient(0, 0, 0, (0.28, 0.25, 0.0), 7.68), run_time=6)
 
 
-        goal_frame_group=Group(goal_im_with_border, all_svgs[16][:-1]) #Group(all_svgs[16], goal_im)
+        goal_frame_group=Group(goal_im_with_border, all_svgs[16][:-1].copy()) #Group(all_svgs[16], goal_im)
         distance_compare_group=Group(all_svgs[27], all_svgs[28], all_svgs[29])
         distance_compare_group.scale(0.137)
         distance_compare_group.move_to([-1.03, -0.47, 0])
@@ -555,7 +555,7 @@ class p75(InteractiveScene):
 
             # 2. Per-step colors + opacities
             costs_step_k = d['costs'][step, :num_paths_to_render]
-            norm_k = plt.Normalize(vmin=costs_step_k.min()*1.4, vmax=costs_step_k.max()) #Keeping my swag adjustement
+            norm_k = plt.Normalize(vmin=costs_step_k.min()*1.5, vmax=costs_step_k.max()) #Keeping my swag adjustement
             path_hex_k  = [rgb_to_hex(c) for c in cmap(norm_k(costs_step_k))[:, :3]]
             opacities_k = [float(o) for o in (0.2 + 0.8 * (1.0 - norm_k(costs_step_k)))]
 
@@ -621,13 +621,40 @@ class p75(InteractiveScene):
             run_time=3,
         )
 
-        start_im
+
+
+        start_im.set_opacity(1.0)
+        all_svgs[15].set_opacity(1.0)
+        self.add(goal_im, all_svgs[16])
+        # goal_im.set_opacity(1.0)
+        # all_svgs[16].set_opacity(1.0)
+
+
+        final_imgs=Group()
+        for i in range(26):
+            final_imgs.add(ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5_rollout/frame_'+str(i).zfill(3)+'.png'))
+
+        for im in final_imgs:
+            im.scale(1.38)
+            im.move_to([-2.85, 0.05, 0])
+
+
+        self.remove(all_svgs[15][:-1]) #Remove start frame label bfore we zoom out
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (0.2, 0.22, 0.0), 7.64), run_time=8)
 
         self.wait()
+        self.remove(start_im)
+        for i in range(len(final_imgs)-1):
+            if i>0: self.remove(final_imgs[i])
+            self.add(final_imgs[i+1])
+            self.add(all_svgs[15])
+            self.add(final_path_line)
+            self.add(final_path_dots)
+            self.wait(0.2)
 
 
-
-
+        #Holy shit that was a crazy scene. 
 
 
 
