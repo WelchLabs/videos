@@ -364,15 +364,67 @@ class p75(InteractiveScene):
         self.play(FadeOut(group_to_remove), 
                   self.frame.animate.reorient(0, 0, 0, (-2.79, -1.02, 0.0), 3.58),
                   all_path_lines.animate.set_stroke(opacity=0.2),
-                  start_im.animate.set_opacity(0.25)
+                  start_im.animate.set_opacity(0.25),
                   run_time=6
                   )
 
-       
+
+        # Ok ok ok ok ok ok ok 
+        # Now we need to color each path according to it's euclidean distance
+        # to the embeding of the goal Img
+
+        # --- color paths by cost at this CEM step ---
+        # d['costs'] is the WM cost (Euclidean dist between predicted final emb and
+        # goal emb) per candidate. Lowest cost = closest match to goal.
+
+        # np.argmin( d['costs'][step]) #207
+
+        # Ok i thnk we increase stroke and size
+        # Bit of a problem here though, the path is going the wrong direction!
+        # Gotta debub that first. 
+
+
+        costs_step = d['costs'][step, :num_paths_to_render]                    # (N,)
+        cmap = plt.get_cmap('viridis_r')                                       # smallest cost → yellow
+        norm = plt.Normalize(vmin=costs_step.min(), vmax=costs_step.max())
+        path_colors_rgb = cmap(norm(costs_step))[:, :3]                        # (N, 3) in [0, 1]
+
+        def rgb_to_hex(rgb):
+            return '#{:02x}{:02x}{:02x}'.format(*(int(c * 255) for c in rgb))
+        path_hex = [rgb_to_hex(c) for c in path_colors_rgb]
+
+        self.wait()
+
+
+        opacities = 0.05 + 0.85 * (1.0 - norm(costs_step))   # 0.05 (worst) → 0.30 (best)
+        self.play(
+            *[line.animate.set_stroke(color=hc, opacity=op)
+              for line, hc, op in zip(all_path_lines, path_hex, opacities.tolist())],
+            run_time=3,
+        )
+
+        self.remove(all_path_lines)
+        self.add(all_path_lines[207])
+
+        # all_path_lines[416].set_stroke(color=WHITE, opacity=1.0)
+
+        # self.wait()
+        # self.play(
+        #     *[line.animate.set_stroke(color=hc)
+        #       for line, hc in zip(all_path_lines, path_hex)],
+        #     run_time=3,
+        # )
+
+        order = np.argsort(-costs_step)           # high→low
+        all_path_lines.submobjects = [all_path_lines.submobjects[i] for i in order]
+
+
 
         self.wait()
 
         
+
+
 
 
 
