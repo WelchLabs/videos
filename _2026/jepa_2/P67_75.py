@@ -48,6 +48,8 @@ hackin_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/hackin'
 class p75(InteractiveScene):
     def construct(self):
 
+        num_paths_to_render=500 ## 500 for full redner
+
 
         svgs_to_skip=[0]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
@@ -60,12 +62,18 @@ class p75(InteractiveScene):
 
         start_im=ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5/start_img.png')
         goal_im=ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5/goal_img_ps.png')
+        goal_im_with_border=ImageMobject(img_dir+'/goal_img_with_border.png')
+
+
 
         start_im.scale(1.38)
         start_im.move_to([-2.85, 0.05, 0])
 
         goal_im.scale(1.37)
-        goal_im.move_to([3.25, 0.1, 0])
+        goal_im.move_to([3.25, 0.10, 0])
+
+        goal_im_with_border.scale(1.37)
+        goal_im_with_border.move_to([3.25, 0.10, 0])
 
 
         self.wait()
@@ -148,7 +156,6 @@ class p75(InteractiveScene):
         step = 0
 
         # 1. Pre-compute the full 26-point scene-space path for every sample.
-        num_paths_to_render=500
         all_full_pts = []
         for path_index in range(num_paths_to_render):
             path = d['paths_all'][step, path_index]                   # (25, 2)
@@ -305,8 +312,72 @@ class p75(InteractiveScene):
                   run_time=4)
         self.add(rollout_group[8])
 
+        #Zoom in on final positions
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (-1.32, -0.69, 0.0), 0.69), run_time=5)
+
+
+
+        #Zoom way out to show original goal state
+        all_svgs[15].set_opacity(1.0)
+        start_im.set_opacity(0.2)
+
+        self.remove(goal_im) #The ole switcheroo
+        self.remove(all_svgs[16][-1])
+        self.add(goal_im_with_border)
+        self.wait()
+        self.play(self.frame.animate.reorient(0, 0, 0, (0.28, 0.25, 0.0), 7.68), run_time=6)
+
+
+        goal_frame_group=Group(goal_im_with_border, all_svgs[16][:-1]) #Group(all_svgs[16], goal_im)
+        distance_compare_group=Group(all_svgs[27], all_svgs[28], all_svgs[29])
+        distance_compare_group.scale(0.137)
+        distance_compare_group.move_to([-1.03, -0.47, 0])
 
         self.wait()
+        self.play(goal_frame_group.animate.scale(0.075).move_to([-0.75, -0.72, 0]),
+                  self.frame.animate.reorient(0, 0, 0, (-0.98, -0.47, 0.0), 1.10),
+                  run_time=5
+            )
+        # self.remove(all_svgs[16]); self.add(all_svgs[16])
+        self.play(Write(distance_compare_group[0]), 
+                  Write(distance_compare_group[1]), 
+                  run_time=4)
+
+        self.wait()
+        self.play(Write(distance_compare_group[2]),run_time=3) 
+
+        # goal_frame_group.scale(0.075)
+        # goal_frame_group.move_to([-0.75, -0.72, 0])
+        # self.add(distance_compare_group)
+
+        # Ok now back to all the random paths, drop rollouts
+        # When we get the best bath, just show rollout images
+        # not full network etc 
+
+        group_to_remove=Group(rollout_group, distance_compare_group, rollout_ims_1, goal_frame_group, 
+                              path_dots[0], path_dots[5], path_dots[10], path_dots[15], path_dots[20], path_dots[25], 
+                              path_line)
+
+        # self.remove(group_to_remove)
+        self.wait()
+        self.play(FadeOut(group_to_remove), 
+                  self.frame.animate.reorient(0, 0, 0, (-2.79, -1.02, 0.0), 3.58),
+                  all_path_lines.animate.set_stroke(opacity=0.2),
+                  start_im.animate.set_opacity(0.25)
+                  run_time=6
+                  )
+
+       
+
+        self.wait()
+
+        
+
+
+
+
+        
 
 
         self.wait(20)
