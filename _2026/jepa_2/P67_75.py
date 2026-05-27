@@ -271,47 +271,43 @@ class p75b(InteractiveScene):
         rollout_group.move_to([-3.1, -0.858, 0])
 
         self.wait()
-        self.play(FadeIn(rollout_group[0]), 
-                  FadeIn(rollout_group[1]),
+        # frame border must stay on top throughout the fade (else it occludes then pops)
+        self.play(FadeIn(rollout_group[1]),
                   self.frame.animate.reorient(0, 0, 0, (-3.55, -0.85, 0.0), 1.87),
                   FadeIn(rollout_ims_1[0]),
                   FadeIn(rollout_ims_1[1]),
+                  FadeIn(rollout_group[0]),
                   run_time=5)
-        self.add(rollout_group[0])
 
         self.wait()
-        self.play(FadeIn(rollout_group[2]), 
-                  FadeIn(path_dots[10]),
-                  FadeIn(rollout_group[3]), 
+        self.play(FadeIn(path_dots[10]),
+                  FadeIn(rollout_group[3]),
                   FadeIn(rollout_ims_1[2]),
+                  FadeIn(rollout_group[2]),
                   run_time=4)
-        self.add(rollout_group[2])
 
         self.wait()
-        self.play(FadeIn(rollout_group[4]), 
-                  FadeIn(path_dots[15]),
-                  FadeIn(rollout_group[5]), 
+        self.play(FadeIn(path_dots[15]),
+                  FadeIn(rollout_group[5]),
                   FadeIn(rollout_ims_1[3]),
+                  FadeIn(rollout_group[4]),
                   run_time=4)
-        self.add(rollout_group[4])
 
         self.wait()
-        self.play(FadeIn(rollout_group[6]), 
-                  FadeIn(path_dots[20]),
-                  FadeIn(rollout_group[7]), 
+        self.play(FadeIn(path_dots[20]),
+                  FadeIn(rollout_group[7]),
                   FadeIn(rollout_ims_1[4]),
                   self.frame.animate.reorient(0, 0, 0, (-3.46, -0.83, 0.0), 1.95),
+                  FadeIn(rollout_group[6]),
                   run_time=4)
-        self.add(rollout_group[6])
 
         self.wait()
-        self.play(FadeIn(rollout_group[8]), 
-                  FadeIn(path_dots[25]),
-                  FadeIn(rollout_group[9]), 
+        self.play(FadeIn(path_dots[25]),
+                  FadeIn(rollout_group[9]),
                   FadeIn(rollout_ims_1[5]),
                   self.frame.animate.reorient(0, 0, 0, (-3.11, -0.81, 0.0), 2.38),
+                  FadeIn(rollout_group[8]),
                   run_time=4)
-        self.add(rollout_group[8])
 
         #Zoom in on final positions
         self.wait()
