@@ -45,7 +45,7 @@ hackin_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/hackin'
 
 
 
-class p75(InteractiveScene):
+class p75b(InteractiveScene):
     def construct(self):
 
         num_paths_to_render=500 ## 500 for full redner

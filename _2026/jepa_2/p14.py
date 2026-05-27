@@ -20,7 +20,7 @@ svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/p1
 img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics'
 
 
-class P14(InteractiveScene):
+class P14b(InteractiveScene):
     def construct(self):
 
         svgs_to_skip=[0]
@@ -56,7 +56,9 @@ class P14(InteractiveScene):
         self.frame.reorient(0, 0, 0, (-0.03, -0.02, 0.0))
         self.wait()
 
-        self.add(dog_1); self.add(all_svgs[0])
+        # self.add(dog_1); self.add(all_svgs[0])
+        self.play(FadeIn(dog_1), FadeIn(all_svgs[0]), run_time=3)
+        self,wait()
         
 
         self.play(Write(all_svgs[1]),
