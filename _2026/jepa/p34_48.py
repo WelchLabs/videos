@@ -20,7 +20,7 @@ svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/p3
 img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics'
 
 
-class p43_48(InteractiveScene):
+class p43_48b(InteractiveScene):
     def construct(self):
         '''Might end up needing to break this scene up, we'll see'''
 

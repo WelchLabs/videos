@@ -58,7 +58,7 @@ class P14b(InteractiveScene):
 
         # self.add(dog_1); self.add(all_svgs[0])
         self.play(FadeIn(dog_1), FadeIn(all_svgs[0]), run_time=3)
-        self,wait()
+        self.wait()
         
 
         self.play(Write(all_svgs[1]),
