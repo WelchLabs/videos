@@ -22,7 +22,7 @@ hackin_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/hackin'
 
 
 
-class p75b(InteractiveScene):
+class P8(InteractiveScene):
     def construct(self):
 
 
@@ -70,6 +70,26 @@ class p75b(InteractiveScene):
         pusht_6.move_to([4.05, -3.1, 0])
 
 
+        # self.remove(all_svgs[1][144])
+        all_svgs[1][141].set_opacity(0.4)
+        all_svgs[1][143].set_opacity(0.7)
+        all_svgs[1][145].set_opacity(0.7)
+        all_svgs[1][147].set_opacity(0.7)
+        all_svgs[1][149].set_opacity(0.5)
+        all_svgs[1][74].set_opacity(0.3)
+
+        all_svgs[1][64].set_opacity(0.4)
+        all_svgs[1][66].set_opacity(0.7)
+        all_svgs[1][68].set_opacity(0.7)
+        all_svgs[1][70].set_opacity(0.7)
+        all_svgs[1][72].set_opacity(0.5)
+        all_svgs[1][74].set_opacity(0.3)
+        # all_svgs[1][76].set_opacity(0.4)
+
+        rng = np.random.default_rng()
+        for o in all_svgs[3]:
+        	o.set_opacity(rng.uniform(0.4, 0.8))
+
         # self.add(v_jepa_cats)
         # self.add(v_jepa_cats_2)
         # self.add(mushroom)
@@ -77,8 +97,41 @@ class p75b(InteractiveScene):
         # self.add(all_svgs)
 
         self.wait()
+        self.frame.reorient(0, 0, 0, (-0.01, 1.13, 0.0), 4.85)
+        self.play(Write(all_svgs[0]), run_time=3)
+
+        self.wait()
+        self.play(Write(all_svgs[1]), run_time=5)
+
+        self.wait()
+        self.play(Write(all_svgs[2]), Write(all_svgs[3]), run_time=5)
+
+        #Alot going on here quickly, maybe just a zoom out and FadeIn?
+        # self.wait()
+        group_1=Group(v_jepa_cats, v_jepa_cats_2, all_svgs[4])
+        group_2=Group(all_svgs[5], mushroom)
+        group_3=Group(pusht_group, all_svgs[6:8])
+
+        self.wait()
+        self.play(LaggedStart([FadeIn(group_1), FadeIn(group_2), FadeIn(group_3)], lag_ratio=0.5), 
+        		  self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8.00),
+        	      run_time=6)
 
 
+        # self.play(FadeIn(v_jepa_cats), 
+        # 		  FadeIn(v_jepa_cats_2), 
+        # 		  # FadeIn(mushroom),
+        # 		  # FadeIn(pusht_group),
+        # 		  FadeIn(all_svgs[4]), 
+        # 		  self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8.00),
+        # 	      run_time=6)
+
+
+        # self.play(FadeIn(all_svgs[5]), FadeIn(mushroom), run_time=3)
+        # self.play(FadeIn(pusht_group), FadeIn(all_svgs[6:8]), run_time=3)
+
+
+        self.wait()
 
 
         self.wait(20)
