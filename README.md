@@ -1,16 +1,9 @@
+This project contains the supporting code used to develop the math and science videos found on [Welch Labs](https://www.youtube.com/@WelchLabs/).
 
-This project contains the code used to generate the explanatory math and science videos found on [Welch Labs](https://www.youtube.com/@WelchLabs/).
+This consists of two major components: the hacking scripts we use to generate data, images, etc., and the core animation used to make the final scenes. The hacking scripts are primarily done through notebooks, with a good example being `_2025/backprop_1/Loss Landscape While Learning.ipynb`. The core animation consists of scene files like `_2025/backprop_2/llama_learning_animation_1.py`.
 
-This almost entirely consists of scenes generated using the library [Manim](https://github.com/3b1b/manim).  See also the community maintained version at [ManimCommunity](https://github.com/ManimCommunity/manim/).
+The animation consists of scenes generated using the library [Manim](https://github.com/3b1b/manim); note that this is the 3Blue1Brown version of Manim, not Manim Community. However, this is not the only method used for the animations present in videos.
 
-Older projects may have code dependent on older versions of manim, and so may not run out of the box here.
-
-Note, while the library Manim itself is [open source](https://opensource.org/osd) software and under the [MIT license](https://github.com/3b1b/manim/blob/master/LICENSE.md), the contents of this repository are available under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License][cc-by-nc-sa].
-
-[![CC BY-NC-SA 4.0][cc-by-nc-sa-image]][cc-by-nc-sa]
-
-[cc-by-nc-sa]: http://creativecommons.org/licenses/by-nc-sa/4.0/
-[cc-by-nc-sa-image]: https://licensebuttons.net/l/by-nc-sa/4.0/88x31.png
-
+Note: while the library Manim itself is [open source](https://opensource.org/osd) software and under the [MIT license](https://github.com/3b1b/manim/blob/master/LICENSE.md), the contents of this repository are available under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License][cc-by-nc-sa].
 
 Copyright © 2026 Welch Labs
