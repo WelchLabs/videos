@@ -7,10 +7,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-import gymnasium as gym
-import ale_py
 
-gym.register_envs(ale_py)
+from breakout import Breakout
 
 H = 200
 batch_size = 10
@@ -18,10 +16,10 @@ learning_rate = 1e-4
 gamma = 0.99
 decay_rate = 0.99
 resume = True
-render = False
 
-D = 80 * 80
-n_actions = 4
+DOWN = 2
+D = (84 // DOWN) * (84 // DOWN)
+n_actions = 3
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RUNS_DIR = os.path.join(HERE, 'runs', 'karpathy')
@@ -81,11 +79,9 @@ if os.path.getsize(log_file) == 0:
     csv_writer.writerow(['episode', 'reward', 'running_reward'])
 
 
-def prepro(I):
-    I = I[32:192]
-    I = I[::2, ::2, 0]
-    I[I != 0] = 1
-    return I.astype(np.float64).ravel()
+def prepro(obs):
+    I = obs[::DOWN, ::DOWN, 0]
+    return (I > 0).astype(np.float64).ravel()
 
 
 def softmax(x):
@@ -125,7 +121,7 @@ def save_plot():
     ax.plot(log_episodes, log_running, color='steelblue', linewidth=2, label='running reward')
     ax.set_xlabel('episode')
     ax.set_ylabel('reward')
-    ax.set_title('Karpathy Breakout — numpy RMSProp + discounted per-step returns')
+    ax.set_title('Karpathy Breakout - numpy RMSProp + discounted returns')
     ax.legend()
     fig.tight_layout()
     fig.savefig(plot_file, dpi=120)
@@ -145,8 +141,8 @@ def save_checkpoint(is_best=False):
         pickle.dump(data, open(best_checkpoint_file, 'wb'))
 
 
-env = gym.make('BreakoutNoFrameskip-v4', render_mode='human' if render else None)
-observation, _ = env.reset()
+env = Breakout()
+observation, info = env.reset()
 prev_x = None
 xs, hs, dlogps, drs = [], [], [], []
 reward_sum = 0
@@ -169,7 +165,7 @@ try:
         dlogp[action] += 1.0
         dlogps.append(dlogp)
 
-        observation, reward, terminated, truncated, _ = env.step(action)
+        observation, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
         reward_sum += reward
         drs.append(reward)
@@ -223,7 +219,7 @@ try:
                 save_checkpoint(is_best=True)
 
             reward_sum = 0
-            observation, _ = env.reset()
+            observation, info = env.reset()
             prev_x = None
 
 except KeyboardInterrupt:
