@@ -21,8 +21,8 @@ SCALE_FACTOR=0.4
 SCALE_FACTOR_2=0.5
 
 
-audio_fn='/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/exports/tell_me_about_china.wav'
-spectra_path='/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/hacking/spectral_envelopes_final.npy'
+audio_fn='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/bitter_lesson/exports/tell_me_about_china.wav'
+spectra_path='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/bitter_lesson/hacking/spectral_envelopes_final.npy'
 
 #Small graph configuration - Phone, node index, x coord, y coord
 nodes=[['start', 0, 0, 0],
