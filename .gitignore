@@ -161,6 +161,7 @@ _2022/wordle/data/pattern_matrix.npy
 _2022/piano/data/
 
 *.mp4
+videos/
 
 raw_data/
 droid_100/
