@@ -16,12 +16,12 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-self_games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/alpha_go_self_play')
-human_games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/human_human_kgs-19-2015')
-# games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/games_with_videos')
-games_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/less_wrong_reverse_engineer')
+self_games_dir=Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/alpha_go_self_play')
+human_games_dir=Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/human_human_kgs-19-2015')
+# games_dir=Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/games_with_videos')
+games_dir=Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/bitter_lesson/games/less_wrong_reverse_engineer')
 
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/graphics/to_manim/')
+svg_dir=Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/bitter_lesson/graphics/to_manim/')
 
 size = 19  # 19x19 board
 padding = 0.5
@@ -69,20 +69,20 @@ def parse_sgf(file_path):
         parsed_moves.append((x, y, color))
     return parsed_moves
 
-def create_stone(x, y, color=BLACK, squash = 0.3):
+def create_stone(x, y, color=BLACK, squash = 0.3, resolution=(17, 9)):
     """Create a 3D stone at the given grid position."""
     stone_radius=step*0.45
     pos = [(-(size-1)/2 + x) * step, (-(size-1)/2 + y) * step, 0]
     
     if color == BLACK:
-        stone = Sphere(radius=stone_radius)
+        stone = Sphere(radius=stone_radius, resolution=resolution)
         # stone.set_color("#1a1a1a")
         # stone.set_color("#222222")
         stone.set_color('#000000')
         # stone.set_shading(0.3, 0.8, 0.2)  # ambient, diffuse, specular
         stone.set_shading(0.1, 0.4, 0.1)
     else:  # white
-        stone = Sphere(radius=stone_radius)
+        stone = Sphere(radius=stone_radius, resolution=resolution)
         stone.set_color("#B0B0B0")
         # stone.set_shading(0.5, 0.7, 0.3)
         stone.set_shading(0.7, 0.9, 0.9)
@@ -119,7 +119,7 @@ def create_cnn_layer(width=19, height=19, cell_size=0.15, depth=0.1, fill_color=
         line = Line3D(
             start=np.array([x, -layer_h / 2, front_z]),
             end=np.array([x, layer_h / 2, front_z]),
-            width=line_width, color=WHITE,
+            width=line_width, color=CHILL_BROWN,
         )
         grid_lines.add(line)
     
@@ -129,7 +129,7 @@ def create_cnn_layer(width=19, height=19, cell_size=0.15, depth=0.1, fill_color=
         line = Line3D(
             start=np.array([-layer_w / 2, y, front_z]),
             end=np.array([layer_w / 2, y, front_z]),
-            width=line_width, color=WHITE,
+            width=line_width, color=CHILL_BROWN,
         )
         grid_lines.add(line)
     
@@ -139,7 +139,7 @@ def create_cnn_layer(width=19, height=19, cell_size=0.15, depth=0.1, fill_color=
         line = Line3D(
             start=np.array([x, -layer_h / 2, back_z]),
             end=np.array([x, layer_h / 2, back_z]),
-            width=line_width, color=WHITE,
+            width=line_width, color=CHILL_BROWN,
         )
         grid_lines.add(line)
     
@@ -149,7 +149,7 @@ def create_cnn_layer(width=19, height=19, cell_size=0.15, depth=0.1, fill_color=
         line = Line3D(
             start=np.array([-layer_w / 2, y, back_z]),
             end=np.array([layer_w / 2, y, back_z]),
-            width=line_width, color=WHITE,
+            width=line_width, color=CHILL_BROWN,
         )
         grid_lines.add(line)
     
@@ -160,14 +160,14 @@ def create_cnn_layer(width=19, height=19, cell_size=0.15, depth=0.1, fill_color=
         line = Line3D(
             start=np.array([x, layer_h / 2, front_z]),
             end=np.array([x, layer_h / 2, back_z]),
-            width=line_width, color=WHITE,
+            width=line_width, color=CHILL_BROWN,
         )
         grid_lines.add(line)
         # Bottom edge
         line = Line3D(
             start=np.array([x, -layer_h / 2, front_z]),
             end=np.array([x, -layer_h / 2, back_z]),
-            width=line_width, color=WHITE,
+            width=line_width, color=CHILL_BROWN,
         )
         grid_lines.add(line)
     
@@ -178,14 +178,14 @@ def create_cnn_layer(width=19, height=19, cell_size=0.15, depth=0.1, fill_color=
         line = Line3D(
             start=np.array([layer_w / 2, y, front_z]),
             end=np.array([layer_w / 2, y, back_z]),
-            width=line_width, color=WHITE,
+            width=line_width, color=CHILL_BROWN,
         )
         grid_lines.add(line)
         # Left edge
         line = Line3D(
             start=np.array([-layer_w / 2, y, front_z]),
             end=np.array([-layer_w / 2, y, back_z]),
-            width=line_width, color=WHITE,
+            width=line_width, color=CHILL_BROWN,
         )
         grid_lines.add(line)
     
@@ -285,10 +285,10 @@ def create_heatmap_overlay(heatmap_data): #, opacity=0.6):
     
     return heatmap_group
 
-def get_board():
+def get_board(stroke_width=0.5):
     board_rect = Square(side_length=board_width + padding)
     board_rect.set_fill(FRESH_TAN, opacity=1)
-    board_rect.set_stroke(CHILL_BROWN, width=2)
+    board_rect.set_stroke(CHILL_BROWN, width=stroke_width)
 
     # We center the grid so the middle intersection is at (0,0,0)
     lines = VGroup()
@@ -307,7 +307,7 @@ def get_board():
         )
         lines.add(v_line, h_line)
         
-    lines.set_stroke(BLACK, width=1.5)
+    lines.set_stroke(BLACK, width=stroke_width)
 
     # For a 19x19, these are usually at 4, 10, and 16 (1-indexed)
     hoshi_indices = [3, 9, 15] # 0-indexed
@@ -461,7 +461,7 @@ def get_value_network():
             start=base_corners[i],
             end=top_corners[i],
             width=line_width,
-            color=WHITE,
+            color=CHILL_BROWN,
         )
         pyramid_edges.add(edge)
     
@@ -472,11 +472,11 @@ def get_value_network():
             start=top_corners[i],
             end=top_corners[next_i],
             width=line_width,
-            color=WHITE,
+            color=CHILL_BROWN,
         )
         pyramid_edges.add(edge)
     
-    # Create single output cube with white borders
+    # Create single output cube with CHILL_BROWN borders
     output_cube = Cube(side_length=output_size)
     output_cube.set_color(CHILL_GREEN)
     output_cube.move_to([0, output_y, 0])
@@ -512,7 +512,7 @@ def get_value_network():
             start=cube_corners[start_idx],
             end=cube_corners[end_idx],
             width=line_width,
-            color=WHITE,
+            color=CHILL_BROWN,
         )
         cube_edges.add(edge)
     
@@ -531,6 +531,344 @@ def get_value_network():
     value_network.add(cube_edges)
 
     return value_network
+
+
+
+class RenderPolicyNetwork(InteractiveScene):
+    def construct(self): 
+
+        spacing=0.8
+        cnn=Group()
+        for i in range(4):
+
+            layer = create_cnn_layer(
+                width=19, 
+                height=19, 
+                cell_size=0.15, 
+                depth=0.15,
+                fill_color=CHILL_BLUE,
+            )
+
+            layer.rotate(90*DEGREES, [1, 0, 0])
+            layer[0].set_opacity(0.6)
+            layer[1].set_opacity(0.6)
+            layer.move_to([0, -spacing*i, 0])
+            cnn.add(layer)
+
+
+        #Ok this looks decent. 
+        # self.add(cnn)
+        cnn.move_to([0, 0, 0])
+        cnn.rotate(90*DEGREES, axis=OUT) 
+        cnn.rotate(30*DEGREES, axis=RIGHT) 
+        cnn.rotate(-30*DEGREES, axis=UP)
+        cnn.rotate(-15*DEGREES, axis=OUT)
+
+        self.add(cnn)
+
+
+        self.wait(20)
+        self.embed()
+
+class RenderValueNetwork(InteractiveScene):
+    def construct(self): 
+
+
+        value_network=get_value_network()
+        value_network.scale(0.72)
+        value_network.rotate(90*DEGREES, axis=OUT) 
+        value_network.rotate(-10*DEGREES, axis=OUT) 
+        value_network.rotate(15*DEGREES, axis=RIGHT) 
+        value_network.rotate(-30*DEGREES, axis=UP)
+        value_network.move_to([-7.1, -4.4, 0])
+
+        self.frame.reorient(-2, 0, 0, (np.float32(-6.99), np.float32(-4.37), np.float32(-0.03)), 5.28)
+        self.add(value_network)
+
+        self.wait()
+
+
+        self.wait(20)
+        self.embed()
+
+
+def get_board_state_after(moves, n):
+    """Replay the first n moves (with captures) and return the board state dict."""
+    state = {}
+    for i in range(n):
+        x, y, color = moves[i]
+        state[(x, y)] = color
+        captured = find_captures(x, y, state)
+        for c in captured:
+            del state[c]
+    return state
+ 
+ 
+def create_flat_stone(x, y, color=BLACK, z_offset=0.02):
+    """2D stone — much faster to render than spheres at grid scale."""
+    stone_radius = step * 0.45
+    pos = [(-(size - 1) / 2 + x) * step,
+           (-(size - 1) / 2 + y) * step,
+           z_offset]
+    stone = Circle(radius=stone_radius)
+    if color == BLACK or color == '#000000':
+        stone.set_fill('#000000', opacity=1)
+        stone.set_stroke('#000000', width=0.5)
+    else:
+        stone.set_fill('#FFFFFF', opacity=1)
+        stone.set_opacity(1.0)
+        # stone.set_stroke('#888888', width=0.5)
+        stone.set_stroke('#FFFFFF', width=0.5)
+    stone.move_to(pos)
+    return stone
+ 
+
+
+class RenderRolloutsBookGrid3(InteractiveScene):
+    def construct(self):
+
+        #Game files from: https://homepages.cwi.nl/~aeb/go/games/games/AlphaGo/
+
+        game_files = ['G01.sgf',  # White wins
+                      'G02.sgf',  # White wins
+                      'G05.sgf',  # Black wins
+                      # 'G06.sgf',  # White wins
+                      # 'G07.sgf',  # White wins
+                      # 'G08.sgf',  # White wins
+                      'G09.sgf',  # Black wins
+                      'G10.sgf',  # White wins
+                      'G11.sgf']  # Black wins
+
+        flat_stones = False
+
+        # Layout
+        cell_size = 0.85
+        h_spacing = cell_size * 1.12
+        v_spacing = cell_size * 1.12
+        board_full_width = board_width + padding
+
+        # Rows = snapshots, columns = games
+        num_rows = 8  # len of snapshot_counts below
+        num_cols = len(game_files)
+
+        # Extra vertical gaps: 0-indexed row after which to insert a gap + ellipsis.
+        # Rows come in pairs (0,1), (20,21), (100,101), (n-1,n) ->
+        # gaps after rows 1, 3, 5 separate the pairs.
+        gap_after_rows = [1, 3, 5]
+        extra_gap = 0.15 * cell_size
+
+        # Uniform lighting: put the light directly overhead, far away,
+        # so every board sees the same angle.
+        self.camera.light_source.move_to([0, 0, 300])
+
+        # Precompute row y-positions (top row first), then center vertically
+        row_y = []
+        y = 0.0
+        for r in range(num_rows):
+            row_y.append(y)
+            y -= v_spacing
+            if r in gap_after_rows:
+                y -= extra_gap
+        y_offset = (row_y[0] + row_y[-1]) / 2
+        row_y = [ry - y_offset for ry in row_y]
+
+        col_x = [(c - (num_cols - 1) / 2) * h_spacing for c in range(num_cols)]
+
+        grid = Group()
+        black_stones = Group()
+        white_stones = Group()
+        all_boards = Group()
+
+        for col, fname in enumerate(tqdm(game_files)):
+            moves = parse_sgf(self_games_dir / fname)
+            n = len(moves)
+
+            snapshot_counts = [0, 1, 20, 21, 100, 101, n - 1, n]
+
+            for row, count in enumerate(snapshot_counts):
+                state = get_board_state_after(moves, count)
+
+                cell = Group()
+                board = get_board(stroke_width=0.5)
+                all_boards.add(board)
+                cell.add(board)
+                for (x, y), color in state.items():
+                    if flat_stones:
+                        stone = create_flat_stone(x, y, color)
+                    else:
+                        stone = create_stone(x, y, color, resolution=(17, 9))
+                    cell.add(stone)
+                    # print(color)
+                    if color == '#000000':
+                        black_stones.add(stone)
+                    elif color == '#FFFFFF':
+                        white_stones.add(stone)
+
+                cell.scale(cell_size / board_full_width)
+                cell.move_to([col_x[col], row_y[row], 0])
+                grid.add(cell)
+
+        # Ellipses in each gap, one per column
+        ellipses = VGroup()
+        for r in gap_after_rows:
+            y_mid = (row_y[r] + row_y[r + 1]) / 2
+            for cx in col_x:
+                dots = Tex(R"\vdots")
+                dots.set_color(CHILL_BROWN)
+                dots.set_height(extra_gap * 0.7)
+                dots.move_to([cx, y_mid, 0])
+                ellipses.add(dots)
+
+        self.add(all_boards)
+        self.add(black_stones, white_stones)
+
+
+        self.add(ellipses)
+
+        total_height = row_y[0] - row_y[-1] + v_spacing
+        self.frame.set_height(total_height * 1.08)
+        self.frame.reorient(0, 0, 0, (0, 0, 0), total_height * 1.08)
+
+        self.wait()
+
+        for s in black_stones: s.set_shading(0.1, 0.0, 0.0)
+
+        self.frame.reorient(-90, 0, 0, (np.float32(-0.01), np.float32(-0.16), np.float32(-0.0)), 5.92)
+
+        self.wait()
+        self.embed()
+
+
+
+
+
+
+# class RenderRolloutsBookGrid(InteractiveScene):
+#     def construct(self):
+ 
+#         game_files = ['G01.sgf',  # White wins
+#                       'G02.sgf',  # White wins
+#                       'G05.sgf',  # Black wins
+#                       # 'G06.sgf',  # White wins
+#                       # 'G07.sgf',  # White wins
+#                       # 'G08.sgf',  # White wins
+#                       'G09.sgf',  # Black wins
+#                       'G10.sgf',  # White wins
+#                       'G11.sgf']  # Black wins
+ 
+#         num_snapshots = 5
+#         flat_stones = False  # Set False for the 3D sphere stones (slower — ~4-5k spheres)
+ 
+#         # Layout
+#         cell_size = 0.85                    # rendered width of each mini board
+#         h_spacing = cell_size * 1.12
+#         v_spacing = cell_size * 1.12
+#         board_full_width = board_width + padding  # native board size before scaling
+ 
+#         num_rows = len(game_files)
+#         grid = Group()
+ 
+#         all_stones=Group()
+#         all_boards=Group()
+#         for col, fname in enumerate(tqdm(game_files)):
+#             moves = parse_sgf(self_games_dir / fname)
+#             n = len(moves)
+ 
+#             # Start, end, and 3 evenly spaced snapshots in between.
+#             # First column is move 0 (empty board) — swap the 0 for e.g. 1 or n//10
+#             # if you'd rather open with some stones on the board.
+#             # snapshot_counts = np.round(np.linspace(0, n, num_snapshots)).astype(int)
+#             snapshot_counts=[0, 1, 20, 21, 100, 101, n-1, n]
+ 
+#             for row, count in enumerate(snapshot_counts):
+#                 state = get_board_state_after(moves, count)
+ 
+#                 cell = Group()
+#                 board=get_board(stroke_width=0.5)
+#                 all_boards.add(board)
+#                 cell.add(board)
+#                 for (x, y), color in state.items():
+#                     if flat_stones:
+#                         stone=create_flat_stone(x, y, color)
+#                         cell.add(stone)
+#                     else:
+#                         stone=create_stone(x, y, color, resolution=(17, 9)) #(101, 51)
+#                         cell.add(stone)
+#                     all_stones.add(stone)
+ 
+#                 cell.scale(cell_size / board_full_width)
+#                 x_pos = (col - (num_snapshots - 1) / 2) * h_spacing
+#                 y_pos = ((num_rows - 1) / 2 - row) * v_spacing
+#                 cell.move_to([x_pos, y_pos, 0])
+#                 grid.add(cell)
+ 
+#         # self.add(grid)
+#         self.frame.set_height(num_rows * v_spacing * 1.05)
+
+#         self.add(all_boards)
+
+#         # self.remove(all_stones)
+#         self.add(all_stones)
+
+#         # all_stones.set_color(WHITE)
+#         # all_stones.set_opacity(1.0)
+
+#         # all_stones.shift([0, 0, 0])
+#         self.frame.reorient(0, 0, 0, (np.float32(0.43), np.float32(-0.99), np.float32(0.0)), 7.97)
+
+ 
+#         self.wait()
+#         self.embed()
+
+
+
+
+class RenderRolloutsBook(InteractiveScene):
+    def construct(self): 
+
+
+        board=get_board()
+        self.add(board)
+
+        p=self_games_dir/'G01.sgf' #White wins
+        # p=self_games_dir/'G02.sgf' #White Wins
+        # p=self_games_dir/'G05.sgf'   #Black wins
+        # p=self_games_dir/'G06.sgf' #White Wins
+        # p=self_games_dir/'G07.sgf'   #White wins
+        # p=self_games_dir/'G08.sgf' #White Wins
+        # p=self_games_dir/'G09.sgf'   #Black wins
+        # p=self_games_dir/'G10.sgf' #White Wins
+        # p=self_games_dir/'G11.sgf'   #Black wins
+
+
+
+        moves = parse_sgf(p)
+        stones=Group()
+        board_state = {}  # (x, y) -> color
+        stone_objects = {}  # (x, y) -> Mobject
+        for i, (x, y, color) in enumerate(moves):
+            stone = create_stone(x, y, color)
+            stones.add(stone)
+            self.add(stone)
+            self.wait(0.1) #Uncomment in FINAL RENDER
+            
+            board_state[(x, y)] = color
+            stone_objects[(x, y)] = stone
+            
+            # Check for captures
+            captured = find_captures(x, y, board_state)
+            for cx, cy in captured:
+                # Remove from scene and state
+                stones.remove(stone_objects[(cx, cy)])
+                self.remove(stone_objects[(cx, cy)])
+                del board_state[(cx, cy)]
+                del stone_objects[(cx, cy)]
+
+        self.wait()
+
+
+
+
 
 
 
