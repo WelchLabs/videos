@@ -2,9 +2,9 @@ directories:
   mirror_module_path: False
   removed_mirror_prefix: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs"
   # base: "/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/manim"
-  # base: "/home/stephen"
+  base: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/rl_1/manim"
   # base: "/Users/stephen/Stephencwelch Dropbox/welch_labs/double_descent/manim"
-  base: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/ai_book_vol_2/1_the_bitter_lesson/manim"
+  # base: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/ai_book_vol_2/1_the_bitter_lesson/manim"
   subdirs:
     raster_images: "images/raster"
     vector_images: "images/vector"
@@ -17,8 +17,8 @@ window:
   monitor_index: 1
   full_screen: False
 camera:
-  resolution: (7680, 4320) #(3840, 2160) #
-  background_color: '#FFFFFF' #"#000000" #191519" #"#000000" ##FFFFFF"
+  resolution: (3840, 2160) #(7680, 4320) #(3840, 2160) #
+  background_color: '#000000' #"#000000" #191519" #"#000000" ##FFFFFF"
   fps: 30
   background_opacity: 1.0
 file_writer:
