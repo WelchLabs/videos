@@ -371,6 +371,327 @@ class policy_surfaces_3d_2_text(Scene):
         self.wait()
 
 
+class policy_surfaces_3d_3(InteractiveScene):
+    def construct(self):
+        # ---- 1. load the same episode as scene 1 (ep 13) ----
+        with open(HACKIN_DIR / "cartpole_human_play/cartpole_human_demos_sw_3.json") as f:
+            data = json.load(f)
+ 
+        all_obs, all_actions = [], []
+        for i in [13]:
+            ep = data["episodes"][i]
+            all_obs.append(ep["observations"])
+            all_actions.append(ep["actions"])
+            print(i, len(ep['observations']))
+ 
+        obs = np.concatenate(all_obs)
+        act = np.concatenate(all_actions)
+ 
+        ang = np.degrees(obs[:, 2])
+        angvel = np.degrees(obs[:, 3])
+ 
+        # ---- 2. axes: x = pole angle, y = pole angular velocity, z = P(right) ----
+        axes = ThreeDAxes(
+            x_range=(*ANG_LIM, 5),
+            y_range=(*VEL_LIM, 50),
+            z_range=(0, 1, 0.25),
+            width=10, height=10, depth=4,
+        )
+        self.add(axes)
+ 
+        cmap = mcolors.LinearSegmentedColormap.from_list("blue_gold", [BLUE, YELLOW], N=256)
+        SURFACE_RES = (41, 41)   # a bit coarser than scene 1 -- rebuilt every frame
+        MESH_RES = (23, 23)
+        SURFACE_OPACITY = 0.5
+ 
+        t1_tracker = ValueTracker(SWEEP_T1_RANGE[0])
+        t2_tracker = ValueTracker(0)
+ 
+        # ---- 3. the sweeping surface + mesh (identical to policy_surfaces_3d_2) ----
+        def vertex_colors(t1, t2, resolution):
+            nu, nv = resolution
+            U, V = np.meshgrid(
+                np.linspace(*ANG_LIM, nu), np.linspace(*VEL_LIM, nv), indexing='ij'
+            )
+            heights = sigmoid(t1 * U + t2 * V)
+            return [mcolors.to_hex(cmap(h)) for h in heights.reshape(-1)]
+ 
+        def build_surface():
+            t1, t2 = t1_tracker.get_value(), t2_tracker.get_value()
+            surf = axes.get_graph(
+                lambda u, v: sigmoid(t1 * u + t2 * v),
+                u_range=ANG_LIM, v_range=VEL_LIM,
+                resolution=SURFACE_RES, opacity=SURFACE_OPACITY,
+            )
+            surf.set_rgba_array_by_color(vertex_colors(t1, t2, SURFACE_RES))
+            surf.set_opacity(SURFACE_OPACITY)
+            return surf
+ 
+        surface = always_redraw(build_surface)
+        mesh = always_redraw(lambda: SurfaceMesh(
+            build_surface(),
+            resolution=MESH_RES,
+            stroke_width=1,
+            stroke_color=FRESH_TAN,
+            stroke_opacity=0.35,
+        ))
+        self.add(surface, mesh)
+ 
+        # ---- 4. arrows: left actions flat on z=0, right actions flat on z=1 --
+        # static throughout the sweep, same as policy_surfaces_3d_1
+        ARROW_WIDTH = 0.5
+        arrows = VGroup()
+        for a, v, action in zip(ang, angvel, act):
+            went_right = (action == 1)
+            arrow = arrow_polygon(
+                direction=(1 if went_right else -1),
+                fill_color=(YELLOW if went_right else BLUE),
+                fill_opacity=0.85,
+                stroke_width=0,
+            )
+            arrow.set_width(ARROW_WIDTH)
+            arrow.move_to(axes.c2p(a, v, 1 if went_right else 0))
+            arrows.add(arrow)
+        self.add(arrows)
+ 
+        # ---- 5. camera (same view as scenes 1 and 2) + sweep ----
+        # self.frame.reorient(-42, 59, 0, (np.float32(-0.64), np.float32(0.43), np.float32(0.46)), 16.40)
+        self.frame.reorient(-26, 64, 0, (np.float32(0.71), np.float32(-0.04), np.float32(0.87)), 16.40)
+        self.wait()
+ 
+        play_theta_sweep(self, t1_tracker, t2_tracker)
+ 
+        self.wait()
+        self.embed()
+
+
+
+class loss_to_surface_viz_1(InteractiveScene):
+    def construct(self):
+        # ---- 1. load the same episode as the 2d version (ep 13) ----
+        with open(HACKIN_DIR / "cartpole_human_play/cartpole_human_demos_sw_3.json") as f:
+            data = json.load(f)
+
+        all_obs, all_actions = [], []
+        for i in [13]:
+            ep = data["episodes"][i]
+            all_obs.append(ep["observations"])
+            all_actions.append(ep["actions"])
+            print(i, len(ep['observations']))
+
+        obs = np.concatenate(all_obs)
+        act = np.concatenate(all_actions)
+
+        ang = np.degrees(obs[:, 2])
+        angvel = np.degrees(obs[:, 3])
+
+        # ---- 2. axes: x = pole angle, y = pole angular velocity, z = P(right) ----
+        axes = ThreeDAxes(
+            x_range=(*ANG_LIM, 5),
+            y_range=(*VEL_LIM, 50),
+            z_range=(0, 1, 0.25),
+            width=10, height=10, depth=4,
+        )
+        self.add(axes)
+
+        # ---- 3. build + export the blue -> yellow colormap as a texture ----
+        ASSET_DIR.mkdir(parents=True, exist_ok=True)
+        tex_path = str(ASSET_DIR / "policy_prob_texture.png")
+        cmap = mcolors.LinearSegmentedColormap.from_list("blue_gold", [BLUE, YELLOW], N=256)
+
+        TEX_RES = 200
+        A, V = np.meshgrid(np.linspace(*ANG_LIM, TEX_RES), np.linspace(*VEL_LIM, TEX_RES))
+        P_grid = sigmoid(T1 * A + T2 * V)
+
+        fig = plt.figure(figsize=(4, 4), dpi=200)
+        tex_ax = fig.add_axes([0, 0, 1, 1])
+        tex_ax.imshow(P_grid, origin='lower', cmap=cmap, vmin=0, vmax=1, aspect='auto')
+        tex_ax.axis('off')
+        fig.savefig(tex_path)
+        plt.close(fig)
+
+        # ---- 4. the surface itself: height = P(right) ----
+        geom_surface = axes.get_graph(
+            lambda u, v: sigmoid(T1 * u + T2 * v),
+            u_range=ANG_LIM,
+            v_range=VEL_LIM,
+            resolution=(51, 51),
+            opacity=1.0,
+        )
+        surface = TexturedSurface(geom_surface, tex_path)
+        self.add(surface)
+        surface.set_opacity(0.5)
+
+
+        mesh = SurfaceMesh(
+            geom_surface,
+            resolution=(23, 23),
+            stroke_width=0.5,
+            stroke_color=WHITE,  # CHILL_BROWN,
+            stroke_opacity=0.4,
+        )
+        self.add(mesh)
+        mesh.set_stroke(opacity=0.25, color=FRESH_TAN)
+
+        # ---- 5. arrows: left actions flat on z=0, right actions flat on z=1 ----
+        ARROW_WIDTH = 0.5
+        arrows = VGroup()
+        for a, v, action in zip(ang, angvel, act):
+            went_right = (action == 1)
+            arrow = arrow_polygon(
+                direction=(1 if went_right else -1),
+                fill_color=(YELLOW if went_right else BLUE),
+                fill_opacity=0.85,
+                stroke_width=0,
+            )
+            arrow.set_width(ARROW_WIDTH)
+            arrow.move_to(axes.c2p(a, v, 1 if went_right else 0))
+            arrows.add(arrow)
+        self.add(arrows)
+
+        # ---- 6. camera + hand off for interactive tuning ----
+        # self.frame.reorient(44, 51, 0, (np.float32(1.17), np.float32(-0.47), np.float32(1.38)), 16.18)
+        # self.frame.reorient(46, 61, 0, (np.float32(1.13), np.float32(-0.66), np.float32(1.23)), 16.40)
+        self.frame.reorient(-42, 59, 0, (np.float32(-0.64), np.float32(0.43), np.float32(0.46)), 16.40)
+        self.wait(20)
+        self.embed()
+
+
+# ----------------------------------------------------------------------
+# loss_to_surface_viz_1: L1 loss as green cylinders connecting each ground-
+# -truth arrow (z=0 or z=1) straight up/down to the surface's predicted
+# P(right) at that same (angle, angvel) -- the line's length *is* the L1
+# loss for that step, with a small sphere marking where it lands on the
+# surface.
+# ----------------------------------------------------------------------
+ 
+class loss_to_surface_viz_1(InteractiveScene):
+    def construct(self):
+        # ---- 1. load the same episode as the 2d version (ep 13) ----
+        with open(HACKIN_DIR / "cartpole_human_play/cartpole_human_demos_sw_3.json") as f:
+            data = json.load(f)
+ 
+        all_obs, all_actions = [], []
+        for i in [13]:
+            ep = data["episodes"][i]
+            all_obs.append(ep["observations"])
+            all_actions.append(ep["actions"])
+            print(i, len(ep['observations']))
+ 
+        obs = np.concatenate(all_obs)
+        act = np.concatenate(all_actions)
+ 
+        ang = np.degrees(obs[:, 2])
+        angvel = np.degrees(obs[:, 3])
+ 
+        # ---- 2. axes: x = pole angle, y = pole angular velocity, z = P(right) ----
+        axes = ThreeDAxes(
+            x_range=(*ANG_LIM, 5),
+            y_range=(*VEL_LIM, 50),
+            z_range=(0, 1, 0.25),
+            width=10, height=10, depth=4,
+        )
+        self.add(axes)
+ 
+        # ---- 3. build + export the blue -> yellow colormap as a texture ----
+        ASSET_DIR.mkdir(parents=True, exist_ok=True)
+        tex_path = str(ASSET_DIR / "policy_prob_texture.png")
+        cmap = mcolors.LinearSegmentedColormap.from_list("blue_gold", [BLUE, YELLOW], N=256)
+ 
+        TEX_RES = 200
+        A, V = np.meshgrid(np.linspace(*ANG_LIM, TEX_RES), np.linspace(*VEL_LIM, TEX_RES))
+        P_grid = sigmoid(T1 * A + T2 * V)
+ 
+        fig = plt.figure(figsize=(4, 4), dpi=200)
+        tex_ax = fig.add_axes([0, 0, 1, 1])
+        tex_ax.imshow(P_grid, origin='lower', cmap=cmap, vmin=0, vmax=1, aspect='auto')
+        tex_ax.axis('off')
+        fig.savefig(tex_path)
+        plt.close(fig)
+ 
+        # ---- 4. the surface itself: height = P(right) ----
+        geom_surface = axes.get_graph(
+            lambda u, v: sigmoid(T1 * u + T2 * v),
+            u_range=ANG_LIM,
+            v_range=VEL_LIM,
+            resolution=(51, 51),
+            opacity=1.0,
+        )
+        surface = TexturedSurface(geom_surface, tex_path)
+        self.add(surface)
+        surface.set_opacity(0.5)
+ 
+        mesh = SurfaceMesh(
+            geom_surface,
+            resolution=(23, 23),
+            stroke_width=0.5,
+            stroke_color=WHITE,  # CHILL_BROWN,
+            stroke_opacity=0.4,
+        )
+        self.add(mesh)
+        mesh.set_stroke(opacity=0.25, color=FRESH_TAN)
+ 
+        # ---- 5. arrows: left actions flat on z=0, right actions flat on z=1 ----
+        ARROW_WIDTH = 0.5
+        arrows = VGroup()
+        for a, v, action in zip(ang, angvel, act):
+            went_right = (action == 1)
+            arrow = arrow_polygon(
+                direction=(1 if went_right else -1),
+                fill_color=(YELLOW if went_right else BLUE),
+                fill_opacity=0.85,
+                stroke_width=0,
+            )
+            arrow.set_width(ARROW_WIDTH)
+            arrow.move_to(axes.c2p(a, v, 1 if went_right else 0))
+            arrows.add(arrow)
+        self.add(arrows)
+ 
+        # ---- 6. L1 loss: a green cylinder from each arrow straight to the
+        # surface's predicted P(right) at that (angle, angvel), plus a small
+        # sphere where it touches down. Line length == |prediction - target|,
+        # i.e. exactly the per-step L1 loss.
+        LOSS_LINE_WIDTH = 0.04
+        LOSS_SPHERE_RADIUS = 0.06
+        loss_lines = Group()
+        loss_spheres = Group()
+        for a, v, action in zip(ang, angvel, act):
+            z_target = 1.0 if action == 1 else 0.0
+            z_pred = sigmoid(T1 * a + T2 * v)
+ 
+            surface_point = axes.c2p(a, v, z_pred)
+            arrow_point = axes.c2p(a, v, z_target)
+ 
+            # skip the (rare) zero-length case -- Line3D can't handle
+            # coincident start/end points
+            if np.allclose(surface_point, arrow_point):
+                continue
+ 
+            line = Line3D(
+                surface_point, arrow_point,
+                width=LOSS_LINE_WIDTH, resolution=(9, 9), color=GREEN,
+            )
+            loss_lines.add(line)
+ 
+            sphere = Sphere(radius=LOSS_SPHERE_RADIUS, resolution=(8, 8), color=GREEN)
+            sphere.move_to(surface_point)
+            loss_spheres.add(sphere)
+ 
+        self.add(loss_lines, loss_spheres)
+
+        self.remove(loss_lines)
+        self.add(loss_lines)
+        self.remove(axes)
+        self.remove(loss_spheres)
+        self.remove(arrows)
+        self.add(arrows)
+ 
+        # ---- 7. camera + hand off for interactive tuning ----
+        # self.frame.reorient(-56, 54, 0, (np.float32(-0.48), np.float32(0.26), np.float32(0.33)), 13.15)
+        self.frame.reorient(-55, 57, 0, (np.float32(-0.52), np.float32(0.23), np.float32(0.26)), 13.15)
+        self.wait(20)
+        self.embed()
+
 
 
 
