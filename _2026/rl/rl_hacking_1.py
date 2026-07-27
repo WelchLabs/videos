@@ -183,7 +183,7 @@ class policy_surfaces_3d_1(InteractiveScene):
 # ----------------------------------------------------------------------
 
 SWEEP_T1_RANGE = (-2.0, 2.0)
-SWEEP_T2_RANGE = (-0.1, 0.1)
+SWEEP_T2_RANGE = (-1.0, 1.0)
 SWEEP_TIME = 4          # seconds, for each of the two straight sweeps
 TRANSITION_TIME = 1.5   # seconds, for the two "get into position" moves
 ELLIPSE_TIME = 6        # seconds, for the full loop around parameter space
@@ -315,7 +315,7 @@ class policy_surfaces_3d_2(InteractiveScene):
         self.embed()
 
 
-class policy_surfaces_3d_2_text(Scene):
+class policy_surfaces_3d_2_text_c(Scene):
     def construct(self):
         t1_tracker = ValueTracker(SWEEP_T1_RANGE[0])
         t2_tracker = ValueTracker(0)
@@ -334,7 +334,7 @@ class policy_surfaces_3d_2_text(Scene):
         theta1_sym = Tex(r"\theta_1 =")
         theta1_val = DecimalNumber(t1_tracker.get_value(), num_decimal_places=2, include_sign=True)
         theta2_sym = Tex(r"\theta_2 =")
-        theta2_val = DecimalNumber(t2_tracker.get_value(), num_decimal_places=3, include_sign=True)
+        theta2_val = DecimalNumber(t2_tracker.get_value(), num_decimal_places=3, include_sign=True) 
  
         label = VGroup(theta1_sym, theta1_val, theta2_sym, theta2_val)
         label.set_color(FRESH_TAN)
