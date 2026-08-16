@@ -8,6 +8,7 @@ qwen3*
 _2026/rl/games/breakout/runs
 _2026/rl/games/pong/runs
 _2026/jepa/runs/
+_2026/resnet/data/activations/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
@@ -165,3 +166,6 @@ videos/
 
 raw_data/
 droid_100/
+
+high_activation_imagenet_images/
+imagenet_examples/
