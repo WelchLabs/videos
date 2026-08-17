@@ -421,9 +421,9 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--data", type=Path, default=Path("/home/stephen/imagenet"))
-    p.add_argument("--out", type=Path, default=Path("runs"))
+    p.add_argument("--out", type=Path, default=Path("/home/stephen/Stephencwelch Dropbox/welch_labs/resnet/hackin/aug_17_run"))
     p.add_argument("--batch", type=int, default=256)
-    p.add_argument("--workers", type=int, default=8)
+    p.add_argument("--workers", type=int, default=12)
     p.add_argument("--lr", type=float, default=0.1)
     p.add_argument("--warmup", type=int, default=500)
     p.add_argument("--eval-every", type=int, default=100,
