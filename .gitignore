@@ -8,7 +8,7 @@ qwen3*
 _2026/rl/games/breakout/runs
 _2026/rl/games/pong/runs
 _2026/jepa/runs/
-_2026/resnet/data/activations/
+_2026/resnets/data/activations/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files

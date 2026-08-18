@@ -1,12 +1,10 @@
+# The whole network as wireframe: two stills on tan, then a push in onto the input.
+# The single-kernel shots of p24b-p24d are in p24b_d.py.
+
 from manimlib import *
 import numpy as np
 import matplotlib.pyplot as plt
 import moderngl
-import os
-
-# The five-layer stack, one still at a time. Paragraphs 37-39 are absent: every shot
-# there ran a-roll footage through the network, and those clips are not in this repo.
-# The flat conv-5 grids and captioned stills of p41 are in p41b_c.py.
 
 CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
@@ -19,11 +17,7 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-data_dir='/Volumes/PG Work/Stephencwelch Dropbox/Pranav Gundu/Welch Labs/videos/_2026/resnet/data'
-image_dir=data_dir+'/high_activation_imagenet_images'
-#Scratch, and deliberately outside Dropbox: these are written then read back immediately,
-#and Dropbox grabs files to hash them in between, which intermittently breaks the read
-frame_dir='/tmp/resnet_scratch/p41a'
+data_dir='/Volumes/PG Work/Stephencwelch Dropbox/Pranav Gundu/Welch Labs/videos/_2026/resnets/data'
 
 spacing_between_layers=5
 line_radius=0.18
@@ -31,16 +25,19 @@ depth_step=0.125
 cell_depth=0.1
 pixel_dim=0.5
 
-sparse_thresh=0.25
-block_opacity=0.95   #These blocks are drawn denser than p21_24's and p43_47's
-image_opacity=0.936  #Measured: what the old three-deep voxel slab composited to
-seconds_per_image=1/30
+borders_only=100     #A threshold no normalised activation can reach
+still_hold=1.0
 fov=PI/3
 
 image_bounds=(-32.0, 32.0, -32.0, 32.0, 0.0, 3*pixel_dim)
-#Camera keyframe: theta, phi, gamma, center, height
-five_layer_view=(-111.1996, 89.9576, 90.0164, (8.5339, -5.7512, 70.6408), 146.1426)
-conv_cuts=[2, 5, 8, 10, 12]
+
+#Camera keyframes: theta, phi, gamma, center, height
+p21_camera=(-124.9504, 89.9626, 90.0261, (-13.9602, 2.7904, 80.5698), 141.852)
+p24_camera=(-105.4699, 89.956, 90.0122, (-13.7275, 2.9934, 77.4039), 141.852)
+p24_end=(-135.4168, 63.3448, 114.4748, (0.0, 0.0, 0.0), 96.224)
+
+conv_layers=['features_2', 'features_5', 'features_8', 'features_10', 'features_12']
+fc_layers=[('classifier_3', 256), ('classifier_6', 256), ('classifier_7', 128)]
 
 viridis_lut=plt.get_cmap('viridis')(np.linspace(0, 1, 256))
 
@@ -51,30 +48,8 @@ def viridis(values):
     return viridis_lut[idx]
 
 
-def image_paths():
-    return sorted(image_dir+'/'+f for f in os.listdir(image_dir) if f.lower().endswith('.jpg'))
-
-
-alexnet=None
-tfms=None
-
-
-def activations(im, cuts):
-    global alexnet, tfms
-    import torch
-    if alexnet is None:
-        import torchvision.models as models
-        from torchvision import transforms
-        alexnet=models.alexnet(weights='IMAGENET1K_V1')
-        alexnet.eval()
-        tfms=transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-    batch=tfms(im)[None]
-    with torch.no_grad():
-        return {cut: alexnet.features[:cut](batch).cpu().numpy()[0] for cut in cuts}
+def load_activation(tag, name):
+    return np.load(data_dir+'/activations/'+tag+'/'+name+'.npy')
 
 
 # 6 faces x 4 corners of a unit cube, wound counter-clockwise seen from outside
@@ -148,35 +123,42 @@ class VoxelBlock(Surface):
             self.data['rgba'][:]=np.repeat(self.rgba, 24, axis=0)
 
 
-def conv_data_block(a, start_depth, thresh, opacity, view_forward):
+def conv_data_block(a, start_depth, thresh, view_forward, vmax=None):
     a=np.asarray(a, dtype=np.float64)
     n_c, n_i, n_j=a.shape
     kk, ii, jj=np.meshgrid(np.arange(n_c), np.arange(n_i), np.arange(n_j), indexing='ij')
-    vals=a/a.max()
+    vals=a/(a.max() if vmax is None else vmax) #vmax keeps p24d's scale stable
     keep=vals>=thresh
 
     half=np.floor(n_j/2)
     centers=np.stack([jj[keep]-half, -ii[keep]+half, depth_step*kk[keep]+start_depth], axis=-1)
     rgba=viridis(vals[keep])
-    rgba[:,3]=opacity
+    rgba[:,3]=0.5
 
     block=VoxelBlock(centers, np.array([1.0, 1.0, cell_depth]), rgba, view_forward)
     bounds=(-half-0.5, half+0.5, -half-0.5, half+0.5, start_depth, n_c*depth_step+start_depth)
     return block, bounds
 
 
-def image_plane(im_pil, path, opacity):
-    from PIL import Image
-    a=np.array(im_pil.resize((128, 128)))
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    Image.fromarray(a[:,:,[0,1,1]], 'RGB').save(path) #Green stands in for blue, as in the original
+def fc_data_block(a, start_depth, viz_len, thresh, view_forward, cell_spacing=0.25):
+    a=np.asarray(a, dtype=np.float64)
+    sI=np.argsort(a)[::-1]
+    vector_to_viz=a[np.sort(sI[:viz_len])] #Top activations, back in original order
+    vals=vector_to_viz/a.max()
+    keep=vals>=thresh
 
-    img=ImageMobject(path)
-    img.set_width(image_bounds[1]-image_bounds[0], stretch=True)
-    img.set_height(image_bounds[3]-image_bounds[2], stretch=True)
-    img.set_opacity(opacity)
-    img.move_to([0, 0, 0.5*(image_bounds[4]+image_bounds[5])])
-    return img
+    n=len(vector_to_viz)
+    i=np.arange(n)
+    centers=np.stack([np.zeros(int(keep.sum())),
+                      -i[keep]*cell_spacing+cell_spacing*np.floor(n/2),
+                      np.full(int(keep.sum()), start_depth)], axis=-1)
+    rgba=viridis(vals[keep])
+    rgba[:,3]=0.5
+
+    block=VoxelBlock(centers, np.array([1.0, cell_spacing, 1.0]), rgba, view_forward)
+    bounds=(-0.5, 0.5, -cell_spacing*np.floor(n/2), cell_spacing*np.floor(n/2),
+            start_depth-0.5, start_depth+0.5)
+    return block, bounds
 
 
 def polyline(points, color, radius):
@@ -208,17 +190,24 @@ def prism(min_x, max_x, min_y, max_y, min_z, max_z, color, radius):
     return group
 
 
-def network_stack(acts, im_pil, path, view_forward):
+def network_stack(thresh, view_forward, fc_specs=(), color=WHITE, image_border=True):
     group=Group()
-    group.add(image_plane(im_pil, path, image_opacity))
-    group.add(prism(*image_bounds, WHITE, line_radius))
+    if image_border:
+        group.add(prism(*image_bounds, color, line_radius))
 
     start_depth=spacing_between_layers+1
-    for cut in conv_cuts:
-        block, bounds=conv_data_block(acts[cut], start_depth, sparse_thresh, block_opacity,
+    for cut in conv_layers:
+        block, bounds=conv_data_block(load_activation('hot_dog', cut), start_depth, thresh,
                                       view_forward)
         group.add(block)
-        group.add(prism(*bounds, WHITE, line_radius))
+        group.add(prism(*bounds, color, line_radius))
+        start_depth=bounds[5]+spacing_between_layers
+
+    for name, viz_len in fc_specs:
+        block, bounds=fc_data_block(load_activation('hot_dog', name), start_depth, viz_len,
+                                    thresh, view_forward)
+        group.add(block)
+        group.add(prism(*bounds, color, 0.1))
         start_depth=bounds[5]+spacing_between_layers
 
     return group
@@ -260,20 +249,24 @@ def forward_from(view):
     return -Rotation.from_euler('zxz', [gamma, phi, theta]).as_matrix()[:,2]
 
 
-class P37_41(InteractiveScene):
+class P21_24(InteractiveScene):
     def construct(self):
-        from PIL import Image
-        self.camera.background_rgba=[0, 0, 0, 1]
         self.frame.set_field_of_view(fov)
 
-        self.frame.reorient(*five_layer_view)
-        forward=forward_from(five_layer_view)
-        current=None
-        for idx, path in enumerate(image_paths()):
-            im=Image.open(path).convert('RGB')
-            stack=network_stack(activations(im, conv_cuts), im,
-                                frame_dir+f'/{idx:04d}.png', forward)
-            swap_out(self, current)
-            self.add(stack)
-            current=stack
-            self.wait(seconds_per_image)
+        self.camera.background_rgba=list(color_to_rgba(FRESH_TAN))
+        self.frame.reorient(*p21_camera)
+        self.add(network_stack(borders_only, forward_from(p21_camera), fc_specs=fc_layers[:2],
+                               color=CHILL_BLUE, image_border=False))
+        self.wait(still_hold)
+
+        clear_scene(self)
+        self.frame.reorient(*p24_camera)
+        self.add(network_stack(borders_only, forward_from(p24_camera), fc_specs=fc_layers,
+                               color=CHILL_BLUE))
+        self.wait(still_hold)
+
+        clear_scene(self)
+        self.camera.background_rgba=[0, 0, 0, 1]
+        self.frame.reorient(*p24_camera)
+        self.add(network_stack(borders_only, forward_from(p24_camera)))
+        self.play(self.frame.animate.reorient(*p24_end), run_time=2, rate_func=linear)

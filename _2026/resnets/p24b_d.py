@@ -1,8 +1,10 @@
+# One conv-1 kernel: wired to its activation, then walked across all 55x55 positions.
+# The whole-network wireframe shots of p21-p24 are in p21_24.py.
+
 from manimlib import *
 import numpy as np
 import matplotlib.pyplot as plt
 import moderngl
-import os
 
 CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
@@ -15,7 +17,7 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-data_dir='/Volumes/PG Work/Stephencwelch Dropbox/Pranav Gundu/Welch Labs/videos/_2026/resnet/data'
+data_dir='/Volumes/PG Work/Stephencwelch Dropbox/Pranav Gundu/Welch Labs/videos/_2026/resnets/data'
 
 spacing_between_layers=5
 line_radius=0.18
@@ -23,23 +25,18 @@ depth_step=0.125
 cell_depth=0.1
 pixel_dim=0.5
 
-borders_only=100     #A threshold no normalised activation can reach
-p45_thresh=0.35
-image_opacity=0.995  #Measured: what the old three-deep voxel slab composited to
+image_opacity=0.936  #Measured: what the old three-deep voxel slab composited to
 still_hold=1.0
-seconds_per_image=0.5  #These passes get cut in by hand, so this is a hold, not a frame rate
+steps_per_viz=11     #p24c/p24d step every 11th of the 55*55 kernel positions
+kernel_k=0
 fov=PI/3
 
 image_bounds=(-32.0, 32.0, -32.0, 32.0, 0.0, 3*pixel_dim)
-#Camera keyframe: theta, phi, gamma, center, height
-view=(-105.4699, 89.956, 90.0122, (-13.7275, 2.9934, 77.4039), 122.093)
 
-conv_layers=['features_2', 'features_5', 'features_8', 'features_10', 'features_12']
-fc_layers=[('classifier_3', 256), ('classifier_6', 256), ('classifier_7', 128)]
+#Camera keyframes: theta, phi, gamma, center, height
+p24_end=(-135.4168, 63.3448, 114.4748, (0.0, 0.0, 0.0), 96.224)
+p24d_end=(-139.5221, 31.6032, 134.9423, (0.0, 0.0, 0.0), 96.224)
 
-#How many conv blocks and which fc blocks each p45 pass draws; p_45_2 was skipped
-p45_passes=[(0, ()), (1, ()), (2, ()), (3, ()), (4, ()), (5, ()),
-            (5, fc_layers[:1]), (5, fc_layers)]
 
 viridis_lut=plt.get_cmap('viridis')(np.linspace(0, 1, 256))
 
@@ -52,10 +49,6 @@ def viridis(values):
 
 def load_activation(tag, name):
     return np.load(data_dir+'/activations/'+tag+'/'+name+'.npy')
-
-
-def imagenet_tags():
-    return sorted(os.listdir(data_dir+'/activations/imagenet'))
 
 
 # 6 faces x 4 corners of a unit cube, wound counter-clockwise seen from outside
@@ -129,11 +122,11 @@ class VoxelBlock(Surface):
             self.data['rgba'][:]=np.repeat(self.rgba, 24, axis=0)
 
 
-def conv_data_block(a, start_depth, thresh, view_forward):
+def conv_data_block(a, start_depth, thresh, view_forward, vmax=None):
     a=np.asarray(a, dtype=np.float64)
     n_c, n_i, n_j=a.shape
     kk, ii, jj=np.meshgrid(np.arange(n_c), np.arange(n_i), np.arange(n_j), indexing='ij')
-    vals=a/a.max()
+    vals=a/(a.max() if vmax is None else vmax) #vmax keeps p24d's scale stable
     keep=vals>=thresh
 
     half=np.floor(n_j/2)
@@ -146,27 +139,6 @@ def conv_data_block(a, start_depth, thresh, view_forward):
     return block, bounds
 
 
-def fc_data_block(a, start_depth, viz_len, thresh, view_forward, cell_spacing=0.25):
-    a=np.asarray(a, dtype=np.float64)
-    sI=np.argsort(a)[::-1]
-    vector_to_viz=a[np.sort(sI[:viz_len])] #Top activations, back in original order
-    vals=vector_to_viz/a.max()
-    keep=vals>=thresh
-
-    n=len(vector_to_viz)
-    i=np.arange(n)
-    centers=np.stack([np.zeros(int(keep.sum())),
-                      -i[keep]*cell_spacing+cell_spacing*np.floor(n/2),
-                      np.full(int(keep.sum()), start_depth)], axis=-1)
-    rgba=viridis(vals[keep])
-    rgba[:,3]=0.5
-
-    block=VoxelBlock(centers, np.array([1.0, cell_spacing, 1.0]), rgba, view_forward)
-    bounds=(-0.5, 0.5, -cell_spacing*np.floor(n/2), cell_spacing*np.floor(n/2),
-            start_depth-0.5, start_depth+0.5)
-    return block, bounds
-
-
 def image_plane(tag, opacity):
     img=ImageMobject(data_dir+'/activations/'+tag+'/im.png')
     img.set_width(image_bounds[1]-image_bounds[0], stretch=True)
@@ -174,6 +146,25 @@ def image_plane(tag, opacity):
     img.set_opacity(opacity)
     img.move_to([0, 0, 0.5*(image_bounds[4]+image_bounds[5])])
     return img
+
+
+def kernel_weights_block(weights, extent, view_forward):
+    """A conv-1 filter painted into its patch, black through to magenta."""
+    w=np.asarray(weights, dtype=np.float64)
+    w=w-w.min()
+    min_x, max_x, _, max_y=extent
+    step=(max_x-min_x)/w.shape[1]
+
+    kk, ii, jj=np.meshgrid(np.arange(w.shape[0]), np.arange(w.shape[1]), np.arange(w.shape[2]),
+                           indexing='ij')
+    vals=(w/w.max()).ravel()
+    centers=np.stack([jj.ravel()*step+min_x, -ii.ravel()*step+max_y,
+                      kk.ravel()*pixel_dim], axis=-1)
+    rgba=np.zeros((len(vals), 4))
+    rgba[:,0]=vals
+    rgba[:,2]=vals
+    rgba[:,3]=0.5
+    return VoxelBlock(centers, np.array([1.0, 1.0, depth_step]), rgba, view_forward)
 
 
 def polyline(points, color, radius):
@@ -205,32 +196,44 @@ def prism(min_x, max_x, min_y, max_y, min_z, max_z, color, radius):
     return group
 
 
-def network_stack(tag, thresh, view_forward, conv_cuts=None, fc_specs=(), color=WHITE,
-                  radius=line_radius, fc_radius=0.03, image_border=True, image=False):
-    conv_cuts=conv_layers if conv_cuts is None else conv_cuts
+def conv1_kernel(i, j, k, a_shape, weights, view_forward):
+    """The conv-1 kernel wired to its activation, with the filter painted into the patch."""
+    min_x, max_x, min_y, _, min_z, max_z=image_bounds
     group=Group()
 
-    if image:
-        group.add(image_plane(tag, image_opacity))
-    if image_border:
-        group.add(prism(*image_bounds, color, radius))
+    step=(max_x-min_x)/a_shape[1]
+    dst_x=j-np.floor(a_shape[-1]/2)
+    dst_y=-i+np.floor(a_shape[-1]/2)
+    dst_z=depth_step*k+spacing_between_layers+1
+    size=8.0
 
-    start_depth=spacing_between_layers+1
-    for cut in conv_cuts:
-        block, bounds=conv_data_block(load_activation(tag, cut), start_depth, thresh,
-                                      view_forward)
-        group.add(block)
-        group.add(prism(*bounds, color, radius))
-        start_depth=bounds[5]+spacing_between_layers
+    #-min_y spells max_y; the bounds are symmetric
+    connectors=[
+        [(dst_x-0.5, dst_y-0.5, dst_z), (min_x+step*j, -min_y-step*i-size, max_z)],
+        [(dst_x+0.5, dst_y-0.5, dst_z), (min_x+step*j+size, -min_y-step*i-size, max_z)],
+        [(dst_x-0.5, dst_y+0.5, dst_z), (min_x+step*j, -min_y-step*i, max_z)],
+        [(dst_x+0.5, dst_y+0.5, dst_z), (min_x+step*j+size, -min_y-step*i, max_z)],
+    ]
+    for cc in connectors:
+        group.add(polyline(cc, MAGENTA, line_radius))
+    for p, q in [(0, 1), (1, 3), (3, 2), (2, 0)]:
+        group.add(polyline([connectors[p][0], connectors[q][0]], MAGENTA, line_radius))
 
-    for name, viz_len in fc_specs:
-        block, bounds=fc_data_block(load_activation(tag, name), start_depth, viz_len, thresh,
-                                    view_forward)
-        group.add(block)
-        group.add(prism(*bounds, color, fc_radius))
-        start_depth=bounds[5]+spacing_between_layers
-
+    extent=(min_x+step*j, min_x+step*j+size, -min_y-step*i-size, -min_y-step*i)
+    group.add(prism(extent[0], extent[1], extent[2], extent[3], min_z, max_z, MAGENTA,
+                    line_radius))
+    group.add(kernel_weights_block(weights, extent, view_forward))
     return group
+
+
+def masked_conv1(a, i, j, k):
+    """Conv-1 revealed in raster order up to cell (i, j) of channel <= k."""
+    out=np.zeros_like(a)
+    n_j=a.shape[2]
+    revealed=(np.arange(a.shape[1])[:,None]*n_j+np.arange(n_j)[None,:])<=(i*n_j+j)
+    #The floor keeps near-zero revealed cells above the render threshold
+    out[:k+1]=np.where(revealed, np.maximum(a[:k+1], 0.01*a[0].max()), 0.0)
+    return out
 
 
 def swap_out(scene, mobject):
@@ -262,6 +265,11 @@ def clear_scene(scene):
     scene.add(scene.camera.frame)
 
 
+def blend_views(a, b, t):
+    return (a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t,
+            tuple(p+(q-p)*t for p, q in zip(a[3], b[3])), a[4]+(b[4]-a[4])*t)
+
+
 def forward_from(view):
     """The direction the camera looks, for the painter's-algorithm sort."""
     from scipy.spatial.transform import Rotation
@@ -269,41 +277,49 @@ def forward_from(view):
     return -Rotation.from_euler('zxz', [gamma, phi, theta]).as_matrix()[:,2]
 
 
-class P43_47(InteractiveScene):
+class P24B_D(InteractiveScene):
     def construct(self):
+        self.camera.background_rgba=[0, 0, 0, 1]
         self.frame.set_field_of_view(fov)
-        self.frame.reorient(*view)
-        forward=forward_from(view)
+        a=load_activation('hot_dog', 'features_2')
+        weights=load_activation('weights', 'features0')[0]
+        vmax=float(a[0].max())
 
-        for fc_specs in [fc_layers, fc_layers[:1], ()]:
-            clear_scene(self)
-            self.camera.background_rgba=list(color_to_rgba(FRESH_TAN))
-            self.frame.reorient(*view)
-            self.add(network_stack('hot_dog', borders_only, forward, fc_specs=fc_specs,
-                                   color=CHILL_BLUE, fc_radius=0.1))
-            self.wait(still_hold)
-
-        # The last pass drops back to borders so the layers can be cut in by hand
-        passes=p45_passes+[(5, (), borders_only)]
-        for entry in passes:
-            n_conv, fc_specs=entry[0], entry[1]
-            thresh=entry[2] if len(entry)>2 else p45_thresh
-            clear_scene(self)
-            self.camera.background_rgba=list(color_to_rgba(FRESH_TAN))
-            self.frame.reorient(*view)
-            current=None
-            for tag in imagenet_tags():
-                stack=network_stack('imagenet/'+tag, thresh, forward,
-                                    conv_cuts=conv_layers[:n_conv], fc_specs=fc_specs,
-                                    color=CHILL_BLUE, fc_radius=0.1, image=True)
-                swap_out(self, current)
-                self.add(stack)
-                current=stack
-                self.wait(seconds_per_image)
-
-        clear_scene(self)
-        self.camera.background_rgba=list(color_to_rgba(CHILL_BLUE))
-        self.frame.reorient(*view)
-        self.add(network_stack('hot_dog', borders_only, forward, conv_cuts=conv_layers[:3],
-                               color=FRESH_TAN, radius=0.6, image_border=False))
+        self.frame.reorient(*p24_end)
+        forward=forward_from(p24_end)
+        self.add(prism(*image_bounds, WHITE, line_radius))
+        self.add(conv1_kernel(0, 10, kernel_k, a.shape, weights, forward))
+        block, bounds=conv_data_block(masked_conv1(a, 0, 10, kernel_k),
+                                      spacing_between_layers+1, 0.005, forward)
+        self.add(block)
+        self.add(prism(*bounds, WHITE, line_radius))
         self.wait(still_hold)
+
+        num_steps=55**2+1
+        for move_camera in [False, True]:
+            clear_scene(self)
+            step_num=0
+            current=None
+            for i in range(55):
+                for j in range(55):
+                    step_num+=1
+                    if step_num!=1 and step_num%steps_per_viz!=0:
+                        continue
+                    view=(blend_views(p24_end, p24d_end, step_num/(num_steps-1))
+                          if move_camera else p24_end)
+                    fwd=forward_from(view)
+
+                    shot=Group()
+                    shot.add(image_plane('hot_dog', image_opacity))
+                    shot.add(prism(*image_bounds, WHITE, line_radius))
+                    shot.add(conv1_kernel(i, j, kernel_k, a.shape, weights, fwd))
+                    block, bounds=conv_data_block(masked_conv1(a, i, j, kernel_k),
+                                                  spacing_between_layers+1, 0.005, fwd, vmax)
+                    shot.add(block)
+                    shot.add(prism(*bounds, WHITE, line_radius))
+
+                    swap_out(self, current)
+                    self.add(shot)
+                    current=shot
+                    self.frame.reorient(*view)
+                    self.wait(1/30)

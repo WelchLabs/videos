@@ -16,7 +16,7 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-data_dir='/Volumes/PG Work/Stephencwelch Dropbox/Pranav Gundu/Welch Labs/videos/_2026/resnet/data'
+data_dir='/Volumes/PG Work/Stephencwelch Dropbox/Pranav Gundu/Welch Labs/videos/_2026/resnets/data'
 image_dir=data_dir+'/high_activation_imagenet_images'
 #Scratch, and deliberately outside Dropbox: these are written then read back immediately,
 #and Dropbox grabs files to hash them in between, which intermittently breaks the read
