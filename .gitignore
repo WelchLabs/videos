@@ -169,3 +169,5 @@ droid_100/
 
 high_activation_imagenet_images/
 imagenet_examples/
+# Pranav-local manimgl config overlay (custom_config.yml points at hot_1)
+pranav_config.yml
