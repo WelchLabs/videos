@@ -27,6 +27,7 @@ still_hold=1.0
 steps_per_viz=11     
 fov=PI/3
 kernel_k=0
+block_cell=0.48
 
 image_bounds=(-32.0, 32.0, -32.0, 32.0, 0.0, 3*pixel_dim)
 # image_bounds=(-224.0, 224.0, -224.0, 224.0, 0.0, 3*pixel_dim)
@@ -115,12 +116,16 @@ class VoxelBlock(Surface):
             self.data['rgba'][:]=np.repeat(self.rgba, 24, axis=0)
 
 
-def conv_data_block(a, start_depth, thresh, vmax=None, cell_size=1.0, alpha=0.5):
+def conv_data_block(a, start_depth, vmin=None, vmax=None, keep=None, cell_size=1.0,
+                    alpha=0.5):
     a=np.asarray(a, dtype=np.float64)
     n_c, n_i, n_j=a.shape
     kk, ii, jj=np.meshgrid(np.arange(n_c), np.arange(n_i), np.arange(n_j), indexing='ij')
-    vals=a/(a.max() if vmax is None else vmax) #vmax keeps p24d's scale stable
-    keep=vals>=thresh
+
+    vmin=a.min() if vmin is None else vmin
+    vmax=a.max() if vmax is None else vmax
+    vals=(a-vmin)/(vmax-vmin)          #imshow's default min-max stretch
+    keep=np.ones(a.shape, dtype=bool) if keep is None else keep
 
     half=np.floor(n_j/2)
     centers=np.stack([(jj[keep]-half)*cell_size, (-ii[keep]+half)*cell_size,
@@ -133,6 +138,14 @@ def conv_data_block(a, start_depth, thresh, vmax=None, cell_size=1.0, alpha=0.5)
     bounds=(-half_extent, half_extent, -half_extent, half_extent,
             start_depth, n_c*depth_step+start_depth)
     return block, bounds
+
+def reveal_mask(shape, i, j, k):
+    """Raster-order reveal up to cell (i, j), channels <= k."""
+    n_c, n_i, n_j=shape
+    revealed=(np.arange(n_i)[:,None]*n_j+np.arange(n_j)[None,:])<=(i*n_j+j)
+    mask=np.zeros(shape, dtype=bool)
+    mask[:k+1]=revealed
+    return mask
 
 
 def image_plane(im_path, opacity):
@@ -278,6 +291,19 @@ def orient(mob):
     mob.rotate(90*DEGREES, [1, 0, 0], about_point=ORIGIN)
     return mob
 
+def activation_image_grid(image_dir, n_c, start_depth, map_width, pitch,
+                          skip_channel=None, n_cols=8):
+    group=Group()
+    for c in range(n_c):
+        if c==skip_channel:
+            continue
+        r, col=divmod(c, n_cols)
+        img=ImageMobject(f'{image_dir}/act_{c:02d}.png')
+        img.set_width(map_width, stretch=True)
+        img.set_height(map_width, stretch=True)
+        img.move_to([col*pitch-0.5*block_cell, -r*pitch+0.5*block_cell, start_depth])
+        group.add(img)
+    return group
 
 class P13(InteractiveScene):
     def construct(self):
@@ -294,17 +320,20 @@ class P13(InteractiveScene):
         a[0]=a[22] #Start with nice vertical edges
         a[22]=temp
 
-        n_i, n_j=a.shape[1], a.shape[2]
-        vmax=float(a[kernel_k].max())          #lock the color scale so cells don't dim as more appear
-        block_cell=0.48
-
         #Static geometry
         image_border=orient(prism(*image_bounds, CHILL_BROWN, line_radius))
         img=orient(image_plane(data_dir+'/p13/lemon.jpg', opacity=0.4))
 
-        _, bounds=conv_data_block(masked_conv1(a, n_i-1, n_j-1, kernel_k),
-                                  spacing_between_layers+1, thresh, vmax=vmax,
-                                  cell_size=block_cell, alpha=0.65)
+        n_i, n_j=a.shape[1], a.shape[2]
+
+        vmin=float(a[kernel_k].min())
+        vmax=float(a[kernel_k].max())
+
+        #bounds (static border)
+        _, bounds=conv_data_block(a, spacing_between_layers+1, vmin=vmin, vmax=vmax,
+                                  cell_size=block_cell, alpha=0.6)
+
+
         conv_1_border=orient(prism(*bounds, CHILL_BROWN, line_radius))
 
         self.add(img, image_border, conv_1_border)
@@ -314,8 +343,8 @@ class P13(InteractiveScene):
         quick_mode=True   #flip to False for the real render
 
         if quick_mode:
-            block, _=conv_data_block(masked_conv1(a, n_i-1, n_j-1, kernel_k),
-                                     spacing_between_layers+1, 0.005, vmax=vmax,
+            block, _=conv_data_block(a, spacing_between_layers+1, vmin=vmin, vmax=vmax,
+                                     keep=reveal_mask(a.shape, n_i-1, n_j-1, kernel_k),
                                      cell_size=block_cell)
             orient(block)
             self.add(block)
@@ -336,9 +365,9 @@ class P13(InteractiveScene):
 
                 kernel=orient(conv1_kernel(i, j, kernel_k, a.shape, layer_1_weights[0],
                                            cell_size=block_cell, stride=1))
-                block, _=conv_data_block(masked_conv1(a, i, j, kernel_k),
-                                         spacing_between_layers+1, 0.005, vmax=vmax,
-                                         cell_size=block_cell, alpha=0.65)
+                block, _=conv_data_block(a, spacing_between_layers+1, vmin=vmin, vmax=vmax,
+                                         keep=reveal_mask(a.shape, i, j, kernel_k),
+                                         cell_size=block_cell)
                 orient(block)
                 self.add(block, kernel)
 
@@ -348,6 +377,26 @@ class P13(InteractiveScene):
             swap_out(self, kernel)
         self.wait(still_hold)
 
+
+        flat_view=(90, 90, 0, (np.float32(32.08), np.float32(202.27), np.float32(-200.76)), 456.79)
+        # self.frame.reorient(90, 90, 0, (np.float32(32.15), np.float32(192.87), np.float32(-191.94)), 479.34)
+        pitch=n_j*block_cell+4.0     #map width ~26.9 + gap
+
+        #Fade everything but the map; bring the map to full opacity
+        self.play(FadeOut(img), FadeOut(image_border), FadeOut(conv_1_border),
+                  block.animate.set_opacity(1.0), run_time=2.0)
+        swap_out(self, img); swap_out(self, image_border); swap_out(self, conv_1_border)
+        img=image_border=conv_1_border=None
+
+        #The other 63 maps; channel 0 (your swapped-in vertical edge map) stays put as upper-left
+        grid=activation_image_grid(data_dir+'p13/conv_1_activations', a.shape[0],
+                                   spacing_between_layers+1,
+                                   n_j*block_cell, pitch, skip_channel=kernel_k)
+        orient(grid)
+        grid.set_opacity(0.0)
+        self.add(grid)
+        self.play(grid.animate.set_opacity(1.0),
+                  self.frame.animate.reorient(*flat_view), run_time=12.0)
 
 
         self.wait(20)
