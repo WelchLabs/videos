@@ -13,8 +13,8 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin'
-data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
+data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin'
+# data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
 
 spacing_between_layers=5
 line_radius=0.18
@@ -117,7 +117,7 @@ class VoxelBlock(Surface):
 
 
 def conv_data_block(a, start_depth, vmin=None, vmax=None, keep=None, cell_size=1.0,
-                    alpha=0.5):
+                    alpha=0.5, view_forward=None):
     a=np.asarray(a, dtype=np.float64)
     n_c, n_i, n_j=a.shape
     kk, ii, jj=np.meshgrid(np.arange(n_c), np.arange(n_i), np.arange(n_j), indexing='ij')
@@ -133,7 +133,9 @@ def conv_data_block(a, start_depth, vmin=None, vmax=None, keep=None, cell_size=1
     rgba=viridis(vals[keep])
     rgba[:,3]=alpha
 
-    block=VoxelBlock(centers, np.array([cell_size, cell_size, cell_depth]), rgba)
+    # block=VoxelBlock(centers, np.array([cell_size, cell_size, cell_depth]), rgba)
+    block=VoxelBlock(centers, np.array([cell_size, cell_size, cell_depth]), rgba,
+                     view_forward=view_forward)
     half_extent=(half+0.5)*cell_size
     bounds=(-half_extent, half_extent, -half_extent, half_extent,
             start_depth, n_c*depth_step+start_depth)
@@ -305,6 +307,23 @@ def activation_image_grid(image_dir, n_c, start_depth, map_width, pitch,
         group.add(img)
     return group
 
+def make_channel_images(im_path, out_dir):
+    """Split the input into R/G/B-only PNGs, once."""
+    from PIL import Image
+    import os
+    paths=[]
+    src=None
+    for ch, name in enumerate('rgb'):
+        p=f'{out_dir}/lemon_{name}.png'
+        paths.append(p)
+        if not os.path.exists(p):
+            if src is None:
+                src=np.array(Image.open(im_path).convert('RGB'))
+            solo=np.zeros_like(src)
+            solo[...,ch]=src[...,ch]
+            Image.fromarray(solo).save(p)
+    return paths
+
 class P13(InteractiveScene):
     def construct(self):
         act=np.load(data_dir+'/p13/lemon_activations_47587.npy', allow_pickle=True).item()
@@ -322,7 +341,7 @@ class P13(InteractiveScene):
 
         #Static geometry
         image_border=orient(prism(*image_bounds, CHILL_BROWN, line_radius))
-        img=orient(image_plane(data_dir+'/p13/lemon.jpg', opacity=0.4))
+        img=orient(image_plane(data_dir+'/p13/lemon.jpg', opacity=0.6))
 
         n_i, n_j=a.shape[1], a.shape[2]
 
@@ -385,11 +404,13 @@ class P13(InteractiveScene):
         #Fade everything but the map; bring the map to full opacity
         self.play(FadeOut(img), FadeOut(image_border), FadeOut(conv_1_border),
                   block.animate.set_opacity(1.0), run_time=2.0)
-        swap_out(self, img); swap_out(self, image_border); swap_out(self, conv_1_border)
-        img=image_border=conv_1_border=None
+        # swap_out(self, img); 
+        # swap_out(self, image_border); 
+        # swap_out(self, conv_1_border)
+        # img=image_border=conv_1_border=None
 
         #The other 63 maps; channel 0 (your swapped-in vertical edge map) stays put as upper-left
-        grid=activation_image_grid(data_dir+'p13/conv_1_activations', a.shape[0],
+        grid=activation_image_grid(data_dir+'/p13/conv_1_activations', a.shape[0],
                                    spacing_between_layers+1,
                                    n_j*block_cell, pitch, skip_channel=kernel_k)
         orient(grid)
@@ -397,6 +418,140 @@ class P13(InteractiveScene):
         self.add(grid)
         self.play(grid.animate.set_opacity(1.0),
                   self.frame.animate.reorient(*flat_view), run_time=12.0)
+
+        self.wait()
+
+        ## P15 ---- Stack the maps back into a tensor ----
+        n_c=a.shape[0]
+        z0=spacing_between_layers+1
+        spread_step=10*depth_step   #spread stack fills a prism 6x the depth of conv_1_border
+        wide_bounds=(bounds[0], bounds[1], bounds[2], bounds[3],
+                     z0, z0+n_c*spread_step)
+
+        def orient_point(p):
+            x, y, z=p
+            return np.array([z, x, y])  #the same permutation orient() applies about ORIGIN
+
+        stack_x, stack_y=-0.5*block_cell, 0.5*block_cell  #channel-0's slot in the grid
+
+        wide_border=orient(prism(*wide_bounds, CHILL_BROWN, line_radius))
+        spread_view=(38, 63, 0, (np.float32(37.84), np.float32(7.36), np.float32(-11.49)), 138.34)
+
+        channels=[c for c in range(n_c) if c!=kernel_k]
+        gather=[m.animate.move_to(orient_point([stack_x, stack_y, z0+c*spread_step]))
+                for m, c in zip(grid, channels)]
+
+        self.wait()
+        self.play(LaggedStart(*gather, lag_ratio=0.01),
+                  FadeIn(wide_border),
+                  FadeIn(img), 
+                  FadeIn(image_border),
+                  self.frame.animate.reorient(*spread_view),
+                  run_time=8.0)
+        self.wait(still_hold)
+
+        # Ok now add dimensions in premiere
+        # Then: 
+        # "These activations form a new sort of image, but where our input image has 
+        # red green and blue color channels, our activation tensor has 64 channels, 
+        # each corresponding to a different type of image feature."
+        #
+        # Ok so maybe dope idea here, temporarily fade out all activations, 
+        # Flip image through red, green, and blue color channels, and then 
+        # quickly roll through adding back each activation image. 
+
+        img=orient(image_plane(data_dir+'/p13/lemon.jpg', opacity=0.4))
+        image_border=orient(prism(*image_bounds, CHILL_BROWN, line_radius))
+        interlude_view=(38, 68, 0, (10.0, 8.0, -2.0), 120)  #placeholder; tune in embed
+
+        self.wait(1)
+        self.remove(grid)
+        self.remove(block)
+        self.wait(1)
+        # grid.set_opacity(0.04)
+        # block.set_opacity(0.04)
+        # self.play(grid.animate.set_opacity(0.01), block.animate.set_opacity(0.01), run_time=2.0)  #wide_border stays
+
+
+        # self.play(FadeIn(img), FadeIn(image_border),
+        #           self.frame.animate.reorient(*interlude_view), run_time=3.0)
+        # self.wait(still_hold)
+
+        ## ---- Flip through R, G, B, then back to color ----
+        channel_paths=make_channel_images(data_dir+'/p13/lemon.jpg', data_dir+'/p13')
+        current=img
+
+        self.wait()
+        for p in channel_paths:
+            nxt=orient(image_plane(p, opacity=1.0))
+            self.remove(current)
+            self.add(nxt)
+            # self.play(FadeIn(nxt), FadeOut(current), run_time=1.0)
+            swap_out(self, current)
+            current=nxt
+            self.wait(0.5)
+        img=orient(image_plane(data_dir+'/p13/lemon.jpg', opacity=0.4))
+        # self.play(FadeIn(img), FadeOut(current), run_time=1.0)
+        self.wait()
+        self.remove(current)
+        self.add(img)
+        swap_out(self, current)
+        
+
+        ## ---- Bring the activation maps back one at a time ----
+        block.set_opacity(1.0)  
+        grid.set_opacity(1.0)
+
+        cascade_start=interlude_view  #or self.frame.get_... wherever you are at this point
+        cascade_end=(58, 69, 0, (np.float32(40.75), np.float32(13.26), np.float32(-9.89)), 138.34)
+
+        click_hold=0.15   #seconds per map; 65 maps ≈ 10s total
+        members=[block, *grid]
+        n=len(members)
+
+        self.wait(still_hold)
+        for idx, m in enumerate(members):
+            self.add(m)
+            t=smooth(idx/(n-1))
+            # self.frame.reorient(*blend_views(cascade_start, cascade_end, t))
+            self.wait(click_hold)
+        self.wait(still_hold)
+
+        #Optionally send the image away again before the compress:
+        self.play(FadeOut(img), FadeOut(image_border), run_time=1.5)
+        swap_out(self, img); swap_out(self, image_border)
+        img=image_border=None
+
+
+
+
+
+
+
+        ## ---- Compress into the tensor, return to end_position ----
+        conv_1_border=orient(prism(*bounds, CHILL_BROWN, line_radius)) #original was swapped out
+        squeeze=[m.animate.move_to(orient_point([stack_x, stack_y, z0+c*depth_step]))
+                 for m, c in zip(grid, channels)]
+
+        self.play(LaggedStart(*squeeze, lag_ratio=0.005),
+                  FadeOut(wide_border), FadeIn(conv_1_border),
+                  self.frame.animate.reorient(*end_position),
+                  run_time=6.0)
+        swap_out(self, wide_border)
+        self.wait(still_hold)
+
+        ## ---- Optional: crossfade the card stack into a real voxel block ----
+        a_norm=(a-a.min(axis=(1,2), keepdims=True))/np.ptp(a, axis=(1,2), keepdims=True)
+        cam=self.frame.get_implied_camera_location()
+        fwd_world=self.frame.get_center()-cam
+        fwd=np.array([fwd_world[1], fwd_world[2], fwd_world[0]]) #undo orient's permutation
+        full_block, _=conv_data_block(a_norm, z0, vmin=0.0, vmax=1.0,
+                                      cell_size=block_cell, alpha=0.6, view_forward=fwd)
+        orient(full_block)
+        self.play(FadeIn(full_block), FadeOut(grid), FadeOut(block), run_time=2.0)
+        swap_out(self, grid); swap_out(self, block)
+        block=full_block
+
 
 
         self.wait(20)
