@@ -285,7 +285,7 @@ class P13(InteractiveScene):
         layer_1_weights=np.load(data_dir+'/p13/plain_8_conv_1.npy')
 
         start_position=(15, 52, 0, (np.float32(4.48), np.float32(4.88), np.float32(-6.58)), 106.23)
-        end_position=(51, 65, 0, (np.float32(4.07), np.float32(7.46), np.float32(-2.33)), 94.39)
+        end_position=(61, 73, 0, (np.float32(3.79), np.float32(7.16), np.float32(-1.82)), 94.39)
 
 
         thresh=-100
@@ -304,41 +304,87 @@ class P13(InteractiveScene):
 
         _, bounds=conv_data_block(masked_conv1(a, n_i-1, n_j-1, kernel_k),
                                   spacing_between_layers+1, thresh, vmax=vmax,
-                                  cell_size=block_cell, alpha=0.6)
+                                  cell_size=block_cell, alpha=0.65)
         conv_1_border=orient(prism(*bounds, CHILL_BROWN, line_radius))
 
         self.add(img, image_border, conv_1_border)
         self.frame.reorient(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
         self.wait(1)
 
-        #Sweep
-        block=None
-        kernel=None
-        positions=list(np.ndindex(n_i, n_j))
-        n_steps=len(positions)
-        for step, (i, j) in enumerate(positions):
-            last=(step==n_steps-1)
-            if step%steps_per_viz!=0 and not last:
-                continue
+        quick_mode=True   #flip to False for the real render
 
-            swap_out(self, kernel)
-            swap_out(self, block)
-
-            kernel=orient(conv1_kernel(i, j, kernel_k, a.shape, layer_1_weights[0],
-                                       cell_size=block_cell, stride=1))
-            block, _=conv_data_block(masked_conv1(a, i, j, kernel_k),
+        if quick_mode:
+            block, _=conv_data_block(masked_conv1(a, n_i-1, n_j-1, kernel_k),
                                      spacing_between_layers+1, 0.005, vmax=vmax,
                                      cell_size=block_cell)
             orient(block)
-            self.add(block, kernel)
+            self.add(block)
+            self.frame.reorient(*end_position)
+            self.wait(0.1)
+        else:
+            block=None
+            kernel=None
+            positions=list(np.ndindex(n_i, n_j))
+            n_steps=len(positions)
+            for step, (i, j) in enumerate(positions):
+                last=(step==n_steps-1)
+                if step%steps_per_viz!=0 and not last:
+                    continue
 
-            t=smooth(step/(n_steps-1))   #ease in/out over the whole sweep
-            self.frame.reorient(*blend_views(start_position, end_position, t))
-            self.wait(1/30)
+                swap_out(self, kernel)
+                swap_out(self, block)
 
-        swap_out(self, kernel)       #drop the kernel at the end, leave the filled map
+                kernel=orient(conv1_kernel(i, j, kernel_k, a.shape, layer_1_weights[0],
+                                           cell_size=block_cell, stride=1))
+                block, _=conv_data_block(masked_conv1(a, i, j, kernel_k),
+                                         spacing_between_layers+1, 0.005, vmax=vmax,
+                                         cell_size=block_cell, alpha=0.65)
+                orient(block)
+                self.add(block, kernel)
+
+                t=smooth(step/(n_steps-1))   #ease in/out over the whole sweep
+                self.frame.reorient(*blend_views(start_position, end_position, t))
+                self.wait(1/30)
+            swap_out(self, kernel)
         self.wait(still_hold)
+
+
+
+        self.wait(20)
         self.embed()
+
+
+
+
+
+        # #Sweep
+        # block=None
+        # kernel=None
+        # positions=list(np.ndindex(n_i, n_j))
+        # n_steps=len(positions)
+        # for step, (i, j) in enumerate(positions):
+        #     last=(step==n_steps-1)
+        #     if step%steps_per_viz!=0 and not last:
+        #         continue
+
+        #     swap_out(self, kernel)
+        #     swap_out(self, block)
+
+        #     kernel=orient(conv1_kernel(i, j, kernel_k, a.shape, layer_1_weights[0],
+        #                                cell_size=block_cell, stride=1))
+        #     block, _=conv_data_block(masked_conv1(a, i, j, kernel_k),
+        #                              spacing_between_layers+1, 0.005, vmax=vmax,
+        #                              cell_size=block_cell)
+        #     orient(block)
+        #     self.add(block, kernel)
+
+        #     t=smooth(step/(n_steps-1))   #ease in/out over the whole sweep
+        #     self.frame.reorient(*blend_views(start_position, end_position, t))
+        #     self.wait(1/30)
+
+        # swap_out(self, kernel)       #drop the kernel at the end, leave the filled map
+        # self.wait(still_hold)
+        
 
 
 
