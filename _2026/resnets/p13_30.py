@@ -13,7 +13,8 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin'
+# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin'
+data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
 
 spacing_between_layers=5
 line_radius=0.18
@@ -24,8 +25,8 @@ pixel_dim=0.5
 image_opacity=0.936  
 still_hold=1.0
 steps_per_viz=11     
-kernel_k=0
 fov=PI/3
+kernel_k=0
 
 image_bounds=(-32.0, 32.0, -32.0, 32.0, 0.0, 3*pixel_dim)
 # image_bounds=(-224.0, 224.0, -224.0, 224.0, 0.0, 3*pixel_dim)
@@ -114,7 +115,7 @@ class VoxelBlock(Surface):
             self.data['rgba'][:]=np.repeat(self.rgba, 24, axis=0)
 
 
-def conv_data_block(a, start_depth, thresh, vmax=None, cell_size=1.0):
+def conv_data_block(a, start_depth, thresh, vmax=None, cell_size=1.0, alpha=0.5):
     a=np.asarray(a, dtype=np.float64)
     n_c, n_i, n_j=a.shape
     kk, ii, jj=np.meshgrid(np.arange(n_c), np.arange(n_i), np.arange(n_j), indexing='ij')
@@ -125,7 +126,7 @@ def conv_data_block(a, start_depth, thresh, vmax=None, cell_size=1.0):
     centers=np.stack([(jj[keep]-half)*cell_size, (-ii[keep]+half)*cell_size,
                       depth_step*kk[keep]+start_depth], axis=-1)
     rgba=viridis(vals[keep])
-    rgba[:,3]=0.5
+    rgba[:,3]=alpha
 
     block=VoxelBlock(centers, np.array([cell_size, cell_size, cell_depth]), rgba)
     half_extent=(half+0.5)*cell_size
@@ -191,30 +192,37 @@ def prism(min_x, max_x, min_y, max_y, min_z, max_z, color, radius):
     return group
 
 
-def conv1_kernel(i, j, k, a_shape, weights):
+def conv1_kernel(i, j, k, act_shape, weights, cell_size=1.0, stride=1):
     """The conv-1 kernel wired to its activation, with the filter painted into the patch."""
     min_x, max_x, min_y, _, min_z, max_z=image_bounds
     group=Group()
 
-    step=(max_x-min_x)/a_shape[1]
-    dst_x=j-np.floor(a_shape[-1]/2)
-    dst_y=-i+np.floor(a_shape[-1]/2)
-    dst_z=depth_step*k+spacing_between_layers+1
-    size=8.0
+    #Activation cell (i, j) -> its footprint on the image plane
+    step=(max_x-min_x)/act_shape[-1]      #image units per activation cell
+    px=step/stride                        #image units per input pixel
+    size=weights.shape[-1]*px             #receptive field of the kernel
 
-    #-min_y spells max_y; the bounds are symmetric
+    half=np.floor(act_shape[-1]/2)
+    hc=0.5*cell_size
+    dst_x=(j-half)*cell_size
+    dst_y=(-i+half)*cell_size
+    dst_z=depth_step*k+spacing_between_layers+1
+
+    src_x=min_x+step*j
+    src_y=-min_y-step*i  #-min_y spells max_y; the bounds are symmetric
+
     connectors=[
-        [(dst_x-0.5, dst_y-0.5, dst_z), (min_x+step*j, -min_y-step*i-size, max_z)],
-        [(dst_x+0.5, dst_y-0.5, dst_z), (min_x+step*j+size, -min_y-step*i-size, max_z)],
-        [(dst_x-0.5, dst_y+0.5, dst_z), (min_x+step*j, -min_y-step*i, max_z)],
-        [(dst_x+0.5, dst_y+0.5, dst_z), (min_x+step*j+size, -min_y-step*i, max_z)],
+        [(dst_x-hc, dst_y-hc, dst_z), (src_x,      src_y-size, max_z)],
+        [(dst_x+hc, dst_y-hc, dst_z), (src_x+size, src_y-size, max_z)],
+        [(dst_x-hc, dst_y+hc, dst_z), (src_x,      src_y,      max_z)],
+        [(dst_x+hc, dst_y+hc, dst_z), (src_x+size, src_y,      max_z)],
     ]
     for cc in connectors:
         group.add(polyline(cc, MAGENTA, line_radius))
     for p, q in [(0, 1), (1, 3), (3, 2), (2, 0)]:
         group.add(polyline([connectors[p][0], connectors[q][0]], MAGENTA, line_radius))
 
-    extent=(min_x+step*j, min_x+step*j+size, -min_y-step*i-size, -min_y-step*i)
+    extent=(src_x, src_x+size, src_y-size, src_y)
     group.add(prism(extent[0], extent[1], extent[2], extent[3], min_z, max_z, MAGENTA,
                     line_radius))
     group.add(kernel_weights_block(weights, extent))
@@ -265,39 +273,112 @@ def blend_views(a, b, t):
             tuple(p+(q-p)*t for p, q in zip(a[3], b[3])), a[4]+(b[4]-a[4])*t)
 
 
+def orient(mob):
+    mob.rotate(90*DEGREES, [0, 1, 0], about_point=ORIGIN)
+    mob.rotate(90*DEGREES, [1, 0, 0], about_point=ORIGIN)
+    return mob
+
+
 class P13(InteractiveScene):
     def construct(self):
-
-        
         act=np.load(data_dir+'/p13/lemon_activations_47587.npy', allow_pickle=True).item()
         layer_1_weights=np.load(data_dir+'/p13/plain_8_conv_1.npy')
 
-
-        ##Ok lets start simple with just the image here.
-        image_border=prism(*image_bounds, CHILL_BROWN, line_radius)
-        img=image_plane(data_dir+'/p13/lemon.jpg', opacity=0.5)
-
-        block, bounds=conv_data_block(masked_conv1(act['conv1'][0], 0, 10, kernel_k),
-                                      spacing_between_layers+1, 0.005, cell_size=0.48)
-        conv_1_border=prism(*bounds, CHILL_BROWN, line_radius)
-
-        k=conv1_kernel(0, 10, kernel_k, layer_1_weights[0].shape, layer_1_weights[0])
+        start_position=(15, 52, 0, (np.float32(4.48), np.float32(4.88), np.float32(-6.58)), 106.23)
+        end_position=(51, 65, 0, (np.float32(4.07), np.float32(7.46), np.float32(-2.33)), 94.39)
 
 
-        # self.add(conv1_kernel(0, 10, kernel_k, a.shape, weights, forward))
+        thresh=-100
+        a=act['conv1'][0]
+        temp=a[0].copy()
+        a[0]=a[22] #Start with nice vertical edges
+        a[22]=temp
+
+        n_i, n_j=a.shape[1], a.shape[2]
+        vmax=float(a[kernel_k].max())          #lock the color scale so cells don't dim as more appear
+        block_cell=0.48
+
+        #Static geometry
+        image_border=orient(prism(*image_bounds, CHILL_BROWN, line_radius))
+        img=orient(image_plane(data_dir+'/p13/lemon.jpg', opacity=0.4))
+
+        _, bounds=conv_data_block(masked_conv1(a, n_i-1, n_j-1, kernel_k),
+                                  spacing_between_layers+1, thresh, vmax=vmax,
+                                  cell_size=block_cell, alpha=0.6)
+        conv_1_border=orient(prism(*bounds, CHILL_BROWN, line_radius))
+
+        self.add(img, image_border, conv_1_border)
+        self.frame.reorient(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
+        self.wait(1)
+
+        #Sweep
+        block=None
+        kernel=None
+        positions=list(np.ndindex(n_i, n_j))
+        n_steps=len(positions)
+        for step, (i, j) in enumerate(positions):
+            last=(step==n_steps-1)
+            if step%steps_per_viz!=0 and not last:
+                continue
+
+            swap_out(self, kernel)
+            swap_out(self, block)
+
+            kernel=orient(conv1_kernel(i, j, kernel_k, a.shape, layer_1_weights[0],
+                                       cell_size=block_cell, stride=1))
+            block, _=conv_data_block(masked_conv1(a, i, j, kernel_k),
+                                     spacing_between_layers+1, 0.005, vmax=vmax,
+                                     cell_size=block_cell)
+            orient(block)
+            self.add(block, kernel)
+
+            t=smooth(step/(n_steps-1))   #ease in/out over the whole sweep
+            self.frame.reorient(*blend_views(start_position, end_position, t))
+            self.wait(1/30)
+
+        swap_out(self, kernel)       #drop the kernel at the end, leave the filled map
+        self.wait(still_hold)
+        self.embed()
 
 
 
-        net_group=Group(img, image_border, conv_1_border, k)
-        net_group.rotate(90*DEGREES, [0, 1, 0])
-        self.add(net_group)
+# class P13(InteractiveScene):
+#     def construct(self):
 
-        # image_border.move_to([0, 10, 0])
+        
+#         act=np.load(data_dir+'/p13/lemon_activations_47587.npy', allow_pickle=True).item()
+#         layer_1_weights=np.load(data_dir+'/p13/plain_8_conv_1.npy')
 
-        self.frame.reorient(6, 52, 0, (np.float32(31.75), np.float32(8.01), np.float32(-4.58)), 113.23)
+
+#         ##Ok lets start simple with just the image here.
+#         image_border=prism(*image_bounds, CHILL_BROWN, line_radius)
+#         img=image_plane(data_dir+'/p13/lemon.jpg', opacity=0.4)
 
 
-        self.wait()
+#         kernel_k=0 #20 is nice vertical edges I think, maybe just transpose 1 and 20
+
+#         a=act['conv1'][0]
+
+#         block, bounds=conv_data_block(masked_conv1(a, 0, 10, kernel_k),
+#                                       spacing_between_layers+1, 0.005, cell_size=0.48)
+#         conv_1_border=prism(*bounds, CHILL_BROWN, line_radius)
+
+#         cell=(image_bounds[1]-image_bounds[0])/a.shape[-1]
+#         k=conv1_kernel(0, 10, kernel_k, a.shape, layer_1_weights[0], cell_size=0.48, stride=1)
+
+
+#         # self.add(conv1_kernel(0, 10, kernel_k, a.shape, weights, forward))
+#         net_group=Group(img, image_border, conv_1_border, k)
+#         net_group.rotate(90*DEGREES, [0, 1, 0])
+#         net_group.rotate(90*DEGREES, [1, 0, 0])
+#         self.add(net_group)
+
+#         # image_border.move_to([0, 10, 0])
+
+#         self.frame.reorient(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
+
+
+#         self.wait()
 
 
 
