@@ -2,7 +2,8 @@ import numpy as np
 import os
 from PIL import Image
 
-data_dir='/Volumes/PG Work/Stephencwelch Dropbox/Pranav Gundu/Welch Labs/videos/_2026/resnets/data'
+# data_dir='/Volumes/PG Work/Stephencwelch Dropbox/Pranav Gundu/Welch Labs/videos/_2026/resnets/data'
+data_dir='/Users/stephen/videos/_2026/resnets/data'
 activations_dir=data_dir+'/activations'
 examples_dir=data_dir+'/imagenet_examples'
 
