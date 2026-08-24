@@ -17,7 +17,8 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-data_dir='/Volumes/PG Work/Stephencwelch Dropbox/Pranav Gundu/Welch Labs/videos/_2026/resnets/data'
+# data_dir='/Volumes/PG Work/Stephencwelch Dropbox/Pranav Gundu/Welch Labs/videos/_2026/resnets/data'
+data_dir='/Users/stephen/videos/_2026/resnets/data'
 
 spacing_between_layers=5
 line_radius=0.18
@@ -314,3 +315,10 @@ class P34_36(InteractiveScene):
             self.frame.reorient(*start)
             self.add(build_stack(forward_from(start), kernels=kernels))
             self.play(self.frame.animate.reorient(*end), run_time=2, rate_func=linear)
+
+
+
+
+
+        self.wait()
+        self.embed()

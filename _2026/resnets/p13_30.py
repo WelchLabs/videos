@@ -117,7 +117,8 @@ class VoxelBlock(Surface):
 
 
 def conv_data_block(a, start_depth, vmin=None, vmax=None, keep=None, cell_size=1.0,
-                    alpha=0.5, view_forward=None):
+                    alpha=0.5, z_step=depth_step, view_forward=None):
+
     a=np.asarray(a, dtype=np.float64)
     n_c, n_i, n_j=a.shape
     kk, ii, jj=np.meshgrid(np.arange(n_c), np.arange(n_i), np.arange(n_j), indexing='ij')
@@ -129,7 +130,7 @@ def conv_data_block(a, start_depth, vmin=None, vmax=None, keep=None, cell_size=1
 
     half=np.floor(n_j/2)
     centers=np.stack([(jj[keep]-half)*cell_size, (-ii[keep]+half)*cell_size,
-                      depth_step*kk[keep]+start_depth], axis=-1)
+                      z_step*kk[keep]+start_depth], axis=-1)
     rgba=viridis(vals[keep])
     rgba[:,3]=alpha
 
@@ -138,8 +139,75 @@ def conv_data_block(a, start_depth, vmin=None, vmax=None, keep=None, cell_size=1
                      view_forward=view_forward)
     half_extent=(half+0.5)*cell_size
     bounds=(-half_extent, half_extent, -half_extent, half_extent,
-            start_depth, n_c*depth_step+start_depth)
+            start_depth, n_c*z_step+start_depth)
     return block, bounds
+
+
+def kernel_weights_stack(weights, extent, z0, z_step):
+    """One (C, 3, 3) filter painted through the depth of the source stack."""
+    w=np.asarray(weights, dtype=np.float64)
+    w=w-w.min()
+    min_x, max_x, min_y, max_y=extent
+    step=(max_x-min_x)/w.shape[-1]
+
+    kk, ii, jj=np.meshgrid(np.arange(w.shape[0]), np.arange(w.shape[1]),
+                           np.arange(w.shape[2]), indexing='ij')
+    vals=(w/w.max()).ravel()
+    centers=np.stack([(jj.ravel()+0.5)*step+min_x, -(ii.ravel()+0.5)*step+max_y,
+                      kk.ravel()*z_step+z0], axis=-1)
+    rgba=np.zeros((len(vals), 4))
+    rgba[:,0]=vals
+    rgba[:,2]=vals
+    rgba[:,3]=0.5
+    return VoxelBlock(centers, np.array([step, step, cell_depth]), rgba)
+
+
+def conv2_kernel(i, j, act_shape, n_src, src_cell, src_z0, src_z1, src_z_step, weights,
+                 cell_size, dst_z, ksize=3):
+    """A layer-2 kernel: activation (i, j) wired to its 3x3xC patch in the source stack."""
+    group=Group()
+    half_dst=np.floor(act_shape[-1]/2)
+    hc=0.5*cell_size
+    dst_x=(j-half_dst)*cell_size
+    dst_y=(-i+half_dst)*cell_size
+
+    #Stride maps output (i, j) to source cell (stride*i, stride*j)
+    stride=n_src/act_shape[-1]              #112/56 = 2
+    half_src=np.floor(n_src/2)
+    src_cx=(stride*j-half_src)*src_cell
+    src_cy=(-stride*i+half_src)*src_cell
+    r=0.5*ksize*src_cell                    #patch is still 3 *source* cells wide
+    extent=(src_cx-r, src_cx+r, src_cy-r, src_cy+r)
+
+    connectors=[
+        [(dst_x-hc, dst_y-hc, dst_z), (extent[0], extent[2], src_z1)],
+        [(dst_x+hc, dst_y-hc, dst_z), (extent[1], extent[2], src_z1)],
+        [(dst_x-hc, dst_y+hc, dst_z), (extent[0], extent[3], src_z1)],
+        [(dst_x+hc, dst_y+hc, dst_z), (extent[1], extent[3], src_z1)],
+    ]
+    for cc in connectors:
+        group.add(polyline(cc, MAGENTA, line_radius))
+    for p, q in [(0, 1), (1, 3), (3, 2), (2, 0)]:
+        group.add(polyline([connectors[p][0], connectors[q][0]], MAGENTA, line_radius))
+
+    group.add(prism(extent[0], extent[1], extent[2], extent[3], src_z0, src_z1,
+                    MAGENTA, line_radius))
+    group.add(kernel_weights_stack(weights, extent, src_z0, src_z_step))
+    return group
+
+
+def activation_image_stack(image_dir, n_c, z0, width, z_step, skip_channel=None):
+    group=Group()
+    for c in range(n_c):
+        if c==skip_channel:
+            continue
+        img=ImageMobject(f'{image_dir}/act_{c:02d}.png')
+        img.set_width(width, stretch=True)
+        img.set_height(width, stretch=True)
+        img.move_to([-0.5*width/56, 0.5*width/56, z0+c*z_step])  #match the voxel grid's half-cell offset
+        group.add(img)
+    return group
+
 
 def reveal_mask(shape, i, j, k):
     """Raster-order reveal up to cell (i, j), channels <= k."""
@@ -323,6 +391,17 @@ def make_channel_images(im_path, out_dir):
             solo[...,ch]=src[...,ch]
             Image.fromarray(solo).save(p)
     return paths
+
+def relu_viz_block(r, z0, z_step, cell, pct=97, alpha=0.7):
+    """Per-channel normalized, per-channel percentile-thresholded, one merged block."""
+    r=np.asarray(r, dtype=np.float64)
+    vmax=r.max(axis=(1, 2), keepdims=True)
+    vmax[vmax==0]=1.0
+    rn=r/vmax
+    thresh=np.percentile(rn, pct, axis=(1, 2), keepdims=True)
+    return conv_data_block(rn, z0, vmin=0.0, vmax=1.0, keep=(rn>thresh),
+                           cell_size=cell, alpha=alpha, z_step=z_step)
+
 
 class P13(InteractiveScene):
     def construct(self):
@@ -536,13 +615,16 @@ class P13(InteractiveScene):
         r=act['relu'][0].copy()
         r[[0, 22]]=r[[22, 0]]   #match the conv1 channel swap
 
-        relu_thresh=0.8
-        r_vmax=float(r.max())   #global normalization; see note below
+        # relu_thresh=1.0
+        # r_vmax=float(r.max())   #global normalization; see note below
 
         slabs=[]
         for c in range(n_c):
+            relu_thresh=np.percentile(r[c:c+1], 97)
+            # print(relu_thresh)
             slab, _=conv_data_block(r[c:c+1], z0+c*spread_step,
-                                    vmin=0.0, vmax=r_vmax,
+                                    vmin=0.0, 
+                                    vmax=float(r[c:c+1].max()),
                                     keep=(r[c:c+1]>relu_thresh),
                                     cell_size=block_cell, alpha=0.7)
             orient(slab)
@@ -557,23 +639,251 @@ class P13(InteractiveScene):
         self.wait(still_hold)
 
 
-        
+        ## ---- Compress the stack, morphing the prism with it ----
+        end_position_2=(37, 64, 0, (np.float32(16.68), np.float32(18.15), np.float32(-7.34)), 106.72)
+        compress_factor=4                       #try 4x; spread_step/4 = 2.5*depth_step
+        squish_step=spread_step/compress_factor
+        squish_bounds=(bounds[0], bounds[1], bounds[2], bounds[3],
+                       z0, z0+n_c*squish_step)
+        squish_border=orient(prism(*squish_bounds, CHILL_BROWN, line_radius))
 
-        ## ---- Compress into the tensor, return to end_position ----
-        conv_1_border=orient(prism(*bounds, CHILL_BROWN, line_radius))
-        squeeze=[slab.animate.shift([(depth_step-spread_step)*c, 0, 0])  #orient: z -> world x
+        squeeze=[slab.animate.shift([(squish_step-spread_step)*c, 0, 0])  #orient: z -> world x
                  for c, slab in enumerate(slabs)]
 
-        self.play(LaggedStart(*squeeze, lag_ratio=0.005),
-                  FadeOut(wide_border), FadeIn(conv_1_border),
-                  self.frame.animate.reorient(*end_position),
+        self.wait(1)
+        self.play(*squeeze,
+                  #LaggedStart(*squeeze, lag_ratio=0.005),
+                  Transform(wide_border, squish_border),
+                  self.frame.animate.reorient(*end_position_2),
                   run_time=6.0)
-        swap_out(self, wide_border)
+        self.wait(still_hold)
+
+
+
+        #P17, conv 2 let's go. 
+        ## --- P17: second layer (layer1.0.conv1) ---
+        a2=act['layer1.0.conv1'][0]                    #(64, 56, 56)
+        layer_2_weights=np.load(data_dir+'/p13/plain_8_layer1_0_conv1.npy')  #(64, 64, 3, 3)
+
+        cell2=block_cell #0.5*block_cell                           #half the width & height
+        step2=squish_step                              #same depth as compressed layer 1
+        n_c2, n_i2, n_j2=a2.shape
+        z1_end=z0+n_c*squish_step                      #far face of the layer-1 stack
+        z2_0=z1_end+spacing_between_layers
+
+        vmin2=float(a2[0].min())
+        vmax2=float(a2[0].max())
+
+        _, bounds2=conv_data_block(a2, z2_0, vmin=vmin2, vmax=vmax2,
+                                   cell_size=cell2, z_step=step2)
+        conv_2_border=orient(prism(*bounds2, CHILL_BROWN, line_radius))
+        self.add(conv_2_border)
+
+        # l2_start=(61, 73, 0, (np.float32(30.0), np.float32(5.0), np.float32(-4.0)), 100)  #tune in embed
+        l2_end=(56, 74, 0, (np.float32(11.0), np.float32(10.64), np.float32(-3.53)), 94.75)
+
+
+        ## ---- Sliding kernel sweep, channel 0 ----
+        self.wait()
+        # quick_mode=True
+
+        if quick_mode:
+            block2, _=conv_data_block(a2, z2_0, vmin=vmin2, vmax=vmax2,
+                                      keep=reveal_mask(a2.shape, n_i2-1, n_j2-1, 0),
+                                      alpha=0.9,
+                                      cell_size=cell2, z_step=step2)
+            orient(block2)
+            self.add(block2)
+            self.frame.reorient(*l2_end)
+            self.wait(0.1)
+        else:
+            block2=None
+            kernel2=None
+            positions=list(np.ndindex(n_i2, n_j2))
+            n_steps=len(positions)
+            for step, (i, j) in enumerate(positions):
+                last=(step==n_steps-1)
+                if step%steps_per_viz!=0 and not last:
+                    continue
+
+                swap_out(self, kernel2)
+                swap_out(self, block2)
+
+                kernel2=orient(conv2_kernel(i, j, a2.shape, n_j, block_cell, z0, z1_end,
+                                            squish_step, layer_2_weights[0],
+                                            cell_size=cell2, dst_z=z2_0))
+                block2, _=conv_data_block(a2, z2_0, vmin=vmin2, vmax=vmax2,
+                                          keep=reveal_mask(a2.shape, i, j, 0),
+                                          alpha=0.9,
+                                          cell_size=cell2, z_step=step2)
+                orient(block2)
+                self.add(block2, kernel2)
+
+                t=smooth(step/(n_steps-1))
+                self.frame.reorient(*blend_views(end_position_2, l2_end, t))
+                self.wait(1/30)
+            swap_out(self, kernel2)
+        self.wait(still_hold)
+
+
+        ## ---- Stack the remaining 63 maps (imshow images, clicked in) ----
+        stack2=activation_image_stack(data_dir+'/p13/conv_2_activations', n_c2,
+                                      z2_0, n_j2*cell2, step2, skip_channel=0)
+        orient(stack2)
+        for m in stack2:
+            self.add(m)
+            self.wait(0.08)
+        self.wait(still_hold)
+
+
+        ## ---- ReLU: crossfade to thresholded slabs ----
+        r2=act['layer1.0.relu'][0]     #check this key against your hook names
+        slabs2=[]
+        self.wait()
+        for c in range(n_c2):
+            relu_thresh=np.percentile(r2[c:c+1], 97)
+            slab, _=conv_data_block(r2[c:c+1], z2_0+c*step2,
+                                    vmin=0.0,
+                                    vmax=float(r2[c:c+1].max()),
+                                    keep=(r2[c:c+1]>relu_thresh),
+                                    cell_size=cell2, alpha=0.7)
+            orient(slab)
+            slabs2.append(slab)
+        relu_stack2=Group(*slabs2)
+
+        self.play(FadeIn(relu_stack2), FadeOut(stack2), FadeOut(block2), run_time=3.0)
+        swap_out(self, stack2); swap_out(self, block2)
+        stack2=block2=None
+        self.wait(still_hold)
+
+
+        self.play(self.frame.animate.reorient(31, 62, 0, (np.float32(17.28), np.float32(12.32), np.float32(-7.73)), 107.89), 
+                     run_time=6)
+        self.wait()
+
+
+
+        ## --- P18: layer1.0 through layer3.0, one camera move ---
+        base_depth=n_c*squish_step               #layer-1 compressed depth, ≈20 world units
+        depth_mults={64: 1.0, 128: 1.35, 256: 1.8}
+        # depth_mults={64: 1.0, 128: 1.5, 256: 3.0}   #the calmer version
+
+        deep_keys=['layer1.0', 'layer2.0.relu', 'layer2.0', 'layer3.0.relu', 'layer3.0']
+
+        z_cursor=z2_0+n_c2*step2+spacing_between_layers
+        deep_blocks, deep_borders, deep_bounds=[], [], []
+
+        for key in deep_keys:
+            rl=act[key][0]
+            n_cl=rl.shape[0]
+            z_step_l=base_depth*depth_mults[n_cl]/n_cl
+            blk, bnds=relu_viz_block(rl, z_cursor, z_step_l, cell2)
+            orient(blk)
+            border=orient(prism(*bnds, CHILL_BROWN, line_radius))
+            deep_blocks.append(blk)
+            deep_borders.append(border)
+            deep_bounds.append(bnds)
+            z_cursor=bnds[5]+spacing_between_layers
+
+        fades=[AnimationGroup(FadeIn(b), FadeIn(p))
+               for b, p in zip(deep_blocks, deep_borders)]
+        deep_view=(28, 64, 0, (np.float32(130.97), np.float32(-14.4), np.float32(7.38)), 133.84)
+        
+        self.wait(1)
+        self.play(LaggedStart(*fades, lag_ratio=0.25),
+                  self.frame.animate.reorient(*deep_view),
+                  run_time=10.0)
+        self.wait(still_hold)
+
+
+        #Zoom in on final block to show dimensions and pooling
+        self.play(self.frame.animate.reorient(54, 71, 0, (np.float32(196.61), np.float32(-12.14), np.float32(7.1)), 46.97), run_time=5.0)
+        self.wait()
+
+        #Ok now I think we show the downsamplign process in place. 
+        pool_factor=5                        #true value is 14; adjustable
+        r3=act['layer3.0'][0]                #(256, 14, 14)
+        p=act['avgpool'][0,:,0,0]            #(256,)
+
+        #Recreate exactly the normalization/threshold the layer3.0 block used
+        vmax3=r3.max(axis=(1,2), keepdims=True); vmax3[vmax3==0]=1.0
+        rn3=r3/vmax3
+        keep3=rn3>np.percentile(rn3, 97, axis=(1,2), keepdims=True)
+
+        n_c3, n_i3, n_j3=r3.shape
+        z3_step=base_depth*depth_mults[n_c3]/n_c3
+        z3_0=deep_bounds[-1][4]
+        pooled_cell=n_j3*cell2/pool_factor
+
+        #Target: every surviving voxel of channel c converges on channel c's pooled slot,
+        #shrinking to the pooled cell size and tinting toward the pooled color
+        kk3=np.meshgrid(np.arange(n_c3), np.arange(n_i3), np.arange(n_j3), indexing='ij')[0]
+        ch=kk3[keep3]
+        pn=p/p.max()
+        tgt_centers=np.stack([np.zeros(len(ch)), np.zeros(len(ch)), z3_0+ch*z3_step], axis=-1)
+        tgt_rgba=viridis(pn[ch]); tgt_rgba[:,3]=0.7
+        pool_target=orient(VoxelBlock(tgt_centers,
+                                      np.array([pooled_cell, pooled_cell, cell_depth]),
+                                      tgt_rgba))
+
+        hp=0.5*pooled_cell
+        pool_bounds=(-hp, hp, -hp, hp, z3_0, z3_0+n_c3*z3_step)
+        pool_border=orient(prism(*pool_bounds, CHILL_BROWN, line_radius))
+
+        self.wait(1)
+        self.play(Transform(deep_blocks[-1], pool_target),
+                  Transform(deep_borders[-1], pool_border),
+                  run_time=3.0)
+
+        #Swap the pile of coincident voxels for one clean voxel per channel
+        pool_block, _=conv_data_block(pn.reshape(n_c3, 1, 1), z3_0, vmin=0.0, vmax=1.0,
+                                      cell_size=pooled_cell, alpha=0.7, z_step=z3_step)
+        orient(pool_block)
+        self.add(pool_block)
+        swap_out(self, deep_blocks[-1])
+        deep_blocks[-1]=pool_block
+        self.add(pool_border)                                     #Transform mutated the old border in place; keep refs tidy
         self.wait(still_hold)
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+        # conv1 (1, 64, 112, 112)                                                                               
+        # bn1 (1, 64, 112, 112)
+        # relu (1, 64, 112, 112)
+        # maxpool (1, 64, 56, 56)
+        # layer1.0.conv1 (1, 64, 56, 56)
+        # layer1.0.bn1 (1, 64, 56, 56)
+        # layer1.0.relu (1, 64, 56, 56)
+        # layer1.0.conv2 (1, 64, 56, 56)
+        # layer1.0.bn2 (1, 64, 56, 56)
+        # layer1.0 (1, 64, 56, 56)                                                                              
+        # layer2.0.conv1 (1, 128, 28, 28)
+        # layer2.0.bn1 (1, 128, 28, 28)
+        # layer2.0.relu (1, 128, 28, 28)
+        # layer2.0.conv2 (1, 128, 28, 28)
+        # layer2.0.bn2 (1, 128, 28, 28)
+        # layer2.0 (1, 128, 28, 28)
+        # layer3.0.conv1 (1, 256, 14, 14)
+        # layer3.0.bn1 (1, 256, 14, 14)
+        # layer3.0.relu (1, 256, 14, 14)
+        # layer3.0.conv2 (1, 256, 14, 14)
+        # layer3.0.bn2 (1, 256, 14, 14)
+        # layer3.0 (1, 256, 14, 14)
+        # avgpool (1, 256, 1, 1)
+        # fc (1, 1000)
+        # image (224, 224, 3)
 
 
 
