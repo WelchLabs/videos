@@ -518,20 +518,51 @@ class P13(InteractiveScene):
         self.wait(still_hold)
 
         #Optionally send the image away again before the compress:
-        self.play(FadeOut(img), FadeOut(image_border), run_time=1.5)
-        swap_out(self, img); swap_out(self, image_border)
-        img=image_border=None
+        # self.play(FadeOut(img), FadeOut(image_border), run_time=1.5)
+        # swap_out(self, img); swap_out(self, image_border)
+        # img=image_border=None
 
 
+        ## --- P16 --- ##
+        # Ok, now we have batch norm and ReLU
+        # Kinda feel like we just show these in one step?
+        # This is where I want to shift to just showing values above a certain threshold
+        # Ok right so act['relu'] is what we want to show here, but 
+        # only activations above some threshold, let's start with 0.2
+        # Everything below that we just won't plot. 
 
 
+         ## --- P16: batch norm + ReLU ---
+        r=act['relu'][0].copy()
+        r[[0, 22]]=r[[22, 0]]   #match the conv1 channel swap
+
+        relu_thresh=0.8
+        r_vmax=float(r.max())   #global normalization; see note below
+
+        slabs=[]
+        for c in range(n_c):
+            slab, _=conv_data_block(r[c:c+1], z0+c*spread_step,
+                                    vmin=0.0, vmax=r_vmax,
+                                    keep=(r[c:c+1]>relu_thresh),
+                                    cell_size=block_cell, alpha=0.7)
+            orient(slab)
+            slabs.append(slab)
+        relu_stack=Group(*slabs)
+
+        ## ---- Crossfade conv1 maps -> thresholded relu slabs ----
+        self.play(FadeIn(relu_stack), FadeOut(grid), FadeOut(block),
+                  run_time=3.0)
+        swap_out(self, grid); swap_out(self, block)
+        grid=block=None
+        self.wait(still_hold)
 
 
+        
 
         ## ---- Compress into the tensor, return to end_position ----
-        conv_1_border=orient(prism(*bounds, CHILL_BROWN, line_radius)) #original was swapped out
-        squeeze=[m.animate.move_to(orient_point([stack_x, stack_y, z0+c*depth_step]))
-                 for m, c in zip(grid, channels)]
+        conv_1_border=orient(prism(*bounds, CHILL_BROWN, line_radius))
+        squeeze=[slab.animate.shift([(depth_step-spread_step)*c, 0, 0])  #orient: z -> world x
+                 for c, slab in enumerate(slabs)]
 
         self.play(LaggedStart(*squeeze, lag_ratio=0.005),
                   FadeOut(wide_border), FadeIn(conv_1_border),
@@ -540,18 +571,15 @@ class P13(InteractiveScene):
         swap_out(self, wide_border)
         self.wait(still_hold)
 
-        ## ---- Optional: crossfade the card stack into a real voxel block ----
-        a_norm=(a-a.min(axis=(1,2), keepdims=True))/np.ptp(a, axis=(1,2), keepdims=True)
-        cam=self.frame.get_implied_camera_location()
-        fwd_world=self.frame.get_center()-cam
-        fwd=np.array([fwd_world[1], fwd_world[2], fwd_world[0]]) #undo orient's permutation
-        full_block, _=conv_data_block(a_norm, z0, vmin=0.0, vmax=1.0,
-                                      cell_size=block_cell, alpha=0.6, view_forward=fwd)
-        orient(full_block)
-        self.play(FadeIn(full_block), FadeOut(grid), FadeOut(block), run_time=2.0)
-        swap_out(self, grid); swap_out(self, block)
-        block=full_block
 
+
+
+
+
+
+
+
+ 
 
 
         self.wait(20)
