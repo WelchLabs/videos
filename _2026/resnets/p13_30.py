@@ -402,6 +402,16 @@ def relu_viz_block(r, z0, z_step, cell, pct=97, alpha=0.7):
     return conv_data_block(rn, z0, vmin=0.0, vmax=1.0, keep=(rn>thresh),
                            cell_size=cell, alpha=alpha, z_step=z_step)
 
+def swing_path(pivot, angle, axis=OUT):
+    """Rigid rotation about pivot, plus a lerp of whatever the rotation doesn't explain."""
+    pivot=np.asarray(pivot, dtype=np.float64)
+    full=rotation_matrix(angle, axis)
+    def path(start_points, end_points, alpha):
+        part=rotation_matrix(alpha*angle, axis)
+        swung=pivot+np.dot(start_points-pivot, part.T)
+        landed=pivot+np.dot(start_points-pivot, full.T)
+        return swung+alpha*(end_points-landed)
+    return path
 
 class P13(InteractiveScene):
     def construct(self):
@@ -846,6 +856,66 @@ class P13(InteractiveScene):
         self.wait(still_hold)
 
 
+        #Now FC layer!
+        ## --- : fc, vertical ---
+        fc_factor=1.2                          #fc height / avgpool length; adjustable
+        fc=act['fc'][0]                        #(1000,) logits
+        n_fc=len(fc)
+        fcn=(fc-fc.min())/np.ptp(fc)           #logits go negative; min-max for viridis
+
+        pool_len=n_c3*z3_step
+        fc_height=fc_factor*pool_len           #≈96 world units at 1.2
+        fc_step=fc_height/n_fc
+        fc_z=z3_0+pool_len+spacing_between_layers   #un-oriented depth of the fc column
+
+        def fc_slot_centers(idx):
+            y=(0.5*(n_fc-1)-idx)*fc_step       #index 0 at top
+            return np.stack([np.zeros(len(idx)), y, np.full(len(idx), fc_z)], axis=-1)
+
+        wafer=np.array([pooled_cell, cell_depth, pooled_cell])  #thin slice per unit, now stacked in y
+
+        #Morph target: the 256 pooled voxels spread to 256 sampled slots along the column
+        seed_idx=np.round(np.linspace(0, n_fc-1, n_c3)).astype(int)
+        seed_rgba=viridis(fcn[seed_idx]); seed_rgba[:,3]=0.7
+        fc_seed=orient(VoxelBlock(fc_slot_centers(seed_idx), wafer, seed_rgba))
+
+        hp=0.5*pooled_cell
+        hh=0.5*fc_height
+
+        fc_view=(2, 80, 0, (np.float32(218.33), np.float32(8.92), np.float32(-0.35)), 60.67) #tune in embed
+
+
+        pool_ghost=deep_blocks[-1].copy()
+        border_ghost=deep_borders[-1].copy()
+        self.add(pool_ghost, border_ghost)
+
+        pivot=np.array([z3_0+pool_len+0.5*spacing_between_layers, 0, 0])  #world x between the columns
+
+        # fc_border=orient(prism(-hp, hp, -hh, hh, fc_z-hp, fc_z+hp, CHILL_BROWN, line_radius))
+        fc_border=deep_borders[-1].copy()
+        fc_border.rotate(-90*DEGREES, UP, about_point=pivot)
+        fc_border.stretch(fc_factor, 2)              #lengthen along world z, about its center
+        fc_border.move_to([fc_z, 0, 0])              #fc column center in world coords
+
+        
+        # arc=swing_path(pivot, 90*DEGREES, axis=UP)   #flip sign if it dives instead of lifts
+        arc=swing_path(pivot, 90*DEGREES, axis=UP)
+
+        self.wait(1.0)
+        self.play(Transform(pool_ghost, fc_seed,
+                            path_arc=-90*DEGREES, path_arc_axis=UP),
+                  Transform(border_ghost, fc_border, path_func=arc),
+                  self.frame.animate.reorient(*fc_view),
+                  run_time=3.0)
+
+
+        #Densify: fade in the full 1000, retire the 256 seeds
+        full_rgba=viridis(fcn); full_rgba[:,3]=0.7
+        fc_block=orient(VoxelBlock(fc_slot_centers(np.arange(n_fc)), wafer, full_rgba))
+        self.play(FadeIn(fc_block), FadeOut(pool_ghost), run_time=1.5)
+        swap_out(self, pool_ghost)
+        fc_border_ref=border_ghost   #this mobject IS the fc border now
+        self.wait(still_hold)
 
 
 
