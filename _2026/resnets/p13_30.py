@@ -471,13 +471,28 @@ class P13_22(InteractiveScene):
 
         #bounds (static border)
         _, bounds=conv_data_block(a, spacing_between_layers+1, vmin=vmin, vmax=vmax,
-                                  cell_size=block_cell, alpha=0.6)
+                                  cell_size=block_cell, alpha=0.75)
+
+        # _.set_opacity(0.0)
 
 
         conv_1_border=orient(prism(*bounds, CHILL_BROWN, line_radius))
 
-        self.frame.reorient(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
-        self.add(img, image_border, conv_1_border)
+        # self.frame.reorient(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
+        self.add(img)
+        self.frame.reorient(90, 90, 0, (np.float32(11.27), np.float32(-0.41), np.float32(0.2)), 65.81)
+
+
+        self.wait(1)
+        self.play(FadeIn(image_border),
+                  FadeIn(conv_1_border), 
+                  self.frame.animate.reorient(*start_position),
+                  run_time=8)
+
+
+
+
+
         self.wait(1)
 
         if quick_mode:
