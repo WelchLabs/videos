@@ -13,8 +13,8 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin'
-# data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
+# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin'
+data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
 
 spacing_between_layers=5
 line_radius=0.18
@@ -412,6 +412,36 @@ def swing_path(pivot, angle, axis=OUT):
         landed=pivot+np.dot(start_points-pivot, full.T)
         return swung+alpha*(end_points-landed)
     return path
+
+def axis_arrow(start, end, color, radius, head_len=2.0, head_w=0.9, normal=UP):
+    """Straight axis with a chevron head at `end`, lying in the plane perpendicular to `normal`."""
+    start=np.asarray(start, dtype=np.float64)
+    end=np.asarray(end, dtype=np.float64)
+    d=end-start
+    d/=np.linalg.norm(d)
+    perp=np.cross(normal, d)
+    group=VGroup(*polyline([start, end], color, radius))
+    for s in (1, -1):
+        group.add(*polyline([end, end-head_len*d+s*head_w*perp], color, radius))
+    return group
+
+def cap_with_triangle(axis, at_start=False, length=2.5, width=2.0, normal=UP, color=CHILL_BROWN):
+    """Filled triangle on one end of a NumberLine, in the plane perpendicular to `normal`.
+    Shortens the line to the triangle's base so the two don't z-fight."""
+    p0, p1=axis.get_start(), axis.get_end()
+    tip, d=(p0, p0-p1) if at_start else (p1, p1-p0)
+    d=d/np.linalg.norm(d)
+    perp=np.cross(normal, d)
+    base=tip-length*d
+    tri=Polygon(tip, base+0.5*width*perp, base-0.5*width*perp)
+    tri.set_fill(color, 1.0)
+    tri.set_stroke(width=0)
+    tri.apply_depth_test()
+    if at_start:
+        axis.put_start_and_end_on(base, p1)
+    else:
+        axis.put_start_and_end_on(p0, base)
+    return tri
 
 class P13(InteractiveScene):
     def construct(self):
@@ -875,7 +905,8 @@ class P13(InteractiveScene):
         wafer=np.array([pooled_cell, cell_depth, pooled_cell])  #thin slice per unit, now stacked in y
 
         #Morph target: the 256 pooled voxels spread to 256 sampled slots along the column
-        seed_idx=np.round(np.linspace(0, n_fc-1, n_c3)).astype(int)
+        # seed_idx=np.round(np.linspace(0, n_fc-1, n_c3)).astype(int)
+        seed_idx=np.round(np.linspace(n_fc-1, 0, n_c3)).astype(int)   #channel 0 -> bottom slot
         seed_rgba=viridis(fcn[seed_idx]); seed_rgba[:,3]=0.7
         fc_seed=orient(VoxelBlock(fc_slot_centers(seed_idx), wafer, seed_rgba))
 
@@ -899,17 +930,15 @@ class P13(InteractiveScene):
 
         
         # arc=swing_path(pivot, 90*DEGREES, axis=UP)   #flip sign if it dives instead of lifts
-        arc=swing_path(pivot, 90*DEGREES, axis=UP)
+        # arc=swing_path(pivot, -90*DEGREES, axis=UP)
+        arc=swing_path(pivot, -90*DEGREES, axis=UP)
 
         self.wait(1.0)
-        self.play(Transform(pool_ghost, fc_seed,
-                            path_arc=-90*DEGREES, path_arc_axis=UP),
+        self.play(Transform(pool_ghost, fc_seed, path_func=arc),
                   Transform(border_ghost, fc_border, path_func=arc),
-                  self.frame.animate.reorient(*fc_view),
-                  run_time=3.0)
+                  self.frame.animate.reorient(*fc_view), run_time=3.0)
 
-
-        #Densify: fade in the full 1000, retire the 256 seeds
+        #Densify: fade in the full 1000, retire the 256 seeds -> Sw, yeah that makes sense
         full_rgba=viridis(fcn); full_rgba[:,3]=0.7
         fc_block=orient(VoxelBlock(fc_slot_centers(np.arange(n_fc)), wafer, full_rgba))
         self.play(FadeIn(fc_block), FadeOut(pool_ghost), run_time=1.5)
@@ -920,6 +949,77 @@ class P13(InteractiveScene):
 
 
 
+        #Logits plot
+        ## --- Logit plot: index axis down, value axis right ---
+        fc_gap=12.0                    #fc column -> index axis; must exceed |fc.min()|*logit_scale or the negatives cross it
+        ## --- Logit plot: Axes with index pointing down, value axis spanning -/+ ---
+        plot_w=11.0                                   #world units for fc.max()
+        logit_unit=plot_w/fc.max()
+        x_pos=0.7*fc.max()                            #value axis extent to the right of zero
+        x_neg=x_pos                                   #and to the left; shrink this if it runs into the fc column
+        y_max=1.05*n_fc
+
+        axes=Axes(x_range=(-x_neg, x_pos, x_pos), y_range=(0, y_max, y_max),
+                  width=(x_neg+x_pos)*logit_unit, height=y_max*fc_step,
+                  axis_config=dict(stroke_width=8, include_ticks=False, include_tip=False))
+        axes.set_color(CHILL_BROWN)
+        for axis in axes.get_axes():
+            axis.set_scale_stroke_with_zoom(True)
+            axis.apply_depth_test()
+
+        axes.rotate(-90*DEGREES, RIGHT, about_point=ORIGIN)   #+y -> -z: index 0 at the top
+        axis_x=fc_z+fc_gap
+        top_z=0.5*(n_fc-1)*fc_step
+        axes.shift(np.array([axis_x, 0, top_z])-axes.c2p(0, 0))
+
+
+        o=axes.c2p(0, 0)
+        plot_step=(o-axes.c2p(0, 1))[2]        #world z per index on the plot; should equal fc_step
+        # print(fc_step, plot_step)
+        # print(fc_step/plot_step)
+        axes.stretch(1.02, 2, about_point=o)   #dim 2 = world z after the rotate
+
+
+
+
+        #Curve points and the origin, before the caps shorten the lines
+        curve_pts=axes.c2p(fc, np.arange(n_fc))
+        o=axes.c2p(0, 0)
+
+        tips=VGroup(cap_with_triangle(axes.x_axis, at_start=True, length=1.0, width=0.85),   #negative end
+                    cap_with_triangle(axes.x_axis, length=1.0, width=0.85),                  #positive end
+                    cap_with_triangle(axes.y_axis, length=1.0, width=0.85))                  #bottom of the index axis
+
+
+        curve=VMobject()
+        curve.set_points_as_corners(axes.c2p(fc, np.arange(n_fc)))
+        curve.set_stroke(width=6, opacity=1.0)
+        curve.set_scale_stroke_with_zoom(True)
+        curve.apply_depth_test()
+        curve.set_joint_type('bevel')
+
+        #Same min-max -> viridis map as fc_block, read back off the point positions
+        o=axes.c2p(0, 0)
+        pts=curve.get_points()
+        v=((pts[:,0]-o[0])/logit_unit-fc.min())/np.ptp(fc)
+        rgba=viridis(v)
+        rgba[:,3]=1.0
+        curve.data['stroke_rgba'][:]=rgba
+
+
+        # self.add(axes, tips, curve)
+        # self.remove(axes, tips, curve)
+
+        # self.frame.reorient(0, 90, 0, (np.float32(214.91), np.float32(8.72), np.float32(-0.68)), 60.67)
+        plot_view=(0, 90, 0, (np.float32(222.89), np.float32(8.72), np.float32(-0.51)), 60.67)
+
+
+        self.wait()
+        self.play(ShowCreation(axes), FadeIn(tips), 
+            self.frame.animate.reorient(*plot_view), 
+            run_time=2.0)
+        self.play(ShowCreation(curve), run_time=5.0)
+        self.wait()
 
 
 
@@ -928,6 +1028,10 @@ class P13(InteractiveScene):
 
 
 
+
+
+        self.wait(20)
+        self.embed()
 
         # conv1 (1, 64, 112, 112)                                                                               
         # bn1 (1, 64, 112, 112)
@@ -961,9 +1065,6 @@ class P13(InteractiveScene):
 
  
 
-
-        self.wait(20)
-        self.embed()
 
 
 
