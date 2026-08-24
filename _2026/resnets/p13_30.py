@@ -443,8 +443,10 @@ def cap_with_triangle(axis, at_start=False, length=2.5, width=2.0, normal=UP, co
         axis.put_start_and_end_on(p0, base)
     return tri
 
-class P13(InteractiveScene):
+class P13_22(InteractiveScene):
     def construct(self):
+        quick_mode=False   #flip to False for the real render
+
         act=np.load(data_dir+'/p13/lemon_activations_47587.npy', allow_pickle=True).item()
         layer_1_weights=np.load(data_dir+'/p13/plain_8_conv_1.npy')
 
@@ -474,11 +476,9 @@ class P13(InteractiveScene):
 
         conv_1_border=orient(prism(*bounds, CHILL_BROWN, line_radius))
 
-        self.add(img, image_border, conv_1_border)
         self.frame.reorient(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
+        self.add(img, image_border, conv_1_border)
         self.wait(1)
-
-        quick_mode=True   #flip to False for the real render
 
         if quick_mode:
             block, _=conv_data_block(a, spacing_between_layers+1, vmin=vmin, vmax=vmax,
@@ -1022,17 +1022,118 @@ class P13(InteractiveScene):
         self.wait()
 
 
+        self.play(FadeOut(axes), 
+                  FadeOut(curve),
+                  FadeOut(tips),
+                  self.frame.animate.reorient(0, 59, 0, (np.float32(105.79), np.float32(12.11), np.float32(-34.57)), 186.07),
+                  run_time=8)
 
 
+        #P20
+        #Ok ok ok ok now add 4 example images, accuracy on the bottom
+        #I thin doing this in illustrator is probably the move, just some chill fade-ins should be ok
+        self.wait(1)
 
+        # P22
+        # Alrighy now we're going to add 6 layers to get to Plain 18
+        # I think we can animated this nicely. 
+        act14=np.load(data_dir+'/p22/lemon_activations_47587_plain14.npy', allow_pickle=True).item()
+        # print(act14.keys())
 
+        layer4_depth_mult=1.2                         #layer4 (512 ch) depth relative to layer3 (256 ch); true ratio is 2
+        depth_mults[512]=depth_mults[256]*layer4_depth_mult
 
+        def deep_layer(rl, z_start, depth):
+            """Thresholded block + border for one layer, `depth` world units deep."""
+            blk, bnds=relu_viz_block(rl, z_start, depth/rl.shape[0], cell2)
+            orient(blk)
+            border=orient(prism(*bnds, CHILL_BROWN, line_radius))
+            return blk, border, bnds
+
+        swap_out(self, pool_border)                   #coincident duplicate of deep_borders[-1] from the pooling step
+        pool_border=None
+
+        #1. Zoom out
+        # wide_view=(1, 60, 0, (np.float32(132.95), np.float32(-18.99), np.float32(-7.27)), 251.41)
+
+        # self.wait()
+        # self.play(self.frame.animate.reorient(*wide_view), run_time=4.0)
+        # self.wait()
+
+        #2. Slide open two slots after layer1.0, fade in layer1.1.relu and layer1.1
+        gap1=2*(base_depth+spacing_between_layers)    #64-channel layers are base_depth deep
+        downstream=[*deep_blocks[1:], *deep_borders[1:], fc_block, fc_border_ref]
+
+        self.wait()
+        self.play(*[m.animate.shift([gap1, 0, 0]) for m in downstream], 
+                    self.frame.animate.reorient(0, 59, 0, (np.float32(136.24), np.float32(-16.45), np.float32(-2.75)), 230.32),
+                    run_time=3.0)   #orient: depth z -> world x
+        z3_0+=gap1
+        fc_z+=gap1
+
+        z_cursor=deep_bounds[0][5]+spacing_between_layers
+        new1=[]
+        for key in ['layer1.1.relu', 'layer1.1']:
+            blk, border, bnds=deep_layer(act14[key][0], z_cursor, base_depth)
+            new1.append((blk, border))
+            z_cursor=bnds[5]+spacing_between_layers
+        self.play(LaggedStart(*[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in new1], lag_ratio=0.3),
+                  run_time=3.0)
+
+        #3.
+        self.wait(still_hold)
+
+        #4. Un-pool layer3.0 back to 14x14 while opening four slots for layer4
+        depth4=base_depth*depth_mults[512]
+        gap4=4*(depth4+spacing_between_layers)
+
+        blk3, border3, bounds3=deep_layer(act['layer3.0'][0], z3_0, base_depth*depth_mults[256])
+        collapsed=orient(VoxelBlock(tgt_centers+np.array([0, 0, gap1]),          #same voxels as blk3, piled in the pooled slots
+                                    np.array([pooled_cell, pooled_cell, cell_depth]), tgt_rgba))
+        self.add(collapsed)
+        swap_out(self, deep_blocks[-1])               #the clean one-voxel-per-channel column
+        deep_blocks[-1]=collapsed
+
+        self.play(Transform(collapsed, blk3),
+                  Transform(deep_borders[-1], border3),
+                  fc_block.animate.shift([gap4, 0, 0]),
+                  fc_border_ref.animate.shift([gap4, 0, 0]),
+                  self.frame.animate.reorient(0, 60, 0, (np.float32(227.84), np.float32(-12.27), np.float32(1.5)), 293.88),
+                  run_time=4.0)
+        fc_z+=gap4
+
+        #Retire the morphed stand-ins for the real block and border
+        self.add(blk3, border3)
+        swap_out(self, collapsed)
+        swap_out(self, deep_borders[-1])
+        deep_blocks[-1]=blk3
+        deep_borders[-1]=border3
+        self.wait(still_hold)
+
+        #5. layer4.0.relu through layer4.1
+        z_cursor=bounds3[5]+spacing_between_layers
+        new4=[]
+        for key in ['layer4.0.relu', 'layer4.0', 'layer4.1.relu', 'layer4.1']:
+            blk, border, bnds=deep_layer(act14[key][0], z_cursor, depth4)
+            new4.append((blk, border))
+            z_cursor=bnds[5]+spacing_between_layers
+        self.play(LaggedStart(*[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in new4], lag_ratio=0.25),
+                  run_time=5.0)
+        self.wait(still_hold)
+
+        #Ok fun little pan around, probably won't use it, but might be a fun b-roll. 
+        self.wait()
+        self.play(self.frame.animate.reorient(47, 64, 0, (np.float32(321.23), np.float32(36.1), np.float32(-33.87)), 215.92), 
+                  run_time=10.0)
 
 
 
         self.wait(20)
         self.embed()
 
+
+
+        # Plain8
         # conv1 (1, 64, 112, 112)                                                                               
         # bn1 (1, 64, 112, 112)
         # relu (1, 64, 112, 112)
@@ -1060,6 +1161,50 @@ class P13(InteractiveScene):
         # image (224, 224, 3)
 
 
+        # Plain14
+        # conv1 (1, 64, 112, 112)
+        # bn1 (1, 64, 112, 112)
+        # relu (1, 64, 112, 112)
+        # maxpool (1, 64, 56, 56)
+        # layer1.0.conv1 (1, 64, 56, 56)
+        # layer1.0.bn1 (1, 64, 56, 56)
+        # layer1.0.relu (1, 64, 56, 56)
+        # layer1.0.conv2 (1, 64, 56, 56)
+        # layer1.0.bn2 (1, 64, 56, 56)
+        # layer1.0 (1, 64, 56, 56)
+        # layer1.1.conv1 (1, 64, 56, 56)
+        # layer1.1.bn1 (1, 64, 56, 56)
+        # layer1.1.relu (1, 64, 56, 56)
+        # layer1.1.conv2 (1, 64, 56, 56)
+        # layer1.1.bn2 (1, 64, 56, 56)
+        # layer1.1 (1, 64, 56, 56)
+        # layer2.0.conv1 (1, 128, 28, 28)
+        # layer2.0.bn1 (1, 128, 28, 28)
+        # layer2.0.relu (1, 128, 28, 28)
+        # layer2.0.conv2 (1, 128, 28, 28)
+        # layer2.0.bn2 (1, 128, 28, 28)
+        # layer2.0 (1, 128, 28, 28)
+        # layer3.0.conv1 (1, 256, 14, 14)
+        # layer3.0.bn1 (1, 256, 14, 14)
+        # layer3.0.relu (1, 256, 14, 14)
+        # layer3.0.conv2 (1, 256, 14, 14)
+        # layer3.0.bn2 (1, 256, 14, 14)
+        # layer3.0 (1, 256, 14, 14)
+        # layer4.0.conv1 (1, 512, 7, 7)
+        # layer4.0.bn1 (1, 512, 7, 7)
+        # layer4.0.relu (1, 512, 7, 7)
+        # layer4.0.conv2 (1, 512, 7, 7)
+        # layer4.0.bn2 (1, 512, 7, 7)
+        # layer4.0 (1, 512, 7, 7)
+        # layer4.1.conv1 (1, 512, 7, 7)
+        # layer4.1.bn1 (1, 512, 7, 7)
+        # layer4.1.relu (1, 512, 7, 7)
+        # layer4.1.conv2 (1, 512, 7, 7)
+        # layer4.1.bn2 (1, 512, 7, 7)
+        # layer4.1 (1, 512, 7, 7)
+        # avgpool (1, 512, 1, 1)
+        # fc (1, 1000)
+        # image (224, 224, 3)
 
 
 
