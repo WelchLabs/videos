@@ -306,13 +306,25 @@ def build_blocks(act, layout, stats=None):
     return blocks
 
 
-def build_fc(probs, fc_step, fc_z, color_max):
-    """Vertical column of 1000 wafers colored by softmax probability."""
-    n_fc=len(probs)
-    rgba=viridis(probs/color_max)
-    rgba[:,3]=0.7
+def fc_stats(fc, pct=70):
+    """The fc vector as a single (1, n_fc, 1) channel, so layer_stats treats it like a conv layer."""
+    return layer_stats(np.asarray(fc, dtype=np.float64).reshape(1, -1, 1), pct)
+
+
+def build_fc(fc, fc_step, fc_z, pct=97, alpha=0.7, stats=None):
+    """Column of wafers, max-normalized and percentile-thresholded exactly like relu_viz_block:
+    only the top (100-pct)% of logits get a wafer, colored by viridis(logit/max)."""
+    fc=np.asarray(fc, dtype=np.float64)
+    vmax, thresh=fc_stats(fc, pct) if stats is None else stats
+
+    vmax=vmax/2.0 #SW hack
+
+    fcn=fc/float(vmax.ravel()[0])
+    keep=fcn>float(thresh.ravel()[0])
+    rgba=viridis(fcn[keep])
+    rgba[:,3]=alpha
     wafer=np.array([fc_cell, cell_depth, fc_cell])   #thin slice per unit, stacked in y
-    return orient(VoxelBlock(fc_slot_centers(n_fc, fc_step, fc_z), wafer, rgba))
+    return orient(VoxelBlock(fc_slot_centers(len(fc), fc_step, fc_z)[keep], wafer, rgba))
 
 
 def build_prob_axes(n_fc, fc_step, fc_z):
@@ -364,7 +376,7 @@ def build_prob_curve(axes, probs, prob_unit, color_max):
 class P25_25(InteractiveScene):
     def construct(self):
         start_id=63
-        sweep_ids=list(range(0, 129, 2))     #0 -> 128; thin this out or reorder as you like
+        sweep_ids=list(range(0, 128, 1))     #0 -> 128; thin this out or reorder as you like
         sweep_hold=0.25                       #seconds per sweep frame
         fixed_norm=True                       #normalize/threshold every frame with start_id's stats
         side_view=(0, 90, 0, (115.0, 0.0, 0.0), 150.0)   #tune in embed
@@ -375,6 +387,7 @@ class P25_25(InteractiveScene):
 
         #Stats from the starting frame, reused for every sweep frame when fixed_norm
         stats=[layer_stats(act[key][0]) for key, _, _ in layout] if fixed_norm else None
+        fc_stat=fc_stats(act['fc'][0]) if fixed_norm else None
 
         def color_max(probs):
             return prob_axis_max if fixed_norm else float(probs.max())
@@ -397,7 +410,7 @@ class P25_25(InteractiveScene):
         ## ---- First frame ----
         probs=softmax(act['fc'][0])
         blocks=build_blocks(act, layout, stats)
-        fc_block=build_fc(probs, fc_step, fc_z, color_max(probs))
+        fc_block=build_fc(act['fc'][0], fc_step, fc_z, stats=fc_stat)
         curve=build_prob_curve(axes, probs, prob_unit, color_max(probs))
 
         self.frame.reorient(*side_view)
@@ -414,12 +427,20 @@ class P25_25(InteractiveScene):
         # self.wait(still_hold)
 
         ## ---- Sweep: rebuild only what depends on the file ----
+
+        # Ok, so I'm not sure yet about what view angle will be nice for blending everything together. 
+        # Maybe try a couple here. 
+        # self.frame.reorient(42, 79, 0, (np.float32(130.97), np.float32(9.46), np.float32(-7.34)), 175.86) #Option 1. 
+        self.frame.reorient(32, 65, 0, (np.float32(135.4), np.float32(11.45), np.float32(-9.87)), 175.86) #Option 2
+
         net=Group(*blocks, fc_block, curve)
+        
+        self.wait(1)
         for sid in sweep_ids:
             act=load_act(sid)
             probs=softmax(act['fc'][0])
             new=Group(*build_blocks(act, layout, stats),
-                      build_fc(act['fc'][0], fc_step, fc_z, color_max(act['fc'][0])),
+                      build_fc(act['fc'][0], fc_step, fc_z, stats=fc_stat),
                       # build_prob_curve(axes, probs, prob_unit, color_max(probs))
                       )
             swap_out(self, net)
