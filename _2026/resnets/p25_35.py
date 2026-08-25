@@ -13,8 +13,8 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-# data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
-data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
+data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
+# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
 sweep_dir=data_dir+'p26_sweep_2/'
 
 spacing_between_layers=5
@@ -432,7 +432,9 @@ class P25_25(InteractiveScene):
         # Ok, so I'm not sure yet about what view angle will be nice for blending everything together. 
         # Maybe try a couple here. 
         # self.frame.reorient(42, 79, 0, (np.float32(130.97), np.float32(9.46), np.float32(-7.34)), 175.86) #Option 1. 
-        self.frame.reorient(32, 65, 0, (np.float32(135.4), np.float32(11.45), np.float32(-9.87)), 175.86) #Option 2
+        # self.frame.reorient(32, 65, 0, (np.float32(135.4), np.float32(11.45), np.float32(-9.87)), 175.86) #Option 2
+        self.frame.reorient(38, 60, 0, (np.float32(151.06), np.float32(16.83), np.float32(-21.6)), 162.19) #Ok getting some traction with this one in p26 in illustrator!
+        # self.frame.reorient(33, 90, 0, (np.float32(137.31), np.float32(67.91), np.float32(-0.33)), 201.08)
 
         net=Group(*blocks, fc_block, curve)
         
