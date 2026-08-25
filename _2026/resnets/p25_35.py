@@ -15,7 +15,7 @@ MAGENTA='#FF00FF'
 
 data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
 # data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
-sweep_dir=data_dir+'p26_sweep_2/'
+sweep_dir=data_dir+'p26_sweep_1_cache/'
 
 spacing_between_layers=5
 line_radius=0.18
@@ -374,7 +374,7 @@ def build_prob_curve(axes, probs, prob_unit, color_max):
     return curve
 
 
-class P25_25(InteractiveScene):
+class P25(InteractiveScene):
     def construct(self):
         start_id=63
         sweep_ids=list(range(0, 128, 1))     #0 -> 128; thin this out or reorder as you like
@@ -414,13 +414,18 @@ class P25_25(InteractiveScene):
         fc_block=build_fc(act['fc'][0], fc_step, fc_z, stats=fc_stat)
         curve=build_prob_curve(axes, probs, prob_unit, color_max(probs))
 
-        self.frame.reorient(*side_view)
-        self.add(img, image_border)
+        # self.frame.reorient(*side_view)
+        # self.frame.reorient(38, 60, 0, (np.float32(151.06), np.float32(16.83), np.float32(-21.6)), 162.19)
+        self.frame.reorient(2, 57, 0, (np.float32(105.69), np.float32(16.14), np.float32(-11.07)), 179.39)
         self.wait(1)
+        self.add(img, image_border)
+        
 
         fades=[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in zip(blocks, borders)]
         fades.append(AnimationGroup(FadeIn(fc_block), FadeIn(fc_border)))
-        self.play(LaggedStart(*fades, lag_ratio=0.2), run_time=6.0)
+
+        self.wait(1)
+        self.play(LaggedStart(*fades, lag_ratio=1.0), run_time=6.0)
         self.wait(still_hold)
 
         # self.play(ShowCreation(axes), FadeIn(tips), run_time=2.0)
@@ -433,11 +438,20 @@ class P25_25(InteractiveScene):
         # Maybe try a couple here. 
         # self.frame.reorient(42, 79, 0, (np.float32(130.97), np.float32(9.46), np.float32(-7.34)), 175.86) #Option 1. 
         # self.frame.reorient(32, 65, 0, (np.float32(135.4), np.float32(11.45), np.float32(-9.87)), 175.86) #Option 2
-        self.frame.reorient(38, 60, 0, (np.float32(151.06), np.float32(16.83), np.float32(-21.6)), 162.19) #Ok getting some traction with this one in p26 in illustrator!
+        # self.frame.reorient(38, 60, 0, (np.float32(151.06), np.float32(16.83), np.float32(-21.6)), 162.19) #Ok getting some traction with this one in p26 in illustrator!
         # self.frame.reorient(33, 90, 0, (np.float32(137.31), np.float32(67.91), np.float32(-0.33)), 201.08)
 
         net=Group(*blocks, fc_block, curve)
         
+        self.wait(1)
+        # self.play(self.frame.animate.reorient(38, 60, 0, (np.float32(151.06), np.float32(16.83), np.float32(-21.6)), 162.19), run_time=6.0)
+        self.play(self.frame.animate.reorient(35, 61, 0, (np.float32(172.47), np.float32(32.64), np.float32(-36.48)), 203.29), run_time=6.0)
+
+        self.wait(1)
+        self.remove(blocks[0], blocks[1], blocks[2]) #Remove blocks to see picture for a moment
+        self.wait(1)
+        self.add(blocks[0], blocks[1], blocks[2])
+
         self.wait(1)
         for sid in sweep_ids:
             act=load_act(sid)
