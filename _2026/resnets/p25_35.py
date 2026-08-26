@@ -13,8 +13,8 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-# data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
-data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
+data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
+# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
 sweep_dir=data_dir+'p27_sweep_1/cache/'
 sweep_dir_2=data_dir+'p27_sweep_4/cache'
 sweep_dir_3=data_dir+'p27_sweep_5/cache'
@@ -485,6 +485,19 @@ class P25(InteractiveScene):
         self.add(blocks[0], blocks[1], blocks[2])
 
         self.wait(1)
+
+        # Quick still grab here for print outs for P41ish
+        # FRESH_TAN=#EFE5D1
+        # self.remove(blocks[0], blocks[1], blocks[2], blocks[4], blocks[5])
+        # self.remove(borders[0], borders[1], borders[2], borders[4], borders[5])
+        # # self.frame.reorient(0, 50, 0, (np.float32(94.77), np.float32(33.95), np.float32(-29.24)), 77.79)
+        # self.frame.reorient(0, 65, 0, (np.float32(94.53), np.float32(36.94), np.float32(-22.72)), 77.79)
+
+        # self.remove(blocks[0], blocks[1], blocks[2], blocks[3], blocks[5])
+        # self.remove(borders[0], borders[1], borders[2], borders[3], borders[5])
+        # # reorient(0, 48, 0, (np.float32(127.61), np.float32(33.57), np.float32(-29.77)), 77.79)
+        # self.frame.reorient(0, 64, 0, (np.float32(126.36), np.float32(36.57), np.float32(-23.5)), 77.79)
+
 
 
 
