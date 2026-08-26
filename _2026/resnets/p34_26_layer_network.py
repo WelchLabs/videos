@@ -393,14 +393,14 @@ def build_fc(fc, fc_step, fc_z, pct=70, vmax_div=2.0, alpha=0.7):
 
 ## ---- The scene ----
 
-class P33_Net(InteractiveScene):
+class P34_Net_26(InteractiveScene):
     """Base class: draws one activation cache. Subclasses only override the attributes below."""
 
-    model_id='plain8'
+    model_id='plain26'
 
     #Per-model layout knobs
-    depth_scale=0.8                   #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
-    layer_spacing=7.0                 #world units between consecutive blocks, default = 5.0
+    depth_scale=0.4                   #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
+    layer_spacing=2.0                 #world units between consecutive blocks, default = 5.0
     tensors_per_block=2               #2 -> post-conv1 relu + block output; 1 -> block outputs only
     depth_mults={64: 1.0, 128: 1.35, 256: 1.8, 512: 2.3}
     max_layers=None                   #debug: only draw the first N blocks
@@ -419,8 +419,8 @@ class P33_Net(InteractiveScene):
     kernels={0: dict(i=10, j=10, prism=True, color=KT_ORANGE),           #image (7x7, stride 2) -> stem
              1: dict(i=20, j=40, prism=True, color=KT_ORANGE), #, color=CYAN),
              2: dict(i=20, j=40, prism=True, color=KT_ORANGE),
-             5: dict(i=5, j=7, prism=True, color=KT_AQUA),
-             6: dict(i=3, j=3, prism=True, color=KT_AQUA),
+             23: dict(i=5, j=7, prism=True, color=KT_AQUA),
+             24: dict(i=3, j=3, prism=True, color=KT_AQUA),
              # 7: dict(i=3, j=3, prism=True, color=KT_AQUA),
 
              }
@@ -446,7 +446,7 @@ class P33_Net(InteractiveScene):
     image_opacity=0.6
     fade_in=True
     fade_in_time=8.0
-    default_view=(0, 56, 0, (np.float32(104.97), np.float32(23.8), np.float32(24.0)), 188.16)                #(theta, phi, gamma, center, height); None -> auto from the layout
+    default_view=(0, 60, 0, (np.float32(172.96), np.float32(34.15), np.float32(39.64)), 246.57)
 
     # ------------------------------------------------------------------
 
