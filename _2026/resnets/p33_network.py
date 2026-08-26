@@ -393,10 +393,10 @@ def build_fc(fc, fc_step, fc_z, pct=70, vmax_div=2.0, alpha=0.7):
 
 ## ---- The scene ----
 
-class GeneralNet(InteractiveScene):
+class P33_Net(InteractiveScene):
     """Base class: draws one activation cache. Subclasses only override the attributes below."""
 
-    model_id='plain14'
+    model_id='plain8'
 
     #Per-model layout knobs
     depth_scale=0.8                   #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
@@ -416,19 +416,13 @@ class GeneralNet(InteractiveScene):
 
     #Kernel viz: {destination layer index: dict(i, j, prism, ksize, color)} -- indices are printed at
     #startup by describe(). Index 0 is the stem, whose source is the input image (default ksize 7).
-    kernels={0: dict(i=10, j=10, prism=True),           #image (7x7, stride 2) -> stem
-             1: dict(i=20, j=40, prism=True), #, color=CYAN),
-             2: dict(i=20, j=40, prism=True),
-             3: dict(i=9, j=16, prism=True),
-             4: dict(i=5, j=7, prism=True),
-             5: dict(i=5, j=7, prism=True),
-             6: dict(i=3, j=3, prism=True),
-             7: dict(i=3, j=3, prism=True),
-             8: dict(i=3, j=3, prism=True),
-             9: dict(i=3, j=3, prism=True),
-             10: dict(i=3, j=3, prism=True),
-             11: dict(i=3, j=3, prism=True),
-             12: dict(i=3, j=3, prism=True)
+    kernels={0: dict(i=10, j=10, prism=True, color=KT_ORANGE),           #image (7x7, stride 2) -> stem
+             1: dict(i=20, j=40, prism=True, color=KT_ORANGE), #, color=CYAN),
+             2: dict(i=20, j=40, prism=True, color=KT_ORANGE),
+             5: dict(i=5, j=7, prism=True, color=KT_AQUA),
+             6: dict(i=3, j=3, prism=True, color=KT_AQUA),
+             # 7: dict(i=3, j=3, prism=True, color=KT_AQUA),
+
              }
 
     kernel_color=KT_ORANGE
@@ -439,7 +433,7 @@ class GeneralNet(InteractiveScene):
 
     #fc "kernel": patch on the last conv block's output face (prism optional) fanned out to the fc
     #column. dict(i, j, ksize, prism, color, radius); ksize='full' uses the whole face. None -> off.
-    fc_kernel=dict(i=3, j=3, ksize=3, prism=True)
+    fc_kernel=dict(i=3, j=3, ksize=3, prism=True, color=KT_AQUA)
 
     #Skip connections (resnets): arc from block input to block output over the top of the net
     show_skips=False
@@ -450,9 +444,9 @@ class GeneralNet(InteractiveScene):
 
     #Presentation
     image_opacity=0.6
-    fade_in=False
-    fade_in_time=6.0
-    default_view=None                 #(theta, phi, gamma, center, height); None -> auto from the layout
+    fade_in=True
+    fade_in_time=8.0
+    default_view=(0, 56, 0, (np.float32(107.53), np.float32(32.15), np.float32(33.91)), 212.89)                 #(theta, phi, gamma, center, height); None -> auto from the layout
 
     # ------------------------------------------------------------------
 
@@ -592,61 +586,61 @@ class GeneralNet(InteractiveScene):
 
 ## ---- One class per model; depth_scale/spacing below are starting guesses to tune ----
 
-class Plain8(GeneralNet):
-    model_id='plain8'
-    depth_scale=1.0
-    layer_spacing=5.0
-    kernels={0: dict(i=40, j=70, prism=False),           #image (7x7, stride 2) -> stem
-             1: dict(i=22, j=30, prism=True),
-             3: dict(i=9, j=16, prism=False),
-             5: dict(i=5, j=7, prism=True)}
-    fc_kernel=dict(i=5, j=7, ksize=3, prism=True)      #or ksize='full' for the whole 14x14 face
-    default_view=(2, 57, 0, (105.69, 16.14, -11.07), 179.39)   #from p25_35
+# class Plain8(GeneralNet):
+#     model_id='plain8'
+#     depth_scale=1.0
+#     layer_spacing=5.0
+#     kernels={0: dict(i=40, j=70, prism=False),           #image (7x7, stride 2) -> stem
+#              1: dict(i=22, j=30, prism=True),
+#              3: dict(i=9, j=16, prism=False),
+#              5: dict(i=5, j=7, prism=True)}
+#     fc_kernel=dict(i=5, j=7, ksize=3, prism=True)      #or ksize='full' for the whole 14x14 face
+#     default_view=(2, 57, 0, (105.69, 16.14, -11.07), 179.39)   #from p25_35
 
 
-class Plain14(GeneralNet):
-    model_id='plain14'
-    depth_scale=0.9
-    layer_spacing=4.0
-    kernels=kernels_for([1, 5, 9], i=10, j=14, prism=True)
+# class Plain14(GeneralNet):
+#     model_id='plain14'
+#     depth_scale=0.9
+#     layer_spacing=4.0
+#     kernels=kernels_for([1, 5, 9], i=10, j=14, prism=True)
 
 
-class Plain20(GeneralNet):
-    model_id='plain20'
-    depth_scale=0.7
-    layer_spacing=3.5
-    kernels=kernels_for([1, 7, 13], i=10, j=14, prism=True)
+# class Plain20(GeneralNet):
+#     model_id='plain20'
+#     depth_scale=0.7
+#     layer_spacing=3.5
+#     kernels=kernels_for([1, 7, 13], i=10, j=14, prism=True)
 
 
-class Plain26(GeneralNet):
-    model_id='plain26'
-    depth_scale=0.55
-    layer_spacing=3.0
-    kernels=kernels_for([1, 7, 13, 19], i=10, j=14, prism=True)
+# class Plain26(GeneralNet):
+#     model_id='plain26'
+#     depth_scale=0.55
+#     layer_spacing=3.0
+#     kernels=kernels_for([1, 7, 13, 19], i=10, j=14, prism=True)
 
 
-class Plain34(GeneralNet):
-    model_id='plain34'
-    depth_scale=0.45
-    layer_spacing=2.5
-    kernels=kernels_for([1, 9, 17, 25], i=10, j=14, prism=True)
+# class Plain34(GeneralNet):
+#     model_id='plain34'
+#     depth_scale=0.45
+#     layer_spacing=2.5
+#     kernels=kernels_for([1, 9, 17, 25], i=10, j=14, prism=True)
 
 
-class Plain56(GeneralNet):
-    model_id='plain56'
-    depth_scale=0.3
-    layer_spacing=2.0
-    kernels=kernels_for([1, 7, 15, 49], i=10, j=14, prism=False)
+# class Plain56(GeneralNet):
+#     model_id='plain56'
+#     depth_scale=0.3
+#     layer_spacing=2.0
+#     kernels=kernels_for([1, 7, 15, 49], i=10, j=14, prism=False)
 
 
-class Plain74(GeneralNet):
-    model_id='plain74'
-    depth_scale=0.25
-    layer_spacing=1.5
-    kernels=kernels_for([1, 7, 15, 67], i=10, j=14, prism=False)
+# class Plain74(GeneralNet):
+#     model_id='plain74'
+#     depth_scale=0.25
+#     layer_spacing=1.5
+#     kernels=kernels_for([1, 7, 15, 67], i=10, j=14, prism=False)
 
 
-class ResNet74(Plain74):
-    model_id='resnet74'
-    show_skips=True
-    skip_height=6.0
+# class ResNet74(Plain74):
+#     model_id='resnet74'
+#     show_skips=True
+#     skip_height=6.0
