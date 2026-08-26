@@ -376,6 +376,9 @@ def build_prob_curve(axes, probs, prob_unit, color_max):
 
 class P25(InteractiveScene):
     def construct(self):
+
+        quick_mode=True
+
         start_id=63
         sweep_ids=list(range(0, 128, 1))     #0 -> 128; thin this out or reorder as you like
         sweep_hold=0.25                       #seconds per sweep frame
@@ -453,6 +456,8 @@ class P25(InteractiveScene):
         self.add(blocks[0], blocks[1], blocks[2])
 
         self.wait(1)
+        if quick_mode: sweep_ids=[sweep_ids[-1]]
+
         for sid in sweep_ids:
             act=load_act(sid)
             probs=softmax(act['fc'][0])
@@ -471,7 +476,10 @@ class P25(InteractiveScene):
 
 
 
-
+        #Mid and probably final parameter sweep
+        # self.frame.reorient(1, 53, 0, (np.float32(144.27), np.float32(22.04), np.float32(-23.48)), 234.65)
+        # self.frame.reorient(0, 50, 0, (np.float32(150.35), np.float32(19.08), np.float32(-27.47)), 238.02)
+        self.frame.reorient(0, 50, 0, (np.float32(156.33), np.float32(16.44), np.float32(-30.65)), 247.62)
 
 
 
