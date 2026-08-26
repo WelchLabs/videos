@@ -14,6 +14,16 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
+KT_PINK='#ED5E78'
+KT_RED='#D73B2F'
+KT_ORANGE='#EB8423'
+KT_YELLOW='#FCC947'
+KT_GREEN='#419C52'
+KT_LT_BLUE='#B2C2E4'
+KT_AQUA='#5BADB6'
+KT_BLUE='#236C94'
+KT_PURPLE='#7E5B76'
+
 data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
 # data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
 act_dir=data_dir+'general_activations/'         #activations_{model_id}.npy from general_activation_saving_1
@@ -386,11 +396,11 @@ def build_fc(fc, fc_step, fc_z, pct=70, vmax_div=2.0, alpha=0.7):
 class GeneralNet(InteractiveScene):
     """Base class: draws one activation cache. Subclasses only override the attributes below."""
 
-    model_id='plain8'
+    model_id='plain14'
 
     #Per-model layout knobs
-    depth_scale=1.0                   #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
-    layer_spacing=5.0                 #world units between consecutive blocks
+    depth_scale=0.8                   #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
+    layer_spacing=7.0                 #world units between consecutive blocks, default = 5.0
     tensors_per_block=2               #2 -> post-conv1 relu + block output; 1 -> block outputs only
     depth_mults={64: 1.0, 128: 1.35, 256: 1.8, 512: 2.3}
     max_layers=None                   #debug: only draw the first N blocks
@@ -413,6 +423,12 @@ class GeneralNet(InteractiveScene):
              4: dict(i=5, j=7, prism=True),
              5: dict(i=5, j=7, prism=True),
              6: dict(i=3, j=3, prism=True),
+             7: dict(i=3, j=3, prism=True),
+             8: dict(i=3, j=3, prism=True),
+             9: dict(i=3, j=3, prism=True),
+             10: dict(i=3, j=3, prism=True),
+             11: dict(i=3, j=3, prism=True),
+             12: dict(i=3, j=3, prism=True)
              }
 
     kernel_color=MAGENTA
