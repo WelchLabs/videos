@@ -13,9 +13,11 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
-# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
+# data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
+data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
 sweep_dir=data_dir+'p26_sweep_1_cache/'
+sweep_dir_2=data_dir+'p27_sweep_4/cache'
+sweep_dir_3=data_dir+'p27_sweep_5/cache'
 
 spacing_between_layers=5
 line_radius=0.18
@@ -268,8 +270,16 @@ def cap_with_triangle(axis, at_start=False, length=2.5, width=2.0, normal=UP, co
 
 ## ---- Sweep helpers: geometry is fixed by the shapes, only the values change per file ----
 
-def load_act(sweep_id):
-    return np.load(f'{sweep_dir}{sweep_id:03d}.npy', allow_pickle=True).item()
+import os, glob
+
+def sweep_paths(d):
+    return sorted(glob.glob(os.path.join(d, '*.npy')))   #zero-padded names sort in sweep order
+
+def load_act(path):
+    return np.load(path, allow_pickle=True).item()
+
+# def load_act(sweep_id):
+#     return np.load(f'{sweep_dir}{sweep_id:03d}.npy', allow_pickle=True).item()
 
 
 def layer_layout(act):
@@ -374,10 +384,23 @@ def build_prob_curve(axes, probs, prob_unit, color_max):
     return curve
 
 
+def run_sweep(scene, paths, net, layout, fc_step, fc_z, stats, fc_stat, hold, quick_mode):
+    if quick_mode: paths=paths[-1:]
+    for p in paths:
+        act=load_act(p)
+        new=Group(*build_blocks(act, layout, stats),
+                  build_fc(act['fc'][0], fc_step, fc_z, stats=fc_stat))
+        swap_out(scene, net)
+        net=new
+        scene.add(net)
+        scene.wait(hold)
+    scene.wait(still_hold)
+    return net
+
 class P25(InteractiveScene):
     def construct(self):
 
-        quick_mode=True
+        quick_mode=False
 
         start_id=63
         sweep_ids=list(range(0, 128, 1))     #0 -> 128; thin this out or reorder as you like
@@ -385,7 +408,8 @@ class P25(InteractiveScene):
         fixed_norm=True                       #normalize/threshold every frame with start_id's stats
         side_view=(0, 90, 0, (115.0, 0.0, 0.0), 150.0)   #tune in embed
 
-        act=load_act(start_id)
+        # act=load_act(start_id)
+        act=load_act(os.path.join(sweep_dir, f'{start_id:03d}.npy'))
         layout, fc_z=layer_layout(act)
         n_fc, fc_height, fc_step=fc_geometry(act, fc_z)
 
@@ -444,7 +468,7 @@ class P25(InteractiveScene):
         # self.frame.reorient(38, 60, 0, (np.float32(151.06), np.float32(16.83), np.float32(-21.6)), 162.19) #Ok getting some traction with this one in p26 in illustrator!
         # self.frame.reorient(33, 90, 0, (np.float32(137.31), np.float32(67.91), np.float32(-0.33)), 201.08)
 
-        net=Group(*blocks, fc_block, curve)
+        net=Group(*blocks, fc_block)
         
         self.wait(1)
         # self.play(self.frame.animate.reorient(38, 60, 0, (np.float32(151.06), np.float32(16.83), np.float32(-21.6)), 162.19), run_time=6.0)
@@ -456,20 +480,22 @@ class P25(InteractiveScene):
         self.add(blocks[0], blocks[1], blocks[2])
 
         self.wait(1)
-        if quick_mode: sweep_ids=[sweep_ids[-1]]
 
-        for sid in sweep_ids:
-            act=load_act(sid)
-            probs=softmax(act['fc'][0])
-            new=Group(*build_blocks(act, layout, stats),
-                      build_fc(act['fc'][0], fc_step, fc_z, stats=fc_stat),
-                      # build_prob_curve(axes, probs, prob_unit, color_max(probs))
-                      )
-            swap_out(self, net)
-            net=new
-            self.add(net)
-            self.wait(sweep_hold)
-        self.wait(still_hold)
+
+
+        self.wait(1)
+        net=run_sweep(self, sweep_paths(sweep_dir), net, layout, fc_step, fc_z, stats, fc_stat, sweep_hold, quick_mode)
+
+        self.play(self.frame.animate.reorient(0, 50, 0, (np.float32(156.33), np.float32(16.44), np.float32(-30.65)), 247.62), run_time=8)
+        self.wait(1)
+
+        net=run_sweep(self, sweep_paths(sweep_dir_2), net, layout, fc_step, fc_z, stats, fc_stat, sweep_hold, quick_mode)   #P27
+        self.wait(1)
+        net=run_sweep(self, sweep_paths(sweep_dir_3), net, layout, fc_step, fc_z, stats, fc_stat, sweep_hold, quick_mode)   #P28
+
+        self.wait(20)
+        self.embed()
+
 
 
 
@@ -479,9 +505,18 @@ class P25(InteractiveScene):
         #Mid and probably final parameter sweep
         # self.frame.reorient(1, 53, 0, (np.float32(144.27), np.float32(22.04), np.float32(-23.48)), 234.65)
         # self.frame.reorient(0, 50, 0, (np.float32(150.35), np.float32(19.08), np.float32(-27.47)), 238.02)
-        self.frame.reorient(0, 50, 0, (np.float32(156.33), np.float32(16.44), np.float32(-30.65)), 247.62)
+        # self.frame.reorient(0, 50, 0, (np.float32(156.33), np.float32(16.44), np.float32(-30.65)), 247.62)
+
+        # Ok, to finish this scene, we need to do two more sweeps from this new FOV
+        # Same sweep approach as before
+        # P27 - sweep_dir_2
 
 
+
+
+
+
+        # P28 - sweep_dir_3
 
 
 
