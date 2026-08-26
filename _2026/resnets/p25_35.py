@@ -15,7 +15,7 @@ MAGENTA='#FF00FF'
 
 # data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
 data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
-sweep_dir=data_dir+'p26_sweep_1_cache/'
+sweep_dir=data_dir+'p27_sweep_1/cache/'
 sweep_dir_2=data_dir+'p27_sweep_4/cache'
 sweep_dir_3=data_dir+'p27_sweep_5/cache'
 
@@ -384,12 +384,17 @@ def build_prob_curve(axes, probs, prob_unit, color_max):
     return curve
 
 
-def run_sweep(scene, paths, net, layout, fc_step, fc_z, stats, fc_stat, hold, quick_mode):
+def run_sweep(scene, paths, net, layout, fc_step, fc_z, stats, fc_stat, hold, quick_mode,
+              fc_vmax_per_frame=False):
     if quick_mode: paths=paths[-1:]
     for p in paths:
         act=load_act(p)
+        fc=act['fc'][0]
+        fs=fc_stat
+        if fc_vmax_per_frame and fc_stat is not None:
+            fs=(np.array([[[fc.max()]]]), fc_stat[1])   #current max, frame-63 threshold
         new=Group(*build_blocks(act, layout, stats),
-                  build_fc(act['fc'][0], fc_step, fc_z, stats=fc_stat))
+                  build_fc(fc, fc_step, fc_z, stats=fs))
         swap_out(scene, net)
         net=new
         scene.add(net)
@@ -484,8 +489,8 @@ class P25(InteractiveScene):
 
 
         self.wait(1)
-        net=run_sweep(self, sweep_paths(sweep_dir), net, layout, fc_step, fc_z, stats, fc_stat, sweep_hold, quick_mode)
-
+        net=run_sweep(self, sweep_paths(sweep_dir), net, layout, fc_step, fc_z, stats, fc_stat,
+                      sweep_hold, quick_mode, fc_vmax_per_frame=True)
         self.play(self.frame.animate.reorient(0, 50, 0, (np.float32(156.33), np.float32(16.44), np.float32(-30.65)), 247.62), run_time=8)
         self.wait(1)
 
