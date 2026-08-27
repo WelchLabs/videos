@@ -24,8 +24,8 @@ KT_AQUA='#5BADB6'
 KT_BLUE='#236C94'
 KT_PURPLE='#7E5B76'
 
-data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
-# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
+# data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
+data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
 act_dir=data_dir+'general_activations/'         #activations_{model_id}.npy from general_activation_saving_1
 image_path=data_dir+'p25/screwdriver.jpg'       #every cache in act_dir is the screwdriver (idx 39209)
 
