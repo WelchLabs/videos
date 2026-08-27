@@ -215,83 +215,208 @@ def build_textured_surface(land, texture, n):
     ts = TexturedSurface(surface, texture)
     ts.set_shading(0.0, 0.1, 0)
     return ts
- 
- 
+
 class P47_48_landscape_1(InteractiveScene):
- 
+
     cfg = 'plain74_first4'
+    cfg2 = 'resnet74_first4'
     max_height = 2.5
     fold_view = (-45, 51, 0, (np.float32(0.03), np.float32(-0.15), np.float32(0.52)), 7.21)
     gridline_view = (-42, 46, 0, (np.float32(0.01), np.float32(-0.2), np.float32(0.45)), 6.70)
-    final_view = (46, 45, 0, (np.float32(-0.07), np.float32(-0.01), np.float32(0.42)))
-    overhead_view = (90, 0, 0, (np.float32(0.03), np.float32(-0.02), np.float32(0.35)), 6.0)
- 
+    final_view = (46, 45, 0, (np.float32(-0.07), np.float32(-0.01), np.float32(0.42)), 9)
+    overhead_view = (90, 0, 0, (np.float32(-0.0), np.float32(0.09), np.float32(0.35)), 6)
+
     def construct(self):
+        # ---------- build plain74 (this replaces the old inline surface + gridline loops) ----------
         land = LossLandscape(self.cfg, self.max_height)
         n = land.n
- 
-        surface = ParametricSurface(
-            land.point,
-            u_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
-            v_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
-            resolution=(n, n),
-        )
-        ts = TexturedSurface(surface, land.texture)
-        ts.set_shading(0.0, 0.1, 0)
- 
-        line_values = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, NUM_GRIDLINES)
-        sweep = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, n)
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
-        for u in line_values:
-            line = VMobject()
-            line.set_points_smoothly(land.points(u, sweep))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
-            u_gridlines.add(line)
-        for v in line_values:
-            line = VMobject()
-            line.set_points_smoothly(land.points(sweep, v))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
-            v_gridlines.add(line)
- 
-        # self.frame.reorient(*self.fold_view)
-        # self.wait(0)
+
+        ts = build_textured_surface(land, land.texture, n)
+        u_gridlines, v_gridlines = build_gridlines(land)
 
         field = GradientField(grad_field_file)
-        arrows = build_gradient_arrows(field)          # pass landscape=land here to drape them on the 3D surface instead
+        arrows = build_gradient_arrows(field)
         arrows.set_color(WHITE)
 
-        # keep the 3D versions
+        # ---------- keep 3D copies, then flatten the live objects ----------
         ts_3d = ts.copy()
         u_grid_3d = u_gridlines.copy()
         v_grid_3d = v_gridlines.copy()
 
-        # pre-flatten the live ones
         ts.stretch(0, 2, about_point=ORIGIN)
         u_gridlines.stretch(0, 2, about_point=ORIGIN)
         v_gridlines.stretch(0, 2, about_point=ORIGIN)
-        self.frame.reorient(*overhead_view)
+        self.frame.reorient(*self.overhead_view)
 
-        self.add(ts, arrows)
+        self.add(ts)
+        self.add(arrows)
         self.wait(1.0)
 
+        # ---------- unfold: flat -> 3D, camera to self.final_view, arrows fade out ----------
         self.play(FadeOut(arrows), FadeIn(u_gridlines), FadeIn(v_gridlines), run_time=1.5)
         self.play(
             Transform(ts, ts_3d),
             Transform(u_gridlines, u_grid_3d),
             Transform(v_gridlines, v_grid_3d),
-            self.frame.animate.reorient(*final_view),
+            # FadeOut(arrows),
+            self.frame.animate.reorient(*self.final_view),
             run_time=5.0,
         )
+        self.wait()
+
+        # At this point:
+        #   ts          = plain74 geometry, plain74 texture, opacity 1
+        #   u/v_gridlines = plain74 gridlines
+        #   camera      = self.final_view, and it stays there for the morph
+
+        # ---------- morph plain74 -> resnet74 ----------
+        MORPH_TIME = 5.0
+        LIFT = 0.003 * OUT      # keeps the stacked surface from z-fighting its twin
+
+        land2 = LossLandscape(self.cfg2, self.max_height)
+        assert land2.n == n     # both 512-grid, so Transform is point-for-point
+
+        # plain-textured surface: morph geometry to resnet while fading out
+        ts_plain_target = build_textured_surface(land2, land.texture, n)
+        ts_plain_target.set_opacity(0.0)
+
+        # resnet-textured surface: starts with plain geometry at opacity 0, morphs to resnet at opacity 1
+        ts_res = build_textured_surface(land, land2.texture, n).shift(LIFT)
+        ts_res.set_opacity(0.0)
+        ts_res_target = build_textured_surface(land2, land2.texture, n).shift(LIFT)
+
+        u_grid2, v_grid2 = build_gridlines(land2)
 
         self.wait(1)
+        # self.add(ts_res)   # added after ts, so draw order is plain-behind, resnet-in-front
+        self.add(ts_res, u_gridlines, v_gridlines)
+
+        self.play(
+            Transform(ts, ts_plain_target),
+            Transform(ts_res, ts_res_target),
+            Transform(u_gridlines, u_grid2),
+            Transform(v_gridlines, v_grid2),
+            run_time=MORPH_TIME,
+        )
+        self.remove(ts)    # fully transparent now; ts_res is the live surface from here on
+        self.wait(2)
+
+
+        #Fun littel camera move just in case we want it.
+        self.play(self.frame.animate.reorient(-133, 43, 0, (np.float32(-0.07), np.float32(-0.01), np.float32(0.42)), 9.00),
+                 run_time=10.0)
+
+        self.wait(20)
+        self.embed()
 
 
 
 
 
 
+# class P47_48_landscape_old(InteractiveScene):
+ 
+#     cfg = 'plain74_first4'
+#     max_height = 2.5
+#     fold_view = (-45, 51, 0, (np.float32(0.03), np.float32(-0.15), np.float32(0.52)), 7.21)
+#     gridline_view = (-42, 46, 0, (np.float32(0.01), np.float32(-0.2), np.float32(0.45)), 6.70)
+#     final_view = (46, 45, 0, (np.float32(-0.07), np.float32(-0.01), np.float32(0.42)))
+#     overhead_view = (90, 0, 0, (np.float32(0.03), np.float32(-0.02), np.float32(0.35)), 6.0)
+ 
+#     def construct(self):
+#         land = LossLandscape(self.cfg, self.max_height)
+#         n = land.n
+ 
+#         surface = ParametricSurface(
+#             land.point,
+#             u_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
+#             v_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
+#             resolution=(n, n),
+#         )
+#         ts = TexturedSurface(surface, land.texture)
+#         ts.set_shading(0.0, 0.1, 0)
+ 
+#         line_values = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, NUM_GRIDLINES)
+#         sweep = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, n)
+#         u_gridlines = VGroup()
+#         v_gridlines = VGroup()
+#         for u in line_values:
+#             line = VMobject()
+#             line.set_points_smoothly(land.points(u, sweep))
+#             line.set_stroke(width=1, color=WHITE, opacity=0.15)
+#             u_gridlines.add(line)
+#         for v in line_values:
+#             line = VMobject()
+#             line.set_points_smoothly(land.points(sweep, v))
+#             line.set_stroke(width=1, color=WHITE, opacity=0.15)
+#             v_gridlines.add(line)
+ 
+#         # self.frame.reorient(*self.fold_view)
+#         # self.wait(0)
 
+#         field = GradientField(grad_field_file)
+#         arrows = build_gradient_arrows(field)          # pass landscape=land here to drape them on the 3D surface instead
+#         arrows.set_color(WHITE)
+
+#         # keep the 3D versions
+#         ts_3d = ts.copy()
+#         u_grid_3d = u_gridlines.copy()
+#         v_grid_3d = v_gridlines.copy()
+
+#         # pre-flatten the live ones
+#         ts.stretch(0, 2, about_point=ORIGIN)
+#         u_gridlines.stretch(0, 2, about_point=ORIGIN)
+#         v_gridlines.stretch(0, 2, about_point=ORIGIN)
+#         self.frame.reorient(*overhead_view)
+
+#         self.add(ts, arrows)
+#         self.wait(1.0)
+
+#         self.play(FadeOut(arrows), FadeIn(u_gridlines), FadeIn(v_gridlines), run_time=1.5)
+#         self.play(
+#             Transform(ts, ts_3d),
+#             Transform(u_gridlines, u_grid_3d),
+#             Transform(v_gridlines, v_grid_3d),
+#             self.frame.animate.reorient(*final_view),
+#             run_time=5.0,
+#         )
+
+#         self.wait(1)
+
+
+
+
+
+
+#         # --- morph plain74 -> resnet74 ---
+#         MORPH_TIME = 5.0
+#         LIFT = 0.003 * OUT      # keeps the stacked surface from z-fighting its twin
+
+#         land2 = LossLandscape('resnet74_first4', self.max_height)
+#         assert land2.n == n     # both 512-grid, so Transform is point-for-point
+
+#         # geometry: plain -> resnet, keeping plain texture, fading out
+#         ts_plain_target = build_textured_surface(land2, land.texture, n)
+#         ts_plain_target.set_opacity(0.0)
+
+#         # geometry: plain -> resnet, resnet texture, fading in (lifted a hair)
+#         ts_res = build_textured_surface(land, land2.texture, n).shift(LIFT)
+#         ts_res.set_opacity(0.0)
+#         ts_res_target = build_textured_surface(land2, land2.texture, n).shift(LIFT)
+
+#         u_grid2, v_grid2 = build_gridlines(land2)
+
+#         self.add(ts_res)   # added after ts so draw order is plain-behind, resnet-in-front
+
+#         self.play(
+#             Transform(ts, ts_plain_target),
+#             Transform(ts_res, ts_res_target),
+#             Transform(u_gridlines, u_grid2),
+#             Transform(v_gridlines, v_grid2),
+#             run_time=MORPH_TIME,
+#         )
+#         self.remove(ts)    # fully transparent now; ts_res is the live surface from here on
+#         self.wait(2)
 
 
 
