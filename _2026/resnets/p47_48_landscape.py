@@ -192,15 +192,39 @@ def sweep_bands(arrows, positions, direction=SWEEP_DIRECTION, n_bands=SWEEP_BAND
     idx = np.clip(np.digitize(proj, edges) - 1, 0, n_bands - 1)
     return [VGroup(*[arrows[k] for k in np.flatnonzero(idx == b)]) for b in range(n_bands) if np.any(idx == b)]
  
+def build_gridlines(land, n_lines=NUM_GRIDLINES, color=WHITE, width=1, opacity=0.15):
+    line_values = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, n_lines)
+    sweep = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, land.n)
+    u_lines, v_lines = VGroup(), VGroup()
+    for x in line_values:
+        lu = VMobject(); lu.set_points_smoothly(land.points(x, sweep))
+        lv = VMobject(); lv.set_points_smoothly(land.points(sweep, x))
+        u_lines.add(lu); v_lines.add(lv)
+    for g in (u_lines, v_lines):
+        g.set_stroke(width=width, color=color, opacity=opacity)
+    return u_lines, v_lines
+
+
+def build_textured_surface(land, texture, n):
+    surface = ParametricSurface(
+        land.point,
+        u_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
+        v_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
+        resolution=(n, n),
+    )
+    ts = TexturedSurface(surface, texture)
+    ts.set_shading(0.0, 0.1, 0)
+    return ts
  
-class P35_Gradient_Field(InteractiveScene):
+ 
+class P47_48_landscape_1(InteractiveScene):
  
     cfg = 'plain74_first4'
     max_height = 2.5
     fold_view = (-45, 51, 0, (np.float32(0.03), np.float32(-0.15), np.float32(0.52)), 7.21)
     gridline_view = (-42, 46, 0, (np.float32(0.01), np.float32(-0.2), np.float32(0.45)), 6.70)
-    final_view = (45, 41, 0, (np.float32(0.07), np.float32(0.03), np.float32(0.35)), 6.92)
-    overhead_view = (90, 0, 0, (np.float32(-0.0), np.float32(0.09), np.float32(0.35)), 5.16)
+    final_view = (46, 45, 0, (np.float32(-0.07), np.float32(-0.01), np.float32(0.42)))
+    overhead_view = (90, 0, 0, (np.float32(0.03), np.float32(-0.02), np.float32(0.35)), 6.0)
  
     def construct(self):
         land = LossLandscape(self.cfg, self.max_height)
@@ -230,40 +254,89 @@ class P35_Gradient_Field(InteractiveScene):
             line.set_stroke(width=1, color=WHITE, opacity=0.15)
             v_gridlines.add(line)
  
-        self.frame.reorient(*self.fold_view)
-        self.wait(0)
- 
-        self.play(ShowCreation(u_gridlines),
-                  ShowCreation(v_gridlines),
-                  self.frame.animate.reorient(*self.gridline_view),
-                  run_time=4.0)
-        self.wait()
- 
-        ts.set_opacity(0.0)
-        self.add(ts)
-        self.add(u_gridlines, v_gridlines)
-        self.play(ts.animate.set_opacity(1.0),
-                  self.frame.animate.reorient(*self.final_view),
-                  run_time=5.0)
-        self.wait(2)
- 
-        # --- go overhead and flatten ---
-        self.play(
-            ts.animate.stretch(0, 2, about_point=ORIGIN),
-            u_gridlines.animate.stretch(0, 2, about_point=ORIGIN),
-            v_gridlines.animate.stretch(0, 2, about_point=ORIGIN),
-            self.frame.animate.reorient(*self.overhead_view),
-            run_time=5.0,
-        )
-        self.wait()
+        # self.frame.reorient(*self.fold_view)
+        # self.wait(0)
 
-        # --- gradient field sweeps in ---
         field = GradientField(grad_field_file)
         arrows = build_gradient_arrows(field)          # pass landscape=land here to drape them on the 3D surface instead
         arrows.set_color(WHITE)
 
+        # keep the 3D versions
+        ts_3d = ts.copy()
+        u_grid_3d = u_gridlines.copy()
+        v_grid_3d = v_gridlines.copy()
+
+        # pre-flatten the live ones
+        ts.stretch(0, 2, about_point=ORIGIN)
+        u_gridlines.stretch(0, 2, about_point=ORIGIN)
+        v_gridlines.stretch(0, 2, about_point=ORIGIN)
+        self.frame.reorient(*overhead_view)
+
+        self.add(ts, arrows)
+        self.wait(1.0)
+
+        self.play(FadeOut(arrows), FadeIn(u_gridlines), FadeIn(v_gridlines), run_time=1.5)
+        self.play(
+            Transform(ts, ts_3d),
+            Transform(u_gridlines, u_grid_3d),
+            Transform(v_gridlines, v_grid_3d),
+            self.frame.animate.reorient(*final_view),
+            run_time=5.0,
+        )
+
         self.wait(1)
-        self.play(FadeIn(arrows), FadeOut(u_gridlines), FadeOut(v_gridlines), ts.animate.set_opacity(0.65), run_time=5.0)
+
+
+
+
+
+
+
+
+
+
+        # #Reverse move from last time
+        # self.play(FadeOut(arrows), FadeIn(arrows), run_time=1.5)
+        # self.play(
+        #     ts.animate.stretch(2, 0,  about_point=ORIGIN),
+        #     u_gridlines.animate.stretch(2, 0,  about_point=ORIGIN),
+        #     v_gridlines.animate.stretch(2, 0,  about_point=ORIGIN),
+        #     self.frame.animate.reorient(*self.final_view),
+        #     run_time=5.0,
+        # )
+        # self.wait()
+
+
+
+
+        # self.play(ShowCreation(u_gridlines),
+        #           ShowCreation(v_gridlines),
+        #           self.frame.animate.reorient(*self.gridline_view),
+        #           run_time=4.0)
+        # self.wait()
+ 
+        # ts.set_opacity(0.0)
+        # self.add(ts)
+        # self.add(u_gridlines, v_gridlines)
+        # self.play(ts.animate.set_opacity(1.0),
+        #           self.frame.animate.reorient(*self.final_view),
+        #           run_time=5.0)
+        # self.wait(2)
+ 
+        # # --- go overhead and flatten ---
+        # self.play(
+        #     ts.animate.stretch(0, 2, about_point=ORIGIN),
+        #     u_gridlines.animate.stretch(0, 2, about_point=ORIGIN),
+        #     v_gridlines.animate.stretch(0, 2, about_point=ORIGIN),
+        #     self.frame.animate.reorient(*self.overhead_view),
+        #     run_time=5.0,
+        # )
+        # self.wait()
+
+
+
+        # self.wait(1)
+        # self.play(FadeIn(arrows), FadeOut(u_gridlines), FadeOut(v_gridlines), ts.animate.set_opacity(0.65), run_time=5.0)
         # self.add(arrows) 
         # self.remove(u_gridlines, v_gridlines)
         # ts.set_opacity(0.75)
