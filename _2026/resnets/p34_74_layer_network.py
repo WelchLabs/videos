@@ -393,14 +393,14 @@ def build_fc(fc, fc_step, fc_z, pct=70, vmax_div=2.0, alpha=0.7):
 
 ## ---- The scene ----
 
-class P34_Net_26(InteractiveScene):
+class P34_Net_74(InteractiveScene):
     """Base class: draws one activation cache. Subclasses only override the attributes below."""
 
-    model_id='plain26'
+    model_id='plain74'
 
     #Per-model layout knobs
-    depth_scale=0.4                   #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
-    layer_spacing=2.0                 #world units between consecutive blocks, default = 5.0
+    depth_scale=0.14                   #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
+    layer_spacing=1.2                #world units between consecutive blocks, default = 5.0
     tensors_per_block=2               #2 -> post-conv1 relu + block output; 1 -> block outputs only
     depth_mults={64: 1.0, 128: 1.35, 256: 1.8, 512: 2.3}
     max_layers=None                   #debug: only draw the first N blocks
@@ -419,8 +419,8 @@ class P34_Net_26(InteractiveScene):
     kernels={0: dict(i=18, j=80, prism=True, color=KT_ORANGE),           #image (7x7, stride 2) -> stem
              1: dict(i=12, j=40, prism=True, color=KT_ORANGE), #, color=CYAN),
              2: dict(i=8, j=40, prism=True, color=KT_ORANGE),
-             23: dict(i=5, j=7, prism=True, color=KT_AQUA),
-             24: dict(i=3, j=3, prism=True, color=KT_AQUA),
+             71: dict(i=5, j=7, prism=True, color=KT_AQUA),
+             72: dict(i=3, j=3, prism=True, color=KT_AQUA),
              # 7: dict(i=3, j=3, prism=True, color=KT_AQUA),
 
              }
@@ -446,7 +446,7 @@ class P34_Net_26(InteractiveScene):
     image_opacity=0.6
     fade_in=True
     fade_in_time=8.0
-    default_view=(0, 60, 0, (np.float32(172.96), np.float32(34.15), np.float32(39.64)), 246.57)
+    default_view=(0, 59, 0, (np.float32(208.58), np.float32(44.2), np.float32(57.06)), 288.92)
 
     # ------------------------------------------------------------------
 
