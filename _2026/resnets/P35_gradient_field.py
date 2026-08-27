@@ -265,7 +265,7 @@ class P35_Gradient_Field(InteractiveScene):
         arrows.set_color(WHITE)
 
         self.wait(1)
-        self.play(FadeIn(arrows), FadeOut(u_gridlines), FadeOut(v_gridlines), ts.animate.set_opacity(0.65))
+        self.play(FadeIn(arrows), FadeOut(u_gridlines), FadeOut(v_gridlines), ts.animate.set_opacity(0.65), run_time=5.0)
         # self.add(arrows) 
         # self.remove(u_gridlines, v_gridlines)
         # ts.set_opacity(0.75)

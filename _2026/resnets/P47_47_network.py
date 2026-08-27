@@ -346,22 +346,40 @@ def fc_kernel_viz(src, fc_geom, i, j, ksize, color, radius, show_prism=True):
 
 ## ---- Skip connections (resnets) ----
 
-def skip_arc(src, dst, height, color, radius, n_pts=32):
-    """Arc over the top of the network from src's output face to dst's input face (un-oriented
-    +y is image-up, which orient() sends to world +z)."""
-    p0=np.array([0.0, src['bounds'][3], src['z1']])
-    p1=np.array([0.0, dst['bounds'][3], dst['z0']])
-    t=np.linspace(0.0, 1.0, n_pts)
-    pts=p0[None,:]+(p1-p0)[None,:]*t[:,None]
-    pts[:,1]+=height*np.sin(np.pi*t)
-    curve=VMobject()
-    curve.set_points_as_corners(pts)
-    curve.set_stroke(color, width=200*radius, opacity=1.0)
-    curve.set_fill(opacity=0.0)
-    curve.set_scale_stroke_with_zoom(True)
-    curve.apply_depth_test()
-    curve.set_joint_type('bevel')
-    return curve
+def rounded_skip(src, dst, height, corner_radius, color, radius,
+                 head_length=1.5, head_width=1.5, n_arc_pts=12):
+    """Skip as a rounded-corner path: up from the center of src's top face, along the network,
+    down into the center of dst's top face, ending in a flat triangular arrowhead (un-oriented:
+    +y is image-up, +z is network depth; orient() sends those to world +z, +x). Returns (line, head)."""
+    src_top, dst_top=src['bounds'][3], dst['bounds'][3]
+    src_zc=0.5*(src['z0']+src['z1'])
+    dst_zc=0.5*(dst['z0']+dst['z1'])
+    y_run=max(src_top, dst_top)+height
+    y_end=dst_top+head_length                     #line stops where the arrowhead starts
+
+    #A corner can't be longer than half of any leg it touches
+    r=max(0.0, min(corner_radius, 0.5*(dst_zc-src_zc), 0.5*(y_run-src_top), 0.5*(y_run-y_end)))
+    t=np.linspace(0.0, 0.5*np.pi, n_arc_pts)
+
+    pts=[[0, src_top, src_zc]]                                                     #start, then up
+    pts+=[[0, y_run-r+r*np.sin(a), src_zc+r-r*np.cos(a)] for a in t]             #corner: up -> along
+    pts+=[[0, y_run-r+r*np.cos(a), dst_zc-r+r*np.sin(a)] for a in t]             #corner: along -> down
+    pts+=[[0, y_end, dst_zc]]                                                      #down
+    line=VMobject()
+    line.set_points_as_corners(np.array(pts, dtype=np.float64))
+    line.set_stroke(color, width=200*radius, opacity=1.0)
+    line.set_fill(opacity=0.0)
+    line.set_scale_stroke_with_zoom(True)
+    line.apply_depth_test()
+    line.set_joint_type('bevel')
+
+    head=Polygon([0, dst_top, dst_zc],                                             #tip on the top face
+                 [0, y_end, dst_zc+0.5*head_width],
+                 [0, y_end, dst_zc-0.5*head_width])
+    head.set_fill(color, opacity=1.0)
+    head.set_stroke(width=0)
+    head.apply_depth_test()
+    return line, head
 
 
 ## ---- fc column (from p25_35, minus the probability axes) ----
@@ -393,7 +411,7 @@ def build_fc(fc, fc_step, fc_z, pct=70, vmax_div=2.0, alpha=0.7):
 
 ## ---- The scene ----
 
-class P34_Net_74(InteractiveScene):
+class P47_Net_74(InteractiveScene):
     """Base class: draws one activation cache. Subclasses only override the attributes below."""
 
     model_id='plain74'
@@ -414,18 +432,21 @@ class P34_Net_74(InteractiveScene):
     fc_pct=70
     fc_vmax_div=2.0
 
+
+
     #Kernel viz: {destination layer index: dict(i, j, prism, ksize, color)} -- indices are printed at
     #startup by describe(). Index 0 is the stem, whose source is the input image (default ksize 7).
-    kernels={0: dict(i=18, j=80, prism=True, color=KT_ORANGE),           #image (7x7, stride 2) -> stem
-             1: dict(i=12, j=40, prism=True, color=KT_ORANGE), #, color=CYAN),
-             2: dict(i=8, j=40, prism=True, color=KT_ORANGE),
-             3: dict(i=8, j=40, prism=True, color=KT_ORANGE),
-             7: dict(i=5, j=7, prism=True, color=KT_AQUA),
-             71: dict(i=5, j=7, prism=True, color=KT_AQUA),
-             72: dict(i=3, j=3, prism=True, color=KT_AQUA),
-             # 7: dict(i=3, j=3, prism=True, color=KT_AQUA),
+    kernels={}
+             # 0: dict(i=18, j=80, prism=True, color=KT_ORANGE),           #image (7x7, stride 2) -> stem
+             # 1: dict(i=12, j=40, prism=True, color=KT_ORANGE), #, color=CYAN),
+             # 2: dict(i=8, j=40, prism=True, color=KT_ORANGE),
+             # 3: dict(i=8, j=40, prism=True, color=KT_ORANGE),
+             # 70: dict(i=5, j=7, prism=True, color=KT_AQUA),
+             # 71: dict(i=5, j=7, prism=True, color=KT_AQUA),
+             # 72: dict(i=3, j=3, prism=True, color=KT_AQUA),
+             # # 7: dict(i=3, j=3, prism=True, color=KT_AQUA),
 
-             }
+             # }
 
     kernel_color=KT_ORANGE
     kernel_ksize=3
@@ -437,18 +458,26 @@ class P34_Net_74(InteractiveScene):
     #column. dict(i, j, ksize, prism, color, radius); ksize='full' uses the whole face. None -> off.
     fc_kernel=dict(i=3, j=3, ksize=3, prism=True, color=KT_AQUA)
 
-    #Skip connections (resnets): arc from block input to block output over the top of the net
-    show_skips=False
-    skip_color=BLUE
-    skip_downsample_color=YELLOW      #first block of layer2/3/4: 1x1 stride-2 conv on the skip path
-    skip_height=6.0
-    skip_radius=0.12
+
+    #Skip connections (resnets): rounded path over the top of the net with an arrowhead into dst
+    show_skips=True
+    skip_color=WHITE
+    skip_downsample_color=WHITE      #first block of layer2/3/4: 1x1 stride-2 conv on the skip path
+    skip_height=6.0                  #horizontal run sits this far above the taller of the two blocks
+    skip_radius=0.2                 #line width, same units as kernel_radius
+    skip_corner_radius=1.5           #world units; clamped so it never exceeds half a leg
+    skip_head_length=2.5
+    skip_head_width=2.5
+    skip_src_offset=-1               #endpoints relative to each block-output index k:
+    skip_dst_offset=1                #  src=k-1 (this block's .relu1), dst=k+1 (next block's .relu1)
+    skip_anim_time=6.0
+    skip_lag_ratio=0.15              #0 -> all arrows draw at once, 1 -> strictly one after another
 
     #Presentation
     image_opacity=0.6
     fade_in=True
     fade_in_time=8.0
-    default_view=(0, 59, 0, (np.float32(208.58), np.float32(44.2), np.float32(57.06)), 288.92)
+    default_view=(0, 66, 0, (np.float32(207.78), np.float32(44.54), np.float32(57.79)), 288.92)
 
     # ------------------------------------------------------------------
 
@@ -526,21 +555,29 @@ class P34_Net_74(InteractiveScene):
         return out
 
     def build_skips(self):
-        """One arc per BasicBlock, from the block's input tensor to its output tensor."""
-        out=[]
-        step=self.tensors_per_block
+        """One arrow per BasicBlock, endpoints offset from the block-output index (skip_*_offset)."""
+        by_idx={L['idx']: L for L in self.layers}
+        self.skip_lines, self.skip_heads=[], []
         for L in self.layers:
             if not L['is_block_out']:
                 continue
-            src_idx=L['idx']-step
-            if src_idx<0:
+            src=by_idx.get(L['idx']+self.skip_src_offset)
+            dst=by_idx.get(L['idx']+self.skip_dst_offset)
+            if src is None or dst is None:         #runs off either end of the net
                 continue
-            src=self.layers[src_idx]
             downsample=(L['block']==0 and L['stage']>1)
             color=self.skip_downsample_color if downsample else self.skip_color
-            out.append(orient(skip_arc(src, L, self.skip_height, color, self.skip_radius)))
-        return out
+            line, head=rounded_skip(src, dst, self.skip_height, self.skip_corner_radius, color,
+                                    self.skip_radius, self.skip_head_length, self.skip_head_width)
+            self.skip_lines.append(orient(line))
+            self.skip_heads.append(orient(head))
+        return [VGroup(l, h) for l, h in zip(self.skip_lines, self.skip_heads)]
 
+    def skip_animation(self):
+        """Each arrow draws source -> destination, staggered left to right."""
+        arrows=[Succession(ShowCreation(l, run_time=1.0), FadeIn(h, run_time=0.25))
+                for l, h in zip(self.skip_lines, self.skip_heads)]
+        return LaggedStart(*arrows, lag_ratio=self.skip_lag_ratio, run_time=self.skip_anim_time)
     def build(self):
         self.load()
         self.describe()
@@ -567,7 +604,8 @@ class P34_Net_74(InteractiveScene):
         pairs=list(zip(self.blocks, self.borders))
         if self.fc_block is not None:
             pairs.append((self.fc_block, self.fc_border))
-        extras=self.kernel_mobs+self.skip_mobs
+
+        extras=self.kernel_mobs
 
         if self.fade_in:
             self.wait(1)
@@ -575,74 +613,19 @@ class P34_Net_74(InteractiveScene):
             self.play(LaggedStart(*fades, lag_ratio=1.0), run_time=self.fade_in_time)
             if extras:
                 self.play(*[FadeIn(m) for m in extras], run_time=1.5)
+            if self.skip_mobs:
+                self.play(self.skip_animation())
         else:
             for b, p in pairs:
                 self.add(b, p)
-            self.add(*extras)
+            self.add(*extras, *self.skip_mobs)
 
-        self.wait(still_hold)
+
+        self.wait()
+
+
+        self.wait(20)
         self.embed()
 
 
 
-
-## ---- One class per model; depth_scale/spacing below are starting guesses to tune ----
-
-# class Plain8(GeneralNet):
-#     model_id='plain8'
-#     depth_scale=1.0
-#     layer_spacing=5.0
-#     kernels={0: dict(i=40, j=70, prism=False),           #image (7x7, stride 2) -> stem
-#              1: dict(i=22, j=30, prism=True),
-#              3: dict(i=9, j=16, prism=False),
-#              5: dict(i=5, j=7, prism=True)}
-#     fc_kernel=dict(i=5, j=7, ksize=3, prism=True)      #or ksize='full' for the whole 14x14 face
-#     default_view=(2, 57, 0, (105.69, 16.14, -11.07), 179.39)   #from p25_35
-
-
-# class Plain14(GeneralNet):
-#     model_id='plain14'
-#     depth_scale=0.9
-#     layer_spacing=4.0
-#     kernels=kernels_for([1, 5, 9], i=10, j=14, prism=True)
-
-
-# class Plain20(GeneralNet):
-#     model_id='plain20'
-#     depth_scale=0.7
-#     layer_spacing=3.5
-#     kernels=kernels_for([1, 7, 13], i=10, j=14, prism=True)
-
-
-# class Plain26(GeneralNet):
-#     model_id='plain26'
-#     depth_scale=0.55
-#     layer_spacing=3.0
-#     kernels=kernels_for([1, 7, 13, 19], i=10, j=14, prism=True)
-
-
-# class Plain34(GeneralNet):
-#     model_id='plain34'
-#     depth_scale=0.45
-#     layer_spacing=2.5
-#     kernels=kernels_for([1, 9, 17, 25], i=10, j=14, prism=True)
-
-
-# class Plain56(GeneralNet):
-#     model_id='plain56'
-#     depth_scale=0.3
-#     layer_spacing=2.0
-#     kernels=kernels_for([1, 7, 15, 49], i=10, j=14, prism=False)
-
-
-# class Plain74(GeneralNet):
-#     model_id='plain74'
-#     depth_scale=0.25
-#     layer_spacing=1.5
-#     kernels=kernels_for([1, 7, 15, 67], i=10, j=14, prism=False)
-
-
-# class ResNet74(Plain74):
-#     model_id='resnet74'
-#     show_skips=True
-#     skip_height=6.0
