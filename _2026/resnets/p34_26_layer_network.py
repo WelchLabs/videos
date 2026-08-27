@@ -419,8 +419,9 @@ class P34_Net_26(InteractiveScene):
     kernels={0: dict(i=18, j=80, prism=True, color=KT_ORANGE),           #image (7x7, stride 2) -> stem
              1: dict(i=12, j=40, prism=True, color=KT_ORANGE), #, color=CYAN),
              2: dict(i=8, j=40, prism=True, color=KT_ORANGE),
-             23: dict(i=5, j=7, prism=True, color=KT_AQUA),
-             24: dict(i=3, j=3, prism=True, color=KT_AQUA),
+             3: dict(i=8, j=40, prism=True, color=KT_ORANGE),
+             # 23: dict(i=5, j=7, prism=True, color=KT_AQUA),
+             # 24: dict(i=3, j=3, prism=True, color=KT_AQUA),
              # 7: dict(i=3, j=3, prism=True, color=KT_AQUA),
 
              }
@@ -433,7 +434,7 @@ class P34_Net_26(InteractiveScene):
 
     #fc "kernel": patch on the last conv block's output face (prism optional) fanned out to the fc
     #column. dict(i, j, ksize, prism, color, radius); ksize='full' uses the whole face. None -> off.
-    fc_kernel=dict(i=3, j=3, ksize=3, prism=True, color=KT_AQUA)
+    fc_kernel={} #dict(i=3, j=3, ksize=3, prism=True, color=KT_AQUA)
 
     #Skip connections (resnets): arc from block input to block output over the top of the net
     show_skips=False

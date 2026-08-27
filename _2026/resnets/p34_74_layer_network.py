@@ -419,6 +419,8 @@ class P34_Net_74(InteractiveScene):
     kernels={0: dict(i=18, j=80, prism=True, color=KT_ORANGE),           #image (7x7, stride 2) -> stem
              1: dict(i=12, j=40, prism=True, color=KT_ORANGE), #, color=CYAN),
              2: dict(i=8, j=40, prism=True, color=KT_ORANGE),
+             3: dict(i=8, j=40, prism=True, color=KT_ORANGE),
+             70: dict(i=5, j=7, prism=True, color=KT_AQUA),
              71: dict(i=5, j=7, prism=True, color=KT_AQUA),
              72: dict(i=3, j=3, prism=True, color=KT_AQUA),
              # 7: dict(i=3, j=3, prism=True, color=KT_AQUA),
