@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-CHILL_BROWN='#948979'
+CHILL_BROWN='#000000' #REplacing wiht black b/c we're going to print
 YELLOW='#ffd35a'
 YELLOW_FADE='#7f6a2d'
 BLUE='#65c8d0'
@@ -393,21 +393,21 @@ def build_fc(fc, fc_step, fc_z, pct=70, vmax_div=2.0, alpha=0.7):
 
 ## ---- The scene ----
 
-class P34_Net_26(InteractiveScene):
+class P41_Net_14(InteractiveScene):
     """Base class: draws one activation cache. Subclasses only override the attributes below."""
 
-    model_id='plain26'
+    model_id='plain14'
 
     #Per-model layout knobs
-    depth_scale=0.4                   #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
-    layer_spacing=2.0                 #world units between consecutive blocks, default = 5.0
+    depth_scale=0.6                   #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
+    layer_spacing=5.0                 #world units between consecutive blocks, default = 5.0
     tensors_per_block=2               #2 -> post-conv1 relu + block output; 1 -> block outputs only
     depth_mults={64: 1.0, 128: 1.35, 256: 1.8, 512: 2.3}
     max_layers=None                   #debug: only draw the first N blocks
 
     #Activation thresholding
     act_pct=97
-    act_alpha=0.4 #0.25
+    act_alpha=0.5 #0.25
 
     #fc column
     show_fc=True
@@ -416,15 +416,22 @@ class P34_Net_26(InteractiveScene):
 
     #Kernel viz: {destination layer index: dict(i, j, prism, ksize, color)} -- indices are printed at
     #startup by describe(). Index 0 is the stem, whose source is the input image (default ksize 7).
-    kernels={0: dict(i=18, j=80, prism=True, color=KT_ORANGE),           #image (7x7, stride 2) -> stem
-             1: dict(i=12, j=40, prism=True, color=KT_ORANGE), #, color=CYAN),
-             2: dict(i=8, j=40, prism=True, color=KT_ORANGE),
-             3: dict(i=8, j=40, prism=True, color=KT_ORANGE),
-             # 23: dict(i=5, j=7, prism=True, color=KT_AQUA),
-             # 24: dict(i=3, j=3, prism=True, color=KT_AQUA),
-             # 7: dict(i=3, j=3, prism=True, color=KT_AQUA),
-
+    kernels={0: dict(i=10, j=10, prism=True),           #image (7x7, stride 2) -> stem
+             1: dict(i=20, j=40, prism=True), #, color=CYAN),
+             2: dict(i=20, j=40, prism=True),
+             3: dict(i=9, j=16, prism=True),
+             4: dict(i=5, j=7, prism=True),
+             5: dict(i=5, j=7, prism=True),
+             6: dict(i=3, j=3, prism=True),
+             7: dict(i=3, j=3, prism=True),
+             8: dict(i=3, j=3, prism=True),
+             9: dict(i=3, j=3, prism=True),
+             10: dict(i=3, j=3, prism=True),
+             11: dict(i=3, j=3, prism=True),
+             12: dict(i=3, j=3, prism=True)
              }
+
+    kernel_color=KT_ORANGE
 
     kernel_color=KT_ORANGE
     kernel_ksize=3
@@ -447,7 +454,7 @@ class P34_Net_26(InteractiveScene):
     image_opacity=0.6
     fade_in=True
     fade_in_time=8.0
-    default_view=(0, 60, 0, (np.float32(172.96), np.float32(34.15), np.float32(39.64)), 246.57)
+    default_view=(0, 59, 0, (np.float32(147.86), np.float32(10.21), np.float32(-1.82)), 220.74)
 
     # ------------------------------------------------------------------
 
@@ -580,68 +587,192 @@ class P34_Net_26(InteractiveScene):
             self.add(*extras)
 
         self.wait(still_hold)
+        
+        self.wait(20)
         self.embed()
 
 
+# Replaces the P43_Net_Residual stub at the bottom of general_network_rendering.py.
+# Everything else (helpers, P41_Net_14) is unchanged.
+
+class P43_Net_Residual(P41_Net_14):
+    """Same layout/camera/kernels as P41_Net_14, but with a faked residual stream: every block's
+    output tensor is drawn as (post-conv1 activation + block output), so each block looks like it
+    carries its input's features forward. Purely a viz hack -- plain14 has no skip paths.
+
+    After the full network is on screen, each activation block is shown alone (no kernels, no
+    other blocks) from the same camera for `isolate_hold` seconds, to be chopped up in editing.
+    """
+
+    model_id='plain14'
+
+    #Residual faking
+    residual_source='relu1'   #'relu1': max(bn1, 0) (what the .relu1 block already draws)
+                              #'bn1'  : raw post-bn1 (has negatives; they fall below threshold anyway)
+                              #'conv1': act['layerS.B.conv1'] if the cache has it, else falls back to relu1
+    residual_mode='block'     #'block' : out = out + gain*relu1             (one pair per block)
+                              #'stream': out = out + gain*relu1 + previous (faked) block output,
+                              #          accumulated within a stage (shapes match), reset at stage change
+    residual_gain=1.0         #weight on the added post-conv1 term
+
+    #Isolation pass
+    isolate_hold=1.0          #seconds each block sits alone on screen
+    isolate_gap=0.0           #seconds of empty screen between blocks (>0 gives clean cut points)
+    isolate_image=True        #the input image gets its own isolated frame (first)
+    isolate_fc=True           #the fc column gets its own isolated frame (last)
+    isolate_borders=True      #keep each block's black outline prism in its isolated frame
+    act_alpha=0.6
+
+    # ------------------------------------------------------------------
+
+    def post_conv1(self, blk):
+        act=self.act
+        if self.residual_source=='conv1' and blk+'.conv1' in act:
+            return act[blk+'.conv1']
+        if self.residual_source=='bn1':
+            return act[blk+'.bn1']
+        return np.maximum(act[blk+'.bn1'], 0.0)      #same reconstruction collect_tensors uses
+
+    def fake_residual(self):
+        """act['layerS.B'] <- act['layerS.B'] + gain*post_conv1 (+ previous block output in 'stream' mode)."""
+        act=self.act
+        for s in range(1, 5):
+            b=0
+            prev=None
+            while f'layer{s}.{b}' in act:
+                blk=f'layer{s}.{b}'
+                out=act[blk]+self.residual_gain*self.post_conv1(blk)
+                if self.residual_mode=='stream' and prev is not None and prev.shape==out.shape:
+                    out=out+prev
+                act[blk]=out
+                prev=out
+                b+=1
+
+    def load(self):
+        self.act=load_act(self.model_id)
+        self.fake_residual()                          #before collect_tensors reads the block outputs
+        tensors=collect_tensors(self.act, self.tensors_per_block)
+        if self.max_layers is not None:
+            tensors=tensors[:self.max_layers]
+        self.layers, self.fc_z=layer_layout(tensors, self.depth_scale, self.layer_spacing,
+                                            self.depth_mults)
+        self.total_z=self.fc_z if not self.show_fc else self.fc_z+fc_cell
+        return self.layers
+
+    def show_network(self):
+        """Full network, identical sequencing to P41_Net_14.construct."""
+        self.add(self.img, self.image_border)
+        pairs=list(zip(self.blocks, self.borders))
+        if self.fc_block is not None:
+            pairs.append((self.fc_block, self.fc_border))
+        extras=self.kernel_mobs+self.skip_mobs
+
+        if self.fade_in:
+            self.wait(1)
+            fades=[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in pairs]
+            self.play(LaggedStart(*fades, lag_ratio=1.0), run_time=self.fade_in_time)
+            if extras:
+                self.play(*[FadeIn(m) for m in extras], run_time=1.5)
+        else:
+            for b, p in pairs:
+                self.add(b, p)
+            self.add(*extras)
+        self.wait(still_hold)
+        return pairs
+
+    def isolate_blocks(self, pairs):
+        """Each (block, border) alone on screen, same camera, no kernels/skips."""
+        shots=[]
+        if self.isolate_image:
+            shots.append((self.img, self.image_border))
+        shots+=[p for p in pairs if self.isolate_fc or p[0] is not self.fc_block]
+
+        self.clear()                                  #drops every mobject, leaves the camera frame alone
+        self.frame.reorient(*self.view())
+        for mob, border in shots:
+            self.add(mob, border) if self.isolate_borders else self.add(mob)
+            self.wait(self.isolate_hold)
+            self.remove(mob, border)
+            if self.isolate_gap>0:
+                self.wait(self.isolate_gap)
+
+    def construct(self):
+        self.build()
+        self.frame.reorient(*self.view())
+        pairs=self.show_network()
+        self.wait(1)
+        self.isolate_blocks(pairs)
+        self.wait(still_hold)
 
 
-## ---- One class per model; depth_scale/spacing below are starting guesses to tune ----
-
-# class Plain8(GeneralNet):
-#     model_id='plain8'
-#     depth_scale=1.0
-#     layer_spacing=5.0
-#     kernels={0: dict(i=40, j=70, prism=False),           #image (7x7, stride 2) -> stem
-#              1: dict(i=22, j=30, prism=True),
-#              3: dict(i=9, j=16, prism=False),
-#              5: dict(i=5, j=7, prism=True)}
-#     fc_kernel=dict(i=5, j=7, ksize=3, prism=True)      #or ksize='full' for the whole 14x14 face
-#     default_view=(2, 57, 0, (105.69, 16.14, -11.07), 179.39)   #from p25_35
+        self.wait(20)
+        self.embed()
 
 
-# class Plain14(GeneralNet):
-#     model_id='plain14'
-#     depth_scale=0.9
-#     layer_spacing=4.0
-#     kernels=kernels_for([1, 5, 9], i=10, j=14, prism=True)
+class P43_Net_Partial(P41_Net_14):
+    """First N drawn layers of the plain14 network, kernels included, real activations."""
+
+    model_id='plain14'
+    max_layers=4                      #N: stem relu, layer1.0.relu1, layer1.0, layer1.1.relu1
+    show_fc=False                     #no fc column dangling after a truncated net
+    frame_to_partial=False            #True: auto-frame the partial net; False: keep the full-net camera
+
+    def view(self):
+        if self.frame_to_partial:
+            L=self.total_z
+            return (0, 59, 0, (0.5*L, 0.0, 0.0), max(60.0, 0.95*L))
+        return super().view()
+
+    def construct(self):
+        self.build()
+        self.frame.reorient(*self.view())
+        self.add(self.img, self.image_border)
+        pairs=list(zip(self.blocks, self.borders))
+        if self.fade_in:
+            self.wait(1)
+            self.play(LaggedStart(*[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in pairs],
+                                  lag_ratio=1.0), run_time=self.fade_in_time)
+            if self.kernel_mobs:
+                self.play(*[FadeIn(m) for m in self.kernel_mobs], run_time=1.5)
+        else:
+            for b, p in pairs:
+                self.add(b, p)
+            self.add(*self.kernel_mobs)
+
+        self.wait(20)
+        self.embed()
+
+class P43_Net_Partial_2(P41_Net_14):
+    """First N drawn layers of the plain14 network, kernels included, real activations."""
+
+    model_id='plain14'
+    max_layers=2                      #N: stem relu, layer1.0.relu1, layer1.0, layer1.1.relu1
+    show_fc=False                     #no fc column dangling after a truncated net
+    frame_to_partial=False            #True: auto-frame the partial net; False: keep the full-net camera
+
+    def view(self):
+        if self.frame_to_partial:
+            L=self.total_z
+            return (0, 59, 0, (0.5*L, 0.0, 0.0), max(60.0, 0.95*L))
+        return super().view()
+
+    def construct(self):
+        self.build()
+        self.frame.reorient(*self.view())
+        self.add(self.img, self.image_border)
+        pairs=list(zip(self.blocks, self.borders))
+        if self.fade_in:
+            self.wait(1)
+            self.play(LaggedStart(*[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in pairs],
+                                  lag_ratio=1.0), run_time=self.fade_in_time)
+            if self.kernel_mobs:
+                self.play(*[FadeIn(m) for m in self.kernel_mobs], run_time=1.5)
+        else:
+            for b, p in pairs:
+                self.add(b, p)
+            self.add(*self.kernel_mobs)
+            
+        self.wait(20)
+        self.embed()
 
 
-# class Plain20(GeneralNet):
-#     model_id='plain20'
-#     depth_scale=0.7
-#     layer_spacing=3.5
-#     kernels=kernels_for([1, 7, 13], i=10, j=14, prism=True)
-
-
-# class Plain26(GeneralNet):
-#     model_id='plain26'
-#     depth_scale=0.55
-#     layer_spacing=3.0
-#     kernels=kernels_for([1, 7, 13, 19], i=10, j=14, prism=True)
-
-
-# class Plain34(GeneralNet):
-#     model_id='plain34'
-#     depth_scale=0.45
-#     layer_spacing=2.5
-#     kernels=kernels_for([1, 9, 17, 25], i=10, j=14, prism=True)
-
-
-# class Plain56(GeneralNet):
-#     model_id='plain56'
-#     depth_scale=0.3
-#     layer_spacing=2.0
-#     kernels=kernels_for([1, 7, 15, 49], i=10, j=14, prism=False)
-
-
-# class Plain74(GeneralNet):
-#     model_id='plain74'
-#     depth_scale=0.25
-#     layer_spacing=1.5
-#     kernels=kernels_for([1, 7, 15, 67], i=10, j=14, prism=False)
-
-
-# class ResNet74(Plain74):
-#     model_id='resnet74'
-#     show_skips=True
-#     skip_height=6.0
