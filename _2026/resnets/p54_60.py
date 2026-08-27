@@ -30,7 +30,7 @@ act_dir=data_dir+'general_activations/'         #activations_{model_id}.npy from
 image_path=data_dir+'p25/screwdriver.jpg'       #every cache in act_dir is the screwdriver (idx 39209)
 
 ## ---- Geometry shared by every model (carried over from p25_35 / p13_30) ----
-line_radius=0.18
+line_radius=0.22
 cell_depth=0.1
 pixel_dim=0.5
 block_cell=0.48
@@ -393,14 +393,14 @@ def build_fc(fc, fc_step, fc_z, pct=70, vmax_div=2.0, alpha=0.7):
 
 ## ---- The scene ----
 
-class P41_Net_14(InteractiveScene):
+class P54_layers_c(InteractiveScene):
     """Base class: draws one activation cache. Subclasses only override the attributes below."""
 
-    model_id='plain14'
+    model_id='plain34'
 
     #Per-model layout knobs
     depth_scale=0.6                   #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
-    layer_spacing=5.0                 #world units between consecutive blocks, default = 5.0
+    layer_spacing=25.0                 #world units between consecutive blocks, default = 5.0
     tensors_per_block=2               #2 -> post-conv1 relu + block output; 1 -> block outputs only
     depth_mults={64: 1.0, 128: 1.35, 256: 1.8, 512: 2.3}
     max_layers=None                   #debug: only draw the first N blocks
@@ -416,20 +416,21 @@ class P41_Net_14(InteractiveScene):
 
     #Kernel viz: {destination layer index: dict(i, j, prism, ksize, color)} -- indices are printed at
     #startup by describe(). Index 0 is the stem, whose source is the input image (default ksize 7).
-    kernels={0: dict(i=10, j=10, prism=True),           #image (7x7, stride 2) -> stem
-             1: dict(i=20, j=40, prism=True), #, color=CYAN),
-             2: dict(i=20, j=40, prism=True),
-             3: dict(i=9, j=16, prism=True),
-             4: dict(i=5, j=7, prism=True),
-             5: dict(i=5, j=7, prism=True),
-             6: dict(i=3, j=3, prism=True),
-             7: dict(i=3, j=3, prism=True),
-             8: dict(i=3, j=3, prism=True),
-             9: dict(i=3, j=3, prism=True),
-             10: dict(i=3, j=3, prism=True),
-             11: dict(i=3, j=3, prism=True),
-             12: dict(i=3, j=3, prism=True)
-             }
+    kernels={} 
+            # 0: dict(i=10, j=10, prism=True),           #image (7x7, stride 2) -> stem
+            #  1: dict(i=20, j=40, prism=True), #, color=CYAN),
+            #  2: dict(i=20, j=40, prism=True),
+            #  3: dict(i=9, j=16, prism=True),
+            #  4: dict(i=5, j=7, prism=True),
+            #  5: dict(i=5, j=7, prism=True),
+            #  6: dict(i=3, j=3, prism=True),
+            #  7: dict(i=3, j=3, prism=True),
+            #  8: dict(i=3, j=3, prism=True),
+            #  9: dict(i=3, j=3, prism=True),
+            #  10: dict(i=3, j=3, prism=True),
+            #  11: dict(i=3, j=3, prism=True),
+            #  12: dict(i=3, j=3, prism=True)
+            #  }
 
     kernel_color=KT_ORANGE
 
@@ -575,16 +576,23 @@ class P41_Net_14(InteractiveScene):
             pairs.append((self.fc_block, self.fc_border))
         extras=self.kernel_mobs+self.skip_mobs
 
-        if self.fade_in:
-            self.wait(1)
-            fades=[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in pairs]
-            self.play(LaggedStart(*fades, lag_ratio=1.0), run_time=self.fade_in_time)
-            if extras:
-                self.play(*[FadeIn(m) for m in extras], run_time=1.5)
-        else:
-            for b, p in pairs:
-                self.add(b, p)
-            self.add(*extras)
+        self.wait()
+
+        for i in [9, 10, 11, 12, 13, 14, 15]: self.add(pairs[i][0], pairs[i][1])
+        # self.frame.reorient(0, 61, 0, (np.float32(470.69), np.float32(6.88), np.float32(-9.95)), 157.79)
+        # self.frame.reorient(0, 60, 0, (np.float32(490.48), np.float32(9.69), np.float32(-4.88)), 170.71)
+        self.frame.reorient(0, 63, 0, (np.float32(490.48), np.float32(9.69), np.float32(-4.88)), 170.71)
+
+        # if self.fade_in:
+        #     self.wait(1)
+        #     fades=[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in pairs]
+        #     self.play(LaggedStart(*fades, lag_ratio=1.0), run_time=self.fade_in_time)
+        #     if extras:
+        #         self.play(*[FadeIn(m) for m in extras], run_time=1.5)
+        # else:
+        #     for b, p in pairs:
+        #         self.add(b, p)
+        #     self.add(*extras)
 
         self.wait(still_hold)
         
@@ -592,187 +600,8 @@ class P41_Net_14(InteractiveScene):
         self.embed()
 
 
-# Replaces the P43_Net_Residual stub at the bottom of general_network_rendering.py.
-# Everything else (helpers, P41_Net_14) is unchanged.
-
-class P43_Net_Residual(P41_Net_14):
-    """Same layout/camera/kernels as P41_Net_14, but with a faked residual stream: every block's
-    output tensor is drawn as (post-conv1 activation + block output), so each block looks like it
-    carries its input's features forward. Purely a viz hack -- plain14 has no skip paths.
-
-    After the full network is on screen, each activation block is shown alone (no kernels, no
-    other blocks) from the same camera for `isolate_hold` seconds, to be chopped up in editing.
-    """
-
-    model_id='plain14'
-
-    #Residual faking
-    residual_source='relu1'   #'relu1': max(bn1, 0) (what the .relu1 block already draws)
-                              #'bn1'  : raw post-bn1 (has negatives; they fall below threshold anyway)
-                              #'conv1': act['layerS.B.conv1'] if the cache has it, else falls back to relu1
-    residual_mode='block'     #'block' : out = out + gain*relu1             (one pair per block)
-                              #'stream': out = out + gain*relu1 + previous (faked) block output,
-                              #          accumulated within a stage (shapes match), reset at stage change
-    residual_gain=1.0         #weight on the added post-conv1 term
-
-    #Isolation pass
-    isolate_hold=1.0          #seconds each block sits alone on screen
-    isolate_gap=0.0           #seconds of empty screen between blocks (>0 gives clean cut points)
-    isolate_image=True        #the input image gets its own isolated frame (first)
-    isolate_fc=True           #the fc column gets its own isolated frame (last)
-    isolate_borders=True      #keep each block's black outline prism in its isolated frame
-    act_alpha=0.6
-
-    # ------------------------------------------------------------------
-
-    def post_conv1(self, blk):
-        act=self.act
-        if self.residual_source=='conv1' and blk+'.conv1' in act:
-            return act[blk+'.conv1']
-        if self.residual_source=='bn1':
-            return act[blk+'.bn1']
-        return np.maximum(act[blk+'.bn1'], 0.0)      #same reconstruction collect_tensors uses
-
-    def fake_residual(self):
-        """act['layerS.B'] <- act['layerS.B'] + gain*post_conv1 (+ previous block output in 'stream' mode)."""
-        act=self.act
-        for s in range(1, 5):
-            b=0
-            prev=None
-            while f'layer{s}.{b}' in act:
-                blk=f'layer{s}.{b}'
-                out=act[blk]+self.residual_gain*self.post_conv1(blk)
-                if self.residual_mode=='stream' and prev is not None and prev.shape==out.shape:
-                    out=out+prev
-                act[blk]=out
-                prev=out
-                b+=1
-
-    def load(self):
-        self.act=load_act(self.model_id)
-        self.fake_residual()                          #before collect_tensors reads the block outputs
-        tensors=collect_tensors(self.act, self.tensors_per_block)
-        if self.max_layers is not None:
-            tensors=tensors[:self.max_layers]
-        self.layers, self.fc_z=layer_layout(tensors, self.depth_scale, self.layer_spacing,
-                                            self.depth_mults)
-        self.total_z=self.fc_z if not self.show_fc else self.fc_z+fc_cell
-        return self.layers
-
-    def show_network(self):
-        """Full network, identical sequencing to P41_Net_14.construct."""
-        self.add(self.img, self.image_border)
-        pairs=list(zip(self.blocks, self.borders))
-        if self.fc_block is not None:
-            pairs.append((self.fc_block, self.fc_border))
-        extras=self.kernel_mobs+self.skip_mobs
-
-        if self.fade_in:
-            self.wait(1)
-            fades=[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in pairs]
-            self.play(LaggedStart(*fades, lag_ratio=1.0), run_time=self.fade_in_time)
-            if extras:
-                self.play(*[FadeIn(m) for m in extras], run_time=1.5)
-        else:
-            for b, p in pairs:
-                self.add(b, p)
-            self.add(*extras)
-        self.wait(still_hold)
-        return pairs
-
-    def isolate_blocks(self, pairs):
-        """Each (block, border) alone on screen, same camera, no kernels/skips."""
-        shots=[]
-        if self.isolate_image:
-            shots.append((self.img, self.image_border))
-        shots+=[p for p in pairs if self.isolate_fc or p[0] is not self.fc_block]
-
-        self.clear()                                  #drops every mobject, leaves the camera frame alone
-        self.frame.reorient(*self.view())
-        for mob, border in shots:
-            self.add(mob, border) if self.isolate_borders else self.add(mob)
-            self.wait(self.isolate_hold)
-            self.remove(mob, border)
-            if self.isolate_gap>0:
-                self.wait(self.isolate_gap)
-
-    def construct(self):
-        self.build()
-        self.frame.reorient(*self.view())
-        pairs=self.show_network()
-        self.wait(1)
-        self.isolate_blocks(pairs)
-        self.wait(still_hold)
 
 
-        self.wait(20)
-        self.embed()
 
-
-class P43_Net_Partial(P41_Net_14):
-    """First N drawn layers of the plain14 network, kernels included, real activations."""
-
-    model_id='plain14'
-    max_layers=4                      #N: stem relu, layer1.0.relu1, layer1.0, layer1.1.relu1
-    show_fc=False                     #no fc column dangling after a truncated net
-    frame_to_partial=False            #True: auto-frame the partial net; False: keep the full-net camera
-
-    def view(self):
-        if self.frame_to_partial:
-            L=self.total_z
-            return (0, 59, 0, (0.5*L, 0.0, 0.0), max(60.0, 0.95*L))
-        return super().view()
-
-    def construct(self):
-        self.build()
-        self.frame.reorient(*self.view())
-        self.add(self.img, self.image_border)
-        pairs=list(zip(self.blocks, self.borders))
-        if self.fade_in:
-            self.wait(1)
-            self.play(LaggedStart(*[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in pairs],
-                                  lag_ratio=1.0), run_time=self.fade_in_time)
-            if self.kernel_mobs:
-                self.play(*[FadeIn(m) for m in self.kernel_mobs], run_time=1.5)
-        else:
-            for b, p in pairs:
-                self.add(b, p)
-            self.add(*self.kernel_mobs)
-
-        self.wait(20)
-        self.embed()
-
-class P43_Net_Partial_2(P41_Net_14):
-    """First N drawn layers of the plain14 network, kernels included, real activations."""
-
-    model_id='plain14'
-    max_layers=2                      #N: stem relu, layer1.0.relu1, layer1.0, layer1.1.relu1
-    show_fc=False                     #no fc column dangling after a truncated net
-    frame_to_partial=False            #True: auto-frame the partial net; False: keep the full-net camera
-
-    def view(self):
-        if self.frame_to_partial:
-            L=self.total_z
-            return (0, 59, 0, (0.5*L, 0.0, 0.0), max(60.0, 0.95*L))
-        return super().view()
-
-    def construct(self):
-        self.build()
-        self.frame.reorient(*self.view())
-        self.add(self.img, self.image_border)
-        pairs=list(zip(self.blocks, self.borders))
-        if self.fade_in:
-            self.wait(1)
-            self.play(LaggedStart(*[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in pairs],
-                                  lag_ratio=1.0), run_time=self.fade_in_time)
-            if self.kernel_mobs:
-                self.play(*[FadeIn(m) for m in self.kernel_mobs], run_time=1.5)
-        else:
-            for b, p in pairs:
-                self.add(b, p)
-            self.add(*self.kernel_mobs)
-            
-        self.wait(20)
-        self.embed()
 
 
