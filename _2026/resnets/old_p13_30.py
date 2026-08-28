@@ -24,16 +24,12 @@ pixel_dim=0.5
 
 image_opacity=0.936  
 still_hold=1.0
-steps_per_viz=5     #was 11
+steps_per_viz=11     
 fov=PI/3
 kernel_k=0
 block_cell=0.48
 
-
-channel_pitch=1.0   #world units between color planes; tune against conv1's depth_step*64
-image_bounds=(-32.0, 32.0, -32.0, 32.0, 0.0, 3*channel_pitch)
-
-# image_bounds=(-32.0, 32.0, -32.0, 32.0, 0.0, 3*pixel_dim)
+image_bounds=(-32.0, 32.0, -32.0, 32.0, 0.0, 3*pixel_dim)
 # image_bounds=(-224.0, 224.0, -224.0, 224.0, 0.0, 3*pixel_dim)
 
 #Camera keyframes: theta, phi, gamma, center, height
@@ -231,7 +227,7 @@ def image_plane(im_path, opacity):
     return img
 
 
-def kernel_weights_block(weights, extent, pitch=channel_pitch):
+def kernel_weights_block(weights, extent):
     """A conv-1 filter painted into its patch, black through to magenta."""
     w=np.asarray(weights, dtype=np.float64)
     w=w-w.min()
@@ -242,7 +238,7 @@ def kernel_weights_block(weights, extent, pitch=channel_pitch):
                            indexing='ij')
     vals=(w/w.max()).ravel()
     centers=np.stack([jj.ravel()*step+min_x, -ii.ravel()*step+max_y,
-                      (kk.ravel()+0.5)*pitch+image_bounds[4]], axis=-1)
+                      kk.ravel()*pixel_dim], axis=-1)
     rgba=np.zeros((len(vals), 4))
     rgba[:,0]=vals
     rgba[:,2]=vals
@@ -312,7 +308,7 @@ def conv1_kernel(i, j, k, act_shape, weights, cell_size=1.0, stride=1):
     extent=(src_x, src_x+size, src_y-size, src_y)
     group.add(prism(extent[0], extent[1], extent[2], extent[3], min_z, max_z, MAGENTA,
                     line_radius))
-    group.add(kernel_weights_block(weights, extent, pitch=channel_pitch))
+    group.add(kernel_weights_block(weights, extent))
     return group
 
 
@@ -447,23 +443,9 @@ def cap_with_triangle(axis, at_start=False, length=2.5, width=2.0, normal=UP, co
         axis.put_start_and_end_on(p0, base)
     return tri
 
-def rgb_image_planes(im_path, opacity=0.4, pitch=channel_pitch):
-    """Three copies of the full-color image, one per depth slot inside image_bounds."""
-    planes=[]
-    w=image_bounds[1]-image_bounds[0]
-    h=image_bounds[3]-image_bounds[2]
-    for c in range(3):
-        img=ImageMobject(im_path)
-        img.set_width(w, stretch=True)
-        img.set_height(h, stretch=True)
-        img.set_opacity(opacity)
-        img.move_to([0, 0, image_bounds[4]+(c+0.5)*pitch])
-        planes.append(img)
-    return planes
-
-class P13_22v2(InteractiveScene):
+class P13_22(InteractiveScene):
     def construct(self):
-        quick_mode=True   #flip to False for the real render
+        quick_mode=False   #flip to False for the real render
 
         act=np.load(data_dir+'/p13/lemon_activations_47587.npy', allow_pickle=True).item()
         layer_1_weights=np.load(data_dir+'/p13/plain_8_conv_1.npy')
@@ -480,17 +462,7 @@ class P13_22v2(InteractiveScene):
 
         #Static geometry
         image_border=orient(prism(*image_bounds, CHILL_BROWN, line_radius))
-
-        rgb=rgb_image_planes(data_dir+'/p13/lemon.jpg', opacity=1.0)
-        img=orient(Group(*reversed(rgb)))
-        self.add(img)
-        self.remove(img[0]); self.add(img[0])
-
-        # rgb=rgb_image_planes(data_dir+'/p13/lemon.jpg', data_dir+'/p13', opacity=0.75)
-        # img=orient(Group(*reversed(rgb)))   #camera sits on the -x side after orient, so blue first
-        # self.add(img)
-
-        # img=orient(image_plane(data_dir+'/p13/lemon.jpg', opacity=0.6))
+        img=orient(image_plane(data_dir+'/p13/lemon.jpg', opacity=0.6))
 
         n_i, n_j=a.shape[1], a.shape[2]
 
@@ -507,18 +479,15 @@ class P13_22v2(InteractiveScene):
         conv_1_border=orient(prism(*bounds, CHILL_BROWN, line_radius))
 
         # self.frame.reorient(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
-        # self.add(img)
+        self.add(img)
         self.frame.reorient(90, 90, 0, (np.float32(11.27), np.float32(-0.41), np.float32(0.2)), 65.81)
 
 
         self.wait(1)
         self.play(FadeIn(image_border),
                   FadeIn(conv_1_border), 
-                  img.animate.set_opacity(0.5),
                   self.frame.animate.reorient(*start_position),
                   run_time=8)
-        self.remove(image_border); self.add(image_border)
-        self.remove(conv_1_border); self.add(conv_1_border)
 
 
         self.wait(1)
@@ -526,7 +495,7 @@ class P13_22v2(InteractiveScene):
         if quick_mode:
             block, _=conv_data_block(a, spacing_between_layers+1, vmin=vmin, vmax=vmax,
                                      keep=reveal_mask(a.shape, n_i-1, n_j-1, kernel_k),
-                                     cell_size=block_cell, alpha=0.75)
+                                     cell_size=block_cell)
             orient(block)
             self.add(block)
             self.frame.reorient(*end_position)
@@ -548,7 +517,7 @@ class P13_22v2(InteractiveScene):
                                            cell_size=block_cell, stride=1))
                 block, _=conv_data_block(a, spacing_between_layers+1, vmin=vmin, vmax=vmax,
                                          keep=reveal_mask(a.shape, i, j, kernel_k),
-                                         cell_size=block_cell, alpha=0.75)
+                                         cell_size=block_cell)
                 orient(block)
                 self.add(block, kernel)
 
