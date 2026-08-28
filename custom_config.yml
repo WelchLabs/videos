@@ -1,8 +1,8 @@
 directories:
   mirror_module_path: False
   removed_mirror_prefix: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs"
-  # base: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/manim"
-  base: "/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/manim"
+  base: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/manim"
+  # base: "/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/manim"
   subdirs:
     raster_images: "images/raster"
     vector_images: "images/vector"
