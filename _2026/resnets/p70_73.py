@@ -7,8 +7,8 @@ from PIL import Image
 
 CHILL_BROWN='#948979'
 
-# data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
-data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
+data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
+# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
 cache_dir=data_dir+'p63_cache/'                      #from p63_cache_activations.ipynb
 key_image_name='0111.png'                            #the single image behind streams/ and max_grids/
 key_image_fallback=data_dir+'p63_vit_input_images/stephen/0111.png'   #un-cropped original, if frames.json is missing
@@ -191,8 +191,37 @@ def vit_viz_block(a, z0, z_step, cell, pct=99, alpha=0.25, cell_z=cell_depth):
     r=np.maximum(np.asarray(a, dtype=np.float64), 0.0)
     vmax, thresh=layer_stats(r, pct)
     rn=r/vmax
-    return conv_data_block(rn, z0, vmin=0.0, vmax=1.0, keep=(rn>thresh),
-                           cell_size=cell, alpha=alpha, z_step=z_step, cell_z=cell_z)
+    block, bounds=conv_data_block(rn, z0, vmin=0.0, vmax=1.0, keep=(rn>thresh),
+                                  cell_size=cell, alpha=alpha, z_step=z_step, cell_z=cell_z)
+    return block, bounds, vmax
+
+
+def register_viz_block(reg, vmax, z0, z_step, reg_cell, face_he, gap, z_offset=0.0,
+                       alpha=0.8, cell_z=cell_depth):
+    """The register tokens as an n_reg-wide x 1-cell-tall strip whose channel slabs march
+    along the same z-range as the paired patch block. Colors reuse the paired block's
+    per-channel vmax, so registers are directly comparable to the patches next to them --
+    values past the patch max clip to the top of viridis. No percentile threshold: all
+    n_reg*C cells are kept (it's tiny).
+
+    In network coords the strip hangs in front of the x=-face_he face (the camera-facing
+    side after orient) with its bottom edge at y=-face_he+z_offset; token 0 sits nearest
+    the block, the last token nearest the camera. Returns (VoxelBlock, bounds)."""
+    reg=np.asarray(reg, dtype=np.float64)                        #(C, 1, R)
+    n_c, _, n_r=reg.shape
+    rn=np.clip(np.maximum(reg, 0.0)/vmax, 0.0, 1.0)              #vmax broadcasts from (C,1,1)
+
+    kk, tt=np.meshgrid(np.arange(n_c), np.arange(n_r), indexing='ij')
+    x0=-face_he-gap                                              #strip edge nearest the block face
+    y0=-face_he+z_offset                                         #bottom edge of the strip
+    centers=np.stack([x0-(tt+0.5)*reg_cell,
+                      np.full(kk.shape, y0+0.5*reg_cell),
+                      z_step*kk+z0], axis=-1).reshape(-1, 3)
+    rgba=viridis(rn[:, 0, :].reshape(-1))                        #k-major, matches centers
+    rgba[:, 3]=alpha
+    block=VoxelBlock(centers, np.array([reg_cell, reg_cell, cell_z]), rgba)
+    bounds=(x0-n_r*reg_cell, x0, y0, y0+reg_cell, z0, n_c*z_step+z0)
+    return block, bounds
 
 
 ## ---- Reading the p63 cache ----
@@ -229,6 +258,24 @@ def stream_tensors(stream, n_skip, first_idx=1, depth_pool=4, pool='max', max_bl
         t=np.asarray(stream[i, n_skip:], dtype=np.float32)          #(G*G, D)
         t=t.reshape(G, G, -1).transpose(2, 0, 1)                    #(D, G, G): row-major patches
         out.append((f'block_{i}', channel_pool(t, depth_pool, pool)))
+    return out
+
+
+def register_tensors(stream, n_skip, first_idx=1, depth_pool=4, pool='max', max_blocks=None):
+    """(C', 1, R) per stream location: the R=n_skip-1 register tokens (stream[:, 1:n_skip]),
+    channel-first, pooled with the SAME grouping as stream_tensors so pooled channels line
+    up 1:1 with the patch blocks. Returns None if the model has no registers."""
+    n_reg=n_skip-1
+    if n_reg<1:
+        return None
+    idx=range(first_idx, stream.shape[0])
+    if max_blocks is not None:
+        idx=list(idx)[:max_blocks]
+    out=[]
+    for i in idx:
+        t=np.asarray(stream[i, 1:n_skip], dtype=np.float32)      #(R, D)
+        t=t.T.reshape(-1, 1, n_reg)                              #(D, 1, R)
+        out.append(channel_pool(t, depth_pool, pool))
     return out
 
 
@@ -329,15 +376,15 @@ class SquashTo(Animation):
 
 ## ---- The scene ----
 
-class P63_Plain(InteractiveScene):
+class P70_73(InteractiveScene):
     """40 residual-stream tensors of DINOv2 ViT-g/14 drawn as CNN-style activation blocks:
     spin in place -> squash flat into the max-grid pngs -> fly into a 5x8 grid."""
 
     def construct(self):
         # ---- config ----
-        model='plain'                 #'plain' or 'reg'
+        model='reg'                 #'plain' or 'reg'
         first_idx=1                   #stream[1] = output of block 0. 0 would include the patch-embed input
-        depth_pool=32                 #1536 -> 48 channels
+        depth_pool=16                 #1536 -> 48 channels
         pool='max'                    #'max' or 'mean' over each group of depth_pool channels
         max_blocks=None               #debug: only the first N blocks
 
@@ -347,6 +394,12 @@ class P63_Plain(InteractiveScene):
 
         act_pct=90 #99.9 to run faster                  #keep the top (100-pct)% of cells per channel. Put at like 90 before final render
         act_alpha=0.8                 #pct=99 -> ~210k voxels, pct=97 -> ~630k. Start high.
+
+        show_registers=True           #little register strips (needs model='reg'; no-op on 'plain')
+        reg_scale=2.0                 #register cell size = reg_scale*cell; 4 tokens -> strip ~4*reg_scale cells wide
+        reg_gap=1.5                   #world-unit gap between the block's front face and the strip - tune me
+        reg_z_offset=0.0              #lift of the strip bottom above the block bottom (world z after orient)
+        reg_alpha=act_alpha           #all register cells are kept, no thresholding
 
         image_scale=1.5               #image face width / block face width
         image_opacity=0.6
@@ -362,7 +415,10 @@ class P63_Plain(InteractiveScene):
 
         # ---- load the cached residual stream ----
         n_skip=load_meta()['n_skip'][model]
-        tensors=stream_tensors(load_stream(model), n_skip, first_idx, depth_pool, pool, max_blocks)
+        stream=load_stream(model)
+        tensors=stream_tensors(stream, n_skip, first_idx, depth_pool, pool, max_blocks)
+        reg_tensors=(register_tensors(stream, n_skip, first_idx, depth_pool, pool, max_blocks)
+                     if show_registers else None)
 
         face_w=G*cell
         image_w=image_scale*face_w
@@ -376,14 +432,24 @@ class P63_Plain(InteractiveScene):
 
         # ---- voxel blocks + borders ----
         blocks, borders=[], []
-        for L in layers:
+        reg_blocks, reg_borders=[], []
+        reg_cell=reg_scale*cell
+        for k, L in enumerate(layers):
             cz=min(cell_depth, 0.8*L['z_step'])
-            blk, _=vit_viz_block(L['data'], L['z0'], L['z_step'], L['cell'],
-                                 pct=act_pct, alpha=act_alpha, cell_z=cz)
+            blk, _, vmax=vit_viz_block(L['data'], L['z0'], L['z_step'], L['cell'],
+                                       pct=act_pct, alpha=act_alpha, cell_z=cz)
             blocks.append(orient(blk))
             borders.append(orient(prism(*L['bounds'], CHILL_BROWN, line_radius)))
 
-        n_vox=sum(len(b.centers) for b in blocks)
+            if reg_tensors is not None:
+                face_he=L['bounds'][1]                       #face half-extent
+                rblk, rbounds=register_viz_block(reg_tensors[k], vmax, L['z0'], L['z_step'],
+                                                 reg_cell, face_he, reg_gap, reg_z_offset,
+                                                 alpha=reg_alpha, cell_z=cz)
+                reg_blocks.append(orient(rblk))
+                reg_borders.append(orient(prism(*rbounds, CHILL_BROWN, line_radius)))
+
+        n_vox=sum(len(b.centers) for b in blocks)+sum(len(b.centers) for b in reg_blocks)
         print(f'\n{model}: {len(layers)} blocks, chain spans x=0 -> {total_z:.1f}, '
               f'face {face_w:.1f} wide')
         print(f'{"idx":>4}  {"name":10s} {"shape":16s} {"x0":>8} {"x1":>8}  voxels  png')
@@ -430,16 +496,30 @@ class P63_Plain(InteractiveScene):
 
         # ---- draw the chain ----
         self.frame.reorient(0, 62, 0, (np.float32(453.62), np.float32(314.9), np.float32(-181.54)), 867.08)
-
+        self.wait()
         self.add(img, image_border)
-        for b, p in zip(blocks, borders):
+        for k, (b, p) in enumerate(zip(blocks, borders)):
             self.add(b, p)
             self.wait(0.1)
 
+
+        self.wait(1.0)
+        self.play(self.frame.animate.reorient(33, 55, 0, (np.float32(-99.01), np.float32(229.6), np.float32(-184.12)), 352.20),
+                  run_time=8.0)
+
+        self.wait(0)
+        self.play(ShowCreation(reg_borders[0]), FadeIn(reg_blocks[0]), run_time=2.0)
+        self.play(ShowCreation(reg_borders[1]), FadeIn(reg_blocks[1]), run_time=2.0)
+        self.play(ShowCreation(reg_borders[2]), FadeIn(reg_blocks[2]), run_time=2.0)
+        self.play(ShowCreation(reg_borders[3]), FadeIn(reg_blocks[3]), run_time=2.0)
+
+        for k in range(4, len(reg_blocks)):
+            self.add(reg_blocks[k], reg_borders[k])
+
         self.wait(1)
-        self.play(self.frame.animate.reorient(0, 70, 0, (np.float32(64.0), np.float32(340.99), np.float32(-119.7)), 409.31),
-                  run_time=9.0)
-        self.wait(1)
+        # self.play(self.frame.animate.reorient(0, 62, 0, (np.float32(453.62), np.float32(314.9), np.float32(-181.54)), 867.08), run_time=8.0)
+        # self.play(self.frame.animate.reorient(0, 90, 0, (np.float32(436.06), np.float32(0.0), np.float32(-70.7)), 572.59), run_time=8.0)
+        self.play(self.frame.animate.reorient(0, 63, 0, (np.float32(458.77), np.float32(0.75), np.float32(-69.75)), 578.37), run_time=10.0)
 
         # ---- max-grid pngs, born at the block centers ----
         centers=[np.array([0.5*(L['z0']+L['z1']), 0.0, 0.0]) for L in layers]
@@ -462,7 +542,7 @@ class P63_Plain(InteractiveScene):
                                         SpinTo(bdr, -90*DEGREES, OUT, c)))
 
         self.wait()
-        self.play(LaggedStart(*spins, lag_ratio=lag_ratio), run_time=2.0) #Increase for final animation
+        self.play(LaggedStart(*spins, lag_ratio=lag_ratio), run_time=10.0) #Increase for final animation
 
         # ---- Stage B: squash flat about each center while the png fades in there ----
         squashes=[AnimationGroup(SquashTo(img, collapse_factor, 1, ic_final),
@@ -473,7 +553,10 @@ class P63_Plain(InteractiveScene):
                                            FadeIn(png)))
 
         self.wait()
-        self.play(LaggedStart(*squashes, lag_ratio=lag_ratio), run_time=2.0)
+        self.play(LaggedStart(*squashes, lag_ratio=lag_ratio), 
+                  *[FadeOut(r) for r in reg_blocks],
+                  *[FadeOut(b) for b in reg_borders],
+                 run_time=10.0)
 
         # swap the squashed prisms for clean squares on the grid plane; drop the voxel blocks
         self.remove(*blocks, *borders)
@@ -504,7 +587,7 @@ class P63_Plain(InteractiveScene):
         pre_view=(0, 90, 0, (np.float32(436.06), np.float32(0.0), np.float32(-70.7)), 572.59)
         self.wait()
 
-        self.play(self.frame.animate.reorient(*pre_view), run_time=5.0)
+        # self.play(self.frame.animate.reorient(*pre_view), run_time=10.0) #Need dis still or nah?
         self.wait(0.5)
 
         moves=[AnimationGroup(img.animate.move_to(image_slot).set_width(img_w)
@@ -515,13 +598,62 @@ class P63_Plain(InteractiveScene):
                                         outline.animate.move_to(slot).set_width(face_w)))
 
 
+        self.wait()
         self.play(self.frame.animate.reorient(*front_view),
-                  LaggedStart(*moves, lag_ratio=lag_ratio), run_time=3.0) #tune; longer reads calmer
+                  LaggedStart(*moves, lag_ratio=lag_ratio), run_time=10.0) #tune; longer reads calmer
 
         self.wait(1.0)
 
+        # # ---- overlay one activation pattern on the input image, zoomed in ----
+        # src=pngs[24]                     #pngs[k] shows layer_{k+1:02d}.png; use pngs[23] if you meant stream index 24
+        # overlay=src.copy()
+        # overlay.set_opacity(0.75)
+        # overlay.shift([0, -0.02, 0])     #a hair in front of the grid plane so it wins the z-fight with the image
+        # self.add(overlay)
+
+        # zoom_h=2.2*img_w                 #tune: how tight the zoom on the image gets
+        # overlay_target=image_slot+np.array([0, -0.02, 0])
 
 
+        # self.wait()
+        # self.play(self.frame.animate.reorient(0, 90, 0, tuple(image_slot), zoom_h),
+        #           overlay.animate.move_to(overlay_target).set_width(img_w),
+        #           run_time=7.0)
+        # self.wait(1.0)
+
+        # #Cool ok now P66, I think jsut a simple zoom back out. 
+        # self.play(self.frame.animate.reorient(*front_view), run_time=7.0)
 
 
+        # #P67 Bring in quote
 
+        # #self.frame.animate.reorient(0, 89, 0, (np.float32(76.86), np.float32(-0.0), np.float32(-49.98)), 133.12)
+        # #df"We propose the following interpretation to these elements: the model learns to \n recognize patches containing little useful information, and recycles the corresponding \n tokens to aggregate global image information while discarding spatial information."
+
+        # # ---- zoom back out and write in the registers-paper quote below the grid ----
+        # FRESH_TAN='#dfd0b9'
+        # quote=Text(
+        #     "\"We propose the following interpretation to these elements: the model learns to\n"
+        #     "recognize patches containing little useful information, and recycles the corresponding\n"
+        #     "tokens to aggregate global image information while discarding spatial information.\"",
+        #     # font='Minion Pro', 
+        #     slant=ITALIC, font_size=28)
+        # quote.set_color(FRESH_TAN)
+        # quote.set_width(0.72*comp_w)              #world-size the text for this camera height; tune
+        # to_front_plane(quote, y=grid_y)
+        # quote.move_to([85, grid_y, -102]) #-103.0])    #centered under the grid; tune z to taste
+        # self.play(self.frame.animate.reorient(0, 90, 0, (np.float32(76.86), np.float32(-0.0),
+        #                                                  np.float32(-49.98)), 133.12),
+        #           Write(quote),
+        #           run_time=8.0)
+        # self.wait(1.0)
+
+        # #P69, make space for illustrator loverlay. 
+        # self.play(self.frame.animate.reorient(0, 90, 0, (np.float32(205.1), np.float32(-0.0), np.float32(-40.96)), 111.84),
+        #           FadeOut(quote), 
+        #           run_time=8.0)
+        # self.wait(1.0)
+
+
+        # self.wait(20)
+        # self.embed()
