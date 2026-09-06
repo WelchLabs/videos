@@ -24,8 +24,8 @@ KT_AQUA='#5BADB6'
 KT_BLUE='#236C94'
 KT_PURPLE='#7E5B76'
 
-data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
-# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
+# data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
+data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
 act_dir=data_dir+'general_activations/'         #activations_{model_id}.npy from general_activation_saving_1
 image_path=data_dir+'p25/screwdriver.jpg'       #every cache in act_dir is the screwdriver (idx 39209)
 
@@ -771,6 +771,47 @@ class P43_Net_Partial_2(P41_Net_14):
             for b, p in pairs:
                 self.add(b, p)
             self.add(*self.kernel_mobs)
+            
+        self.wait(20)
+        self.embed()
+
+class P43_Net_Partial_3(P41_Net_14):
+    """First N drawn layers of the plain14 network, kernels included, real activations."""
+
+    model_id='plain14'
+    max_layers=-1                      #N: stem relu, layer1.0.relu1, layer1.0, layer1.1.relu1
+    show_fc=False                     #no fc column dangling after a truncated net
+    frame_to_partial=False            #True: auto-frame the partial net; False: keep the full-net camera
+
+    def view(self):
+        if self.frame_to_partial:
+            L=self.total_z
+            return (0, 59, 0, (0.5*L, 0.0, 0.0), max(60.0, 0.95*L))
+        return super().view()
+
+    def construct(self):
+        self.build()
+        self.frame.reorient(*self.view())
+        # self.add(self.img, self.image_border)
+
+        pairs=list(zip(self.blocks, self.borders))
+
+        for i in range(2, len(pairs)): 
+            self.add(pairs[i][0], pairs[i][1])
+
+
+        len(pairs)
+        # pairs=list(zip(self.blocks, self.borders))
+        # if self.fade_in:
+        #     self.wait(1)
+        #     self.play(LaggedStart(*[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in pairs],
+        #                           lag_ratio=1.0), run_time=self.fade_in_time)
+        #     if self.kernel_mobs:
+        #         self.play(*[FadeIn(m) for m in self.kernel_mobs], run_time=1.5)
+        # else:
+        #     for b, p in pairs:
+        #         self.add(b, p)
+        #     self.add(*self.kernel_mobs)
             
         self.wait(20)
         self.embed()

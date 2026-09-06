@@ -15,8 +15,13 @@ window:
   monitor_index: 1
   full_screen: False
 camera:
+<<<<<<< HEAD
   resolution: (7680, 4320) #(7680, 4320) #(3840, 2160) #
   background_color: '#FFFFFF' ##EFE5D1' #"#000000" #191519" #"#000000" ##FFFFFF"
+=======
+  resolution: (3840, 2160) #(7680, 4320) #(3840, 2160) #
+  background_color: '#EFE5D1' ##EFE5D1' #"#000000" #191519" #"#000000" ##FFFFFF"
+>>>>>>> refs/remotes/origin/master
   fps: 30
   background_opacity: 1.0
 file_writer:
