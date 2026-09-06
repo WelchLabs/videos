@@ -376,7 +376,7 @@ class SquashTo(Animation):
 
 ## ---- The scene ----
 
-class P70_73(InteractiveScene):
+class P70_73c(InteractiveScene):
     """40 residual-stream tensors of DINOv2 ViT-g/14 drawn as CNN-style activation blocks:
     spin in place -> squash flat into the max-grid pngs -> fly into a 5x8 grid."""
 
@@ -602,7 +602,8 @@ class P70_73(InteractiveScene):
         self.play(self.frame.animate.reorient(*front_view),
                   LaggedStart(*moves, lag_ratio=lag_ratio), run_time=10.0) #tune; longer reads calmer
 
-        self.wait(1.0)
+        self.wait(20)
+        self.embed()
 
         # # ---- overlay one activation pattern on the input image, zoomed in ----
         # src=pngs[24]                     #pngs[k] shows layer_{k+1:02d}.png; use pngs[23] if you meant stream index 24
