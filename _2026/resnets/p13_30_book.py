@@ -13,8 +13,8 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#EB8423' #Sike! '#FF00FF'
 
-# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin'
-data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
+data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin'
+# data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
 
 spacing_between_layers=5
 line_radius=0.18
@@ -468,6 +468,100 @@ def rgb_image_planes(im_path, opacity=0.4, pitch=channel_pitch):
         planes.append(img)
     return planes
 
+class P13_22_book_pooled(InteractiveScene):
+    """Just the avgpool output: 256 pooled activations as a single column of voxels."""
+    def construct(self):
+        show_border=True
+        pool_factor=5                          #true value is 14; matches the video's pooled cell
+
+        act=np.load(data_dir+'/p13/lemon_activations_47587.npy', allow_pickle=True).item()
+        p=act['avgpool'][0,:,0,0]              #(256,)
+        n_c3=len(p)
+        pn=p/p.max()
+
+        base_depth=64*(10*depth_step/4)        #same depth scale as the full network figure
+        z3_step=base_depth*1.8/n_c3
+        pooled_cell=14*block_cell/pool_factor
+        z_start=0.0
+
+        pool_block, bnds=conv_data_block(pn.reshape(n_c3, 1, 1), z_start, vmin=0.0, vmax=1.0,
+                                         cell_size=pooled_cell, alpha=0.7, z_step=z3_step)
+        self.add(orient(pool_block))
+
+        if show_border:
+            hp=0.5*pooled_cell
+            self.add(orient(prism(-hp, hp, -hp, hp, z_start, z_start+n_c3*z3_step,
+                                  CHILL_BROWN, line_radius)))
+
+        # self.frame.reorient(54, 71, 0, (0.5*n_c3*z3_step, 0, 0), 50)  #column runs along world x after orient
+        self.frame.reorient(0, 55, 0, (np.float32(17.13), np.float32(0.43), np.float32(-0.65)), 33.71)
+        self.wait()
+        self.embed()
+
+
+class P13_22_book_static(InteractiveScene):
+    """Plain-8 as one static diagram: input image, the 7 thresholded activation
+    blocks, and the fc column. No sweeps, no pooling, no logit plot."""
+    def construct(self):
+        show_image=True
+        show_fc=True
+        show_borders=True
+
+        act=np.load(data_dir+'/p13/lemon_activations_47587.npy', allow_pickle=True).item()
+
+        z0=spacing_between_layers+1
+        squish_step=10*depth_step/4                   #compressed layer-1 spacing from the video
+        base_depth=64*squish_step                     #a 64-channel block is this deep (~20 units)
+        depth_mults={64: 1.0, 128: 1.35, 256: 1.8}    #deeper layers get a little extra room
+        cell=block_cell
+
+        r1=act['relu'][0].copy()
+        r1[[0, 22]]=r1[[22, 0]]                       #vertical-edge channel up front, as in the video
+        acts=[r1]+[act[k][0] for k in ['layer1.0.relu', 'layer1.0', 'layer2.0.relu',
+                                        'layer2.0', 'layer3.0.relu', 'layer3.0']]
+
+        blocks, borders=[], []
+        z_cursor=z0
+        for rl in acts:
+            n_cl=rl.shape[0]
+            z_step=base_depth*depth_mults[n_cl]/n_cl
+            blk, bnds=relu_viz_block(rl, z_cursor, z_step, cell)
+            blocks.append(orient(blk))
+            borders.append(orient(prism(*bnds, CHILL_BROWN, line_radius)))
+            z_cursor=bnds[5]+spacing_between_layers
+        last_depth=bnds[5]-bnds[4]
+
+        if show_image:
+            self.add(orient(image_plane(data_dir+'/p13/lemon.jpg', opacity=0.5)))
+            if show_borders:
+                self.add(orient(prism(*image_bounds, CHILL_BROWN, line_radius)))
+
+        self.add(*blocks)
+        if show_borders:
+            self.add(*borders)
+
+        if show_fc:
+            fc=act['fc'][0]
+            n_fc=len(fc)
+            fcn=(fc-fc.min())/np.ptp(fc)              #logits go negative; min-max for viridis
+            fc_height=1.2*last_depth                  #same fc_factor as the video
+            fc_step=fc_height/n_fc
+            fc_z=z_cursor                             #layer gap already included
+            fc_cell=acts[-1].shape[-1]*cell/5         #the pooled-cell width from the video
+            y=(0.5*(n_fc-1)-np.arange(n_fc))*fc_step  #index 0 at the top
+            centers=np.stack([np.zeros(n_fc), y, np.full(n_fc, fc_z)], axis=-1)
+            rgba=viridis(fcn); rgba[:,3]=0.7
+            self.add(orient(VoxelBlock(centers, np.array([fc_cell, cell_depth, fc_cell]), rgba)))
+            if show_borders:
+                hp, hh=0.5*fc_cell, 0.5*fc_height
+                self.add(orient(prism(-hp, hp, -hh, hh, fc_z-hp, fc_z+hp,
+                                      CHILL_BROWN, line_radius)))
+
+        # self.frame.reorient(28, 64, 0, (130.97, -14.4, 7.38), 133.84)  #deep_view from the video
+        self.frame.reorient(0, 57, 0, (np.float32(104.35), np.float32(-3.52), np.float32(0.43)), 158.73)
+        self.wait()
+        self.embed()
+
 class P13_22_book_2(InteractiveScene):
     def construct(self):
         quick_mode=True   #flip to False for the real render
@@ -779,10 +873,6 @@ class P13_22_book_2(InteractiveScene):
         #           self.frame.animate.reorient(*end_position_2),
         #           run_time=6.0)
         # self.wait(still_hold)
-
-
-
-
 
 
 
@@ -1634,67 +1724,6 @@ class P13_22_book_3(InteractiveScene):
 
 
 
-# class P13(InteractiveScene):
-#     def construct(self):
-
-        
-#         act=np.load(data_dir+'/p13/lemon_activations_47587.npy', allow_pickle=True).item()
-#         layer_1_weights=np.load(data_dir+'/p13/plain_8_conv_1.npy')
-
-
-#         ##Ok lets start simple with just the image here.
-#         image_border=prism(*image_bounds, CHILL_BROWN, line_radius)
-#         img=image_plane(data_dir+'/p13/lemon.jpg', opacity=0.4)
-
-
-#         kernel_k=0 #20 is nice vertical edges I think, maybe just transpose 1 and 20
-
-#         a=act['conv1'][0]
-
-#         block, bounds=conv_data_block(masked_conv1(a, 0, 10, kernel_k),
-#                                       spacing_between_layers+1, 0.005, cell_size=0.48)
-#         conv_1_border=prism(*bounds, CHILL_BROWN, line_radius)
-
-#         cell=(image_bounds[1]-image_bounds[0])/a.shape[-1]
-#         k=conv1_kernel(0, 10, kernel_k, a.shape, layer_1_weights[0], cell_size=0.48, stride=1)
-
-
-#         # self.add(conv1_kernel(0, 10, kernel_k, a.shape, weights, forward))
-#         net_group=Group(img, image_border, conv_1_border, k)
-#         net_group.rotate(90*DEGREES, [0, 1, 0])
-#         net_group.rotate(90*DEGREES, [1, 0, 0])
-#         self.add(net_group)
-
-#         # image_border.move_to([0, 10, 0])
-
-#         self.frame.reorient(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
-
-
-#         self.wait()
-
-
-
-
-
-        # self.camera.background_rgba=[0, 0, 0, 1]
-        # self.frame.set_field_of_view(fov)
-        # a=load_activation('hot_dog', 'features_2')
-        # weights=load_activation('weights', 'features0')[0]
-        # vmax=float(a[0].max())
-
-        # self.frame.reorient(*p24_end)
-        # forward=forward_from(p24_end)
-        # self.add(prism(*image_bounds, WHITE, line_radius))
-        # self.add(conv1_kernel(0, 10, kernel_k, a.shape, weights, forward))
-        # block, bounds=conv_data_block(masked_conv1(a, 0, 10, kernel_k),
-        #                               spacing_between_layers+1, 0.005, forward)
-        # self.add(block)
-        # self.add(prism(*bounds, WHITE, line_radius))
-        # self.wait(still_hold)
-
-
-        self.wait(20)
-        self.embed()
 
 
 
