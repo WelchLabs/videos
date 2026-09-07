@@ -597,7 +597,33 @@ class Lemon8(InteractiveScene):
 
 
 
+class Lemon8Pooled(Lemon8):
+    """Only the avgpool output: layer3.0's 14x14 block collapsed to a 1x1 column of 256 voxels,
+    in the same position, with the same viridis / alpha as the conv blocks."""
+    pool_factor=5            #pooled voxel width = 14 cells / pool_factor; the true ratio is 14
+    pool_pct=None            #None -> all 256 channels; e.g. 70 -> only the top 30% (global percentile)
+    show_pool_border=True
 
+    def construct(self):
+        self.load()
+        L=self.layers[-1]                                    #layer3.0, (256, 14, 14)
+        p=self.act['avgpool'][0,:,0,0].astype(np.float64)    #(256,)
+        pn=(p/p.max()).reshape(-1, 1, 1)
+        keep=None if self.pool_pct is None else (pn>np.percentile(pn, self.pool_pct))
+
+        pooled_cell=L['n']*L['cell']/self.pool_factor
+        cz=min(cell_depth, 0.8*L['z_step'])                  #same voxel thickness as build_blocks
+        blk, bnds=conv_data_block(pn, L['z0'], vmin=0.0, vmax=1.0, keep=keep,
+                                  cell_size=pooled_cell, alpha=self.act_alpha,
+                                  z_step=L['z_step'], cell_z=cz)
+        self.add(orient(blk))
+        if self.show_pool_border:
+            self.add(orient(prism(*bnds, CHILL_BROWN, line_radius)))
+
+        # self.frame.reorient(54, 71, 0, (0.5*(L['z0']+L['z1']), 0.0, 0.0), 50.0)
+        self.frame.reorient(0, 57, 0, (np.float32(103.2), np.float32(1.02), np.float32(1.58)), 163.55)
+        self.wait(still_hold)
+        self.embed()
 
 
 ## ---- One class per model; depth_scale/spacing below are starting guesses to tune ----
