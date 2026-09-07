@@ -27,8 +27,8 @@ KT_PURPLE='#7E5B76'
 data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
 # data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
 act_dir=data_dir+'general_activations/'         #activations_{model_id}.npy from general_activation_saving_1
-# image_path=data_dir+'p25/screwdriver.jpg'       #every cache in act_dir is the screwdriver (idx 39209)
-image_path=data_dir+'/p13/lemon.jpg'
+image_path=data_dir+'p25/screwdriver.jpg'       #every cache in act_dir is the screwdriver (idx 39209)
+# image_path=data_dir+'/p13/lemon.jpg'
 
 
 ## ---- Geometry shared by every model (carried over from p25_35 / p13_30) ----
@@ -395,7 +395,7 @@ def build_fc(fc, fc_step, fc_z, pct=70, vmax_div=2.0, alpha=0.7):
 
 ## ---- The scene ----
 
-class Lemon8(InteractiveScene):
+class ScrewDriver8(InteractiveScene):
     """Base class: draws one activation cache. Subclasses only override the attributes below."""
 
     model_id='plain8'
@@ -459,9 +459,9 @@ class Lemon8(InteractiveScene):
     # ------------------------------------------------------------------
 
     def load(self):
-        # self.act=load_act(self.model_id)
+        self.act=load_act(self.model_id)
 
-        self.act=np.load(data_dir+'/p13/lemon_activations_47587.npy', allow_pickle=True).item() #SW LEMON HACK
+        # self.act=np.load(data_dir+'/p13/lemon_activations_47587.npy', allow_pickle=True).item() #SW LEMON HACK
 
         tensors=collect_tensors(self.act, self.tensors_per_block)
         if self.max_layers is not None:
@@ -595,35 +595,55 @@ class Lemon8(InteractiveScene):
         self.embed()
 
 
+class ScrewDriver14(ScrewDriver8):
+    model_id='plain14'
 
-class Lemon8Pooled(Lemon8):
-    pool_factor=5
-    pool_pct=None
-    show_pool_border=True
-    cmap_lo=0.5              #fraction of viridis to skip; 0.5 -> only the teal-to-yellow half
+    #Per-model layout knobs
+    depth_scale=0.8                  #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
+    layer_spacing=4.0                 #world units between consecutive blocks, default = 5.0
+
+
+    #Kernel viz: {destination layer index: dict(i, j, prism, ksize, color)} -- indices are printed at
+    #startup by describe(). Index 0 is the stem, whose source is the input image (default ksize 7).
+    kernels={0: dict(i=10, j=10, prism=True),           #image (7x7, stride 2) -> stem
+             1: dict(i=20, j=40, prism=True), #, color=CYAN),
+             2: dict(i=20, j=40, prism=True),
+             3: dict(i=9, j=16, prism=True),
+             4: dict(i=5, j=7, prism=True),
+             5: dict(i=5, j=7, prism=True),
+             6: dict(i=3, j=3, prism=True),
+             7: dict(i=3, j=3, prism=True),
+             8: dict(i=3, j=3, prism=True),
+             9: dict(i=3, j=3, prism=True),
+             10: dict(i=3, j=3, prism=True),
+             11: dict(i=3, j=3, prism=True),
+             12: dict(i=3, j=3, prism=True)
+             }
+
 
     def construct(self):
-        self.load()
-        L=self.layers[-1]
-        p=self.act['avgpool'][0,:,0,0].astype(np.float64)
-        pn=(p/p.max()).reshape(-1, 1, 1)
-        keep=None if self.pool_pct is None else (pn>np.percentile(pn, self.pool_pct))
-        pc=self.cmap_lo+(1.0-self.cmap_lo)*pn                #0..1 -> cmap_lo..1
+        self.build()
+        self.frame.reorient(*self.view())
+        self.add(self.img, self.image_border)
 
-        pooled_cell=L['n']*L['cell']/self.pool_factor
-        cz=min(cell_depth, 0.8*L['z_step'])
-        blk, bnds=conv_data_block(pc, L['z0'], vmin=0.0, vmax=1.0, keep=keep,
-                                  cell_size=pooled_cell, alpha=self.act_alpha,
-                                  z_step=L['z_step'], cell_z=cz)
-        self.add(orient(blk))
-        if self.show_pool_border:
-            self.add(orient(prism(*bnds, CHILL_BROWN, line_radius)))
+        pairs=list(zip(self.blocks, self.borders))
+        if self.fc_block is not None:
+            pairs.append((self.fc_block, self.fc_border))
+        extras=self.kernel_mobs+self.skip_mobs
 
-        # self.frame.reorient(54, 71, 0, (0.5*(L['z0']+L['z1']), 0.0, 0.0), 50.0)
-        self.frame.reorient(0, 57, 0, (np.float32(103.2), np.float32(1.02), np.float32(1.58)), 163.55) 
-        self.wait(still_hold)
+        if self.fade_in:
+            self.wait(1)
+            fades=[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in pairs]
+            self.play(LaggedStart(*fades, lag_ratio=1.0), run_time=self.fade_in_time)
+            if extras:
+                self.play(*[FadeIn(m) for m in extras], run_time=1.5)
+        else:
+            for b, p in pairs:
+                self.add(b, p)
+            self.add(*extras)
 
-        self.frame.reorient(0, 57, 0, (np.float32(103.35), np.float32(7.78), np.float32(11.99)), 163.55)
+        self.frame.reorient(0, 57, 0, (np.float32(182.87), np.float32(1.56), np.float32(2.4)), 249.21)           
+
         self.wait(still_hold)
         self.embed()
 
