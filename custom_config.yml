@@ -1,9 +1,9 @@
 directories:
   mirror_module_path: False
   removed_mirror_prefix: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs"
-  base: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/ai_book_vol_2/3_resnets/videos"
+  # base: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/ai_book_vol_2/3_resnets/videos"
   # base: "/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/manim"
-  # base: "/Users/stephen/Dropbox-Stephencwelch/welch_labs/ai_book_vol_2/3_resnets/videos"
+  base: "/Users/stephen/Dropbox-Stephencwelch/welch_labs/ai_book_vol_2/3_resnets/videos"
   subdirs:
     raster_images: "images/raster"
     vector_images: "images/vector"
