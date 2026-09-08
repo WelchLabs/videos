@@ -32,7 +32,7 @@ image_path=data_dir+'p25/screwdriver.jpg'       #every cache in act_dir is the s
 
 
 ## ---- Geometry shared by every model (carried over from p25_35 / p13_30) ----
-line_radius=0.22 #0.18 #Thicker for book
+line_radius=0.25 #0.18 #Thicker for book
 cell_depth=0.1
 pixel_dim=0.5
 block_cell=0.48
