@@ -24,8 +24,8 @@ KT_AQUA='#5BADB6'
 KT_BLUE='#236C94'
 KT_PURPLE='#7E5B76'
 
-data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
-# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
+# data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
+data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
 act_dir=data_dir+'general_activations/'         #activations_{model_id}.npy from general_activation_saving_1
 image_path=data_dir+'p25/screwdriver.jpg'       #every cache in act_dir is the screwdriver (idx 39209)
 # image_path=data_dir+'/p13/lemon.jpg'
@@ -647,6 +647,58 @@ class ScrewDriver14(ScrewDriver8):
         self.wait(still_hold)
         self.embed()
 
+class ScrewDriver74(ScrewDriver8):
+    model_id='plain74'
+
+    #Per-model layout knobs
+    depth_scale=0.14                  #multiplies base_depth; 1.0 reproduces p25_35's plain8 proportions
+    layer_spacing=1.2                 #world units between consecutive blocks, default = 5.0
+
+
+    #Kernel viz: {destination layer index: dict(i, j, prism, ksize, color)} -- indices are printed at
+    #startup by describe(). Index 0 is the stem, whose source is the input image (default ksize 7).
+    # kernels={0: dict(i=10, j=10, prism=True),           #image (7x7, stride 2) -> stem
+    #          1: dict(i=20, j=40, prism=True), #, color=CYAN),
+    #          2: dict(i=20, j=40, prism=True),
+    #          3: dict(i=9, j=16, prism=True),
+    #          4: dict(i=5, j=7, prism=True),
+    #          5: dict(i=5, j=7, prism=True),
+    #          6: dict(i=3, j=3, prism=True),
+    #          7: dict(i=3, j=3, prism=True),
+    #          8: dict(i=3, j=3, prism=True),
+    #          9: dict(i=3, j=3, prism=True),
+    #          10: dict(i=3, j=3, prism=True),
+    #          11: dict(i=3, j=3, prism=True),
+    #          12: dict(i=3, j=3, prism=True)
+    #          }
+    kernels=kernels_for(np.arange(74), i=10, j=14, prism=True)
+
+
+    def construct(self):
+        self.build()
+        self.frame.reorient(*self.view())
+        self.add(self.img, self.image_border)
+
+        pairs=list(zip(self.blocks, self.borders))
+        if self.fc_block is not None:
+            pairs.append((self.fc_block, self.fc_border))
+        extras=self.kernel_mobs+self.skip_mobs
+
+        if self.fade_in:
+            self.wait(1)
+            fades=[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in pairs]
+            self.play(LaggedStart(*fades, lag_ratio=1.0), run_time=self.fade_in_time)
+            if extras:
+                self.play(*[FadeIn(m) for m in extras], run_time=1.5)
+        else:
+            for b, p in pairs:
+                self.add(b, p)
+            self.add(*extras)
+
+        # self.frame.reorient(0, 57, 0, (np.float32(182.87), np.float32(1.56), np.float32(2.4)), 249.21)           
+        self.frame.reorient(0, 57, 0, (np.float32(204.85), np.float32(3.99), np.float32(6.14)), 271.92)
+        self.wait(still_hold)
+        self.embed()
 
 
 ## ---- One class per model; depth_scale/spacing below are starting guesses to tune ----
