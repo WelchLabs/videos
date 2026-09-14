@@ -182,7 +182,7 @@ def find_captures(x, y, board_state):
     return captured
 
 
-class GameSanityCheck(InteractiveScene):
+class RL_Render_2(InteractiveScene):
     def construct(self): 
 
         '''
@@ -193,13 +193,15 @@ class GameSanityCheck(InteractiveScene):
         
         games=sorted(list(games_dir.glob('*sgf')))
 
-        p=games[1]
+        p=games[0]
         print(p)
         moves = parse_sgf(p)
 
         #Game 1 video: https://www.youtube.com/watch?v=E3g-kBtqtMo
         #Game 2 video: https://www.youtube.com/watch?v=0uTlyJ4ITnQ
         #Ok, game 2 actually has captures!
+
+        self.frame.reorient(0, 0, 0, (np.float32(0.09), np.float32(-0.02), np.float32(0.0)), 9.25)
 
         # Track board state and stone objects
         board_state = {}  # (x, y) -> color
@@ -220,6 +222,7 @@ class GameSanityCheck(InteractiveScene):
                 self.remove(stone_objects[(cx, cy)])
                 del board_state[(cx, cy)]
                 del stone_objects[(cx, cy)]
+            self.wait(0.1)
 
         self.wait()
 
