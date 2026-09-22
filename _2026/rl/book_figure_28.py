@@ -19,11 +19,18 @@ FRESH_TAN = '#dfd0b9'
 RED = '#ec2027'
 MAGENTA = '#FF00FF'
 
+
+CHILL_BROWN="#948979"
+FRESH_TAN="#f4ebd9"
+ORANGE='#eb8423'
+LT_BLUE='#5badb6'
+
+
 HACKIN_DIR = Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/rl_1/hackin')
 ASSET_DIR = HACKIN_DIR / 'manim_assets'  # where the exported texture goes
 
-ANG_LIM = (-13, 13)     # pole angle, degrees -- same as the 2d version
-VEL_LIM = (-170, 170)   # pole angular velocity, degrees/s
+ANG_LIM = (-15, 15)     # pole angle, degrees -- same as the 2d version
+VEL_LIM = (-15, 15)   # pole angular velocity, degrees/s
 
 # theta values used for the height field / colormap. These match the
 # manually-overridden t1, t2 = 0.01, 0.01 in the notebook's final plot
@@ -78,7 +85,7 @@ class policy_surfaces_3d_1(InteractiveScene):
         # ---- 2. axes: x = pole angle, y = pole angular velocity, z = P(right) ----
         axes = ThreeDAxes(
             x_range=(*ANG_LIM, 5),
-            y_range=(*VEL_LIM, 50),
+            y_range=(*VEL_LIM, ),
             z_range=(0, 1, 0.25),
             width=10, height=10, depth=4,
         )
@@ -248,17 +255,19 @@ def play_theta_sweep(scene, t1_tracker, t2_tracker):
     )
 
 
-class policy_surfaces_3d_2(InteractiveScene):
+class policy_surfaces_3d_4(InteractiveScene):
     def construct(self):
+
+        # self.wait()
         axes = ThreeDAxes(
             x_range=(*ANG_LIM, 5),
-            y_range=(*VEL_LIM, 50),
+            y_range=(*VEL_LIM, ),
             z_range=(0, 1, 0.25),
             width=10, height=10, depth=4,
         )
         self.add(axes)
 
-        cmap = mcolors.LinearSegmentedColormap.from_list("blue_gold", [BLUE, YELLOW], N=256)
+        cmap = mcolors.LinearSegmentedColormap.from_list("blue_orange", [LT_BLUE, ORANGE], N=256)
         SURFACE_RES = (41, 41)   # a bit coarser than scene 1 -- rebuilt every frame
         MESH_RES = (23, 23)
         SURFACE_OPACITY = 0.5
@@ -299,8 +308,8 @@ class policy_surfaces_3d_2(InteractiveScene):
             build_surface(),
             resolution=MESH_RES,
             stroke_width=1,
-            stroke_color=FRESH_TAN,
-            stroke_opacity=0.35,
+            stroke_color=CHILL_BROWN,
+            stroke_opacity=0.5,
         ))
 
         # mesh.set_stroke(opacity=0.25, color=FRESH_TAN)
@@ -315,6 +324,8 @@ class policy_surfaces_3d_2(InteractiveScene):
 
         self.wait()
         self.embed()
+
+
 
 
 class policy_surfaces_3d_2_text_c(Scene):
@@ -339,7 +350,7 @@ class policy_surfaces_3d_2_text_c(Scene):
         theta2_val = DecimalNumber(t2_tracker.get_value(), num_decimal_places=3, include_sign=True) 
  
         label = VGroup(theta1_sym, theta1_val, theta2_sym, theta2_val)
-        label.set_color(FRESH_TAN)
+        label.set_color(BLACK)
         label.scale(1.3)
         label.arrange(RIGHT, buff=0.15)
         label.to_edge(DOWN)
@@ -357,7 +368,6 @@ class policy_surfaces_3d_2_text_c(Scene):
         theta2_val.add_updater(lambda d: d.next_to(theta2_sym, RIGHT, buff=0.15))
  
         self.add(label)
- 
         # Simpler (but slower -- recompiles latex every frame) alternative,
         # if the DecimalNumber wiring above is more than you want:
         # label = always_redraw(lambda: Tex(
@@ -396,13 +406,15 @@ class policy_surfaces_3d_3(InteractiveScene):
         # ---- 2. axes: x = pole angle, y = pole angular velocity, z = P(right) ----
         axes = ThreeDAxes(
             x_range=(*ANG_LIM, 5),
-            y_range=(*VEL_LIM, 50),
+            y_range=(*VEL_LIM, 5),
             z_range=(0, 1, 0.25),
             width=10, height=10, depth=4,
         )
         self.add(axes)
  
-        cmap = mcolors.LinearSegmentedColormap.from_list("blue_gold", [BLUE, YELLOW], N=256)
+        # cmap = mcolors.LinearSegmentedColormap.from_list("blue_gold", [BLUE, YELLOW], N=256)
+        cmap = mcolors.LinearSegmentedColormap.from_list("blue_orange", [LT_BLUE, ORANGE], N=256)
+
         SURFACE_RES = (41, 41)   # a bit coarser than scene 1 -- rebuilt every frame
         MESH_RES = (23, 23)
         SURFACE_OPACITY = 0.5
@@ -491,7 +503,7 @@ class loss_to_surface_viz_1(InteractiveScene):
         # ---- 2. axes: x = pole angle, y = pole angular velocity, z = P(right) ----
         axes = ThreeDAxes(
             x_range=(*ANG_LIM, 5),
-            y_range=(*VEL_LIM, 50),
+            y_range=(*VEL_LIM, ),
             z_range=(0, 1, 0.25),
             width=10, height=10, depth=4,
         )
@@ -570,27 +582,45 @@ class loss_to_surface_viz_1(InteractiveScene):
  
 class loss_to_surface_viz_1(InteractiveScene):
     def construct(self):
+        # T1=1.0
+        # T2=1.0
+
+        T1 = 1.0
+        T2 = 0.0
+
         # ---- 1. load the same episode as the 2d version (ep 13) ----
-        with open(HACKIN_DIR / "cartpole_human_play/cartpole_human_demos_sw_3.json") as f:
+        DATA = "/Users/stephen/ai_book_vol_2/chapters/02-reinforcement-learning/data"
+
+        with open(DATA + "/sw_cartpole_game.json") as f: 
             data = json.load(f)
+
+        VEL_SCALE = 10   # divide velocities by 10 -> feature scales comparable, ~isotropic parameter space
+        obs = np.array(data["episodes"][0]["observations"]) 
+        X = obs[:, 2:4] * 180/np.pi # Here we'll just use pole angle and pole angular velocity, and use degrees
+        X[:,1] = X[:,1] / VEL_SCALE # Scale pole angular velocity
+        act = np.array(data['episodes'][0]['actions'])
+
+
+        # with open(HACKIN_DIR / "cartpole_human_play/cartpole_human_demos_sw_3.json") as f:
+        #     data = json.load(f)
  
-        all_obs, all_actions = [], []
-        for i in [13]:
-            ep = data["episodes"][i]
-            all_obs.append(ep["observations"])
-            all_actions.append(ep["actions"])
-            print(i, len(ep['observations']))
+        # all_obs, all_actions = [], []
+        # for i in [13]:
+        #     ep = data["episodes"][i]
+        #     all_obs.append(ep["observations"])
+        #     all_actions.append(ep["actions"])
+        #     print(i, len(ep['observations']))
  
-        obs = np.concatenate(all_obs)
-        act = np.concatenate(all_actions)
+        # obs = np.concatenate(all_obs)
+        # act = np.concatenate(all_actions)
  
-        ang = np.degrees(obs[:, 2])
-        angvel = np.degrees(obs[:, 3])
+        ang = X[:, 0]
+        angvel = X[:, 1]
  
         # ---- 2. axes: x = pole angle, y = pole angular velocity, z = P(right) ----
         axes = ThreeDAxes(
             x_range=(*ANG_LIM, 5),
-            y_range=(*VEL_LIM, 50),
+            y_range=(*VEL_LIM, ),
             z_range=(0, 1, 0.25),
             width=10, height=10, depth=4,
         )
@@ -599,7 +629,8 @@ class loss_to_surface_viz_1(InteractiveScene):
         # ---- 3. build + export the blue -> yellow colormap as a texture ----
         ASSET_DIR.mkdir(parents=True, exist_ok=True)
         tex_path = str(ASSET_DIR / "policy_prob_texture.png")
-        cmap = mcolors.LinearSegmentedColormap.from_list("blue_gold", [BLUE, YELLOW], N=256)
+        # cmap = mcolors.LinearSegmentedColormap.from_list("blue_gold", [BLUE, YELLOW], N=256)
+        cmap = mcolors.LinearSegmentedColormap.from_list("blue_orange", [LT_BLUE, ORANGE], N=256)
  
         TEX_RES = 200
         A, V = np.meshgrid(np.linspace(*ANG_LIM, TEX_RES), np.linspace(*VEL_LIM, TEX_RES))
@@ -628,8 +659,8 @@ class loss_to_surface_viz_1(InteractiveScene):
             geom_surface,
             resolution=(23, 23),
             stroke_width=0.5,
-            stroke_color=WHITE,  # CHILL_BROWN,
-            stroke_opacity=0.4,
+            stroke_color=CHILL_BROWN,  # CHILL_BROWN,
+            stroke_opacity=0.5,
         )
         self.add(mesh)
         mesh.set_stroke(opacity=0.25, color=FRESH_TAN)
@@ -641,7 +672,7 @@ class loss_to_surface_viz_1(InteractiveScene):
             went_right = (action == 1)
             arrow = arrow_polygon(
                 direction=(1 if went_right else -1),
-                fill_color=(YELLOW if went_right else BLUE),
+                fill_color=(ORANGE if went_right else LT_BLUE),
                 fill_opacity=0.85,
                 stroke_width=0,
             )
@@ -684,14 +715,20 @@ class loss_to_surface_viz_1(InteractiveScene):
 
         self.remove(loss_lines)
         self.add(loss_lines)
-        self.remove(axes)
+        # self.remove(axes)
         self.remove(loss_spheres)
         self.remove(arrows)
         self.add(arrows)
+        self.remove(surface); self.add(surface)
+        # self.remove(mesh); self.add(mesh)
  
         # ---- 7. camera + hand off for interactive tuning ----
         # self.frame.reorient(-56, 54, 0, (np.float32(-0.48), np.float32(0.26), np.float32(0.33)), 13.15)
-        self.frame.reorient(-55, 57, 0, (np.float32(-0.52), np.float32(0.23), np.float32(0.26)), 13.15)
+        # self.frame.reorient(-55, 57, 0, (np.float32(-0.52), np.float32(0.23), np.float32(0.26)), 13.15)
+        # self.frame.reorient(-26, 64, 0, (np.float32(0.71), np.float32(-0.04), np.float32(0.87)), 16.40)
+        self.frame.reorient(-28, 45, 0, (np.float32(0.2), np.float32(-0.31), np.float32(0.09)), 14.97)
+        self.wait(1.0)
+        self.frame.reorient(-40, 49, 0, (np.float32(0.09), np.float32(-0.12), np.float32(0.2)), 14.97)
         self.wait(20)
         self.embed()
 
@@ -803,7 +840,7 @@ class loss_to_surface_sweep_1(InteractiveScene):
         # (and the touchdown spheres) during its add/remove shuffle.
         axes = ThreeDAxes(
             x_range=(*ANG_LIM, 5),
-            y_range=(*VEL_LIM, 50),
+            y_range=(*VEL_LIM, ),
             z_range=(0, 1, 0.25),
             width=10, height=10, depth=4,
         )
@@ -843,8 +880,8 @@ class loss_to_surface_sweep_1(InteractiveScene):
             build_surface(),
             resolution=MESH_RES,
             stroke_width=1,
-            stroke_color=FRESH_TAN,
-            stroke_opacity=0.35,
+            stroke_color=CHILL_BROWN,
+            stroke_opacity=0.5,
         ))
         axes.set_color(CHILL_BROWN)
         self.add(axes)
