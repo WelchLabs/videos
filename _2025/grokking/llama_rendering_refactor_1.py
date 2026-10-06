@@ -35,7 +35,7 @@ CONFIG = dict(
     # --- Data ----------------------------------------------------------------
     # A single .p file, or a directory of them (sorted, then SNAPSHOT_INDEX picks one).
     SNAPSHOT_PATH='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/ai_book_vol_2/2_grokking/hackin/jun_3_1',
-    SNAPSHOT_INDEX=0,
+    SNAPSHOT_INDEX=9,
 
     # --- What to draw --------------------------------------------------------
     SHOW_WEIGHTS=True,    # forward-pass connection lines
@@ -60,7 +60,8 @@ CONFIG = dict(
     # --- 6. Depth ------------------------------------------------------------
     # An int N draws N layers spread evenly from first to last (16 = full depth for this model),
     # or give an explicit list of layer indices.
-    DEPTH=[0, 1, 6, 7, 8, 9, 14, 15],
+    # DEPTH=[0, 1, 6, 7, 8, 9, 14, 15],
+    DEPTH=16,
 
     # --- 7. Width ------------------------------------------------------------
     # Counts are neurons / heads actually drawn (each column also gets one "..." slot).
@@ -619,6 +620,9 @@ class LlamaRender(InteractiveScene):
             frame_height = cfg.FRAME[2]
             center = np.array([cfg.FRAME[0], cfg.FRAME[1], 0.0])
         self.frame.reorient(0, 0, 0, tuple(center), frame_height)
+
+        #SW quick hacky reorient for bleed spacing
+        # self.frame.reorient(0, 0, 0, tuple(center), 1)
 
         stroke_scale = cfg.STROKE_SCALE
         if cfg.AUTO_STROKE_SCALE:
