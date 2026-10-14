@@ -35,7 +35,7 @@ CONFIG = dict(
     # --- Data ----------------------------------------------------------------
     # A single .p file, or a directory of them (sorted, then SNAPSHOT_INDEX picks one).
     SNAPSHOT_PATH='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/ai_book_vol_2/2_grokking/hackin/jun_3_1',
-    SNAPSHOT_INDEX=9,
+    SNAPSHOT_INDEX=0,
 
     # --- What to draw --------------------------------------------------------
     SHOW_WEIGHTS=True,    # forward-pass connection lines
@@ -131,7 +131,7 @@ CONFIG = dict(
     INPUT_FONT_SIZE=24,
     OUTPUT_FONT_SIZES=(22, 16, 12),       # top-1, top-2..4, everything else
     OUTPUT_TEXT_FADE=True,                # fade predicted tokens toward the background by probability
-    OUTPUT_TEXT_FLOOR=0.1,                # ...treating probabilities below this as this (keeps the tail legible)
+    OUTPUT_TEXT_FLOOR=0.25,                # Was 0.1, ...treating probabilities below this as this (keeps the tail legible)
     TEXT_NUDGES={' capital': -0.02},      # per-token vertical nudges for descenders etc.
     PROMPT_NEURONS=None,                  # input neurons the prompt tokens sit on. None = seeded random draw
     PROMPT_SEED=25,                       #   (seed 25 -> [4, 26, 15, 23, 8] at the default width)
@@ -154,6 +154,8 @@ CONFIG = dict(
     ATTN_ELLIPSIS_SQUEEZE=0.15,   # how far the two halves close in on the "..."
     ATTN_BORDER_PAD=0.095,        # padding between patterns and the rounded border
     START_X=-4.0,                 # x of the first attention block
+
+    BACKGROUND_OPACITY=0.0
 )
 
 # The locality windows for attention/embedding lines were tuned at these widths; they get
@@ -603,7 +605,8 @@ class LlamaRender(InteractiveScene):
 
     def construct(self):
         cfg = resolve_config(self.overrides)
-        self.camera.background_rgba = list(color_to_rgba(cfg.BACKGROUND_COLOR))
+        # self.camera.background_rgba = list(color_to_rgba(cfg.BACKGROUND_COLOR))
+        self.camera.background_rgba = list(color_to_rgba(cfg.BACKGROUND_COLOR, cfg.BACKGROUND_OPACITY))
 
         snapshot = load_snapshot(cfg.SNAPSHOT_PATH, cfg.SNAPSHOT_INDEX)
         parts = build_network(snapshot, cfg)
