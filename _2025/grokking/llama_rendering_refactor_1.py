@@ -35,7 +35,7 @@ CONFIG = dict(
     # --- Data ----------------------------------------------------------------
     # A single .p file, or a directory of them (sorted, then SNAPSHOT_INDEX picks one).
     SNAPSHOT_PATH='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/ai_book_vol_2/2_grokking/hackin/jun_3_1',
-    SNAPSHOT_INDEX=0,
+    SNAPSHOT_INDEX=4,
 
     # --- What to draw --------------------------------------------------------
     SHOW_WEIGHTS=True,    # forward-pass connection lines
