@@ -16,9 +16,13 @@ MAGENTA='#FF00FF'
 
 #ulimit -n 4096
 
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/p19_22_to_manim')
-img_dir_1='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/fish_stock_video'
-img_dir_1_masked='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/fish_stock_video_masked'
+# svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/p19_22_to_manim')
+# img_dir_1='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/fish_stock_video'
+# img_dir_1_masked='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/fish_stock_video_masked'
+
+svg_dir=Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/p19_22_to_manim')
+img_dir_1='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/fish_stock_video'
+img_dir_1_masked='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/fish_stock_video_masked'
 
 
 
@@ -94,8 +98,8 @@ class P19_22_3da(InteractiveScene):
         self.wait(20)
         self.embed()
 
-img_dir_2='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/cat_stock_video'
-img_dir_2_masked='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/cat_stock_video_masked'
+img_dir_2='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/cat_stock_video'
+img_dir_2_masked='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/cat_stock_video_masked'
 
 
 class P19_22_3db(InteractiveScene):
@@ -164,15 +168,15 @@ class P19_22_3db(InteractiveScene):
         #Here's the non-corrupted version: 
         self.remove(video_masked)
         self.add(video)
-        self.wait()
+        # self.wait()
 
 
         self.wait(20)
         self.embed()
 
 
-img_dir_3='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/a_roll_clips'
-img_dir_3_masked='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/a_roll_clips_masked'
+img_dir_3='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/a_roll_clips'
+img_dir_3_masked='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/a_roll_clips_masked'
 
 
 class P19_22_3dc(InteractiveScene):

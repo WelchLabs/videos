@@ -2,7 +2,9 @@ directories:
   mirror_module_path: False
   removed_mirror_prefix: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs"
   # base: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/ai_book_vol_2/2_grokking/videos"
-  base: "/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/world_models/hrt_integration_world_models/order_book_animation"
+  # base: "/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/world_models/hrt_integration_world_models/order_book_animation"
+  base: "/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/ai_book_vol_2/4_jepa/videos"
+  # base: "/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/ai_book_vol_2/4_jepa/videos"
   # base: "/Users/stephen/Dropbox-Stephencwelch/welch_labs/ai_book_vol_2/2_grokking/videos"
   subdirs:
     raster_images: "images/raster"
