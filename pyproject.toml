@@ -1,0 +1,90 @@
+[project]
+name = "welch-labs-videos"
+version = "0.1.0"
+description = "Supporting code for Welch Labs videos: manimgl scenes and research notebooks"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12,<3.13"
+# Core: everything the manimgl scenes and the lightweight notebooks need.
+dependencies = [
+    "manimgl>=1.7.2",
+    # manimgl 1.7.2 does `import pkg_resources`, which setuptools 81+ no longer ships.
+    "setuptools<81",
+    "mf-tools>=1.4",
+    "numpy>=2",
+    "scipy",
+    "sympy",
+    "matplotlib",
+    "pandas",
+    "pillow",
+    "opencv-python",
+    "imageio",
+    "plotly",
+    "seaborn",
+    "shapely",
+    "scikit-learn",
+    "einops",
+    "tqdm",
+    "rich",
+    "pyyaml",
+    "requests",
+    "psutil",
+    "ipykernel",
+    "ipywidgets",
+]
+
+[dependency-groups]
+dev = ["jupyterlab"]
+# PyTorch + Hugging Face stack used by most of the hacking notebooks.
+ml = [
+    "torch",
+    "torchvision",
+    "transformers",
+    "datasets",
+    "huggingface-hub",
+    "safetensors",
+    "accelerate",
+    "tokenizers",
+    "tiktoken",
+    "jaxtyping",
+    "diffusers",
+    "smalldiffusion",
+    "umap-learn",
+    "nltk",
+    "librosa",
+]
+# Mechanistic interpretability (backprop_2, mech_interp_partial).
+interp = ["transformer-lens", "sae-lens", "circuitsvis", "tabulate"]
+# RL videos: Atari games + the vendored "Build a Reasoning Model" package.
+rl = ["gymnasium", "ale-py", "wandb", "reasoning-from-scratch"]
+# JEPA / world-model notebooks.
+jepa = ["stable-worldmodel", "stable-pretraining", "gymnasium"]
+tf = ["tensorflow"]
+# VLA notebooks. openpi / openpi-client are not included: they pin numpy<2 and the
+# notebooks that use them run against a remote openpi checkout.
+vla = ["jax"]
+tooling = ["notion-client", "reportlab", "nbformat", "markdown", "pygments"]
+
+[tool.uv]
+default-groups = ["dev", "ml"]
+# The repo lives on an external Dropbox volume and the uv cache does not, so
+# hardlinks never work; copy without warning.
+link-mode = "copy"
+# Only resolve for the platforms this repo is actually used on.
+environments = ["sys_platform == 'darwin'", "sys_platform == 'linux'"]
+
+[tool.uv.sources]
+reasoning-from-scratch = { path = "_2026/rl/references/reasoning-from-scratch", editable = true }
+
+# The project itself is only installed so that `custom/` (welch_axes, welch_tools, ...)
+# lands on sys.path: `from welch_axes import *` works from any scene or notebook.
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+dev-mode-dirs = ["custom"]
+
+[tool.hatch.build.targets.wheel]
+only-include = ["custom"]
+sources = ["custom"]
