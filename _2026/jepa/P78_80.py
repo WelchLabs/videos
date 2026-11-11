@@ -16,8 +16,12 @@ MAGENTA='#FF00FF'
 
 #ulimit -n 4096
 
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/p78_80')
-img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/hacking/v_jepa_ac_1'
+# svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/p78_80')
+# img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/hacking/v_jepa_ac_1'
+
+svg_dir=Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/jepa/graphics/p78_80')
+img_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/jepa/hacking/v_jepa_ac_1'
+
 
 def make_emb_tex(vals, color, position, scale=0.65):
     s = (r'\begin{bmatrix} '
