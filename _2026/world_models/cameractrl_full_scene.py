@@ -583,7 +583,7 @@ class CameraCtrlFull(InteractiveScene):
                   *self.anims(FadeOut, "cite_svd"), *self.anims(FadeIn, "cite_cameractrl"),
                   ShowCreation(d["camera"]), run_time=1.0)
         self.play(LaggedStart(*[AnimationGroup(ShowCreation(drop[0]), FadeIn(drop[1], rate_func=squish_rate_func(smooth, 0.7, 1)))
-                                for drop in d["bus"]], lag_ratio=0.12), run_time=2.0)
+                                for drop in d["bus"]], lag_ratio=0.12), run_time=3.0)
         self.wait(1.5)
 
     # --------------------------------------------------------------------------------------------- beat 2 -> 3
@@ -603,7 +603,7 @@ class CameraCtrlFull(InteractiveScene):
         fades = [FadeOut(self.svd_image), FadeOut(self.svd_video), FadeOut(d["camera"])]
         if self.has("title_cameractrl"):
             fades += [FadeOut(d["title_cameractrl"], shift=0.2 * UP), FadeIn(d["title_training"], shift=0.2 * UP)]
-        self.play(*moves, *fades, run_time=1.5)
+        self.play(*moves, *fades, run_time=2.5)
 
         # panel geometry for the training / inference beats (each panel sits just above its label)
         w, h = self.panel_width_px, self.panel_width_px * 320 / 576
@@ -673,7 +673,7 @@ class CameraCtrlFull(InteractiveScene):
             self.play(left.alpha.animate.set_value(1), run_time=0.6)
             for name, (c2w, fxfy, frames) in runs:
                 traj = Trajectory(c2w, fxfy, scale=self.inference_scale)
-                self.run_path(traj, frames, layout_first=True, run_time=self.inference_run_time)
+                self.run_path(traj, frames, layout_first=False, run_time=self.inference_run_time)
             self.play(left.alpha.animate.set_value(0), run_time=0.5)
             self.remove(left)
             left.clear_updaters()
