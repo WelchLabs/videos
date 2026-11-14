@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2 {
+        font-size: 4.2px;
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-weight: 700;
+      }
+
+      .cls-2, .cls-3, .cls-5 {
+        fill: #948678;
+      }
+
+      .cls-3 {
+        font-size: 3.6px;
+      }
+
+      .cls-6 {
+        stroke-width: .3px;
+      }
+
+      .cls-6, .cls-7 {
+        stroke: #f4ebd9;
+      }
+
+      .cls-6, .cls-7, .cls-8 {
+        fill: none;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-7, .cls-8 {
+        stroke-width: .2px;
+      }
+
+      .cls-8 {
+        stroke: #948678;
+      }
+
+      .cls-9, .cls-4 {
+        fill: #f4ebd9;
+      }
+
+      .cls-4 {
+        font-size: 3.77px;
+      }
+
+      .cls-5 {
+        font-size: 2.67px;
+      }
+    </style>
+  </defs>
+  <g>
+    <polygon class="cls-1" points=".26 107.69 .31 -.26 192.62 -.21 192.57 107.69 .26 107.69"/>
+    <path d="M192.52-.16v107.8H.36V-.16h192.17M192.62-.26H.26v108h192.37V-.26h0Z"/>
+  </g>
+  <image width="832" height="480" transform="translate(6.82 68.42) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p55/inclip_clean_t0_teacher/frames/frame_000.png"/>
+  <image width="832" height="480" transform="translate(39.67 68.42) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p55/inclip_clean_t0_teacher/frames/frame_005.png"/>
+  <image width="832" height="480" transform="translate(72.52 68.42) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p55/inclip_clean_t0_teacher/frames/frame_009.png"/>
+  <image width="832" height="480" transform="translate(151.17 68.42) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p55/inclip_clean_t0_teacher/frames/frame_011.png"/>
+  <text class="cls-4" transform="translate(123.54 32.04)"><tspan x="0" y="0">VIDEO</tspan><tspan x="-.99" y="4.53">MODEL</tspan></text>
+  <rect class="cls-7" x="120.43" y="24.07" width="17.84" height="17.84" rx="1.17" ry="1.17"/>
+  <g>
+    <line class="cls-6" x1="109" y1="32.58" x2="116.1" y2="32.58"/>
+    <polygon class="cls-9" points="118.22 32.58 115.24 33.8 115.95 32.58 115.24 31.36 118.22 32.58"/>
+  </g>
+  <g>
+    <line class="cls-6" x1="140.02" y1="32.58" x2="146.38" y2="32.58"/>
+    <polygon class="cls-9" points="148.5 32.58 145.52 33.8 146.23 32.58 145.52 31.36 148.5 32.58"/>
+  </g>
+  <text class="cls-5" transform="translate(46.76 50)"><tspan x="0" y="0">REAL VIDEO</tspan></text>
+  <path class="cls-8" d="M7.71,46.83v1.18c0,.61.49,1.1,1.1,1.1h34.55"/>
+  <path class="cls-8" d="M103.93,46.83v1.18c0,.61-.49,1.1-1.1,1.1h-37.12"/>
+  <text class="cls-5" transform="translate(156.55 48.48)"><tspan x="0" y="0">GENERATED NEXT </tspan><tspan x="7.15" y="3.2">FRAME</tspan></text>
+  <image width="1920" height="1080" transform="translate(7.71 23.66) scale(.02)" xlink:href="../tennis_ball_frames/tennis_ball.00_00_00_46.Still001.jpg"/>
+  <image width="1920" height="1080" transform="translate(40.47 23.66) scale(.02)" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_12.Still002.jpg"/>
+  <image width="1920" height="1080" transform="translate(73.23 23.66) scale(.02)" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_22.Still003.jpg"/>
+  <image width="1920" height="1080" transform="translate(152.38 23.54) scale(.02)" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_31.Still004.jpg"/>
+  <text class="cls-5" transform="translate(43.16 94.72)"><tspan x="0" y="0">MODEL OUTPUTS</tspan></text>
+  <path class="cls-8" d="M6.77,91.55v1.18c0,.61.49,1.1,1.1,1.1h34.55"/>
+  <path class="cls-8" d="M104.95,91.55v1.18c0,.61-.49,1.1-1.1,1.1h-37.12"/>
+  <text class="cls-5" transform="translate(156.55 93.19)"><tspan x="0" y="0">GENERATED NEXT </tspan><tspan x="7.15" y="3.2">FRAME</tspan></text>
+  <text class="cls-4" transform="translate(121.74 78.24)"><tspan x="0" y="0">VIDEO</tspan><tspan x="-.99" y="4.53">MODEL</tspan></text>
+  <rect class="cls-7" x="118.63" y="70.27" width="17.84" height="17.84" rx="1.17" ry="1.17"/>
+  <g>
+    <line class="cls-6" x1="107.2" y1="78.78" x2="114.31" y2="78.78"/>
+    <polygon class="cls-9" points="116.43 78.78 113.44 80 114.15 78.78 113.44 77.56 116.43 78.78"/>
+  </g>
+  <g>
+    <line class="cls-6" x1="138.22" y1="78.78" x2="144.59" y2="78.78"/>
+    <polygon class="cls-9" points="146.7 78.78 143.72 80 144.43 78.78 143.72 77.56 146.7 78.78"/>
+  </g>
+  <text class="cls-3" transform="translate(6.82 64.98)"><tspan x="0" y="0">AUTOREGRESSIVE INFERENCE</tspan></text>
+  <text class="cls-3" transform="translate(7.71 20.22)"><tspan x="0" y="0">TEACHER FORCING (TRAINING)</tspan></text>
+  <text class="cls-2" transform="translate(80.31 6.84)"><tspan x="0" y="0">EXPOSURE BIAS</tspan></text>
+</svg>

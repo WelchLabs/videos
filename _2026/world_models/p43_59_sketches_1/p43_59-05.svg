@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        stroke-dasharray: .6 .6;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4, .cls-5 {
+        fill: none;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1, .cls-3, .cls-4 {
+        stroke-width: .2px;
+      }
+
+      .cls-1, .cls-3, .cls-4, .cls-5 {
+        stroke: #fcc947;
+      }
+
+      .cls-6 {
+        fill: #031e1e;
+      }
+
+      .cls-7 {
+        font-size: 4.2px;
+      }
+
+      .cls-7, .cls-8 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-weight: 700;
+      }
+
+      .cls-7, .cls-9, .cls-10 {
+        fill: #948678;
+      }
+
+      .cls-2 {
+        stroke: #948678;
+        stroke-width: .1px;
+      }
+
+      .cls-8 {
+        fill: #063336;
+        font-size: 4.8px;
+      }
+
+      .cls-3 {
+        stroke-dasharray: .6 .6;
+      }
+
+      .cls-11 {
+        fill: #fcc947;
+      }
+
+      .cls-5 {
+        stroke-width: .4px;
+      }
+
+      .cls-9, .cls-12 {
+        font-family: OpenSans-Semibold, 'Open Sans';
+        font-size: 2.2px;
+        font-weight: 600;
+      }
+
+      .cls-13 {
+        opacity: .5;
+      }
+
+      .cls-10 {
+        font-family: LMRoman8-Regular, 'Latin Modern Roman';
+        font-size: 3.2px;
+      }
+
+      .cls-12 {
+        fill: #f4ebd9;
+      }
+    </style>
+  </defs>
+  <g>
+    <polygon class="cls-6" points="0 107.95 .05 0 192 .05 191.96 107.95 0 107.95"/>
+    <path d="M191.9.1v107.8H.1V.1h191.8ZM192,0H0v108h192V0h0Z"/>
+  </g>
+  <text class="cls-7" transform="translate(67.9 6.16)"><tspan x="0" y="0">BIDIRECTIONAL DIFFUSION</tspan></text>
+  <text class="cls-10" transform="translate(46.96 16.53)"><tspan x="0" y="0">20,280</tspan></text>
+  <line class="cls-2" x1="14.58" y1="15.97" x2="44.06" y2="15.97"/>
+  <line class="cls-2" x1="59.31" y1="15.97" x2="88.79" y2="15.97"/>
+  <text class="cls-9" transform="translate(14.58 95.9)"><tspan x="0" y="0">LAYER 15 HEAD 1</tspan></text>
+  <g class="cls-13">
+    <image width="832" height="480" transform="translate(99.26 23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_000.png"/>
+    <image width="832" height="480" transform="translate(127.8 23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_003.png"/>
+    <image width="832" height="480" transform="translate(156.32 23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_006.png"/>
+    <image width="832" height="480" transform="translate(99.26 39.64) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_010.png"/>
+    <image width="832" height="480" transform="translate(127.8 39.64) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_015.png"/>
+    <image width="832" height="480" transform="translate(156.35 39.64) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_020.png"/>
+    <image width="832" height="480" transform="translate(99.26 56.33) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_023.png"/>
+    <image width="832" height="480" transform="translate(127.8 56.39) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_026.png"/>
+    <image width="832" height="480" transform="translate(156.35 56.49) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_030.png"/>
+    <image width="832" height="480" transform="translate(99.26 73.23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_035.png"/>
+    <image width="832" height="480" transform="translate(127.8 73.23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_040.png"/>
+    <image width="832" height="480" transform="translate(156.32 73.23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_044.png"/>
+  </g>
+  <image width="1872" height="1872" transform="translate(14.58 19.16) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p44/attn/step_15_layer_15_head_01_max_f10_log.png"/>
+  <text class="cls-10" transform="translate(11.8 61.05) rotate(-90)"><tspan x="0" y="0">20,280</tspan></text>
+  <line class="cls-2" x1="11.24" y1="93.44" x2="11.24" y2="63.96"/>
+  <line class="cls-2" x1="11.24" y1="48.71" x2="11.24" y2="19.23"/>
+  <rect class="cls-5" x="63.47" y="25.16" width="6.49" height="6.49"/>
+  <rect class="cls-5" x="156.32" y="56.49" width="27.65" height="15.93"/>
+  <rect class="cls-5" x="127.77" y="23" width="27.65" height="15.93"/>
+  <text class="cls-8" transform="translate(140.23 32.05)"><tspan x="0" y="0">2</tspan></text>
+  <text class="cls-8" transform="translate(169.56 65.76)"><tspan x="0" y="0">9</tspan></text>
+  <g>
+    <line class="cls-4" x1="141.61" y1="22.52" x2="141.61" y2="22.22"/>
+    <path class="cls-1" d="M141.61,21.62v-1.02c0-.8-.65-1.45-1.45-1.45h-42.72c-.8,0-1.45.65-1.45,1.45v6.52c0,.8-.65,1.45-1.45,1.45h-20.15"/>
+    <line class="cls-4" x1="74.11" y1="28.57" x2="73.81" y2="28.57"/>
+    <polygon class="cls-11" points="72.39 28.57 74.38 27.76 73.91 28.57 74.38 29.39 72.39 28.57"/>
+  </g>
+  <g>
+    <path class="cls-3" d="M183.97,63.96h2.33c1.04,0,1.88-.84,1.88-1.88V14.36c0-1.04-.84-1.88-1.88-1.88h-117.69c-1.04,0-1.88.84-1.88,1.88v7.23"/>
+    <polygon class="cls-11" points="66.72 23 65.91 21.01 66.72 21.48 67.53 21.01 66.72 23"/>
+  </g>
+  <text class="cls-12" transform="translate(117.66 -17.45)"><tspan x="0" y="0">Not quite sure yet if I want to do fully or partiall </tspan><tspan x="0" y="2.64">denoised frames here yet, maybe partially </tspan><tspan x="0" y="5.28">denoised...Tehcnically it should be half way </tspan><tspan x="0" y="7.92">through to match the attention pattern. </tspan></text>
+</svg>

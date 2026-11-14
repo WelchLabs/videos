@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2 {
+        font-size: 4.2px;
+      }
+
+      .cls-2, .cls-3 {
+        fill: #948678;
+      }
+
+      .cls-2, .cls-3, .cls-4 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-weight: 700;
+      }
+
+      .cls-5 {
+        stroke-width: .3px;
+      }
+
+      .cls-5, .cls-6 {
+        stroke: #f4ebd9;
+      }
+
+      .cls-5, .cls-6, .cls-7 {
+        fill: none;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-6, .cls-7 {
+        stroke-width: .2px;
+      }
+
+      .cls-3 {
+        font-size: 2.59px;
+      }
+
+      .cls-7 {
+        stroke: #948678;
+      }
+
+      .cls-8, .cls-4 {
+        fill: #f4ebd9;
+      }
+
+      .cls-4 {
+        font-size: 3.66px;
+      }
+    </style>
+    <image id="image" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_00_46.Still001.jpg"/>
+    <image id="image-2" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_22.Still003.jpg"/>
+    <image id="image-3" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_12.Still002.jpg"/>
+  </defs>
+  <g>
+    <polygon class="cls-1" points="0 107.89 .05 -.06 192 0 191.95 107.89 0 107.89"/>
+    <path d="M191.9.04v107.8H.1V.04h191.8M192-.06H0v108h192V-.06h0Z"/>
+  </g>
+  <text class="cls-2" transform="translate(64.49 7.55)"><tspan x="0" y="0">TEACHER FORCING - TRAINING</tspan></text>
+  <text class="cls-4" transform="translate(118.75 79.28)"><tspan x="0" y="0">VIDEO</tspan><tspan x="-.96" y="4.39">MODEL</tspan></text>
+  <rect class="cls-6" x="115.74" y="71.55" width="17.3" height="17.3" rx="1.17" ry="1.17"/>
+  <g>
+    <line class="cls-5" x1="104.65" y1="79.8" x2="111.48" y2="79.8"/>
+    <polygon class="cls-8" points="113.6 79.8 110.61 81.02 111.32 79.8 110.61 78.58 113.6 79.8"/>
+  </g>
+  <g>
+    <line class="cls-5" x1="134.72" y1="79.8" x2="140.83" y2="79.8"/>
+    <polygon class="cls-8" points="142.95 79.8 139.96 81.02 140.67 79.8 139.96 78.58 142.95 79.8"/>
+  </g>
+  <text class="cls-4" transform="translate(119.33 55.96)"><tspan x="0" y="0">VIDEO</tspan><tspan x="-.96" y="4.39">MODEL</tspan></text>
+  <rect class="cls-6" x="116.32" y="48.24" width="17.3" height="17.3" rx="1.17" ry="1.17"/>
+  <g>
+    <line class="cls-5" x1="105.23" y1="56.49" x2="112.06" y2="56.49"/>
+    <polygon class="cls-8" points="114.17 56.49 111.19 57.71 111.9 56.49 111.19 55.27 114.17 56.49"/>
+  </g>
+  <g>
+    <line class="cls-5" x1="135.3" y1="56.49" x2="141.41" y2="56.49"/>
+    <polygon class="cls-8" points="143.53 56.49 140.54 57.71 141.25 56.49 140.54 55.27 143.53 56.49"/>
+  </g>
+  <text class="cls-4" transform="translate(119.69 31.85)"><tspan x="0" y="0">VIDEO</tspan><tspan x="-.96" y="4.39">MODEL</tspan></text>
+  <rect class="cls-6" x="116.68" y="24.12" width="17.3" height="17.3" rx="1.17" ry="1.17"/>
+  <g>
+    <line class="cls-5" x1="105.6" y1="32.37" x2="112.42" y2="32.37"/>
+    <polygon class="cls-8" points="114.54 32.37 111.56 33.59 112.26 32.37 111.56 31.15 114.54 32.37"/>
+  </g>
+  <g>
+    <line class="cls-5" x1="135.67" y1="32.37" x2="141.77" y2="32.37"/>
+    <polygon class="cls-8" points="143.89 32.37 140.91 33.59 141.62 32.37 140.91 31.15 143.89 32.37"/>
+  </g>
+  <text class="cls-3" transform="translate(44.32 96.69)"><tspan x="0" y="0">REAL VIDEO</tspan></text>
+  <path class="cls-7" d="M6.47,93.61v1.15c0,.59.48,1.07,1.07,1.07h33.5"/>
+  <path class="cls-7" d="M99.74,93.61v1.15c0,.59-.48,1.07-1.07,1.07h-35.98"/>
+  <text class="cls-3" transform="translate(150.75 95.21)"><tspan x="0" y="0">GENERATED NEXT </tspan><tspan x="6.94" y="3.1">FRAME</tspan></text>
+  <use transform="translate(6.47 71.15) scale(.02)" xlink:href="#image"/>
+  <use transform="translate(38.22 71.15) scale(.02)" xlink:href="#image-3"/>
+  <use transform="translate(69.98 71.15) scale(.02)" xlink:href="#image-2"/>
+  <image width="1920" height="1080" transform="translate(146.7 71.04) scale(.02)" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_31.Still004.jpg"/>
+  <use transform="translate(38.22 48.24) scale(.02)" xlink:href="#image"/>
+  <use transform="translate(69.98 48.24) scale(.02)" xlink:href="#image-3"/>
+  <use transform="translate(146.7 48.24) scale(.02)" xlink:href="#image-2"/>
+  <use transform="translate(68.97 24.32) scale(.02)" xlink:href="#image"/>
+  <use transform="translate(146.49 23.72) scale(.02)" xlink:href="#image-3"/>
+</svg>

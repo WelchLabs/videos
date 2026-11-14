@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-size: 4.2px;
+        font-weight: 700;
+      }
+
+      .cls-2, .cls-3, .cls-4 {
+        fill: #948678;
+      }
+
+      .cls-5 {
+        fill: none;
+        stroke: #948678;
+        stroke-miterlimit: 10;
+        stroke-width: .1px;
+      }
+
+      .cls-3, .cls-6 {
+        font-family: OpenSans-Semibold, 'Open Sans';
+        font-size: 2.2px;
+        font-weight: 600;
+      }
+
+      .cls-4 {
+        font-family: LMRoman8-Regular, 'Latin Modern Roman';
+        font-size: 3.2px;
+      }
+
+      .cls-6 {
+        fill: #f4ebd9;
+      }
+    </style>
+  </defs>
+  <g>
+    <polygon class="cls-1" points="0 107.95 .05 0 192 .05 191.95 107.95 0 107.95"/>
+    <path d="M191.9.1v107.8H.1V.1h191.8ZM192,0H0v108h192V0h0Z"/>
+  </g>
+  <text class="cls-2" transform="translate(67.9 6.16)"><tspan x="0" y="0">BIDIRECTIONAL DIFFUSION</tspan></text>
+  <text class="cls-4" transform="translate(46.96 16.43)"><tspan x="0" y="0">20,280</tspan></text>
+  <line class="cls-5" x1="14.58" y1="15.87" x2="44.06" y2="15.87"/>
+  <line class="cls-5" x1="59.3" y1="15.87" x2="88.78" y2="15.87"/>
+  <text class="cls-4" transform="translate(11.4 60.8) rotate(-90)"><tspan x="0" y="0">20,280</tspan></text>
+  <line class="cls-5" x1="10.84" y1="93.19" x2="10.84" y2="63.71"/>
+  <line class="cls-5" x1="10.84" y1="48.46" x2="10.84" y2="18.98"/>
+  <text class="cls-3" transform="translate(14.58 95.9)"><tspan x="0" y="0">LAYER 15 HEAD 1</tspan></text>
+  <text class="cls-6" transform="translate(116.19 42.22)"><tspan x="0" y="0">Frames get stacked into 3D block of pixels, zoom </tspan><tspan x="0" y="2.64">into a “spacetime patch” of 8x8x4 of pixels. From </tspan><tspan x="0" y="5.28">here the script says that each spacetime patch is </tspan><tspan x="0" y="7.92">mapped to a token, and the tokens are passed </tspan><tspan x="0" y="10.56">into our model. Would like to figure out someway </tspan><tspan x="0" y="13.2">to show this. After this want to animatbe back to </tspan><tspan x="0" y="15.84">4x3 grid of frames. </tspan></text>
+  <image width="1872" height="1872" transform="translate(14.76 19.33) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p44/attn/step_15_layer_15_head_01_max_f10_log.png"/>
+</svg>

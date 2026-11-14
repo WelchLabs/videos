@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-size: 3.6px;
+        font-weight: 700;
+      }
+
+      .cls-2, .cls-3 {
+        fill: #948678;
+      }
+
+      .cls-3 {
+        font-family: OpenSans-Semibold, 'Open Sans';
+        font-size: 1.8px;
+        font-weight: 600;
+      }
+    </style>
+  </defs>
+  <g>
+    <polygon class="cls-1" points=".26 107.95 .31 0 192.62 .05 192.57 107.95 .26 107.95"/>
+    <path d="M192.52.1v107.8H.36V.1h192.17M192.62,0H.26v108h192.37V0h0Z"/>
+  </g>
+  <text class="cls-2" transform="translate(77.57 9.81)"><tspan x="0" y="0">DIFFUSION FORCING</tspan></text>
+  <text class="cls-3" transform="translate(136.66 97.88)"><tspan x="0" y="0">Chen, Boyuan, et al. &quot;Diffusion forcing: Next-token prediction </tspan><tspan x="0" y="2.16">meets full-sequence diffusion.&quot; Advances in Neural </tspan><tspan x="0" y="4.32">Information Processing Systems 37 (2024): 24081-24125.</tspan></text>
+</svg>

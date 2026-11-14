@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5, .cls-6 {
+        fill: #948678;
+      }
+
+      .cls-3 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-size: 3.6px;
+      }
+
+      .cls-3, .cls-4 {
+        font-weight: 700;
+      }
+
+      .cls-4 {
+        font-family: OpenSans-ExtraBold, 'Open Sans';
+        font-size: 2.04px;
+      }
+
+      .cls-7 {
+        fill: #f4ebd9;
+        font-family: MyriadPro-Regular, 'Myriad Pro';
+        font-size: 2.4px;
+      }
+
+      .cls-5 {
+        font-size: 3.8px;
+      }
+
+      .cls-5, .cls-6 {
+        font-family: STIXTwoText-Italic, 'STIX Two Text';
+        font-style: italic;
+        font-variation-settings: 'wght' 400;
+      }
+
+      .cls-8 {
+        opacity: .6;
+      }
+
+      .cls-9 {
+        opacity: .25;
+      }
+
+      .cls-10 {
+        opacity: .1;
+      }
+
+      .cls-11 {
+        letter-spacing: -.06em;
+      }
+
+      .cls-12 {
+        stroke-width: .2px;
+      }
+
+      .cls-12, .cls-13 {
+        fill: none;
+        stroke: #948678;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-13 {
+        stroke-width: .2px;
+      }
+
+      .cls-14 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-15 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-16 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-17 {
+        letter-spacing: -.04em;
+      }
+
+      .cls-18 {
+        letter-spacing: 0em;
+      }
+
+      .cls-19 {
+        letter-spacing: 0em;
+      }
+
+      .cls-20 {
+        letter-spacing: 0em;
+      }
+
+      .cls-21 {
+        letter-spacing: 0em;
+      }
+
+      .cls-22 {
+        letter-spacing: 0em;
+      }
+
+      .cls-23 {
+        letter-spacing: 0em;
+      }
+
+      .cls-24 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-25 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-26 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-27 {
+        letter-spacing: 0em;
+      }
+
+      .cls-28 {
+        letter-spacing: 0em;
+      }
+
+      .cls-6 {
+        font-size: 3.2px;
+      }
+
+      .cls-29 {
+        letter-spacing: 0em;
+      }
+    </style>
+    <image id="image" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_31.Still004.jpg"/>
+    <image id="image-2" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_00_46.Still001.jpg"/>
+    <image id="image-3" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_22.Still003.jpg"/>
+    <image id="image-4" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_12.Still002.jpg"/>
+  </defs>
+  <g>
+    <polygon class="cls-1" points="-.27 107.92 -.22 -.03 192.09 .02 192.04 107.92 -.27 107.92"/>
+    <path d="M191.99.07v107.8H-.17V.07h192.17M192.09-.03H-.27v108h192.37V-.03h0Z"/>
+  </g>
+  <text class="cls-3" transform="translate(31 13.26)"><tspan x="0" y="0">BIDIRECTIONAL DIFFUSION</tspan></text>
+  <use class="cls-10" transform="translate(9.96 23.91) scale(0)" xlink:href="#image-2"/>
+  <use class="cls-10" transform="translate(29.34 23.91) scale(0)" xlink:href="#image-4"/>
+  <use class="cls-10" transform="translate(68.1 23.91) scale(0)" xlink:href="#image"/>
+  <use class="cls-10" transform="translate(48.72 23.91) scale(0)" xlink:href="#image-3"/>
+  <use class="cls-9" transform="translate(10.29 42.33) scale(0)" xlink:href="#image-2"/>
+  <use class="cls-9" transform="translate(29.67 42.33) scale(0)" xlink:href="#image-4"/>
+  <use class="cls-9" transform="translate(68.43 42.33) scale(0)" xlink:href="#image"/>
+  <use class="cls-9" transform="translate(49.05 42.33) scale(0)" xlink:href="#image-3"/>
+  <rect class="cls-12" x="36.62" y="36.88" width="23.55" height="3.03" rx=".87" ry=".87"/>
+  <use class="cls-8" transform="translate(10.29 61.5) scale(0)" xlink:href="#image-2"/>
+  <use class="cls-8" transform="translate(29.67 61.5) scale(0)" xlink:href="#image-4"/>
+  <use class="cls-8" transform="translate(68.43 61.5) scale(0)" xlink:href="#image"/>
+  <use class="cls-8" transform="translate(49.05 61.5) scale(0)" xlink:href="#image-3"/>
+  <use transform="translate(10.51 80.9) scale(0)" xlink:href="#image-2"/>
+  <use transform="translate(29.89 80.9) scale(0)" xlink:href="#image-4"/>
+  <use transform="translate(68.65 80.9) scale(0)" xlink:href="#image"/>
+  <use transform="translate(49.27 80.9) scale(0)" xlink:href="#image-3"/>
+  <text class="cls-3" transform="translate(127.67 13.26)"><tspan x="0" y="0">TEACHER FORCING</tspan></text>
+  <text class="cls-7" transform="translate(116.4 35.47)"><tspan x="0" y="0">Ok </tspan><tspan class="cls-26" x="3.29" y="0">y</tspan><tspan x="4.39" y="0">eah so I think </tspan><tspan class="cls-28" x="18.11" y="0">w</tspan><tspan x="19.85" y="0">e sh</tspan><tspan class="cls-18" x="23.84" y="0">o</tspan><tspan x="25.14" y="0">w</tspan><tspan x="-5.12" y="2.88">one </tspan><tspan class="cls-19" x="-.76" y="2.88">c</tspan><tspan x=".3" y="2.88">olumn </tspan><tspan class="cls-20" x="7.35" y="2.88">c</tspan><tspan x="8.41" y="2.88">oming in </tspan><tspan class="cls-23" x="17.88" y="2.88">a</tspan><tspan x="19.03" y="2.88">t a time he</tspan><tspan class="cls-26" x="29.6" y="2.88">re</tspan><tspan x="31.53" y="2.88">, </tspan><tspan x="-6.54" y="5.76">m</tspan><tspan class="cls-27" x="-4.54" y="5.76">a</tspan><tspan x="-3.4" y="5.76">ybe like ma</tspan><tspan class="cls-28" x="7.93" y="5.76">r</tspan><tspan x="8.69" y="5.76">ching d</tspan><tspan class="cls-18" x="16.2" y="5.76">o</tspan><tspan x="17.5" y="5.76">wn...</tspan><tspan class="cls-19" x="22.09" y="5.76">c</tspan><tspan x="23.15" y="5.76">ould le</tspan><tspan class="cls-27" x="29.98" y="5.76">av</tspan><tspan x="32.25" y="5.76">e </tspan><tspan x="-6.33" y="8.64">the p</tspan><tspan class="cls-23" x="-1.12" y="8.64">a</tspan><tspan x=".02" y="8.64">th </tspan><tspan class="cls-28" x="2.66" y="8.64">w</tspan><tspan x="4.4" y="8.64">e </tspan><tspan class="cls-16" x="6.11" y="8.64">f</tspan><tspan x="6.78" y="8.64">oll</tspan><tspan class="cls-18" x="9.23" y="8.64">o</tspan><tspan class="cls-26" x="10.53" y="8.64">w</tspan><tspan x="12.28" y="8.64">ed </tspan><tspan class="cls-23" x="15.34" y="8.64">a</tspan><tspan x="16.49" y="8.64">t l</tspan><tspan class="cls-18" x="18.36" y="8.64">o</tspan><tspan x="19.66" y="8.64">w opaci</tspan><tspan class="cls-29" x="27.41" y="8.64">t</tspan><tspan class="cls-17" x="28.23" y="8.64">y</tspan><tspan x="29.26" y="8.64">, </tspan><tspan class="cls-21" x="30.27" y="8.64">I</tspan><tspan class="cls-17" x="30.83" y="8.64">’</tspan><tspan x="31.23" y="8.64">m </tspan><tspan x="1.84" y="11.52">50/50 on thi</tspan><tspan class="cls-24" x="13.94" y="11.52">s</tspan><tspan x="14.87" y="11.52">, </tspan><tspan class="cls-26" x="15.87" y="11.52">w</tspan><tspan class="cls-14" x="17.61" y="11.52">e</tspan><tspan class="cls-11" x="18.76" y="11.52">’</tspan><tspan x="19.11" y="11.52">’ll se</tspan><tspan class="cls-25" x="23.41" y="11.52">e</tspan><tspan x="24.58" y="11.52">. </tspan></text>
+  <g>
+    <line class="cls-12" x1="96" y1="7.89" x2="96" y2="102.98"/>
+    <polygon class="cls-2" points="96 104.39 95.19 102.4 96 102.87 96.81 102.4 96 104.39"/>
+  </g>
+  <text class="cls-5" transform="translate(98.61 38.44) rotate(90)"><tspan x="0" y="0">Diffusion P</tspan><tspan class="cls-22" x="17.47" y="0">r</tspan><tspan x="18.9" y="0">og</tspan><tspan class="cls-22" x="22.46" y="0">r</tspan><tspan x="23.9" y="0">ess</tspan></text>
+  <g>
+    <line class="cls-13" x1="11.97" y1="98.93" x2="84.71" y2="98.93"/>
+    <polygon class="cls-2" points="86.12 98.93 84.13 99.74 84.6 98.93 84.13 98.11 86.12 98.93"/>
+  </g>
+  <text class="cls-6" transform="translate(40.58 103.48)"><tspan x="0" y="0">Video</tspan><tspan class="cls-15" x="7.54" y="0"> </tspan><tspan x="8.2" y="0">Time</tspan></text>
+  <g>
+    <line class="cls-13" x1="106.72" y1="97.96" x2="179.45" y2="97.96"/>
+    <polygon class="cls-2" points="180.86 97.96 178.87 98.77 179.35 97.96 178.87 97.14 180.86 97.96"/>
+  </g>
+  <text class="cls-6" transform="translate(135.32 102.51)"><tspan x="0" y="0">Video</tspan><tspan class="cls-15" x="7.54" y="0"> </tspan><tspan x="8.2" y="0">Time</tspan></text>
+  <text class="cls-4" transform="translate(41.25 39.06)"><tspan x="0" y="0">VIDEO MODEL</tspan></text>
+  <g>
+    <line class="cls-12" x1="48.4" y1="34.57" x2="48.4" y2="35.65"/>
+    <polygon class="cls-2" points="48.4 36.36 47.99 35.36 48.4 35.6 48.81 35.36 48.4 36.36"/>
+  </g>
+  <g>
+    <line class="cls-12" x1="48.4" y1="40.42" x2="48.4" y2="41.37"/>
+    <polygon class="cls-2" points="48.4 42.08 47.99 41.09 48.4 41.32 48.81 41.09 48.4 42.08"/>
+  </g>
+  <rect class="cls-12" x="36.95" y="55.74" width="23.55" height="3.03" rx=".87" ry=".87"/>
+  <text class="cls-4" transform="translate(41.58 57.92)"><tspan x="0" y="0">VIDEO MODEL</tspan></text>
+  <g>
+    <line class="cls-12" x1="48.72" y1="53.43" x2="48.72" y2="54.51"/>
+    <polygon class="cls-2" points="48.72 55.22 48.32 54.22 48.72 54.46 49.13 54.22 48.72 55.22"/>
+  </g>
+  <g>
+    <line class="cls-12" x1="48.72" y1="59.28" x2="48.72" y2="60.24"/>
+    <polygon class="cls-2" points="48.72 60.94 48.32 59.95 48.72 60.18 49.13 59.95 48.72 60.94"/>
+  </g>
+  <rect class="cls-12" x="36.95" y="74.76" width="23.55" height="3.03" rx=".87" ry=".87"/>
+  <text class="cls-4" transform="translate(41.58 76.95)"><tspan x="0" y="0">VIDEO MODEL</tspan></text>
+  <g>
+    <line class="cls-12" x1="48.72" y1="72.46" x2="48.72" y2="73.54"/>
+    <polygon class="cls-2" points="48.72 74.25 48.32 73.25 48.72 73.49 49.13 73.25 48.72 74.25"/>
+  </g>
+  <g>
+    <line class="cls-12" x1="48.72" y1="78.31" x2="48.72" y2="79.26"/>
+    <polygon class="cls-2" points="48.72 79.97 48.32 78.97 48.72 79.21 49.13 78.97 48.72 79.97"/>
+  </g>
+  <use class="cls-10" transform="translate(163.63 23.7) scale(0)" xlink:href="#image"/>
+  <use class="cls-9" transform="translate(163.95 42.12) scale(0)" xlink:href="#image"/>
+  <rect class="cls-12" x="162.28" y="36.86" width="23.55" height="3.03" rx=".87" ry=".87"/>
+  <use class="cls-8" transform="translate(163.95 61.29) scale(0)" xlink:href="#image"/>
+  <use transform="translate(106.03 80.69) scale(0)" xlink:href="#image-2"/>
+  <use transform="translate(125.41 80.69) scale(0)" xlink:href="#image-4"/>
+  <use transform="translate(164.17 80.69) scale(0)" xlink:href="#image"/>
+  <use transform="translate(144.79 80.69) scale(0)" xlink:href="#image-3"/>
+  <text class="cls-4" transform="translate(166.91 39.04)"><tspan x="0" y="0">VIDEO MODEL</tspan></text>
+  <g>
+    <line class="cls-12" x1="174.06" y1="34.55" x2="174.06" y2="35.63"/>
+    <polygon class="cls-2" points="174.06 36.34 173.65 35.34 174.06 35.58 174.47 35.34 174.06 36.34"/>
+  </g>
+  <g>
+    <line class="cls-12" x1="174.06" y1="40.4" x2="174.06" y2="41.36"/>
+    <polygon class="cls-2" points="174.06 42.06 173.65 41.07 174.06 41.3 174.47 41.07 174.06 42.06"/>
+  </g>
+  <rect class="cls-12" x="162.61" y="55.72" width="23.55" height="3.03" rx=".87" ry=".87"/>
+  <text class="cls-4" transform="translate(167.24 57.9)"><tspan x="0" y="0">VIDEO MODEL</tspan></text>
+  <g>
+    <line class="cls-12" x1="174.38" y1="53.41" x2="174.38" y2="54.49"/>
+    <polygon class="cls-2" points="174.38 55.2 173.98 54.2 174.38 54.44 174.79 54.2 174.38 55.2"/>
+  </g>
+  <g>
+    <line class="cls-12" x1="174.38" y1="59.26" x2="174.38" y2="60.22"/>
+    <polygon class="cls-2" points="174.38 60.92 173.98 59.93 174.38 60.16 174.79 59.93 174.38 60.92"/>
+  </g>
+  <rect class="cls-12" x="162.61" y="74.75" width="23.55" height="3.03" rx=".87" ry=".87"/>
+  <text class="cls-4" transform="translate(167.24 76.93)"><tspan x="0" y="0">VIDEO MODEL</tspan></text>
+  <g>
+    <line class="cls-12" x1="174.38" y1="72.44" x2="174.38" y2="73.52"/>
+    <polygon class="cls-2" points="174.38 74.23 173.98 73.23 174.38 73.47 174.79 73.23 174.38 74.23"/>
+  </g>
+  <g>
+    <line class="cls-12" x1="174.38" y1="78.29" x2="174.38" y2="79.25"/>
+    <polygon class="cls-2" points="174.38 79.95 173.98 78.96 174.38 79.19 174.79 78.96 174.38 79.95"/>
+  </g>
+  <g>
+    <path class="cls-12" d="M115.4,79.97v-2.42c0-.59.48-1.07,1.07-1.07h37.66c.59,0,1.07-.48,1.07-1.07v-35.74c0-.59.48-1.07,1.07-1.07h3.59"/>
+    <polygon class="cls-2" points="160.58 38.59 159.58 38.99 159.82 38.59 159.58 38.18 160.58 38.59"/>
+  </g>
+  <g>
+    <path class="cls-12" d="M134.78,79.58v-2.08c0-.57.46-1.02,1.02-1.02h18.53c.56,0,1.02-.46,1.02-1.02v-17.2c0-.57.46-1.02,1.02-1.02h3.35"/>
+    <polygon class="cls-2" points="160.58 57.23 159.38 57.72 159.66 57.23 159.38 56.74 160.58 57.23"/>
+  </g>
+  <g>
+    <path class="cls-12" d="M154.16,79.9v-2.92c0-.32.26-.58.58-.58h5.44"/>
+    <polygon class="cls-2" points="161.03 76.41 159.84 76.9 160.12 76.41 159.84 75.92 161.03 76.41"/>
+  </g>
+</svg>

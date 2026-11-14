@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2 {
+        stroke-width: .4px;
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5 {
+        fill: none;
+        stroke: #d73b2f;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-3, .cls-4, .cls-5 {
+        stroke-width: .2px;
+      }
+
+      .cls-6 {
+        font-size: 4.2px;
+      }
+
+      .cls-6, .cls-7, .cls-8 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-weight: 700;
+      }
+
+      .cls-6, .cls-9 {
+        fill: #948678;
+      }
+
+      .cls-4 {
+        stroke-dasharray: .6 .6;
+      }
+
+      .cls-7 {
+        fill: #063336;
+        font-size: 4.8px;
+      }
+
+      .cls-9 {
+        font-family: OpenSans-Semibold, 'Open Sans';
+        font-size: 2.2px;
+        font-weight: 600;
+      }
+
+      .cls-10 {
+        opacity: .5;
+      }
+
+      .cls-11, .cls-8 {
+        fill: #d73b2f;
+      }
+
+      .cls-5 {
+        stroke-dasharray: .6 .6;
+      }
+
+      .cls-8 {
+        font-size: 3.6px;
+      }
+    </style>
+  </defs>
+  <g>
+    <polygon class="cls-1" points="0 107.95 .05 0 192 .05 191.95 107.95 0 107.95"/>
+    <path d="M191.9.1v107.8H.1V.1h191.8ZM192,0H0v108h192V0h0Z"/>
+  </g>
+  <text class="cls-6" transform="translate(67.9 6.16)"><tspan x="0" y="0">BIDIRECTIONAL DIFFUSION</tspan></text>
+  <text class="cls-9" transform="translate(14.58 95.9)"><tspan x="0" y="0">LAYER 15 HEAD 1</tspan></text>
+  <image class="cls-10" width="832" height="480" transform="translate(99.25 23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_000.png"/>
+  <image width="832" height="480" transform="translate(127.8 23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_003.png"/>
+  <image class="cls-10" width="832" height="480" transform="translate(156.32 23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_006.png"/>
+  <image class="cls-10" width="832" height="480" transform="translate(99.25 39.64) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_010.png"/>
+  <image class="cls-10" width="832" height="480" transform="translate(127.8 39.64) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_015.png"/>
+  <image class="cls-10" width="832" height="480" transform="translate(156.34 39.64) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_020.png"/>
+  <image class="cls-10" width="832" height="480" transform="translate(99.25 56.33) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_023.png"/>
+  <image class="cls-10" width="832" height="480" transform="translate(127.8 56.39) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_026.png"/>
+  <image width="832" height="480" transform="translate(156.34 56.49) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_030.png"/>
+  <image class="cls-10" width="832" height="480" transform="translate(99.25 73.23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_035.png"/>
+  <image class="cls-10" width="832" height="480" transform="translate(127.8 73.23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_040.png"/>
+  <image class="cls-10" width="832" height="480" transform="translate(156.32 73.23) scale(.03)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_044.png"/>
+  <image width="1872" height="1872" transform="translate(14.57 19.16) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p44/attn/step_15_layer_15_head_01_max_f10_log.png"/>
+  <rect class="cls-2" x="63.35" y="25.28" width="6.49" height="6.49"/>
+  <rect class="cls-2" x="156.2" y="56.61" width="27.65" height="15.93"/>
+  <rect class="cls-2" x="127.65" y="23.12" width="27.65" height="15.93"/>
+  <text class="cls-7" transform="translate(140.1 32.17)"><tspan x="0" y="0">2</tspan></text>
+  <text class="cls-7" transform="translate(169.44 65.89)"><tspan x="0" y="0">9</tspan></text>
+  <g>
+    <line class="cls-3" x1="141.49" y1="22.64" x2="141.49" y2="22.34"/>
+    <path class="cls-4" d="M141.49,21.74v-1.02c0-.8-.65-1.45-1.45-1.45h-42.72c-.8,0-1.45.65-1.45,1.45v6.52c0,.8-.65,1.45-1.45,1.45h-20.15"/>
+    <line class="cls-3" x1="73.98" y1="28.69" x2="73.68" y2="28.69"/>
+    <polygon class="cls-11" points="72.27 28.69 74.26 27.88 73.79 28.69 74.26 29.51 72.27 28.69"/>
+  </g>
+  <g>
+    <path class="cls-5" d="M183.84,64.08h2.33c1.04,0,1.88-.84,1.88-1.88V14.48c0-1.04-.84-1.88-1.88-1.88h-117.69c-1.04,0-1.88.84-1.88,1.88v7.23"/>
+    <polygon class="cls-11" points="66.6 23.12 65.78 21.13 66.6 21.6 67.41 21.13 66.6 23.12"/>
+  </g>
+  <g>
+    <line class="cls-2" x1="153.85" y1="53.57" x2="148.43" y2="44.1"/>
+    <polygon class="cls-11" points="147.02 41.65 150.41 44.29 148.53 44.28 147.59 45.91 147.02 41.65"/>
+  </g>
+  <text class="cls-8" transform="translate(152.55 48.8)"><tspan x="0" y="0">NON CAUSAL</tspan></text>
+</svg>

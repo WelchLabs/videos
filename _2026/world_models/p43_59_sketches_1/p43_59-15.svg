@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        font-size: 2.8px;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4, .cls-5 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-weight: 700;
+      }
+
+      .cls-1, .cls-2, .cls-4 {
+        fill: #948678;
+      }
+
+      .cls-6 {
+        fill: #031e1e;
+      }
+
+      .cls-2, .cls-5 {
+        font-size: 4.2px;
+      }
+
+      .cls-7 {
+        font-family: STIXTwoText-Italic, 'STIX Two Text';
+        font-size: 3.8px;
+        font-style: italic;
+        font-variation-settings: 'wght' 400;
+      }
+
+      .cls-7, .cls-3, .cls-5, .cls-8 {
+        fill: #f4ebd9;
+      }
+
+      .cls-3 {
+        font-size: 3.2px;
+      }
+
+      .cls-9 {
+        stroke-width: .3px;
+      }
+
+      .cls-9, .cls-10 {
+        stroke: #f4ebd9;
+      }
+
+      .cls-9, .cls-10, .cls-11 {
+        fill: none;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-10, .cls-11 {
+        stroke-width: .2px;
+      }
+
+      .cls-4 {
+        font-size: 2.59px;
+      }
+
+      .cls-11 {
+        stroke: #948678;
+      }
+
+      .cls-12 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-13 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-14 {
+        letter-spacing: 0em;
+      }
+
+      .cls-15 {
+        letter-spacing: 0em;
+      }
+
+      .cls-16 {
+        letter-spacing: .05em;
+      }
+    </style>
+  </defs>
+  <text class="cls-2" transform="translate(41.59 -18.47)"><tspan x="0" y="0">Hmm how do I juxtuopse this with diffusion forcing, </tspan><tspan x="17.76" y="5.04">that’s the big thing I need to setup!</tspan></text>
+  <g>
+    <polygon class="cls-6" points=".14 107.89 .19 -.06 192.14 0 192.09 107.89 .14 107.89"/>
+    <path d="M192.04.04v107.8H.24V.04h191.8M192.14-.06H.14v108h192V-.06h0Z"/>
+  </g>
+  <text class="cls-5" transform="translate(106.9 38.7)"><tspan x="0" y="0">LLM</tspan></text>
+  <rect class="cls-10" x="104.09" y="29.96" width="14.32" height="14.32" rx="1.17" ry="1.17"/>
+  <g>
+    <line class="cls-9" x1="92.58" y1="37.12" x2="98.29" y2="37.12"/>
+    <polygon class="cls-8" points="100.41 37.12 97.42 38.34 98.13 37.12 97.42 35.9 100.41 37.12"/>
+  </g>
+  <g>
+    <line class="cls-9" x1="121.38" y1="37.12" x2="127.08" y2="37.12"/>
+    <polygon class="cls-8" points="129.2 37.12 126.22 38.34 126.92 37.12 126.22 35.9 129.2 37.12"/>
+  </g>
+  <text class="cls-2" transform="translate(65.38 9.78)"><tspan x="0" y="0">AUTOREGRESSIVE INFERENCE</tspan></text>
+  <text class="cls-7" transform="translate(132.82 37.98)"><tspan class="cls-13" x="0" y="0">P</tspan><tspan x="2.05" y="0">aris</tspan></text>
+  <text class="cls-7" transform="translate(49.97 38.46)"><tspan x="0" y="0">The </tspan><tspan class="cls-14" x="6.82" y="0">c</tspan><tspan x="8.36" y="0">apital o</tspan><tspan class="cls-16" x="20.32" y="0">f</tspan><tspan x="21.62" y="0"> </tspan><tspan class="cls-12" x="22.48" y="0">F</tspan><tspan class="cls-15" x="24.64" y="0">r</tspan><tspan x="26.05" y="0">an</tspan><tspan class="cls-14" x="30.23" y="0">c</tspan><tspan x="31.76" y="0">e is</tspan></text>
+  <text class="cls-3" transform="translate(126.02 76.94)"><tspan x="0" y="0">WORLD </tspan><tspan x=".2" y="3.84">MODEL</tspan></text>
+  <rect class="cls-10" x="124.43" y="70.19" width="15.13" height="15.13" rx="1.17" ry="1.17"/>
+  <g>
+    <line class="cls-9" x1="114.73" y1="77.4" x2="120.44" y2="77.4"/>
+    <polygon class="cls-8" points="122.56 77.4 119.57 78.62 120.28 77.4 119.57 76.18 122.56 77.4"/>
+  </g>
+  <g>
+    <line class="cls-9" x1="141.04" y1="77.4" x2="146.11" y2="77.4"/>
+    <polygon class="cls-8" points="148.23 77.4 145.25 78.62 145.95 77.4 145.25 76.18 148.23 77.4"/>
+  </g>
+  <text class="cls-4" transform="translate(54.36 92.64)"><tspan x="0" y="0">CONTEXT</tspan></text>
+  <path class="cls-11" d="M8.33,89.61v1.15c0,.59.48,1.07,1.07,1.07h43.15"/>
+  <path class="cls-11" d="M112.33,89.62v1.15c0,.59-.48,1.07-1.07,1.07h-43.15"/>
+  <text class="cls-1" transform="translate(156.91 93.31)"><tspan x="0" y="0">PREDICTION</tspan></text>
+  <image width="832" height="480" transform="translate(8.33 66.8) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_000.png"/>
+  <image width="832" height="480" transform="translate(43.39 66.8) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_003.png"/>
+  <image width="832" height="480" transform="translate(78.41 66.8) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_006.png"/>
+  <image width="832" height="480" transform="translate(150.35 66.67) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p43/xt/step_30_final/frame_010.png"/>
+</svg>

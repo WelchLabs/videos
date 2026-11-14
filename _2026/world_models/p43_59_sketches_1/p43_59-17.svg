@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2 {
+        fill: #948678;
+        font-size: 4.2px;
+      }
+
+      .cls-2, .cls-3 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-weight: 700;
+      }
+
+      .cls-4 {
+        stroke-width: .3px;
+      }
+
+      .cls-4, .cls-5 {
+        fill: none;
+        stroke: #f4ebd9;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-5 {
+        stroke-width: .2px;
+      }
+
+      .cls-6, .cls-3 {
+        fill: #f4ebd9;
+      }
+
+      .cls-3 {
+        font-size: 3.66px;
+      }
+    </style>
+  </defs>
+  <g>
+    <polygon class="cls-1" points="0 107.95 .05 0 192 .05 191.95 107.95 0 107.95"/>
+    <path d="M191.9.1v107.8H.1V.1h191.8M192,0H0v108h192V0h0Z"/>
+  </g>
+  <text class="cls-2" transform="translate(44.16 7.61)"><tspan x="0" y="0">TEACHER FORCING + AUTOREGRESSIVE INFERENCE</tspan></text>
+  <text class="cls-3" transform="translate(126.07 53.99)"><tspan x="0" y="0">VIDEO</tspan><tspan x="-.96" y="4.39">MODEL</tspan></text>
+  <rect class="cls-5" x="123.06" y="46.26" width="17.3" height="17.3" rx="1.17" ry="1.17"/>
+  <g>
+    <line class="cls-4" x1="111.98" y1="54.51" x2="118.8" y2="54.51"/>
+    <polygon class="cls-6" points="120.92 54.51 117.94 55.73 118.64 54.51 117.94 53.29 120.92 54.51"/>
+  </g>
+  <g>
+    <line class="cls-4" x1="142.05" y1="54.51" x2="148.15" y2="54.51"/>
+    <polygon class="cls-6" points="150.27 54.51 147.29 55.73 148 54.51 147.29 53.29 150.27 54.51"/>
+  </g>
+  <text class="cls-2" transform="translate(45.07 92.63)"><tspan x="0" y="0">Ok so I think the win here is showing this just like the </tspan><tspan x="12.34" y="5.04">LLM rollouts, bring outputs over to inputs</tspan></text>
+  <image width="832" height="480" transform="translate(4.76 44.81) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p55/inclip_clean_t0_teacher/frames/frame_000.png"/>
+  <image width="832" height="480" transform="translate(40.22 44.81) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p55/inclip_clean_t0_teacher/frames/frame_005.png"/>
+  <image width="832" height="480" transform="translate(75.68 44.81) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p55/inclip_clean_t0_teacher/frames/frame_009.png"/>
+  <image width="832" height="480" transform="translate(151.56 44.66) scale(.04)" xlink:href="../../hackin/Wan2.1/attn_runs/ball_drop_01/p43_59_2/p55/inclip_clean_t0_teacher/frames/frame_011.png"/>
+</svg>
