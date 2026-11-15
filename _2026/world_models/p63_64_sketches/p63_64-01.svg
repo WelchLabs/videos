@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2 {
+        stroke-width: 2.5px;
+      }
+
+      .cls-2, .cls-3 {
+        fill: none;
+        stroke: #f4ebd9;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-4 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-size: 36.58px;
+        font-weight: 700;
+      }
+
+      .cls-4, .cls-5, .cls-6 {
+        fill: #f4ebd9;
+      }
+
+      .cls-3 {
+        stroke-width: 2px;
+      }
+
+      .cls-5 {
+        font-family: STIXTwoTextItalic-MediumItalic, 'STIX Two Text';
+        font-size: 30px;
+        font-style: italic;
+        font-variation-settings: 'wght' 500;
+        font-weight: 500;
+      }
+
+      .cls-7 {
+        letter-spacing: -.07em;
+      }
+
+      .cls-8 {
+        letter-spacing: -.07em;
+      }
+
+      .cls-9 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-10 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-11 {
+        letter-spacing: 0em;
+      }
+
+      .cls-12 {
+        letter-spacing: .02em;
+      }
+    </style>
+  </defs>
+  <g>
+    <rect class="cls-1" x=".5" y=".5" width="1919" height="1079"/>
+    <path d="M1919,1v1078H1V1h1918ZM1920,0H0v1080h1920V0h0Z"/>
+  </g>
+  <text class="cls-4" transform="translate(803.92 553.2)"><tspan x="0" y="0">ATLAS</tspan></text>
+  <rect class="cls-2" x="773.67" y="465.52" width="172.97" height="146.51" rx="11.73" ry="11.73"/>
+  <text class="cls-5" transform="translate(137.82 533.77)"><tspan class="cls-8" x="0" y="0">“</tspan><tspan x="10.74" y="0">A home offi</tspan><tspan class="cls-11" x="156.72" y="0">c</tspan><tspan x="169.2" y="0">e with wooden desk and </tspan><tspan x="-16.02" y="36">floo</tspan><tspan class="cls-9" x="31.86" y="36">r</tspan><tspan x="43.32" y="36">-t</tspan><tspan class="cls-12" x="62.07" y="36">o-</tspan><tspan class="cls-11" x="87.69" y="36">c</tspan><tspan x="100.17" y="36">eiling dark g</tspan><tspan class="cls-11" x="258.63" y="36">r</tspan><tspan x="270.54" y="36">een bookshelves</tspan><tspan class="cls-7" x="469.34" y="36">.</tspan><tspan x="474.83" y="36">” </tspan></text>
+  <g>
+    <line class="cls-3" x1="692" y1="538.78" x2="732.51" y2="538.78"/>
+    <polygon class="cls-6" points="746.63 538.78 726.73 546.91 731.45 538.78 726.73 530.65 746.63 538.78"/>
+  </g>
+  <g>
+    <line class="cls-3" x1="981.56" y1="538.78" x2="1022.07" y2="538.78"/>
+    <polygon class="cls-6" points="1036.19 538.78 1016.29 546.91 1021.01 538.78 1016.29 530.65 1036.19 538.78"/>
+  </g>
+  <text class="cls-5" transform="translate(1278.994 551.0491)"><tspan x="0" y="0">360</tspan><tspan class="cls-9" x="44.52" y="0"> </tspan><tspan x="50.67" y="0">Vide</tspan><tspan class="cls-10" x="108.63" y="0">o</tspan><tspan x="123.24" y="0">, add in P</tspan><tspan class="cls-11" x="244.7" y="0">r</tspan><tspan x="256.61" y="0">emie</tspan><tspan class="cls-11" x="316.4" y="0">r</tspan><tspan x="328.31" y="0">e</tspan></text>
+</svg>

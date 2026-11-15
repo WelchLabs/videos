@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <defs>
+    <style>
+      .cls-1 {
+        font-family: OpenSans-Extrabold, 'Open Sans';
+        font-size: 24px;
+      }
+
+      .cls-1, .cls-2 {
+        fill: #948678;
+        font-weight: 700;
+      }
+
+      .cls-2 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-size: 42px;
+      }
+
+      .cls-3 {
+        fill: #031e1e;
+      }
+
+      .cls-4 {
+        fill: none;
+        stroke: #948678;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-5 {
+        fill: #f4ebd9;
+        font-family: STIXTwoTextItalic-MediumItalic, 'STIX Two Text';
+        font-size: 36.58px;
+        font-style: italic;
+        font-variation-settings: 'wght' 500;
+        font-weight: 500;
+      }
+
+      .cls-6 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-7 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-8 {
+        letter-spacing: -.05em;
+      }
+
+      .cls-9 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-10 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-11 {
+        letter-spacing: 0em;
+      }
+
+      .cls-12 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-13 {
+        letter-spacing: 0em;
+      }
+    </style>
+  </defs>
+  <g>
+    <rect class="cls-3" x=".5" y="1.78" width="1919" height="1079"/>
+    <path d="M1919,2.28v1078H1V2.28h1918ZM1920,1.28H0v1080h1920V1.28h0Z"/>
+  </g>
+  <line class="cls-4" x1="590.75" y1="264" x2="590.75" y2="821.12"/>
+  <line class="cls-4" x1="1286.06" y1="264" x2="1286.06" y2="821.12"/>
+  <text class="cls-2" transform="translate(894.73 114.18)"><tspan x="0" y="0">ATLAS</tspan></text>
+  <text class="cls-5" transform="translate(140.18 509.18)"><tspan class="cls-13" x="0" y="0">N</tspan><tspan x="26.3" y="0">ew</tspan><tspan class="cls-6" x="68.45" y="0"> </tspan><tspan x="75.95" y="0">View P</tspan><tspan class="cls-11" x="182.8" y="0">r</tspan><tspan x="197.33" y="0">ediction</tspan></text>
+  <text class="cls-5" transform="translate(740.59 486.83)"><tspan x="0" y="0">Multimodal </tspan><tspan class="cls-6" x="194.73" y="0">A</tspan><tspan x="219.24" y="0">uto</tspan><tspan class="cls-11" x="269.98" y="0">r</tspan><tspan x="284.5" y="0">eg</tspan><tspan class="cls-11" x="317.06" y="0">r</tspan><tspan x="331.58" y="0">essive </tspan><tspan x="34.55" y="43.9">Diffusion</tspan><tspan class="cls-6" x="179.02" y="43.9"> </tspan><tspan class="cls-10" x="186.51" y="43.9">T</tspan><tspan class="cls-13" x="208.35" y="43.9">r</tspan><tspan x="222.7" y="43.9">ansformer</tspan></text>
+  <text class="cls-1" transform="translate(185.55 674.08)"><tspan x="0" y="0">PREDICTION TARGET</tspan></text>
+  <text class="cls-1" transform="translate(859.68 672.29)"><tspan x="0" y="0">ARCHITECTURE</tspan></text>
+  <text class="cls-1" transform="translate(1563.884 674.0791)"><tspan x="0" y="0">TRAINING</tspan></text>
+  <text class="cls-5" transform="translate(1425.1252 497.7627)"><tspan class="cls-7" x="0" y="0">F</tspan><tspan class="cls-11" x="21.11" y="0">r</tspan><tspan x="35.63" y="0">om Sc</tspan><tspan class="cls-13" x="128.33" y="0">r</tspan><tspan x="142.67" y="0">atch P</tspan><tspan class="cls-11" x="240.24" y="0">r</tspan><tspan x="254.76" y="0">e</tspan><tspan class="cls-8" x="270.42" y="0">-</tspan><tspan class="cls-9" x="280" y="0">T</tspan><tspan class="cls-12" x="301.84" y="0">r</tspan><tspan x="316.18" y="0">ain</tspan></text>
+</svg>

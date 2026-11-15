@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1920 1080">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2 {
+        stroke-width: 2.5px;
+      }
+
+      .cls-2, .cls-3, .cls-4 {
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5 {
+        fill: none;
+        stroke: #f4ebd9;
+      }
+
+      .cls-3 {
+        stroke-linecap: round;
+      }
+
+      .cls-3, .cls-5 {
+        stroke-width: 2.74px;
+      }
+
+      .cls-6 {
+        font-size: 36.58px;
+      }
+
+      .cls-6, .cls-7 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-weight: 700;
+      }
+
+      .cls-6, .cls-7, .cls-8 {
+        fill: #f4ebd9;
+      }
+
+      .cls-4 {
+        stroke-width: 2px;
+      }
+
+      .cls-9 {
+        fill: #fcc947;
+      }
+
+      .cls-7 {
+        font-size: 16.89px;
+      }
+
+      .cls-10 {
+        letter-spacing: -.07em;
+      }
+
+      .cls-11 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-12 {
+        letter-spacing: 0em;
+      }
+
+      .cls-5 {
+        stroke-linejoin: round;
+      }
+
+      .cls-13 {
+        font-family: STIXTwoTextItalic-MediumItalic, 'STIX Two Text';
+        font-size: 30px;
+        font-style: italic;
+        font-variation-settings: 'wght' 500;
+        font-weight: 500;
+      }
+
+      .cls-14 {
+        letter-spacing: .02em;
+      }
+
+      .cls-15 {
+        letter-spacing: .05em;
+      }
+    </style>
+  </defs>
+  <g>
+    <rect class="cls-1" x=".5" y=".5" width="1919" height="1079"/>
+    <path d="M1919,1v1078H1V1h1918ZM1920,0H0v1080h1920V0h0Z"/>
+  </g>
+  <text class="cls-13" transform="translate(214.05 497.87)"><tspan class="cls-8"><tspan class="cls-10" x="0" y="0">“</tspan><tspan x="10.74" y="0">A home offi</tspan><tspan class="cls-12" x="156.72" y="0">c</tspan><tspan x="169.2" y="0">e with wooden desk and </tspan></tspan><tspan class="cls-8"><tspan x="-6.86" y="36">floo</tspan><tspan class="cls-11" x="41.02" y="36">r</tspan><tspan x="52.48" y="36">-t</tspan><tspan class="cls-14" x="71.23" y="36">o-</tspan><tspan class="cls-12" x="96.85" y="36">c</tspan><tspan x="109.33" y="36">eiling dark g</tspan><tspan class="cls-12" x="267.79" y="36">r</tspan><tspan x="279.7" y="36">een bookshelves </tspan></tspan><tspan class="cls-9"><tspan x="20.44" y="72">with an abus</tspan><tspan class="cls-12" x="185.41" y="72">r</tspan><tspan x="197.32" y="72">d number o</tspan><tspan class="cls-15" x="342.67" y="72">f</tspan><tspan x="353.41" y="72" xml:space="preserve"> books</tspan><tspan class="cls-10" x="432.88" y="72">.</tspan><tspan x="438.37" y="72">” </tspan></tspan></text>
+  <text class="cls-6" transform="translate(914.37 538.54)"><tspan x="0" y="0">ATLAS</tspan></text>
+  <rect class="cls-2" x="884.12" y="450.86" width="172.97" height="146.51" rx="11.73" ry="11.73"/>
+  <g>
+    <line class="cls-4" x1="802.45" y1="524.12" x2="842.96" y2="524.12"/>
+    <polygon class="cls-8" points="857.08 524.12 837.18 532.25 841.91 524.12 837.18 515.99 857.08 524.12"/>
+  </g>
+  <g>
+    <line class="cls-4" x1="1092.01" y1="524.12" x2="1132.52" y2="524.12"/>
+    <polygon class="cls-8" points="1146.64 524.12 1126.74 532.25 1131.47 524.12 1126.74 515.99 1146.64 524.12"/>
+  </g>
+  <image width="960" height="720" transform="translate(1231.1028 55.1239) scale(.5988)" xlink:href="../p60_64_assets/moar_books/01-u9595213284-a-grand-home-office-with-large-wooden-desk-and-ex-d0f7e423-1ec8-49d7-94cf-bd7944664d79-1.png"/>
+  <image width="960" height="720" transform="translate(1231.1028 486.2913) scale(.5988)" xlink:href="../p60_64_assets/moar_books/depth_renders/magma_linear/01-depth.png"/>
+  <polygon class="cls-5" points="1490.42 936.81 1570.95 936.81 1573.42 981.09 1487.8 981.09 1490.42 936.81"/>
+  <line class="cls-3" x1="1533.78" y1="1016.42" x2="1490.99" y2="936.81"/>
+  <line class="cls-3" x1="1533.78" y1="1016.42" x2="1570.95" y2="936.81"/>
+  <line class="cls-3" x1="1534.33" y1="1016.9" x2="1488.06" y2="981.09"/>
+  <line class="cls-3" x1="1533.78" y1="1016.42" x2="1573.42" y2="981.09"/>
+  <circle class="cls-8" cx="1533.78" cy="1015.59" r="4.74"/>
+  <text class="cls-7" transform="translate(1512.3708 1046.5388)"><tspan x="0" y="0">POSE</tspan></text>
+</svg>

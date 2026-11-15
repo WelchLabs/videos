@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1920 1080">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2 {
+        stroke-width: 2.5px;
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5 {
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7 {
+        fill: none;
+        stroke: #f4ebd9;
+      }
+
+      .cls-3, .cls-4 {
+        stroke-linecap: round;
+      }
+
+      .cls-3, .cls-6 {
+        stroke-width: 2.74px;
+      }
+
+      .cls-4, .cls-7 {
+        stroke-width: 2.51px;
+      }
+
+      .cls-8 {
+        font-size: 36.58px;
+      }
+
+      .cls-8, .cls-9, .cls-10, .cls-11 {
+        fill: #f4ebd9;
+      }
+
+      .cls-8, .cls-9, .cls-11 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-weight: 700;
+      }
+
+      .cls-5 {
+        stroke-width: 2px;
+      }
+
+      .cls-12 {
+        fill: #fcc947;
+      }
+
+      .cls-9 {
+        font-size: 16.89px;
+      }
+
+      .cls-13 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-14 {
+        letter-spacing: 0em;
+      }
+
+      .cls-15 {
+        letter-spacing: 0em;
+      }
+
+      .cls-6, .cls-7 {
+        stroke-linejoin: round;
+      }
+
+      .cls-16 {
+        font-family: STIXTwoTextItalic-MediumItalic, 'STIX Two Text';
+        font-size: 30px;
+        font-style: italic;
+        font-variation-settings: 'wght' 500;
+        font-weight: 500;
+      }
+
+      .cls-17 {
+        letter-spacing: .02em;
+      }
+
+      .cls-11 {
+        font-size: 20.9px;
+      }
+
+      .cls-18 {
+        letter-spacing: .05em;
+      }
+    </style>
+  </defs>
+  <g>
+    <rect class="cls-1" x=".5" y=".5" width="1919" height="1079"/>
+    <path d="M1919,1v1078H1V1h1918ZM1920,0H0v1080h1920V0h0Z"/>
+  </g>
+  <text class="cls-16" transform="translate(165.99 95.33)"><tspan class="cls-10"><tspan x="0" y="0">A home offi</tspan><tspan class="cls-15" x="145.98" y="0">c</tspan><tspan x="158.46" y="0">e with wooden desk and </tspan></tspan><tspan class="cls-10"><tspan x="-12.22" y="36">floo</tspan><tspan class="cls-13" x="35.66" y="36">r</tspan><tspan x="47.12" y="36">-t</tspan><tspan class="cls-17" x="65.86" y="36">o-</tspan><tspan class="cls-15" x="91.48" y="36">c</tspan><tspan x="103.96" y="36">eiling dark g</tspan><tspan class="cls-14" x="262.42" y="36">r</tspan><tspan x="274.33" y="36">een bookshelves </tspan></tspan><tspan class="cls-12"><tspan x="20.44" y="72">with an abus</tspan><tspan class="cls-15" x="185.41" y="72">r</tspan><tspan x="197.32" y="72">d number o</tspan><tspan class="cls-18" x="342.67" y="72">f</tspan><tspan x="353.41" y="72" xml:space="preserve"> books. </tspan></tspan></text>
+  <text class="cls-8" transform="translate(881.8 536.97)"><tspan x="0" y="0">ATLAS</tspan></text>
+  <rect class="cls-2" x="851.56" y="449.29" width="172.97" height="146.51" rx="11.73" ry="11.73"/>
+  <g>
+    <line class="cls-5" x1="769.88" y1="522.55" x2="810.4" y2="522.55"/>
+    <polygon class="cls-10" points="824.52 522.55 804.62 530.68 809.34 522.55 804.62 514.42 824.52 522.55"/>
+  </g>
+  <g>
+    <line class="cls-5" x1="1059.44" y1="522.55" x2="1099.96" y2="522.55"/>
+    <polygon class="cls-10" points="1114.08 522.55 1094.18 530.68 1098.9 522.55 1094.18 514.42 1114.08 522.55"/>
+  </g>
+  <image width="960" height="720" transform="translate(156.53 198.46) scale(.5)" xlink:href="../p60_64_assets/moar_books/01-u9595213284-a-grand-home-office-with-large-wooden-desk-and-ex-d0f7e423-1ec8-49d7-94cf-bd7944664d79-1.png"/>
+  <image width="960" height="720" transform="translate(156.53 559.65) scale(.5)" xlink:href="../p60_64_assets/moar_books/depth_renders/magma_linear/01-depth.png"/>
+  <image width="960" height="720" transform="translate(1246.5192 58.3458) scale(.6114)" xlink:href="../p60_64_assets/moar_books/02-view.png"/>
+  <image width="960" height="720" transform="translate(1246.5192 493.8825) scale(.6114)" xlink:href="../p60_64_assets/moar_books/depth_renders/magma_linear/02-depth.png"/>
+  <polygon class="cls-6" points="363.36 950.91 443.89 950.91 446.37 995.19 360.74 995.19 363.36 950.91"/>
+  <line class="cls-3" x1="406.73" y1="1030.51" x2="363.94" y2="950.91"/>
+  <line class="cls-3" x1="406.73" y1="1030.51" x2="443.89" y2="950.91"/>
+  <line class="cls-3" x1="407.27" y1="1031" x2="361" y2="995.19"/>
+  <line class="cls-3" x1="406.73" y1="1030.51" x2="446.37" y2="995.19"/>
+  <circle class="cls-10" cx="406.73" cy="1029.69" r="4.74"/>
+  <text class="cls-9" transform="translate(385.319 1060.6349)"><tspan x="0" y="0">POSE</tspan></text>
+  <text class="cls-11" transform="translate(1536.169 1062.62)"><tspan x="0" y="0">POSE</tspan></text>
+  <line class="cls-4" x1="1596.66" y1="1024.65" x2="1524.32" y2="965.61"/>
+  <line class="cls-4" x1="1596.66" y1="1024.65" x2="1579.72" y2="950.99"/>
+  <line class="cls-4" x1="1597.16" y1="1025.09" x2="1524.32" y2="1007.64"/>
+  <line class="cls-4" x1="1596.66" y1="1024.65" x2="1579.72" y2="991.51"/>
+  <circle class="cls-10" cx="1596.66" cy="1023.89" r="4.34"/>
+  <polygon class="cls-7" points="1524.32 964.52 1579.72 950.99 1579.72 991.51 1524.32 1007.9 1524.32 964.52"/>
+</svg>

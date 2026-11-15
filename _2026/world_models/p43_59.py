@@ -12,6 +12,12 @@ One growing file for the whole sequence; scenes get split out when it makes sens
                         noisy video appears on the right, then travels around the loop and becomes the next input
                         (the feedback line + plus node draw in during the first trip)
     beat_fast_steps     the remaining steps tick by (left = step s, right = step s + 1) while the ball keeps bouncing
+  ... continuing into P44, storyboard p43_59-02
+    beat_rearrange      prompt + transformer slide left, the finished video (paused) moves to the right of the model;
+                        only the prompt -> transformer and transformer -> video arrows stay
+    beat_play_once      the video plays through once, start to end, and stops on its last frame
+    beat_split          it breaks apart into 12 frames, 3 across x 4 down (one per latent frame)
+    beat_grid_denoise   the 12 frames drop back to noise, then the diffusion steps run on all of them together
 
 Artwork comes from the Illustrator storyboards in p43_59_sketches_1/ (192 x 108 viewBox = one unit per 10 px at
 1080p, mapped onto manim's 8-unit-tall frame). The transformer graphic is read straight out of p43_59-01.svg at
@@ -191,7 +197,7 @@ def _path_mob(d, M):
 
 def read_svg_shapes(path, region=None, bg=BG_FALLBACK):
     """Vector shapes of a storyboard SVG (line, rect, circle, polygon, polyline, path) as styled VMobjects, in
-    document order. region = (x0, y0, x1, y1) in storyboard units keeps only shapes whose center is inside it.
+    document order. region = (x0, y0, x1, y1) in storyboard units keeps only shapes that lie entirely inside it.
 
     Each mobject gets .svg_tag, .svg_class and .svg (its resolved style: fill, stroke, stroke_u, opacity, rounded).
     """
@@ -233,9 +239,10 @@ def read_svg_shapes(path, region=None, bg=BG_FALLBACK):
         else:
             return
         if region is not None:
-            cx, cy = mob.get_center()[0] / U + 96, 54 - mob.get_center()[1] / U
-            if not (region[0] <= cx <= region[2] and region[1] <= cy <= region[3]):
-                return
+            x0, x1 = mob.get_left()[0] / U + 96, mob.get_right()[0] / U + 96
+            y0, y1 = 54 - mob.get_top()[1] / U, 54 - mob.get_bottom()[1] / U
+            if not (region[0] <= x0 and x1 <= region[2] and region[1] <= y0 and y1 <= region[3]):
+                return      # (whole shape must be inside: the full-frame background shapes share the same center)
         st = {}
         for name in (node.get("class") or "").split():
             st.update(css.get(name, {}))
@@ -332,9 +339,10 @@ class Clock:
 
     def __init__(self, fps, n_frames):
         self.t, self.fps, self.n = 0.0, fps, n_frames
+        self.fixed = None           # set to a frame number to stop looping and hold / scrub
 
     def frame(self):
-        return int(self.t * self.fps) % self.n
+        return int(self.fixed) if self.fixed is not None else int(self.t * self.fps) % self.n
 
 
 class StepVideo(ImageMobject):
@@ -342,11 +350,12 @@ class StepVideo(ImageMobject):
     video (at any diffusion step) costs one mobject and one texture instead of one ImageMobject per frame.
 
         v = StepVideo(clock, step=0)        v.set_step(12)        v.sync()   # scene calls sync() every frame
+        StepVideo(clock, step=30, frame=44)                                  # a still: always video frame 44
     """
     _count = 0
 
-    def __init__(self, clock, step=0, kind="xt", height=2.0):
-        self.clock, self.step, self.kind = clock, step, kind
+    def __init__(self, clock, step=0, kind="xt", height=2.0, frame=None):
+        self.clock, self.step, self.kind, self.frame = clock, step, kind, frame
         self.dirs = step_dirs(kind)
         self._shown = None
         super().__init__(str(self.frame_path()), height=height)
@@ -358,7 +367,8 @@ class StepVideo(ImageMobject):
         self.uniforms["video_slot"] = float(StepVideo._count)   # keeps two videos from being batched onto one texture
 
     def frame_path(self):
-        return self.dirs[int(np.clip(self.step, 0, len(self.dirs) - 1))] / f"frame_{self.clock.frame():03d}.png"
+        frame = self.clock.frame() if self.frame is None else self.frame
+        return self.dirs[int(np.clip(self.step, 0, len(self.dirs) - 1))] / f"frame_{frame:03d}.png"
 
     def set_step(self, step):
         self.step = int(step)
@@ -416,7 +426,19 @@ class P43(InteractiveScene):
     fast_step_time = 0.3        # per step once they just tick by
     fast_step_times = None      # or a list of per-step seconds for the fast steps (e.g. linger on the late ones)
     final_feedback = True       # after the last step, send the finished video round the loop so it ends on the left
-    end_hold = 6.0              # finished video on the right, still looping
+    end_hold = 6.0              # finished video, still looping (end of P43)
+
+    # P44
+    rearrange_time = 2.5        # prompt + transformer slide left, video grows on the right
+    play_once_pre_hold = 0.5    # paused on the first frame before the single play-through
+    play_once_post_hold = 1.0   # ... and on the last frame after it
+    split_time = 2.5            # video breaks apart into the 12-frame grid
+    split_hold = 2.0
+    renoise_time = 1.0          # the 12 clean frames run back to noise (steps played in reverse)
+    renoise_hold = 1.0
+    grid_step_time = 0.3        # per diffusion step on the grid
+    grid_step_times = None      # or a list of per-step seconds (30 entries)
+    p44_end_hold = 5.0
 
     # --- storyboard -01 geometry (192 x 108 units) ---------------------------------------------------------
     SLOT_L = (11.99, 41.03, 49.92, 28.80)       # x, y, w, h of the input video
@@ -426,6 +448,16 @@ class P43(InteractiveScene):
     PLUS = (96.0, 78.69, 1.22)                  # center x, y and radius of the plus node
     TRAVEL_SCALE = 0.22                         # size of the video while it rides the loop
 
+    # --- storyboard -02 geometry ---------------------------------------------------------------------------
+    TF_SHIFT = (-59.44, 0.29)                   # how far the transformer moves from -01 to -02
+    TITLE_SHIFT = (-0.17, -2.97)
+    PROMPT_SCALE = 0.72                         # the prompt shrinks to the transformer's width so it fits on the left
+    GRID_X, GRID_Y = (77.20, 112.74, 148.27), (11.00, 31.71, 52.57, 73.54)     # tile left edges / top edges
+    GRID_W, GRID_H = 33.28, 19.20
+    GRID_FRAMES = [0] + [4 * f for f in range(1, 12)]      # video frame shown per tile: the last frame of each latent frame
+    BIG = (77.20, 25.61, 104.35, 60.20)         # the whole video before it splits: grid width, centered on the out arrow
+    COUNTER_44 = (37.08, 73.5)                  # step counter under the transformer
+
     def construct(self):
         self.setup_scene()
         self.beat_intro()
@@ -434,6 +466,13 @@ class P43(InteractiveScene):
         self.beat_teach_steps()
         self.beat_fast_steps()
         self.wait(self.end_hold)
+        # P44
+        self.beat_rearrange()
+        self.beat_play_once()
+        self.beat_split()
+        self.wait(self.split_hold)
+        self.beat_grid_denoise()
+        self.wait(self.p44_end_hold)
 
     # ------------------------------------------------------------------------------------------- pieces
     def setup_scene(self):
@@ -486,8 +525,8 @@ class P43(InteractiveScene):
         self.counter = VGroup()
         self._counter_cache = {}
 
-    def new_video(self, step, kind="xt"):
-        v = StepVideo(self.clock, step, kind)
+    def new_video(self, step, kind="xt", frame=None):
+        v = StepVideo(self.clock, step, kind, frame=frame)
         self.videos.append(v)
         return v
 
@@ -506,10 +545,19 @@ class P43(InteractiveScene):
     def set_counter(self, n):
         if not (self.show_step_counter and self.show_text):
             return
-        if n not in self._counter_cache:
-            self._counter_cache[n] = u_text(f"STEP {n} / {self.n_steps}", 2.0, self.PLUS[0], 85.2, bold=True,
-                                            align="center", color=CHILL_BROWN)
-        self.counter.set_submobjects([self._counter_cache[n]])
+        x, y = getattr(self, "counter_pos", (self.PLUS[0], 85.2))
+        if (n, x, y) not in self._counter_cache:
+            self._counter_cache[(n, x, y)] = u_text(f"STEP {n} / {self.n_steps}", 2.0, x, y, bold=True,
+                                                    align="center", color=CHILL_BROWN)
+        self.counter.set_submobjects([self._counter_cache[(n, x, y)]])
+        if self.counter not in self.mobjects:
+            self.add(self.counter)
+
+    @staticmethod
+    def move_slot(video, start, end, **kwargs):
+        """Animate a StepVideo from one (x, y, w, h) slot to another."""
+        a0, a1 = np.array(start, float), np.array(end, float)
+        return UpdateFromAlphaFunc(video, lambda m, a: m.place(*interpolate(a0, a1, a)), **kwargs)
 
     @staticmethod
     def fade(image, start=0.0, end=1.0, **kwargs):
@@ -523,7 +571,7 @@ class P43(InteractiveScene):
         return VShowPassingFlash(hot, time_width=time_width, **kwargs)
 
     # ------------------------------------------------------------------------------------------- beats
-    def beat_intro(self):
+    def beat_intro(self, run_time=None):
         """Title, transformer and prompt draw in together."""
         tf = self.tf
         anims = [
@@ -538,10 +586,10 @@ class P43(InteractiveScene):
         ]
         if self.show_text:
             anims += [Write(self.title), Write(self.prompt, lag_ratio=0.05)]
-        self.play(*anims, run_time=self.intro_time)
+        self.play(*anims, run_time=run_time or self.intro_time)
         self.settle(tf)
 
-    def beat_io(self):
+    def beat_io(self, run_time=None):
         self.left.set_opacity(0)
         self.add(self.left)
         self.play(
@@ -550,7 +598,7 @@ class P43(InteractiveScene):
                 AnimationGroup(ShowCreation(self.in_arrow[0]), FadeIn(self.in_arrow[1])),
                 AnimationGroup(ShowCreation(self.out_arrow[0]), FadeIn(self.out_arrow[1])),
                 lag_ratio=0.6),
-            run_time=self.io_time)
+            run_time=run_time or self.io_time)
 
     def forward_pass(self, step, run_time=None):
         """Input (left, at `step`) runs through the model; the next, slightly cleaner video fades in on the right."""
@@ -614,21 +662,24 @@ class P43(InteractiveScene):
         self.left.set_step(self.right.step)
         self.remove(self.right)
 
-    def beat_teach_steps(self):
+    def beat_teach_steps(self, forward_time=None, feedback_time=None):
+        """forward_time / feedback_time: seconds per pass through the model / per trip round the loop."""
         for s in range(min(self.teach_steps, self.n_steps)):
-            self.forward_pass(s)
+            self.forward_pass(s, forward_time)
             self.wait(self.output_hold)
-            self.feedback()
+            self.feedback(feedback_time)
 
-    def beat_fast_steps(self):
+    def beat_fast_steps(self, run_time=None):
+        """run_time: total seconds for the ticking steps (spread evenly), instead of fast_step_time per step."""
         first = min(self.teach_steps, self.n_steps)
         if first >= self.n_steps:
             return
         self.forward_pass(first)                 # left = first, right = first + 1, both stay up from here on
         steps = list(range(first + 1, self.n_steps))
-        times = list(self.fast_step_times or [self.fast_step_time] * len(steps))[:len(steps)]
-        times += [self.fast_step_time] * (len(steps) - len(times))
-        edges = np.cumsum([self.fast_step_time] + times)       # the hold on `first`, then one entry per later step
+        per = run_time / (len(steps) + 1) if run_time else self.fast_step_time
+        times = list((None if run_time else self.fast_step_times) or [per] * len(steps))[:len(steps)]
+        times += [per] * (len(steps) - len(times))
+        edges = np.cumsum([per] + times)       # the hold on `first`, then one entry per later step
         t0 = self.clock.t
 
         def tick():
@@ -647,3 +698,103 @@ class P43(InteractiveScene):
         if self.final_feedback:                  # the finished video takes one last trip round the loop to the input side
             self.wait(self.output_hold)
             self.feedback()
+
+    # ------------------------------------------------------------------------------------------- P44 beats
+    def beat_rearrange(self, run_time=None):
+        """-01 -> -02: prompt + transformer to the left, finished video to the right of the model. The input arrow,
+        feedback loop, plus node and step counter go; prompt -> transformer and transformer -> video arrows stay.
+        The video is paused on whatever frame it's showing while it moves."""
+        video, other = (self.left, self.right) if self.final_feedback else (self.right, self.left)
+        start = self.SLOT_L if self.final_feedback else self.SLOT_R
+        d = np.array([self.TF_SHIFT[0] * U, -self.TF_SHIFT[1] * U, 0.0])
+        dt = np.array([self.TITLE_SHIFT[0] * U, -self.TITLE_SHIFT[1] * U, 0.0])
+        self.clock.fixed = self.clock.frame()           # pause playback
+
+        going = [self.in_arrow, self.plus]
+        going += [self.loop] if getattr(self, "loop_drawn", False) else []
+        going += [self.counter] if len(self.counter) else []
+        anims = [FadeOut(m) for m in going]
+        if other in self.mobjects:
+            anims.append(self.fade(other, 1.0, 0.0))
+        anims += [self.tf.animate.shift(d), self.prompt_arrow.animate.shift(d), self.out_arrow.animate.shift(d)]
+        if self.show_text:
+            anims += [self.title.animate.shift(dt),
+                      self.prompt.animate.scale(self.PROMPT_SCALE, about_point=self.prompt.get_bottom()).shift(d)]
+
+        self.remove(video)      # so it's re-added last, on top of the transformer it passes over
+        self.play(*anims, self.move_slot(video, start, self.BIG), run_time=run_time or self.rearrange_time)
+        for m in going:
+            self.remove(*m.get_family())
+        self.remove(other)
+        self.bring_to_front(video)
+        self.counter.set_submobjects([])
+        self.counter_pos = self.COUNTER_44
+        self.big = video
+
+    def beat_play_once(self, run_time=None):
+        """Back to the first frame, a short pause, then the clip plays through once and stops on its last frame.
+        run_time: seconds for the play-through (default: real time at video_fps)."""
+        c = self.clock
+        if c.fixed is None:                                  # still looping: let the current loop finish first
+            self.wait((c.n - (c.t * c.fps) % c.n) / c.fps)
+        c.fixed = 0
+        self.wait(self.play_once_pre_hold)
+        t0, dur = c.t, run_time or c.n / c.fps
+
+        def tick():
+            c.fixed = min(c.n - 1, int((c.t - t0) / dur * c.n))
+
+        self.on_tick.append(tick)
+        self.wait(dur)
+        self.on_tick.remove(tick)
+        c.fixed = c.n - 1
+        self.wait(self.play_once_post_hold)
+
+    def grid_slot(self, k):
+        return (self.GRID_X[k % 3], self.GRID_Y[k // 3], self.GRID_W, self.GRID_H)
+
+    def beat_split(self, run_time=None):
+        """The video (stopped on its last frame) deals out into 12 stills, one per latent frame, 3 across x 4 down."""
+        self.tiles = [self.new_video(self.n_steps, frame=f).place(*self.BIG) for f in self.GRID_FRAMES]
+        self.add(*self.tiles)               # last tile on top: it shows the frame the video stopped on
+        self.remove(self.big)
+        self.play(LaggedStart(*[self.move_slot(t, self.BIG, self.grid_slot(k)) for k, t in enumerate(self.tiles)],
+                              lag_ratio=0.08),
+                  run_time=run_time or self.split_time)
+
+    def beat_grid_denoise(self, run_time=None, renoise_time=None):
+        """All 12 frames run back to noise, then the diffusion steps play forward on all of them at once.
+        run_time: total seconds for the forward steps (spread evenly), instead of grid_step_time per step.
+        renoise_time: seconds for the run back to noise."""
+        n, t0 = self.n_steps, self.clock.t
+        renoise_time = renoise_time or self.renoise_time
+
+        def set_all(step):
+            for t in self.tiles:
+                t.set_step(step)
+
+        def back():
+            set_all(n - int(np.clip((self.clock.t - t0) / renoise_time, 0, 1) * n))
+
+        self.on_tick.append(back)
+        self.wait(renoise_time)
+        self.on_tick.remove(back)
+        set_all(0)
+        self.wait(self.renoise_hold)
+
+        per = run_time / n if run_time else self.grid_step_time
+        times = list((None if run_time else self.grid_step_times) or [per] * n)[:n]
+        times += [per] * (n - len(times))
+        edges = np.cumsum(times)
+        t1 = self.clock.t
+
+        def forward():
+            k = int(np.searchsorted(edges, self.clock.t - t1, side="right"))      # steps finished so far
+            set_all(min(k + 1, n))
+            self.set_counter(min(k + 1, n))
+
+        self.on_tick.append(forward)
+        self.wait(float(edges[-1]))
+        self.on_tick.remove(forward)
+        set_all(n)
+        self.set_counter(n)
