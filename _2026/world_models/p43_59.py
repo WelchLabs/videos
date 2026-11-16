@@ -25,6 +25,17 @@ One growing file for the whole sequence; scenes get split out when it makes sens
     beat_icon_to_bracket  the pink icon drops to the bottom of the screen and a line runs out of each side of it,
                         forming a bracket under where the full pattern goes
     beat_pattern        the full attention pattern grows up out of the icon; dimensions (18,720 x 18,720) + label
+  ... storyboard p43_59-04: one row / column of the pattern = one spacetime patch of video
+    beat_stack          the 12 frames stack into a block seen at an angle (last frame of the video in front)
+    beat_rule_patches   the outline of every patch is ruled onto the block (52 x 30 x 12)
+    beat_patch_zoom     the block scales up, in place on the right half, onto one spacetime patch (16 x 16 pixels x
+                        4 frames); then it fills in: pixel grid, its dimensions and a SPACETIME PATCH title
+    beat_pull_back      the labels clear and the block pulls back out while the video dims
+    beat_unstack        boxes go, video back to full brightness, block flattens to the 3 x 4 grid again
+
+The block is drawn with a flat (orthographic) projection computed here, not a 3D camera: nothing else on screen
+tilts, and "zooming" is the block scaling about a fixed point behind two background-colored masks (left half +
+title strip), so the attention pattern stays put.
 
 Artwork comes from the Illustrator storyboards in p43_59_sketches_1/ (192 x 108 viewBox = one unit per 10 px at
 1080p, mapped onto manim's 8-unit-tall frame). The transformer graphic is read straight out of p43_59-01.svg at
@@ -46,6 +57,11 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from manimlib import *
+
+try:
+    import moderngl
+except Exception:      # only needed for hard-edged pixels in the patch zoom
+    moderngl = None
 
 # ----------------------------------------------------------------------------- config
 HERE = Path(__file__).resolve().parent
@@ -368,6 +384,7 @@ class StepVideo(ImageMobject):
 
     def __init__(self, clock, step=0, kind="xt", height=2.0, frame=None):
         self.clock, self.step, self.kind, self.frame = clock, step, kind, frame
+        self.pixelated = False
         self.dirs = step_dirs(kind)
         self._shown = None
         super().__init__(str(self.frame_path()), height=height)
@@ -393,6 +410,19 @@ class StepVideo(ImageMobject):
         # a private texture (the stock one is cached per file path and shared between mobjects)
         self.shader_wrapper.textures[0] = ctx.texture(size=size, components=4, data=data)
         self._shown = path
+        self.set_pixelated(self.pixelated)
+
+    def set_pixelated(self, on=True):
+        """Hard-edged pixels when the image is blown up (instead of smooth interpolation)."""
+        self.pixelated = on
+        if moderngl is not None and self.shader_wrapper is not None and self.shader_wrapper.textures:
+            self.shader_wrapper.textures[0].filter = (moderngl.LINEAR, moderngl.NEAREST if on else moderngl.LINEAR)
+        return self
+
+    def set_quad(self, ul, dl, ur, dr):
+        """Put the image's four corners anywhere (used for the tilted block)."""
+        self.set_points(np.array([ul, dl, ur, dr, ur, dl]))
+        return self
 
     def sync(self):
         path = self.frame_path()
@@ -467,6 +497,20 @@ class P43(InteractiveScene):
     dims_time = 1.5             # dimension lines + numbers + label
     pattern_hold = 5.0
 
+    # P44, spacetime patch (-04)
+    stack_time = 2.5            # grid -> tilted block
+    stack_hold = 1.0
+    rule_patches_time = 2.0     # every patch's outline is ruled onto the block
+    rule_hold = 1.0
+    patch_zoom_time = 3.0       # block scales up onto the patch
+    patch_box_time = 1.5        # the patch fills in
+    patch_labels_time = 1.5     # pixel grid, dimensions, title
+    patch_hold = 4.0
+    pull_back_time = 4.0        # labels clear, block pulls back out, video dims
+    tiled_hold = 4.0
+    unstack_time = 3.0          # boxes fade, block flattens back to the grid
+    unstack_hold = 4.0
+
     # --- storyboard -01 geometry (192 x 108 units) ---------------------------------------------------------
     SLOT_L = (11.99, 41.03, 49.92, 28.80)       # x, y, w, h of the input video
     SLOT_R = (131.03, 41.03, 49.92, 28.80)      # ... and the output video
@@ -498,6 +542,21 @@ class P43(InteractiveScene):
     GRID3_W, GRID3_H = 24.96, 14.40
     TITLE_SHIFT_3 = (0.0, -0.73)
 
+    # --- spacetime patch (-04) -----------------------------------------------------------------------------
+    BLOCK_BOX = (101.0, 17.0, 86.0, 80.0)       # x, y, w, h of the area the tilted block is fit into
+    BLOCK_ANGLES = (30.0, 22.0)                 # degrees: turn about the vertical axis, tilt toward the viewer
+    BLOCK_SPACING = 0.03                        # gap between frames in the stack, as a fraction of a frame's width
+    BLOCK_LAST_IN_FRONT = True                  # the last frame of the video is the front sheet (False: the first)
+    PATCH_TOKEN = (11, 0, 0)                    # (frame 0-11, row 0-29, col 0-51) of the patch to zoom on; this is the
+                                                # upper-left corner of the front sheet
+    PATCH_PX, PATCH_FRAMES = 16, 4              # a token covers 16 x 16 pixels x 4 video frames
+    PATCH_VIEW = (150.0, 62.0)                  # where the patch's front face sits on screen when zoomed in
+    PATCH_ZOOM = 18.0                           # how much the block scales up
+    PATCH_COLOR = PINK                          # patch outlines, the highlighted patch, the SPACETIME PATCH title
+    RULE_WIDTHS = (0.08, 0.25)                  # patch outline width (storyboard units) pulled back / zoomed in
+    DIM_OPACITY = 0.3                           # video opacity while the patches are ruled in
+    MASK_X, MASK_Y = 95.5, 11.5                 # the zoomed block is hidden left of / above these
+
     def construct(self):
         self.setup_scene()
         self.beat_intro()
@@ -520,6 +579,17 @@ class P43(InteractiveScene):
         self.beat_icon_to_bracket()
         self.beat_pattern()
         self.wait(self.pattern_hold)
+        # P44, spacetime patch
+        self.beat_stack()
+        self.wait(self.stack_hold)
+        self.beat_rule_patches()
+        self.wait(self.rule_hold)
+        self.beat_patch_zoom()
+        self.wait(self.patch_hold)
+        self.beat_pull_back()
+        self.wait(self.tiled_hold)
+        self.beat_unstack()
+        self.wait(self.unstack_hold)
 
     # ------------------------------------------------------------------------------------------- pieces
     def setup_scene(self):
@@ -965,3 +1035,244 @@ class P43(InteractiveScene):
                                      self.ATTN_LABEL_Y, weight="SEMIBOLD", align="center", color=CHILL_BROWN)
             anims += [Write(d[1]) for d in self.dims] + [Write(self.attn_label)]
         self.play(*anims, run_time=dims_time or self.dims_time)
+
+    # ------------------------------------------------------------------------------------------- P44: spacetime patch
+    # Block coordinates: storyboard units, origin at the block's center, x right, y up, z toward the viewer.
+    # The frames are sheets one spacing apart, the front one at z = 5.5 * spacing. With BLOCK_LAST_IN_FRONT the last
+    # frame is in front and time runs toward the viewer; otherwise frame 0 is in front and time runs back.
+    def blk_z(self, k):
+        """Block-space depth of frame k's sheet, in units of the sheet spacing."""
+        return (k - 5.5) if self.BLOCK_LAST_IN_FRONT else (5.5 - k)
+
+    def blk_proj(self, pts, frac=1.0):
+        """Block-space points [N, 3] -> on-screen offsets (manim units), turned by `frac` of the block's angles."""
+        th, ph = np.radians(self.BLOCK_ANGLES[0]) * frac, np.radians(self.BLOCK_ANGLES[1]) * frac
+        ry = np.array([[np.cos(th), 0, np.sin(th)], [0, 1, 0], [-np.sin(th), 0, np.cos(th)]])
+        rx = np.array([[1, 0, 0], [0, np.cos(ph), -np.sin(ph)], [0, np.sin(ph), np.cos(ph)]])
+        q = np.atleast_2d(np.array(pts, float)) @ (rx @ ry).T
+        return np.stack([q[:, 0] * U, q[:, 1] * U, np.zeros(len(q))], axis=1)
+
+    def blk_screen(self, pts):
+        """Block-space points -> manim points, at the block's current zoom."""
+        base = self.blk_center + self.blk_proj(pts)
+        return self.blk_fixed + self.blk_zoom * (base - self.blk_fixed)
+
+    def blk_setup(self):
+        ratio = self.GRID3_H / self.GRID3_W
+        sp = self.BLOCK_SPACING
+
+        def box(w):     # corners of the whole ruled volume (12 patches deep) for a frame width w
+            return np.array([[x * w / 2, y * w * ratio / 2, z * w * sp]
+                             for x in (-1, 1) for y in (-1, 1) for z in (5.5, -6.5)])
+
+        bx, by, bw, bh = self.BLOCK_BOX
+        unit = self.blk_proj(box(1.0)) / U
+        ext = unit.max(0) - unit.min(0)
+        self.blk_w = W = min(bw / ext[0], bh / ext[1])
+        self.blk_h, self.blk_s = W * ratio, W * sp
+        pr = self.blk_proj(box(W))
+        self.blk_center = P(bx + bw / 2, by + bh / 2) - (pr.max(0) + pr.min(0)) / 2
+        self.blk_t, self.blk_zoom, self.blk_fixed = 0.0, 1.0, np.zeros(3)
+        # zooming = scaling about the one point that carries the patch's front face to PATCH_VIEW
+        (x0, x1), (y0, y1), (zf, zb) = self.patch_bounds(*self.PATCH_TOKEN)
+        front = self.blk_center + self.blk_proj([[(x0 + x1) / 2, (y0 + y1) / 2, zf]])[0]
+        Z = self.PATCH_ZOOM
+        self.blk_fixed = (Z * front - P(*self.PATCH_VIEW)) / (Z - 1)
+        self.blk_lines = []
+        self.blk_driver = Mobject()
+
+    def patch_bounds(self, f, r, c):
+        """Block-space extent of token (frame, row, col): (x0, x1), (y0, y1), (z front, z back)."""
+        W, H, s = self.blk_w, self.blk_h, self.blk_s
+        wp, hp = W * self.PATCH_PX / 832, H * self.PATCH_PX / 480
+        x0, y1, zf = -W / 2 + c * wp, H / 2 - r * hp, self.blk_z(f) * s
+        return (x0, x0 + wp), (y1 - hp, y1), (zf, zf - s)
+
+    def blk_update(self):
+        """Put every frame (and every line riding on the block) where the block's current state says."""
+        W, H, s, t = self.blk_w, self.blk_h, self.blk_s, self.blk_t
+        local = np.array([[-W / 2, H / 2, 0], [-W / 2, -H / 2, 0], [W / 2, H / 2, 0], [W / 2, -H / 2, 0]])   # UL DL UR DR
+        for k, tile in enumerate(self.tiles):
+            depth = np.array([0, 0, self.blk_z(k) * s])
+            if t >= 1:
+                corners = self.blk_screen(local + depth)
+            else:       # part-way between its flat grid slot and its place in the block
+                gx, gy, gw, gh = self.small_grid_slot(k)
+                center = interpolate(P(gx + gw / 2, gy + gh / 2), self.blk_center + self.blk_proj([depth])[0], t)
+                corners = center + interpolate(gw / W, 1.0, t) * self.blk_proj(local, frac=t)
+            tile.set_quad(*corners)
+        for m in self.blk_lines:
+            m.set_points_as_corners(self.blk_screen(m.bpts))
+
+    def blk_line(self, pts, color, stroke_u, opacity=1.0, fill=None):
+        """A polyline (or filled polygon) that lives in block space and follows the block."""
+        m = VMobject()
+        m.bpts = np.array(pts, float)
+        m.set_points_as_corners(self.blk_screen(m.bpts))
+        m.set_stroke(color, stroke_u * STROKE_PER_U, opacity)
+        m.set_fill(fill[0], fill[1]) if fill else m.set_fill(opacity=0)
+        self.blk_lines.append(m)
+        return m
+
+    def blk_restack(self):
+        """Layer order while the block is up: frames, anything drawn on the block, the masks, then everything that
+        must stay visible on the left and along the top."""
+        self.remove(*self.blk_masks.get_family())
+        self.add(self.blk_masks)
+        for name in ("pattern", "dims", "bracket", "icon", "attn_label", "title"):
+            m = getattr(self, name, None)
+            if m is not None and (name != "title" or self.show_text):
+                self.remove(*m.get_family())        # (some of these went on screen piece by piece)
+                self.add(m)
+
+    def blk_run(self, func, run_time, **kwargs):
+        """Play an animation that drives the block: func(alpha) sets its state, then everything is re-placed."""
+        def step(m, a):
+            func(a)
+            self.blk_update()
+        self.play(UpdateFromAlphaFunc(self.blk_driver, step, **kwargs), run_time=run_time)
+
+    def beat_stack(self, run_time=None):
+        """The 12 frames lift off the grid into a tilted block, the last frame of the video in front."""
+        self.blk_setup()
+        self.remove(*self.tiles)
+        self.add(*sorted(self.tiles, key=lambda t: self.blk_z(self.tiles.index(t))))    # back to front, nearer covers farther
+        # background-colored masks: once the block is scaled up it only shows on the right half, below the title
+        fw, fh = 192.0, 108.0
+        self.blk_masks = VGroup(
+            place_rect(Rectangle(), -10, -10, self.MASK_X + 10, fh + 20),
+            place_rect(Rectangle(), -10, -10, fw + 20, self.MASK_Y + 10))
+        self.blk_masks.set_fill(self.bg, 1).set_stroke(width=0)
+        for m in self.blk_masks:        # tagged so manimgl never batches the masks with the lines under them (within
+            m.uniforms["z_layer"] = 99.0    # a batch all fills are drawn before all strokes, which would let lines through)
+        self.blk_restack()
+
+        def state(a):
+            self.blk_t = a
+        self.blk_run(state, run_time or self.stack_time)
+        self.blk_t = 1.0
+        self.blk_update()
+
+    def beat_rule_patches(self, run_time=None):
+        """Rule the outline of every patch onto the block: 52 across x 30 down x 12 deep. Done before the zoom so
+        there is always something to follow on the way in."""
+        W, H, s, col = self.blk_w, self.blk_h, self.blk_s, self.PATCH_COLOR
+        nx, ny, nz = 832 // self.PATCH_PX, 480 // self.PATCH_PX, len(self.tiles)
+        xs, ys = np.linspace(-W / 2, W / 2, nx + 1), np.linspace(H / 2, -H / 2, ny + 1)
+        zf, zb = 5.5 * s, (5.5 - nz) * s
+        zs = np.linspace(zf, zb, nz + 1)
+        x0, y1 = -W / 2, H / 2
+        rules = [[(x, y1, zf), (x, -y1, zf)] for x in xs] + [[(x0, y, zf), (-x0, y, zf)] for y in ys]     # front
+        rules += [[(x, y1, zf), (x, y1, zb)] for x in xs] + [[(x0, y1, z), (-x0, y1, z)] for z in zs]     # top
+        rules += [[(x0, y, zf), (x0, y, zb)] for y in ys] + [[(x0, y1, z), (x0, -y1, z)] for z in zs]     # left side
+        self.token_grid = VGroup(*[self.blk_line(r, col, self.RULE_WIDTHS[0], 0.9) for r in rules])
+        self.add(self.token_grid)
+        self.blk_restack()
+        self.play(ShowCreation(self.token_grid, lag_ratio=0.01), run_time=run_time or self.rule_patches_time)
+
+    def beat_patch_zoom(self, run_time=None, box_time=None, labels_time=None):
+        """Scale the block up onto one spacetime patch (its outline is already there), then fill it in: tinted
+        faces and a heavier outline, pixel grid, dimensions and title."""
+        Z, col, dark = self.PATCH_ZOOM, self.PATCH_COLOR, self.bg
+        for t in self.tiles:
+            t.set_pixelated(True)
+
+        def state(a):
+            self.blk_zoom = Z ** a
+            self.token_grid.set_stroke(width=float(interpolate(*self.RULE_WIDTHS, a) * STROKE_PER_U))
+        self.blk_restack()
+        self.blk_run(state, run_time or self.patch_zoom_time)
+
+        (x0, x1), (y0, y1), (zf, zb) = self.patch_bounds(*self.PATCH_TOKEN)
+        n, nf = self.PATCH_PX, self.PATCH_FRAMES
+        # the three faces we can see: front, top, left
+        front = [(x0, y1, zf), (x1, y1, zf), (x1, y0, zf), (x0, y0, zf), (x0, y1, zf)]
+        top = [(x0, y1, zf), (x1, y1, zf), (x1, y1, zb), (x0, y1, zb), (x0, y1, zf)]
+        left = [(x0, y1, zf), (x0, y0, zf), (x0, y0, zb), (x0, y1, zb), (x0, y1, zf)]
+        self.patch_faces = VGroup(self.blk_line(front, col, 0, fill=(col, 0.12)),
+                                  self.blk_line(top, col, 0, fill=(col, 0.45)),
+                                  self.blk_line(left, col, 0, fill=(col, 0.30)))
+        edges = [front[:-1] + front[:1],
+                 [(x0, y1, zf), (x0, y1, zb), (x1, y1, zb), (x1, y1, zf)],
+                 [(x0, y1, zb), (x0, y0, zb), (x0, y0, zf)]]
+        self.patch_edges = VGroup(*[self.blk_line(e, col, 0.35) for e in edges])
+        # pixel grid: 16 x 16 on the front, 16 pixels x 4 frames on the top and the side
+        xs, ys = np.linspace(x0, x1, n + 1)[1:-1], np.linspace(y1, y0, n + 1)[1:-1]
+        zs = np.linspace(zf, zb, nf + 1)[1:-1]
+        grid = [[(x, y1, zf), (x, y0, zf)] for x in xs] + [[(x0, y, zf), (x1, y, zf)] for y in ys]
+        grid += [[(x, y1, zf), (x, y1, zb)] for x in xs] + [[(x0, y1, z), (x1, y1, z)] for z in zs]
+        grid += [[(x0, y, zf), (x0, y, zb)] for y in ys] + [[(x0, y1, z), (x0, y0, z)] for z in zs]
+        self.patch_grid = VGroup(*[self.blk_line(g, dark, 0.07, 0.45) for g in grid])
+
+        self.add(self.patch_faces, self.patch_edges)
+        self.blk_restack()
+        self.play(FadeIn(self.patch_faces), ShowCreation(self.patch_edges, lag_ratio=0.3),
+                  run_time=box_time or self.patch_box_time)
+        self.blk_restack()
+
+        anims = [FadeIn(self.patch_grid, lag_ratio=0.02)]
+        self.patch_labels = VGroup()
+        if self.show_text:
+            def at(block_pt, dx=0.0, dy=0.0):       # block point -> storyboard (x, y), nudged by (dx, dy) units
+                q = self.blk_screen([block_pt])[0]
+                return q[0] / U + 96 + dx, 54 - q[1] / U + dy
+            corners = self.blk_screen([(x, y, z) for x in (x0, x1) for y in (y0, y1) for z in (zf, zb)])
+            top_y = 54 - corners[:, 1].max() / U
+            mid_x = (corners[:, 0].max() + corners[:, 0].min()) / 2 / U + 96
+            px, fr = f"{n} pixels", f"{nf} frames"
+            dim = dict(font=DIM_FONT, color=CHILL_BROWN)
+            self.patch_labels = VGroup(
+                u_text("SPACETIME PATCH", 3.4, mid_x, top_y - 4.0, bold=True, align="center", color=col),
+                u_text(px, 3.2, *at(((x0 + x1) / 2, y0, zf), 0, 4.2), align="center", **dim),
+                u_text(px, 3.2, *at((x1, (y0 + y1) / 2, zf), 1.8, 1.1), align="left", **dim),
+                u_text(fr, 3.2, *at((x0, y0, (zf + zb) / 2), -1.8, 3.0), align="right", **dim))
+            anims.append(Write(self.patch_labels))
+        self.play(*anims, run_time=labels_time or self.patch_labels_time)
+
+    def beat_pull_back(self, run_time=None):
+        """Labels and pixel grid clear, then the block pulls back out to the whole ruled volume while the video dims,
+        so it reads as a pile of these boxes."""
+        Z = self.PATCH_ZOOM
+        grid0 = float(self.patch_grid[0].get_stroke_opacity()) if len(self.patch_grid) else 0.0
+
+        def state(a):
+            self.blk_zoom = Z ** (1 - a)
+            early = float(np.clip(a / 0.15, 0, 1))                 # labels + pixel grid clear out first
+            self.patch_labels.set_opacity(float(1 - early))
+            self.patch_grid.set_stroke(opacity=grid0 * (1 - early))
+            self.token_grid.set_stroke(width=float(interpolate(*self.RULE_WIDTHS[::-1], a) * STROKE_PER_U))
+            self.patch_edges.set_stroke(width=float(interpolate(0.35, 0.12, a) * STROKE_PER_U))
+            for t in self.tiles:
+                t.set_opacity(float(interpolate(1.0, self.DIM_OPACITY, a)))
+        self.blk_run(state, run_time or self.pull_back_time)
+        self.blk_zoom = 1.0
+        self.blk_update()
+        self.remove(self.patch_grid, self.patch_labels)
+        self.blk_lines = [m for m in self.blk_lines if m not in set(self.patch_grid)]
+        for t in self.tiles:
+            t.set_pixelated(False)
+
+    def beat_unstack(self, run_time=None):
+        """Boxes fade and the video comes back up to full brightness; then the block flattens to the grid again."""
+        run_time = run_time or self.unstack_time
+        lines = [self.token_grid, self.patch_edges]
+        op0 = [float(m[0].get_stroke_opacity()) for m in lines]
+        fills = [float(f.get_fill_opacity()) for f in self.patch_faces]
+
+        def fade(m, a):
+            for g, o in zip(lines, op0):
+                g.set_stroke(opacity=float(o * (1 - a)))
+            for f, o in zip(self.patch_faces, fills):
+                f.set_fill(opacity=float(o * (1 - a)))
+            for t in self.tiles:
+                t.set_opacity(float(interpolate(self.DIM_OPACITY, 1.0, a)))
+        self.play(UpdateFromAlphaFunc(self.blk_driver, fade), run_time=run_time * 0.35)
+        self.remove(self.token_grid, self.patch_edges, self.patch_faces)
+        self.blk_lines = []
+
+        def state(a):
+            self.blk_t = 1 - a
+        self.blk_run(state, run_time * 0.65)
+        self.remove(self.blk_masks)
+        for k, t in enumerate(self.tiles):
+            t.place(*self.small_grid_slot(k))
