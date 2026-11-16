@@ -18,16 +18,25 @@ One growing file for the whole sequence; scenes get split out when it makes sens
     beat_play_once      the video plays through once, start to end, and stops on its last frame
     beat_split          it breaks apart into 12 frames, 3 across x 4 down (one per latent frame)
     beat_grid_denoise   the 12 frames drop back to noise, then the diffusion steps run on all of them together
+  ... storyboard p43_59-03
+    beat_icon_highlight one of the little attention-pattern icons inside the transformer turns pink
+    beat_clear_left     the rest of the transformer, the prompt and the arrows fade; the frame grid shrinks to the
+                        right half of the screen
+    beat_icon_to_bracket  the pink icon drops to the bottom of the screen and a line runs out of each side of it,
+                        forming a bracket under where the full pattern goes
+    beat_pattern        the full attention pattern grows up out of the icon; dimensions (18,720 x 18,720) + label
 
 Artwork comes from the Illustrator storyboards in p43_59_sketches_1/ (192 x 108 viewBox = one unit per 10 px at
 1080p, mapped onto manim's 8-unit-tall frame). The transformer graphic is read straight out of p43_59-01.svg at
 runtime (it's ~550 little pieces); everything else is redrawn from the storyboard's coordinates.
 
-Video frames come from the Wan2.1 notebook p43_59_2.ipynb:  <RUN>/p43/xt/step_SS/frame_FFF.png  (31 steps x 45
-frames). Set WM_P43_59 to point somewhere else (e.g. on the Linux box).
+Video frames come from the Wan2.2 notebook p43_59_3.ipynb:  <RUN>/p43/xt/step_SS/frame_FFF.png  (41 step folders
+x 48 frames; 12 latent frames x 4 video frames each). Step and frame counts are read off the folder, so the older
+Wan2.1 output (p43_59_2: 31 x 45) still runs. Set WM_P43_59 to point somewhere else (e.g. on the Linux box).
 
 Timings and toggles are class attributes on the scene classes.
 """
+import json
 import os
 import re
 import xml.etree.ElementTree as ET
@@ -43,16 +52,18 @@ HERE = Path(__file__).resolve().parent
 SKETCHES = HERE / "p43_59_sketches_1"
 RUN = Path(os.environ.get(
     "WM_P43_59",
-    "/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/world_models/hackin/Wan2.1/"
-    "attn_runs/ball_drop_01/p43_59_2"))
+    "/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/world_models/hackin/Wan2.2/"
+    "attn_runs/ball_drop_s252/p43_59_3"))
 
 FRESH_TAN = "#f4ebd9"       # line art, prompt, TRANSFORMER
+PINK = "#ed5e78"            # the highlighted attention-pattern icon + its bracket
 CHILL_BROWN = "#948678"     # title, feedback loop
 BG_FALLBACK = "#031e1e"     # node fill = scene background (read from the camera at runtime when possible)
 SVG_BG = "#031e1e"          # the background color used inside the storyboards (swapped for the scene's)
 LABEL_FONT = "Open Sans"
 TEXT_FONT = "STIX Two Text"
-CAP = {LABEL_FONT: 0.714, TEXT_FONT: 0.656}     # cap height / em, to match Illustrator's point sizes
+DIM_FONT = "Latin Modern Roman"                 # the 18,720 dimension labels
+CAP = {LABEL_FONT: 0.714, TEXT_FONT: 0.656, DIM_FONT: 0.683}    # cap height / em, to match Illustrator's point sizes
 
 PROMPT = [
     "“A single red rubber ball is dropped from the top of the frame onto a wooden",
@@ -86,14 +97,15 @@ def arrow(tail, tip, stroke_u=0.2, head=(1.99, 0.815, 1.52), color=FRESH_TAN):
     return VGroup(shaft, barb)
 
 
-def u_text(string, size_u, x, y, font=LABEL_FONT, bold=False, italic=False, align="left", color=FRESH_TAN):
+def u_text(string, size_u, x, y, font=LABEL_FONT, bold=False, italic=False, align="left", color=FRESH_TAN,
+           weight=None):
     """Text at storyboard size with its baseline at y. x is its left edge ("left"), right edge ("right") or middle.
 
     A throwaway "H" is set in front of the string: its height fixes the scale and its bottom is the baseline, so
     strings with descenders sit correctly without per-string fudge factors.
     """
-    full = Text("H" + string, font=font, weight=BOLD if bold else NORMAL, slant=ITALIC if italic else NORMAL,
-                font_size=48)
+    full = Text("H" + string, font=font, weight=weight or (BOLD if bold else NORMAL),
+                slant=ITALIC if italic else NORMAL, font_size=48)
     full.scale(CAP.get(font, 0.7) * size_u * U / full[0].get_height())
     t = full[1:]
     baseline = full[0].get_bottom()[1]
@@ -323,7 +335,7 @@ def step_dirs(kind="xt"):
     dirs = sorted(d for d in root.glob("step_*") if d.is_dir())
     if not dirs:
         raise FileNotFoundError(
-            f"No step folders in {root}\n  -> point WM_P43_59 at the notebook's p43_59_2 output folder")
+            f"No step folders in {root}\n  -> point WM_P43_59 at the notebook's p43_59_3 output folder")
     return dirs
 
 
@@ -350,7 +362,7 @@ class StepVideo(ImageMobject):
     video (at any diffusion step) costs one mobject and one texture instead of one ImageMobject per frame.
 
         v = StepVideo(clock, step=0)        v.set_step(12)        v.sync()   # scene calls sync() every frame
-        StepVideo(clock, step=30, frame=44)                                  # a still: always video frame 44
+        StepVideo(clock, step=40, frame=47)                                  # a still: always video frame 47
     """
     _count = 0
 
@@ -392,9 +404,14 @@ class StepVideo(ImageMobject):
 
     def place(self, x, y, w, h):
         """Fill the storyboard slot with top-left (x, y) and size (w, h)."""
-        self.set_width(w * U, stretch=True).set_height(h * U, stretch=True)
-        self.move_to(P(x + w / 2, y + h / 2))
-        return self
+        return place_rect(self, x, y, w, h)
+
+
+def place_rect(mob, x, y, w, h):
+    """Stretch a mobject to fill the storyboard rectangle with top-left (x, y) and size (w, h)."""
+    mob.set_width(w * U, stretch=True).set_height(h * U, stretch=True)
+    mob.move_to(P(x + w / 2, y + h / 2))
+    return mob
 
 
 def polyline_point(points, alpha):
@@ -411,14 +428,14 @@ def polyline_point(points, alpha):
 class P43(InteractiveScene):
     # --- toggles -------------------------------------------------------------------------------------------
     show_text = True            # title / prompt / TRANSFORMER as manim Text. False: add them in post
-    show_step_counter = True    # small "STEP 12 / 30" under the plus node (not in the storyboard)
-    video_fps = 16              # playback rate of the 45-frame ball clip (Wan2.1's native rate)
+    show_step_counter = True    # small "STEP 12 / 40" under the plus node (not in the storyboard)
+    video_fps = 16              # playback rate of the 48-frame ball clip (Wan2.2's native rate)
 
     # --- timings (seconds) ---------------------------------------------------------------------------------
     intro_time = 6.0            # title + transformer + prompt, all at once
     io_time = 1.5
     pre_steps_hold = 1.0
-    teach_steps = 3             # how many steps get the slow treatment (pulse through the model + trip round the loop)
+    teach_steps = 2             # how many steps get the slow treatment (pulse through the model + trip round the loop)
     forward_time = 1.4          # pulse through the model, output fades in
     output_hold = 0.6           # output sits on the right before it heads round the loop
     first_feedback_time = 2.5   # the first trip: the feedback line + plus node draw in as the output travels
@@ -437,8 +454,18 @@ class P43(InteractiveScene):
     renoise_time = 1.0          # the 12 clean frames run back to noise (steps played in reverse)
     renoise_hold = 1.0
     grid_step_time = 0.3        # per diffusion step on the grid
-    grid_step_times = None      # or a list of per-step seconds (30 entries)
-    p44_end_hold = 5.0
+    grid_step_times = None      # or a list of per-step seconds (one per step: 40)
+    p44_end_hold = 5.0          # finished grid, before the attention pattern section
+
+    # P44, attention pattern (-03)
+    icon_color_time = 1.0       # one attention icon in the transformer turns pink
+    icon_hold = 0.5
+    clear_left_time = 2.0       # rest of the transformer fades, frame grid shrinks to the right half
+    icon_move_time = 1.5        # icon drops to the bottom of the screen
+    bracket_time = 1.0          # lines run out of each side of it
+    pattern_time = 2.0          # full pattern grows out of the icon
+    dims_time = 1.5             # dimension lines + numbers + label
+    pattern_hold = 5.0
 
     # --- storyboard -01 geometry (192 x 108 units) ---------------------------------------------------------
     SLOT_L = (11.99, 41.03, 49.92, 28.80)       # x, y, w, h of the input video
@@ -454,9 +481,22 @@ class P43(InteractiveScene):
     PROMPT_SCALE = 0.72                         # the prompt shrinks to the transformer's width so it fits on the left
     GRID_X, GRID_Y = (77.20, 112.74, 148.27), (11.00, 31.71, 52.57, 73.54)     # tile left edges / top edges
     GRID_W, GRID_H = 33.28, 19.20
-    GRID_FRAMES = [0] + [4 * f for f in range(1, 12)]      # video frame shown per tile: the last frame of each latent frame
+    GRID_FRAMES = [4 * f + 3 for f in range(12)]           # video frame shown per tile: the last of each latent frame's 4
     BIG = (77.20, 25.61, 104.35, 60.20)         # the whole video before it splits: grid width, centered on the out arrow
     COUNTER_44 = (37.08, 73.5)                  # step counter under the transformer
+
+    # --- storyboard -03 geometry ---------------------------------------------------------------------------
+    ATTN_NAME = "step_05_layer_09_head_26_mean_f20_log"     # <RUN>/p44/attn/<ATTN_NAME>.png
+    ATTN = (14.94, 19.33, 74.88, 74.88)         # x, y, w, h of the full attention pattern
+    DIM_TOP_Y, DIM_LEFT_X = 15.97, 10.84        # where the two dimension lines run
+    ICON = (1, 0)                               # which icon in the transformer: (column 0-2, row 0-2 from the top)
+    ICON_SCALE = 1.0                            # how much it grows on its way down (1 = stays the same size)
+    BRACKET_Y, BRACKET_TOP = 97.8, 95.6         # the bracket's horizontal run, and how far up its end ticks reach
+    BRACKET_R = 0.8                             # its corner radius
+    ATTN_LABEL_Y = 103.8                        # baseline of "LAYER 9 HEAD 26", centered under the icon
+    GRID3_X, GRID3_Y = (100.49, 129.04, 157.56), (22.19, 38.83, 55.55, 72.42)      # the half-screen frame grid
+    GRID3_W, GRID3_H = 24.96, 14.40
+    TITLE_SHIFT_3 = (0.0, -0.73)
 
     def construct(self):
         self.setup_scene()
@@ -473,6 +513,13 @@ class P43(InteractiveScene):
         self.wait(self.split_hold)
         self.beat_grid_denoise()
         self.wait(self.p44_end_hold)
+        # P44, attention pattern
+        self.beat_icon_highlight()
+        self.wait(self.icon_hold)
+        self.beat_clear_left()
+        self.beat_icon_to_bracket()
+        self.beat_pattern()
+        self.wait(self.pattern_hold)
 
     # ------------------------------------------------------------------------------------------- pieces
     def setup_scene(self):
@@ -482,8 +529,8 @@ class P43(InteractiveScene):
             self.bg = BG_FALLBACK
 
         # everything that plays video hangs off one clock, advanced by an invisible mobject's updater
-        self.n_steps = len(step_dirs("xt")) - 1                         # 30 model calls -> 31 step folders
-        n_frames = len(list(step_dirs("xt")[0].glob("frame_*.png")))    # 45
+        self.n_steps = len(step_dirs("xt")) - 1                         # 40 model calls -> 41 step folders
+        n_frames = len(list(step_dirs("xt")[0].glob("frame_*.png")))    # 48
         self.clock = Clock(self.video_fps, n_frames)
         self.videos, self.on_tick = [], []
         self.ticker = Mobject()
@@ -755,7 +802,8 @@ class P43(InteractiveScene):
 
     def beat_split(self, run_time=None):
         """The video (stopped on its last frame) deals out into 12 stills, one per latent frame, 3 across x 4 down."""
-        self.tiles = [self.new_video(self.n_steps, frame=f).place(*self.BIG) for f in self.GRID_FRAMES]
+        self.tiles = [self.new_video(self.n_steps, frame=min(f, self.clock.n - 1)).place(*self.BIG)
+                      for f in self.GRID_FRAMES]
         self.add(*self.tiles)               # last tile on top: it shows the frame the video stopped on
         self.remove(self.big)
         self.play(LaggedStart(*[self.move_slot(t, self.BIG, self.grid_slot(k)) for k, t in enumerate(self.tiles)],
@@ -798,3 +846,122 @@ class P43(InteractiveScene):
         self.on_tick.remove(forward)
         set_all(n)
         self.set_counter(n)
+
+    # ------------------------------------------------------------------------------------------- P44: attention pattern
+    def tf_icon(self, col, row):
+        """The pieces (16 cells + grid lines) of one little attention-pattern icon in the transformer graphic."""
+        box = sorted(self.tf.columns, key=lambda m: m.get_center()[0])[col]
+        cells = [c for c in self.tf.cells if box.get_left()[0] <= c.get_center()[0] <= box.get_right()[0]]
+        cells = sorted(cells, key=lambda c: -c.get_center()[1])[16 * row:16 * (row + 1)]
+        xs, ys = [c.get_center()[0] for c in cells], [c.get_center()[1] for c in cells]
+        pad = 0.8 * U
+        lines = [l for l in self.tf.grid
+                 if min(xs) - pad <= l.get_center()[0] <= max(xs) + pad and min(ys) - pad <= l.get_center()[1] <= max(ys) + pad]
+        icon = VGroup(*cells, *lines)
+        icon.cells, icon.lines = cells, lines
+        return icon
+
+    def small_grid_slot(self, k):
+        return (self.GRID3_X[k % 3], self.GRID3_Y[k // 3], self.GRID3_W, self.GRID3_H)
+
+    def beat_icon_highlight(self, run_time=None):
+        """One attention-pattern icon inside the transformer turns pink."""
+        tf = self.tf
+        self.icon = icon = self.tf_icon(*self.ICON)
+        mine = set(id(m) for m in icon)
+        layers = (tf.border, tf.columns, tf.cells, tf.grid, tf.wires, tf.nodes, tf.dots)
+        self.tf_rest = VGroup(*[m for layer in layers for m in layer if id(m) not in mine],
+                              *([tf.label] if len(tf.label) else []))
+        self.remove(*tf.get_family())           # from here on the transformer is two mobjects: the icon and the rest
+        self.add(self.tf_rest, icon)
+        self.play(*[c.animate.set_fill(PINK) for c in icon.cells],
+                  *[l.animate.set_stroke(PINK) for l in icon.lines],
+                  run_time=run_time or self.icon_color_time)
+
+    def beat_clear_left(self, run_time=None):
+        """Everything on the left except the pink icon fades; the frame grid shrinks to the right half (-03)."""
+        going = [self.tf_rest, self.prompt_arrow, self.out_arrow]
+        going += [self.prompt] if self.show_text else []
+        going += [self.counter] if len(self.counter) else []
+        anims = [FadeOut(m) for m in going]
+        anims += [self.move_slot(t, self.grid_slot(k), self.small_grid_slot(k)) for k, t in enumerate(self.tiles)]
+        if self.show_text:
+            anims.append(self.title.animate.shift(np.array([self.TITLE_SHIFT_3[0] * U, -self.TITLE_SHIFT_3[1] * U, 0.0])))
+        self.play(*anims, run_time=run_time or self.clear_left_time)
+        for m in going:
+            self.remove(*m.get_family())
+        self.counter.set_submobjects([])
+
+    def beat_icon_to_bracket(self, run_time=None, bracket_time=None):
+        """The icon drops to the bottom of the screen, centered under where the pattern goes; then a line runs out
+        of each side of it to the pattern's edges and turns up: a bracket saying "this is a blow-up of that"."""
+        ax, ay, aw, ah = self.ATTN
+        cx, by = ax + aw / 2, self.BRACKET_Y
+        target = self.icon.copy()
+        scale_with_strokes(target, self.ICON_SCALE)
+        target.move_to(P(cx, by))
+        self.play(Transform(self.icon, target), run_time=run_time or self.icon_move_time)
+
+        half = self.icon.get_width() / U / 2 + 0.9          # where the lines start, in storyboard units from center
+        r = self.BRACKET_R
+        arms = VGroup()
+        for sgn, edge in ((-1, ax), (1, ax + aw)):
+            # icon side -> out along the bottom -> round the corner -> short tick up (in equal-length pieces, so it
+            # draws at an even speed)
+            corner = [(edge - sgn * r + sgn * r * np.sin(a), by - r + r * np.cos(a)) for a in np.linspace(0, PI / 2, 10)]
+            outline = np.array([(cx + sgn * half, by), *corner, (edge, self.BRACKET_TOP)])
+            n = int(np.linalg.norm(np.diff(outline, axis=0), axis=1).sum() / 0.25)
+            arms.add(VMobject().set_points_as_corners([P(*polyline_point(outline, k / n)) for k in range(n + 1)]))
+        arms.set_stroke(PINK, 0.2 * STROKE_PER_U).set_fill(opacity=0)
+        self.bracket = arms
+        self.play(*[ShowCreation(a) for a in arms], run_time=bracket_time or self.bracket_time)
+
+    def dimension(self, a, b, string, gap_pad=1.6):
+        """A storyboard-style dimension: a line from a to b with the number sitting in a gap at its middle."""
+        a, b = np.array(a, float), np.array(b, float)
+        mid, u = (a + b) / 2, (b - a) / np.linalg.norm(b - a)
+        text = u_text(string, 3.2, 0, 0, font=DIM_FONT, align="center", color=CHILL_BROWN)
+        gap = text.get_width() / U / 2 + gap_pad
+        if abs(u[1]) > abs(u[0]):
+            text.rotate(PI / 2)
+        text.move_to(P(*mid))
+        lines = VGroup(u_line(mid - gap * u, a, 0.1, CHILL_BROWN), u_line(mid + gap * u, b, 0.1, CHILL_BROWN))
+        return VGroup(lines, text)
+
+    def beat_pattern(self, run_time=None, dims_time=None):
+        """The full attention pattern grows up from just above the icon; then its dimensions and label come in."""
+        path = RUN / "p44" / "attn" / f"{self.ATTN_NAME}.png"
+        if not path.exists():
+            raise FileNotFoundError(f"Attention pattern not found: {path}")
+        self.pattern = img = ImageMobject(str(path))
+        try:
+            img.image.load()
+        except Exception:
+            pass
+        end = np.array(self.ATTN, float)
+        w = self.icon.get_width() / U           # starts icon-sized, sitting on the pattern's bottom edge above the icon,
+        start = np.array([end[0] + end[2] / 2 - w / 2, end[1] + end[3] - w, w, w])     # so it never covers the icon
+
+        def grow(m, a):
+            place_rect(m, *interpolate(start, end, a))
+            m.set_opacity(float(np.clip(a / 0.25, 0, 1)))
+
+        grow(img, 0)
+        self.add(img)
+        self.play(UpdateFromAlphaFunc(img, grow), run_time=run_time or self.pattern_time)
+
+        ax, ay, aw, ah = self.ATTN
+        try:
+            n_tokens = json.loads((RUN / "frame_map.json").read_text())["n_tokens"]
+        except Exception:
+            n_tokens = 18720
+        number = f"{n_tokens:,}"
+        self.dims = VGroup(self.dimension((ax, self.DIM_TOP_Y), (ax + aw, self.DIM_TOP_Y), number),
+                           self.dimension((self.DIM_LEFT_X, ay + ah), (self.DIM_LEFT_X, ay), number))
+        anims = [ShowCreation(l) for d in self.dims for l in d[0]]
+        if self.show_text:
+            m = re.search(r"layer_(\d+)_head_(\d+)", self.ATTN_NAME)
+            self.attn_label = u_text(f"LAYER {int(m.group(1))} HEAD {int(m.group(2))}", 2.2, ax + aw / 2,
+                                     self.ATTN_LABEL_Y, weight="SEMIBOLD", align="center", color=CHILL_BROWN)
+            anims += [Write(d[1]) for d in self.dims] + [Write(self.attn_label)]
+        self.play(*anims, run_time=dims_time or self.dims_time)
