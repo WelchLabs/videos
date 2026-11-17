@@ -31,7 +31,15 @@ One growing file for the whole sequence; scenes get split out when it makes sens
     beat_patch_zoom     the block scales up, in place on the right half, onto one spacetime patch (16 x 16 pixels x
                         4 frames); then it fills in: pixel grid, its dimensions and a SPACETIME PATCH title
     beat_pull_back      the labels clear and the block pulls back out while the video dims
-    beat_unstack        boxes go, video back to full brightness, block flattens to the 3 x 4 grid again
+    beat_unstack        video back to full brightness, block flattens to the 3 x 4 grid again; every frame keeps
+                        its own patch grid (52 x 30) as it goes
+
+  ... the pattern's 12 x 12 block structure
+    beat_block_lines    tan lines draw down the pattern, splitting it into 12 columns (one per frame); then across,
+                        splitting it into 12 rows
+    beat_frames_to_blocks  each frame's patch grid lifts off with a pale pink panel under it and flies to that
+                        frame's block on the top row of the pattern, squashing into it (the lines crowd together and
+                        become the panel)
 
 The block is drawn with a flat (orthographic) projection computed here, not a 3D camera: nothing else on screen
 tilts, and "zooming" is the block scaling about a fixed point behind two background-colored masks (left half +
@@ -508,8 +516,15 @@ class P43(InteractiveScene):
     patch_hold = 4.0
     pull_back_time = 4.0        # labels clear, block pulls back out, video dims
     tiled_hold = 4.0
-    unstack_time = 3.0          # boxes fade, block flattens back to the grid
+    unstack_time = 3.0          # block flattens back to the grid, each frame keeping its patch grid
     unstack_hold = 4.0
+
+    # P44, block structure of the pattern
+    col_lines_time = 2.0        # 11 lines draw down, splitting the pattern into 12 columns
+    row_lines_time = 2.0        # 11 lines draw across, splitting it into 12 rows
+    block_lines_hold = 1.5
+    frames_to_blocks_time = 5.0  # all 12 panels (with the lag below), frame -> top-row block
+    frames_to_blocks_hold = 5.0
 
     # --- storyboard -01 geometry (192 x 108 units) ---------------------------------------------------------
     SLOT_L = (11.99, 41.03, 49.92, 28.80)       # x, y, w, h of the input video
@@ -554,6 +569,11 @@ class P43(InteractiveScene):
     PATCH_ZOOM = 18.0                           # how much the block scales up
     PATCH_COLOR = PINK                          # patch outlines, the highlighted patch, the SPACETIME PATCH title
     RULE_WIDTHS = (0.08, 0.25)                  # patch outline width (storyboard units) pulled back / zoomed in
+    BLOCK_LINE = (0.15, 0.9)                    # width and opacity of the tan lines splitting the pattern into 12 x 12
+    PANEL_OPACITY = 0.35                        # fill of the pink panels that go from the frames to the pattern
+    PANEL_LAG = 0.15                            # lag ratio between one frame's panel leaving and the next
+    PANEL_ROW = 0                               # which row of the pattern the panels land on (0 = top)
+    FLAT_RULE = (0.05, 0.8)                     # width and opacity of the patch grid on each frame once they're flat again
     DIM_OPACITY = 0.3                           # video opacity while the patches are ruled in
     MASK_X, MASK_Y = 95.5, 11.5                 # the zoomed block is hidden left of / above these
 
@@ -590,6 +610,11 @@ class P43(InteractiveScene):
         self.wait(self.tiled_hold)
         self.beat_unstack()
         self.wait(self.unstack_hold)
+        # P44, block structure of the pattern
+        self.beat_block_lines()
+        self.wait(self.block_lines_hold)
+        self.beat_frames_to_blocks()
+        self.wait(self.frames_to_blocks_hold)
 
     # ------------------------------------------------------------------------------------------- pieces
     def setup_scene(self):
@@ -1103,6 +1128,28 @@ class P43(InteractiveScene):
             tile.set_quad(*corners)
         for m in self.blk_lines:
             m.set_points_as_corners(self.blk_screen(m.bpts))
+        self.sync_tile_grids()
+
+    def make_tile_grid(self, color, stroke_u, opacity):
+        """A patch grid (52 x 30 cells) for one frame, as a single mobject. Its points are kept in the frame's own
+        coordinates (.uv: 0-1 across, 0-1 down) so it can be laid onto the frame wherever and however it sits."""
+        nx, ny = 832 // self.PATCH_PX, 480 // self.PATCH_PX
+        g = VMobject()
+        for u in np.linspace(0, 1, nx + 1):
+            g.start_new_path(np.array([u, 0.0, 0.0]))
+            g.add_line_to(np.array([u, 1.0, 0.0]))
+        for v in np.linspace(0, 1, ny + 1):
+            g.start_new_path(np.array([0.0, v, 0.0]))
+            g.add_line_to(np.array([1.0, v, 0.0]))
+        g.uv = g.get_points().copy()
+        g.set_stroke(color, stroke_u * STROKE_PER_U, opacity).set_fill(opacity=0)
+        return g
+
+    def sync_tile_grids(self):
+        """Lay each frame's patch grid onto its frame (call after moving the frames once the grids exist)."""
+        for tile, g in zip(self.tiles, getattr(self, "tile_grids", [])):
+            ul, dl, ur = tile.get_points()[:3]
+            g.set_points(ul + g.uv[:, :1] * (ur - ul) + g.uv[:, 1:2] * (dl - ul))
 
     def blk_line(self, pts, color, stroke_u, opacity=1.0, fill=None):
         """A polyline (or filled polygon) that lives in block space and follows the block."""
@@ -1253,17 +1300,29 @@ class P43(InteractiveScene):
             t.set_pixelated(False)
 
     def beat_unstack(self, run_time=None):
-        """Boxes fade and the video comes back up to full brightness; then the block flattens to the grid again."""
+        """The highlighted patch and the rules on the block's top and side fade while the video comes back up to
+        full brightness; then the block flattens to the grid again, every frame carrying its own patch grid."""
         run_time = run_time or self.unstack_time
-        lines = [self.token_grid, self.patch_edges]
-        op0 = [float(m[0].get_stroke_opacity()) for m in lines]
+        col, (flat_w, flat_op) = self.PATCH_COLOR, self.FLAT_RULE
+        rule_op = float(self.token_grid[0].get_stroke_opacity())
+        edge_op = float(self.patch_edges[0].get_stroke_opacity())
         fills = [float(f.get_fill_opacity()) for f in self.patch_faces]
 
-        def fade(m, a):
-            for g, o in zip(lines, op0):
-                g.set_stroke(opacity=float(o * (1 - a)))
+        # one grid per frame, each drawn just above its own frame (so nearer frames still cover farther grids)
+        self.tile_grids = [self.make_tile_grid(col, self.RULE_WIDTHS[0], 0.0) for _ in self.tiles]
+        self.sync_tile_grids()
+        self.remove(*self.tiles)
+        for k in sorted(range(len(self.tiles)), key=self.blk_z):
+            self.add(self.tiles[k], self.tile_grids[k])
+        self.blk_restack()
+
+        def fade(m, a):     # block rules -> per-frame grids (the front one sits exactly on the block's front rules)
+            self.token_grid.set_stroke(opacity=float(rule_op * (1 - a)))
+            self.patch_edges.set_stroke(opacity=float(edge_op * (1 - a)))
             for f, o in zip(self.patch_faces, fills):
                 f.set_fill(opacity=float(o * (1 - a)))
+            for g in self.tile_grids:
+                g.set_stroke(opacity=float(interpolate(0.0, rule_op, a)))
             for t in self.tiles:
                 t.set_opacity(float(interpolate(self.DIM_OPACITY, 1.0, a)))
         self.play(UpdateFromAlphaFunc(self.blk_driver, fade), run_time=run_time * 0.35)
@@ -1272,7 +1331,69 @@ class P43(InteractiveScene):
 
         def state(a):
             self.blk_t = 1 - a
+            for g in self.tile_grids:
+                g.set_stroke(width=float(interpolate(self.RULE_WIDTHS[0], flat_w, a) * STROKE_PER_U),
+                             opacity=float(interpolate(rule_op, flat_op, a)))
         self.blk_run(state, run_time * 0.65)
         self.remove(self.blk_masks)
         for k, t in enumerate(self.tiles):
             t.place(*self.small_grid_slot(k))
+        self.sync_tile_grids()
+
+    # ------------------------------------------------------------------------------------------- P44: 12 x 12 blocks
+    def beat_block_lines(self, run_time=None, row_time=None):
+        """Tan lines split the pattern into its 12 natural columns (drawn top to bottom, left to right), then into
+        12 rows (drawn left to right, top to bottom). One column / row per latent frame: 1,560 tokens each."""
+        ax, ay, aw, ah = self.ATTN
+        n = len(self.tiles)
+        w, op = self.BLOCK_LINE
+        xs = [ax + k * aw / n for k in range(1, n)]
+        ys = [ay + k * ah / n for k in range(1, n)]
+        self.col_lines = VGroup(*[u_line((x, ay), (x, ay + ah), w, FRESH_TAN, op) for x in xs])
+        self.row_lines = VGroup(*[u_line((ax, y), (ax + aw, y), w, FRESH_TAN, op) for y in ys])
+        self.play(ShowCreation(self.col_lines, lag_ratio=0.15), run_time=run_time or self.col_lines_time)
+        self.play(ShowCreation(self.row_lines, lag_ratio=0.15), run_time=row_time or self.row_lines_time)
+
+    def beat_frames_to_blocks(self, run_time=None):
+        """Frame k's patch grid -> block k on one row of the pattern.
+
+        Each frame's grid gets a pale pink panel under it, then grid + panel lift off the frame together and are
+        squashed onto the block (the grid is laid onto the moving panel, so its 52 x 30 cells crowd into the block
+        and fade as the panel takes over): the frame's 1,560 patches are that block's 1,560 columns.
+        """
+        ax, ay, aw, ah = self.ATTN
+        n, col = len(self.tiles), self.PATCH_COLOR
+        cw, ch = aw / n, ah / n
+        grids = list(getattr(self, "tile_grids", []))
+        if len(grids) != n:         # (run without the spacetime-patch section: make the grids here)
+            grids = [self.make_tile_grid(col, self.FLAT_RULE[0], 0.0) for _ in self.tiles]
+            self.tile_grids = grids
+            self.sync_tile_grids()
+            self.add(*grids)
+        grid_op = [float(g.get_stroke_opacity()) for g in grids]
+        self.panels = VGroup()
+        anims = []
+        for k, (tile, g) in enumerate(zip(self.tiles, grids)):
+            ul, dl, ur = [np.array(q) for q in tile.get_points()[:3]]
+            y0 = ay + self.PANEL_ROW * ch
+            cul, cdl, cur = P(ax + k * cw, y0), P(ax + k * cw, y0 + ch), P(ax + (k + 1) * cw, y0)
+            panel = VMobject().set_points_as_corners([ul, ur, ur + dl - ul, dl, ul])
+            panel.set_fill(col, 0.0).set_stroke(col, 0.12 * STROKE_PER_U, 0.0)
+            self.panels.add(panel)
+
+            def fly(m, a, g=g, panel=panel, src=(ul, dl, ur), dst=(cul, cdl, cur), op=grid_op[k]):
+                rise = float(np.clip(a / 0.2, 0, 1))                    # panel fades up on the frame ...
+                go = smooth(float(np.clip((a - 0.2) / 0.8, 0, 1)))      # ... then it and the grid head for the block
+                p_ul, p_dl, p_ur = [interpolate(s0, d0, go) for s0, d0 in zip(src, dst)]
+                panel.set_points_as_corners([p_ul, p_ur, p_ur + p_dl - p_ul, p_dl, p_ul])
+                panel.set_fill(opacity=self.PANEL_OPACITY * rise).set_stroke(opacity=rise)
+                g.set_points(p_ul + g.uv[:, :1] * (p_ur - p_ul) + g.uv[:, 1:2] * (p_dl - p_ul))
+                g.set_stroke(opacity=float(op * (1 - go)))
+
+            anims.append(UpdateFromAlphaFunc(Group(panel, g), fly, rate_func=linear))
+        self.add(self.panels)
+        self.bring_to_front(*grids)
+        self.play(LaggedStart(*anims, lag_ratio=self.PANEL_LAG), run_time=run_time or self.frames_to_blocks_time)
+        self.remove(*grids)
+        self.tile_grids = []            # the grids are gone: they turned into the panels
+        self.add(self.panels)
