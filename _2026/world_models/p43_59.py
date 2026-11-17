@@ -40,6 +40,18 @@ One growing file for the whole sequence; scenes get split out when it makes sens
     beat_frames_to_blocks  each frame's patch grid lifts off with a pale pink panel under it and flies to that
                         frame's block on the top row of the pattern, squashing into it (the lines crowd together and
                         become the panel)
+  ... storyboard p43_59-05: one block of the pattern = one pair of frames
+    beat_block_highlight  a yellow border draws around the block in row 2, column 9 (the top-row panels fade)
+    beat_frame_link     ("row") frame 2 gets a yellow border and its number; a dashed arrow runs from it to the block's
+                        side. ("col") the same for frame 9, its arrow coming down into the block from above.
+  P45   storyboards p43_59-06, -07: one row of the pattern = one patch looking at every other patch
+    beat_clear_block_links  the P44 highlights go (block border, frame borders / numbers / arrows, the 12 x 12 lines,
+                        and the left-hand dimension, which is where the row's number goes)
+    beat_row_highlight  a yellow line draws across the pattern at the query token's row, with its number (15,322)
+    beat_patch_link     a yellow square marks that token's spacetime patch on its frame; a dashed two-headed
+                        connector joins the row to the patch
+    beat_row_to_heat    all 18,720 values in the row leave it as colored dots, in order, and fly to their own patch
+                        on their own frame; when they land they are the heatmap, which then sits over the frames
 
 The block is drawn with a flat (orthographic) projection computed here, not a 3D camera: nothing else on screen
 tilts, and "zooming" is the block scaling about a fixed point behind two background-colored masks (left half +
@@ -80,6 +92,8 @@ RUN = Path(os.environ.get(
     "attn_runs/ball_drop_s252/p43_59_3"))
 
 FRESH_TAN = "#f4ebd9"       # line art, prompt, TRANSFORMER
+YELLOW = "#fcc947"          # block / frame highlights and their dashed arrows (storyboard -05)
+FRAME_NUM = "#063336"       # the big frame numbers set over the highlighted frames
 PINK = "#ed5e78"            # the highlighted attention-pattern icon + its bracket
 CHILL_BROWN = "#948678"     # title, feedback loop
 BG_FALLBACK = "#031e1e"     # node fill = scene background (read from the camera at runtime when possible)
@@ -526,6 +540,25 @@ class P43(InteractiveScene):
     frames_to_blocks_time = 5.0  # all 12 panels (with the lag below), frame -> top-row block
     frames_to_blocks_hold = 5.0
 
+    # P44, one block <-> two frames (-05)
+    block_hl_time = 1.0         # yellow border around the block (panels on the top row fade with it)
+    block_hl_hold = 1.0
+    frame_hl_time = 1.0         # yellow border + number on a frame
+    link_arrow_time = 2.0       # its dashed arrow to the block
+    link_hold = 1.5             # after each frame's link
+    p44_final_hold = 5.0
+
+    # P45, one row -> heatmap over the frames (-06, -07)
+    clear_links_time = 1.0      # P44 highlights fade
+    row_hl_time = 1.5           # yellow row line + its number
+    row_hl_hold = 1.0
+    patch_hl_time = 1.0         # yellow square on the query patch
+    patch_link_time = 2.0       # dashed connector, row <-> patch
+    patch_link_hold = 2.0
+    row_to_heat_time = 7.0      # the row's values fly to the frames
+    heat_settle_time = 1.0      # dots hand over to the heatmap images
+    heat_hold = 6.0
+
     # --- storyboard -01 geometry (192 x 108 units) ---------------------------------------------------------
     SLOT_L = (11.99, 41.03, 49.92, 28.80)       # x, y, w, h of the input video
     SLOT_R = (131.03, 41.03, 49.92, 28.80)      # ... and the output video
@@ -569,6 +602,26 @@ class P43(InteractiveScene):
     PATCH_ZOOM = 18.0                           # how much the block scales up
     PATCH_COLOR = PINK                          # patch outlines, the highlighted patch, the SPACETIME PATCH title
     RULE_WIDTHS = (0.08, 0.25)                  # patch outline width (storyboard units) pulled back / zoomed in
+    QUERY_NAME = "step_05_layer_09_head_26_any_07_f09_tok15322"     # <RUN>/p45_48/data/<QUERY_NAME>.npz
+    ROW_STROKE = 0.3                            # yellow row line / patch square / connector width
+    ROW_LINK_X = 95.0                           # the connector drops down between the pattern and the frames here
+    PATCH_BOX = 1.5                             # side of the yellow square drawn round the query patch (the patch is 0.48)
+    HEAT_CMAP, HEAT_ALPHA = "magma", 0.5        # the heatmap's colormap, and its opacity over the frames
+    HEAT_SCALE = "log"                          # "log": color by log10(weight) over the top HEAT_DECADES decades below the
+    HEAT_DECADES = 6.0                          #        row's max (like the pattern image, which is log-scaled too)
+    HEAT_GAMMA = 0.5                            # "gamma": color by (w / max) ** HEAT_GAMMA (the notebook's overlays; mostly black)
+    HEAT_LAG = 0.65                             # how spread out the departures are (0 = all at once, -> 1 = strictly one by one)
+    DOT_MIN_ALPHA = 0.9                        # opacity of the dots carrying the smallest weights (the largest are solid)
+    DOT_RADII = (0.14, 0.24)                    # dot radius leaving the row / landing on its patch (0.24 = half a patch)
+    DOT_FADE_IN = 0.0                           # fraction of its trip over which a dot fades in (0 = solid the moment it leaves)
+    ROW_MARKER = 0.5                            # radius of the bright marker that runs along the row showing where values
+                                                # are leaving from right now (0 = no marker)
+    HL_ROW_FRAME, HL_COL_FRAME = 2, 9           # (1-based) the block in row 2, column 9 <-> frames 2 and 9
+    HL_STROKE = 0.9                             # yellow border width (storyboard units)
+    LINK_DASH = (0.6, 0.6)                      # dash, gap of the connecting arrows
+    LINK_R = 1.45                               # their corner radius
+    LINK_TOP_Y, LINK_SIDE_X = 12.6, 187.6       # where the column frame's arrow runs: above the pattern, right of the frames
+    LINK_MID_X, LINK_OVER_Y = 95.4, 18.3        # where the row frame's arrow runs: between pattern and frames, above the frames
     BLOCK_LINE = (0.15, 0.9)                    # width and opacity of the tan lines splitting the pattern into 12 x 12
     PANEL_OPACITY = 0.35                        # fill of the pink panels that go from the frames to the pattern
     PANEL_LAG = 0.15                            # lag ratio between one frame's panel leaving and the next
@@ -615,6 +668,21 @@ class P43(InteractiveScene):
         self.wait(self.block_lines_hold)
         self.beat_frames_to_blocks()
         self.wait(self.frames_to_blocks_hold)
+        # P44, one block <-> two frames
+        self.beat_block_highlight()
+        self.wait(self.block_hl_hold)
+        self.beat_frame_link("row")
+        self.wait(self.link_hold)
+        self.beat_frame_link("col")
+        self.wait(self.p44_final_hold)
+        # P45
+        self.beat_clear_block_links()
+        self.beat_row_highlight()
+        self.wait(self.row_hl_hold)
+        self.beat_patch_link()
+        self.wait(self.patch_link_hold)
+        self.beat_row_to_heat()
+        self.wait(self.heat_hold)
 
     # ------------------------------------------------------------------------------------------- pieces
     def setup_scene(self):
@@ -1397,3 +1465,266 @@ class P43(InteractiveScene):
         self.remove(*grids)
         self.tile_grids = []            # the grids are gone: they turned into the panels
         self.add(self.panels)
+
+    # ------------------------------------------------------------------------------------------- P44: block <-> frames (-05)
+    def hl_block_rect(self):
+        """(x, y, w, h) of the highlighted block of the pattern."""
+        ax, ay, aw, ah = self.ATTN
+        n = len(self.tiles)
+        return (ax + (self.HL_COL_FRAME - 1) * aw / n, ay + (self.HL_ROW_FRAME - 1) * ah / n, aw / n, ah / n)
+
+    def dashed_arrow(self, corners, color=YELLOW, stroke_u=0.2, start_head=False):
+        """Storyboard-style connector: a dashed line through `corners` (storyboard points) with rounded corners and
+        a notched arrowhead at the end (and at the start too with start_head). -> VGroup(dashes, head[, start head]);
+        the dashes are in order, so ShowCreation(dashes, lag_ratio=1) draws the line from start to end."""
+        pts = [np.array(c, float) for c in corners]
+        r = self.LINK_R
+        u0 = (pts[1] - pts[0]) / np.linalg.norm(pts[1] - pts[0])
+        outline = [pts[0] + 1.52 * u0 if start_head else pts[0]]
+        for a, b, c in zip(pts, pts[1:], pts[2:]):          # round each corner with a quarter turn
+            u, v = (b - a) / np.linalg.norm(b - a), (c - b) / np.linalg.norm(c - b)
+            rr = min(r, np.linalg.norm(b - a) / 2, np.linalg.norm(c - b) / 2)
+            p0, center = b - rr * u, b - rr * u + rr * v
+            outline += [center - rr * v * np.cos(t) + rr * u * np.sin(t) for t in np.linspace(0, PI / 2, 8)]
+        tip = pts[-1]
+        u = (pts[-1] - pts[-2]) / np.linalg.norm(pts[-1] - pts[-2])
+        nrm = np.array([-u[1], u[0]])
+        outline.append(tip - 1.52 * u)                      # the line stops at the head's notch
+        outline = np.array(outline)
+        total = np.linalg.norm(np.diff(outline, axis=0), axis=1).sum()
+        dash, gap = self.LINK_DASH
+        dashes, d = VGroup(), 0.0
+        while d < total:
+            e = min(d + dash, total)
+            seg = [P(*polyline_point(outline, q / total)) for q in np.linspace(d, e, 4)]
+            dashes.add(VMobject().set_points_as_corners(seg))
+            d += dash + gap
+        dashes.set_stroke(color, stroke_u * STROKE_PER_U).set_fill(opacity=0)
+        head = Polygon(P(*tip), P(*(tip - 1.99 * u + 0.815 * nrm)), P(*(tip - 1.52 * u)), P(*(tip - 1.99 * u - 0.815 * nrm)))
+        head.set_fill(color, 1).set_stroke(color, 0)
+        out = VGroup(dashes, head)
+        if start_head:
+            n0 = np.array([-u0[1], u0[0]])
+            a = pts[0]
+            head0 = Polygon(P(*a), P(*(a + 1.99 * u0 + 0.815 * n0)), P(*(a + 1.52 * u0)), P(*(a + 1.99 * u0 - 0.815 * n0)))
+            out.add(head0.set_fill(color, 1).set_stroke(color, 0))
+        return out
+
+    def beat_block_highlight(self, run_time=None):
+        """Yellow border around one block of the pattern (row = HL_ROW_FRAME, column = HL_COL_FRAME). The pink
+        panels from the last beat fade out with it."""
+        bx, by, bw, bh = self.hl_block_rect()
+        self.block_hl = place_rect(Rectangle(), bx, by, bw, bh)
+        self.block_hl.set_stroke(YELLOW, self.HL_STROKE * STROKE_PER_U).set_fill(opacity=0)
+        anims = [ShowCreation(self.block_hl)]
+        panels = getattr(self, "panels", None)
+        if panels is not None and len(panels):
+            anims.append(FadeOut(panels))
+        self.play(*anims, run_time=run_time or self.block_hl_time)
+        if panels is not None:
+            self.remove(*panels.get_family())
+
+    def beat_frame_link(self, kind="row", run_time=None, arrow_time=None):
+        """Highlight one of the block's two frames and connect it to the block.
+
+        kind="row": the row's frame (HL_ROW_FRAME); its arrow leaves the top of the frame, runs round between the
+                    pattern and the frames, and comes into the block from the side, along its row.
+        kind="col": the column's frame (HL_COL_FRAME); its arrow leaves the frame's right side, runs up and over the
+                    top of the pattern, and comes down into the block from above, along its column.
+        """
+        bx, by, bw, bh = self.hl_block_rect()
+        num = self.HL_ROW_FRAME if kind == "row" else self.HL_COL_FRAME
+        fx, fy, fw, fh = self.small_grid_slot(num - 1)
+        gap = 1.2                                   # between an arrow's ends and the borders
+        border = place_rect(Rectangle(), fx, fy, fw, fh)
+        border.set_stroke(YELLOW, self.HL_STROKE * STROKE_PER_U).set_fill(opacity=0)
+        if kind == "row":
+            cy = by + bh / 2
+            route = [(fx + fw / 2, fy - gap), (fx + fw / 2, self.LINK_OVER_Y), (self.LINK_MID_X, self.LINK_OVER_Y),
+                     (self.LINK_MID_X, cy), (bx + bw + gap, cy)]
+        else:
+            cx = bx + bw / 2
+            route = [(fx + fw + gap, fy + fh / 2), (self.LINK_SIDE_X, fy + fh / 2), (self.LINK_SIDE_X, self.LINK_TOP_Y),
+                     (cx, self.LINK_TOP_Y), (cx, by - gap)]
+        arrow = self.dashed_arrow(route)
+        anims = [ShowCreation(border)]
+        label = VGroup()
+        if self.show_text:
+            label = u_text(str(num), 4.8, fx + fw / 2, fy + fh / 2 + 0.5 * 0.714 * 4.8, bold=True, align="center",
+                           color=FRAME_NUM)
+            anims.append(Write(label))
+        self.play(*anims, run_time=run_time or self.frame_hl_time)
+        t = arrow_time or self.link_arrow_time
+        self.play(ShowCreation(arrow[0], lag_ratio=1), run_time=t * 0.9, rate_func=smooth)
+        self.play(FadeIn(arrow[1]), run_time=t * 0.1)
+        if not hasattr(self, "links"):
+            self.links = {}
+        self.links[kind] = VGroup(border, label, arrow)
+
+    # ============================================================================================= P45 (-06, -07)
+    def load_query(self):
+        """The query token's attention row: weights [12, 30, 52] + where the token is."""
+        path = RUN / "p45_48" / "data" / f"{self.QUERY_NAME}.npz"
+        if not path.exists():
+            raise FileNotFoundError(f"Attention row not found: {path}")
+        d = np.load(path, allow_pickle=True)
+        self.q_row = np.array(d["row"], dtype=np.float64)
+        self.q_tok = int(d["q_tok"])
+        self.q_fhw = tuple(int(v) for v in d["q_fhw"])
+        ax, ay, aw, ah = self.ATTN
+        self.q_y = ay + (self.q_tok + 0.5) / self.q_row.size * ah          # the row's height on the pattern
+        f, r, c = self.q_fhw
+        gx, gy, gw, gh = self.small_grid_slot(f)
+        nf, nr, nc = self.q_row.shape
+        self.q_patch = (gx + (c + 0.5) * gw / nc, gy + (r + 0.5) * gh / nr)      # center of its patch on its frame
+
+    def beat_clear_block_links(self, run_time=None):
+        """Fade the P44 highlights, and the left-hand dimension (the row's number goes there)."""
+        going = [getattr(self, n, None) for n in ("block_hl", "col_lines", "row_lines", "panels")]
+        going += list(getattr(self, "links", {}).values())
+        if hasattr(self, "dims"):
+            going.append(self.dims[1])
+        going = [m for m in going if m is not None and len(m.get_family()) > 0]
+        if going:
+            self.play(*[FadeOut(m) for m in going], run_time=run_time or self.clear_links_time)
+        for m in going:
+            self.remove(*m.get_family())
+
+    def beat_row_highlight(self, run_time=None):
+        """A yellow line across the pattern at the query token's row, and the token's number beside it."""
+        self.load_query()
+        ax, ay, aw, ah = self.ATTN
+        self.row_line = u_line((ax, self.q_y), (ax + aw, self.q_y), self.ROW_STROKE, YELLOW)
+        anims = [ShowCreation(self.row_line)]
+        self.row_label = VGroup()
+        if self.show_text:
+            self.row_label = u_text(f"{self.q_tok:,}", 3.2, ax - 1.6, self.q_y + 0.5 * 0.683 * 3.2, font=DIM_FONT,
+                                    align="right", color=YELLOW)
+            anims.append(Write(self.row_label))
+        self.play(*anims, run_time=run_time or self.row_hl_time)
+
+    def beat_patch_link(self, run_time=None, link_time=None):
+        """A yellow square round the query token's patch on its frame, then a dashed two-headed connector from the
+        end of the row, down between the pattern and the frames, along under the patch's frame and up to the patch."""
+        ax, ay, aw, ah = self.ATTN
+        px, py = self.q_patch
+        half = self.PATCH_BOX / 2
+        self.patch_box = place_rect(Rectangle(), px - half, py - half, 2 * half, 2 * half)
+        self.patch_box.set_stroke(YELLOW, self.ROW_STROKE * STROKE_PER_U).set_fill(opacity=0)
+        self.play(ShowCreation(self.patch_box), run_time=run_time or self.patch_hl_time)
+
+        f = self.q_fhw[0]
+        gx, gy, gw, gh = self.small_grid_slot(f)
+        last_row = f // 3 == len(self.GRID3_Y) - 1
+        under = gy + gh + (4.2 if last_row else (self.GRID3_Y[f // 3 + 1] - gy - gh) / 2)     # a clear run under that frame
+        route = [(ax + aw + 0.8, self.q_y), (self.ROW_LINK_X, self.q_y), (self.ROW_LINK_X, under), (px, under),
+                 (px, py + half + 0.9)]
+        self.row_link = self.dashed_arrow(route, stroke_u=self.ROW_STROKE, start_head=True)
+        t = link_time or self.patch_link_time
+        self.play(FadeIn(self.row_link[2]), run_time=t * 0.1)
+        self.play(ShowCreation(self.row_link[0], lag_ratio=1), run_time=t * 0.8)
+        self.play(FadeIn(self.row_link[1]), run_time=t * 0.1)
+
+    def heat_strength(self):
+        """The row mapped to 0-1 [12, 30, 52] for coloring, by HEAT_SCALE."""
+        w = self.q_row / self.q_row.max()
+        if self.HEAT_SCALE == "log":
+            return np.clip(np.log10(np.maximum(w, 1e-30)) / self.HEAT_DECADES + 1, 0, 1)
+        return w ** self.HEAT_GAMMA
+
+    def heat_colors(self):
+        """RGB [12, 30, 52, 3] for the row."""
+        import matplotlib
+        try:
+            cmap = matplotlib.colormaps[self.HEAT_CMAP]
+        except AttributeError:
+            from matplotlib import cm
+            cmap = cm.get_cmap(self.HEAT_CMAP)
+        return cmap(self.heat_strength())[..., :3]
+
+    def beat_row_to_heat(self, run_time=None, settle_time=None):
+        """Every value in the row (all 18,720) leaves it as a colored dot and flies to its own patch on its own frame:
+        token i = (frame, row, col) starts at its place along the row line and lands on patch (row, col) of that
+        frame. They go in token order, so the frames fill one after another, top row to bottom row. Once they have
+        landed they are the heatmap; crisp heatmap images fade in over the frames and the dots fade away."""
+        if not hasattr(self, "q_row"):
+            self.load_query()
+        ax, ay, aw, ah = self.ATTN
+        nf, nr, nc = self.q_row.shape
+        n = self.q_row.size
+        rgb = self.heat_colors()
+
+        # where each value starts (along the row) and lands (its patch)
+        i = np.arange(n)
+        start = np.stack([(ax + (i + 0.5) / n * aw - 96) * U, np.full(n, (54 - self.q_y) * U), np.zeros(n)], axis=1)
+        end = np.zeros((nf, nr, nc, 3))
+        for f in range(nf):
+            gx, gy, gw, gh = self.small_grid_slot(f)
+            xs = (gx + (np.arange(nc) + 0.5) * gw / nc - 96) * U
+            ys = (54 - (gy + (np.arange(nr) + 0.5) * gh / nr)) * U
+            end[f, :, :, 0], end[f, :, :, 1] = xs[None, :], ys[:, None]
+        end = end.reshape(n, 3)
+        r0, r1 = self.DOT_RADII[0] * U, self.DOT_RADII[1] * U
+        rgba = np.concatenate([rgb.reshape(n, 3), np.zeros((n, 1))], axis=1)
+
+        dots = DotCloud(start.copy(), radius=r0)
+        dots.set_rgba_array(rgba)
+        self.heat_dots = dots
+        lag, order = self.HEAT_LAG, i / (n - 1)
+        strength = self.heat_strength().reshape(n)
+        dot_alpha = self.DOT_MIN_ALPHA + (1 - self.DOT_MIN_ALPHA) * strength
+
+        def fly(m, a):
+            s = np.clip((a - lag * order) / (1 - lag), 0, 1)       # each dot's own progress, staggered by token index
+            s = s * s * (3 - 2 * s)
+            m.set_points(start + (end - start) * s[:, None])
+            m.set_radii(r0 + (r1 - r0) * s)
+            left = (a - lag * order) > 0                             # has this dot left the row yet?
+            fade = np.clip(s / self.DOT_FADE_IN, 0, 1) if self.DOT_FADE_IN > 0 else 1.0
+            rgba[:, 3] = left * fade * dot_alpha
+            m.set_rgba_array(rgba)
+            if marker is not None:      # rides the row at the token that is leaving right now
+                front = float(np.clip(a / lag, 0, 1)) if lag > 0 else 1.0
+                marker.move_to(P(ax + front * aw, self.q_y))
+                marker.set_opacity(float(np.clip((1 - front) / 0.03, 0, 1)) if a > 0 else 0.0)
+
+        marker = None
+        if self.ROW_MARKER > 0:
+            marker = Circle(radius=self.ROW_MARKER * U).set_fill("#ffffff", 1).set_stroke(YELLOW, self.ROW_STROKE * STROKE_PER_U)
+        fly(dots, 0)
+        self.add(dots)
+        if marker is not None:
+            self.add(marker)
+        self.play(UpdateFromAlphaFunc(dots, fly, rate_func=linear), run_time=run_time or self.row_to_heat_time)
+        if marker is not None:
+            self.remove(marker)
+
+        # the landed dots hand over to one heatmap image per frame (square patches, HEAT_ALPHA over the video)
+        cache = HERE / "_p43_59_cache"
+        cache.mkdir(exist_ok=True)
+        self.heat_images = Group()
+        for f in range(nf):
+            tag = f"log{self.HEAT_DECADES}" if self.HEAT_SCALE == "log" else f"g{self.HEAT_GAMMA}"
+            path = cache / f"heat_{self.QUERY_NAME}_{self.HEAT_CMAP}_{tag}_f{f:02d}.png"
+            if not path.exists():
+                im = Image.fromarray((rgb[f] * 255).round().astype(np.uint8))
+                im.resize((nc * 16, nr * 16), Image.NEAREST).save(path)
+            img = ImageMobject(str(path))
+            try:
+                img.image.load()
+            except Exception:
+                pass
+            place_rect(img, *self.small_grid_slot(f)).set_opacity(0)
+            self.heat_images.add(img)
+        self.add(self.heat_images)
+        self.bring_to_front(dots)
+        if hasattr(self, "patch_box"):
+            self.bring_to_front(self.patch_box, self.row_link)
+
+        def settle(m, a):
+            for img in self.heat_images:
+                img.set_opacity(float(self.HEAT_ALPHA * a))
+            rgba[:, 3] = (1 - a) * dot_alpha
+            dots.set_rgba_array(rgba)
+        self.play(UpdateFromAlphaFunc(dots, settle), run_time=settle_time or self.heat_settle_time)
+        self.remove(dots)
