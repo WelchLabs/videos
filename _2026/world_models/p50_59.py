@@ -77,14 +77,31 @@ runtime; everything else is redrawn from the storyboard's coordinates.
                         (three real tennis frames -> VIDEO MODEL -> the real next frame) fades in above it, on the
                         same columns
     beat_compare_labels TEACHER FORCING (TRAINING) / AUTOREGRESSIVE INFERENCE headings, REAL VIDEO and MODEL OUTPUTS
-                        brackets, and PREDICTION TARGET under both outputs
+                        brackets, PREDICTION TARGET under the training output and GENERATED NEXT FRAME under the
+                        inference output
     beat_exposure_title after a hold, the title becomes EXPOSURE BIAS
+  ... storyboard p43_59-19: the same two rows for an LLM, then back
+    beat_compare_swap("llm")    all at once: the images fade, sentences write in where they were ("The capital of
+                        France is" -> "Paris" on top, "The capital of Germany is" -> "Berlin" below), VIDEO MODEL
+                        becomes LLM, and the labels switch to REAL TEXT / GENERATED TEXT / GENERATED NEXT TOKEN
+    beat_compare_swap("video")  ... and all back to the video version
   The rollout frames are synthetic: _p54_drift/mild/drift_K_frame_FFF.png, made by p54_drift.py from the clean
   frames of the Wan2.2 clip (K = 0 is clean, 1-3 drift further and further). DRIFT_DIR picks the folder.
 
   The diffusion on the real frames is faked: each tile is a pixel blend of the real frame and one of the Wan2.2
   run's pure-noise frames, with the blend weight per step (NOISE_CURVE) measured from the real run so it clears at
   the same pace. Every tile has its own noise level (RealTile.set_level), all driven together here.
+
+  class P56_58   (its own scene)   storyboard p43_59-21: bidirectional diffusion and teacher forcing side by side
+    beat_intro          the dividing line draws down from the top while the two titles write in
+    beat_tiles_in       left: four frames of the real video as pure noise. right: the first real frame, an arrow,
+                        and the next frame as pure noise
+    beat_run            right: the output frame denoises, then slides over to join the inputs (which shuffle left),
+                        a new noise frame takes its place and denoises, and so on: 1 input -> 2 -> 3, ending on
+                        storyboard -21 (three clean inputs -> the fourth frame). left: the four frames denoise
+                        together in ONE pass spread over that whole time, so both sides finish on the same frame
+                        (left_sync = False: the left pass runs at the right side's pace and finishes early).
+  Same faked diffusion on the real frames as P53 (RealTile + NOISE_CURVE).
 
 The ball frames in P52 are stills from the finished Wan2.2 clip, read from the same notebook output folder
 p43_59.py uses (<RUN>/p43/xt/step_NN_final/frame_FFF.png; set WM_P43_59 to point somewhere else).
@@ -1222,6 +1239,10 @@ class P53(InteractiveScene):
     compare_labels_time = 2.0   # headings, brackets, labels
     compare_hold = 3.0          # the beat before the title changes
     exposure_title_time = 1.5
+    exposure_hold = 3.0         # EXPOSURE BIAS title up, before the LLM version
+    llm_swap_time = 2.0         # video rows -> LLM rows, everything at once
+    llm_hold = 4.0
+    video_swap_time = 1.5       # ... and back
     p55_end_hold = 5.0
 
     # --- layout: storyboard p43_59-02 (192 x 108 units) ----------------------------------------------------
@@ -1277,7 +1298,14 @@ class P53(InteractiveScene):
     COMPARE_BRACKETS = ("REAL VIDEO", "MODEL OUTPUTS")
     COMPARE_BRACKET_GAP = 2.5                   # images' bottom edge -> top of the bracket
     COMPARE_NOTE_SIZE = 2.67
-    COMPARE_NOTES = (("PREDICTION", "TARGET"), ("PREDICTION", "TARGET"))    # under the training / inference output
+    COMPARE_NOTES = (("PREDICTION", "TARGET"), ("GENERATED NEXT", "FRAME"))    # under the training / inference output
+
+    # the LLM version of the two rows (storyboard p43_59-19)
+    LLM_ROWS = (("The capital of France is", "Paris"), ("The capital of Germany is", "Berlin"))     # input, output
+    LLM_TEXT_SIZE, LLM_TEXT_DROP = 4.37, 1.0    # sentence size; row center line -> text baseline
+    LLM_MODEL_LABEL = ("LLM", 4.83)
+    LLM_BRACKETS = ("REAL TEXT", "GENERATED TEXT")
+    LLM_NOTES = (("PREDICTION", "TARGET"), ("GENERATED NEXT", "TOKEN"))
 
     def construct(self):
         self.setup_scene()
@@ -1315,6 +1343,10 @@ class P53(InteractiveScene):
         self.beat_compare_labels()
         self.wait(self.compare_hold)
         self.beat_exposure_title()
+        self.wait(self.exposure_hold)
+        self.beat_compare_swap("llm")           # storyboard -19
+        self.wait(self.llm_hold)
+        self.beat_compare_swap("video")         # ... and back to -18
         self.wait(self.p55_end_hold)
 
     # ------------------------------------------------------------------------------------------- setup
@@ -1648,29 +1680,91 @@ class P53(InteractiveScene):
         self.play(*[self.fade(t) for t in self.train_tiles], FadeIn(self.train_model),
                   run_time=fade_time or self.compare_fade_time)
 
-    def beat_compare_labels(self, run_time=None):
-        """Headings over both rows, REAL VIDEO / MODEL OUTPUTS brackets under the inputs, PREDICTION TARGET
-        under the outputs."""
+    def compare_row_parts(self, row, kind="video"):
+        """The pieces of compare row `row` that differ between the video and the LLM version, freshly made:
+        dict(model_label, bracket = VGroup(left line, right line, label), note, strings = (bracket string, note lines))"""
         w, h = self.ROLLOUT_IMG
         x0, x1 = self.ROLLOUT_CONTEXT_X[0], self.ROLLOUT_CONTEXT_X[-1] + w
+        y = self.COMPARE_Y[row]
+        mx = self.ROLLOUT_MODEL[0]
+        if kind == "llm":
+            string, size = self.LLM_MODEL_LABEL
+            model_label = VGroup(u_text(string, size, mx, y + CAP[LABEL_FONT] * size / 2, bold=True, align="center"))
+            bracket_string, note_lines = self.LLM_BRACKETS[row], self.LLM_NOTES[row]
+        else:
+            lines, size, leading = self.MODEL_LABEL
+            base = y + CAP[LABEL_FONT] * size / 2 - leading * (len(lines) - 1) / 2
+            model_label = VGroup(*[u_text(s, size, mx, base + k * leading, bold=True, align="center")
+                                   for k, s in enumerate(lines)])
+            bracket_string, note_lines = self.COMPARE_BRACKETS[row], self.COMPARE_NOTES[row]
+        y0 = y + h / 2 + self.COMPARE_BRACKET_GAP
+        bracket = self.bracket(x0, x1, (y0, y0 + 2.22, 1.07, 1.6), bracket_string, y0 + 3.1,
+                               size=self.COMPARE_NOTE_SIZE)
         leading = self.COMPARE_NOTE_SIZE * 1.2
-        self.compare_headings, self.compare_brackets, self.compare_notes = VGroup(), VGroup(), VGroup()
-        for row, y in enumerate(self.COMPARE_Y):
-            top, bottom = y - h / 2, y + h / 2
-            self.compare_headings.add(u_text(self.COMPARE_HEADINGS[row], self.HEADING_SIZE, x0,
-                                             top - self.HEADING_GAP, bold=True, color=CHILL_BROWN))
-            y0 = bottom + self.COMPARE_BRACKET_GAP
-            spec = (y0, y0 + 2.22, 1.07, 1.6)
-            self.compare_brackets.add(self.bracket(x0, x1, spec, self.COMPARE_BRACKETS[row], y0 + 3.1,
-                                                   size=self.COMPARE_NOTE_SIZE))
-            self.compare_notes.add(VGroup(*[
-                u_text(s, self.COMPARE_NOTE_SIZE, self.ROLLOUT_OUTPUT_X + w / 2, y0 + 1.65 + k * leading, bold=True,
-                       align="center", color=CHILL_BROWN) for k, s in enumerate(self.COMPARE_NOTES[row])]))
-        anims = [ShowCreation(side) for b in self.compare_brackets for side in b[:2]]
+        note = VGroup(*[u_text(s, self.COMPARE_NOTE_SIZE, self.ROLLOUT_OUTPUT_X + w / 2, y0 + 1.65 + k * leading,
+                               bold=True, align="center", color=CHILL_BROWN) for k, s in enumerate(note_lines)])
+        return dict(model_label=model_label, bracket=bracket, note=note, strings=(bracket_string, tuple(note_lines)))
+
+    def beat_compare_labels(self, run_time=None):
+        """Headings over both rows, REAL VIDEO / MODEL OUTPUTS brackets under the inputs, PREDICTION TARGET /
+        GENERATED NEXT FRAME under the outputs."""
+        w, h = self.ROLLOUT_IMG
+        x0 = self.ROLLOUT_CONTEXT_X[0]
+        self.compare_headings = VGroup(*[
+            u_text(self.COMPARE_HEADINGS[row], self.HEADING_SIZE, x0, y - h / 2 - self.HEADING_GAP, bold=True,
+                   color=CHILL_BROWN) for row, y in enumerate(self.COMPARE_Y)])
+        # the current state of each row's swappable pieces (beat_compare_swap replaces them)
+        self.compare_rows = [self.compare_row_parts(row, "video") for row in range(len(self.COMPARE_Y))]
+        for row, model in enumerate((self.train_model, self.rollout_model)):
+            self.compare_rows[row]["model_label"] = model[1]            # the label already on screen
+        self.compare_kind = "video"
+        self.compare_text = []
+        anims = [ShowCreation(side) for parts in self.compare_rows for side in parts["bracket"][:2]]
         if self.show_text:
-            anims += [Write(self.compare_headings), Write(self.compare_notes),
-                      *[Write(b[2]) for b in self.compare_brackets]]
+            anims += [Write(self.compare_headings),
+                      *[Write(parts["note"]) for parts in self.compare_rows],
+                      *[Write(parts["bracket"][2]) for parts in self.compare_rows]]
         self.play(*anims, run_time=run_time or self.compare_labels_time)
+
+    def beat_compare_swap(self, kind, run_time=None):
+        """Everything at once: both rows switch between the video version and the LLM version (kind = "llm" or
+        "video"). To LLM: images fade, sentences write in, VIDEO MODEL -> LLM, labels switch. To video: the reverse."""
+        if kind == self.compare_kind:
+            return
+        images = [*self.train_tiles, *self.rollout_context,
+                  *([self.rollout_output] if self.rollout_output is not None else [])]
+        to_llm = kind == "llm"
+        anims = [self.fade(m, 1.0, 0.0) if to_llm else self.fade(m, 0.0, 1.0) for m in images]
+        w = self.ROLLOUT_IMG[0]
+        in_x = (self.ROLLOUT_CONTEXT_X[0] + self.ROLLOUT_CONTEXT_X[-1] + w) / 2        # middle of the inputs
+        out_x = self.ROLLOUT_OUTPUT_X + w / 2
+        new_text = []
+        for row, old in enumerate(self.compare_rows):
+            new = self.compare_row_parts(row, kind)
+            # bracket lines reshape (the gap follows the new label); the labels themselves crossfade
+            anims += [Transform(old["bracket"][0], new["bracket"][0]), Transform(old["bracket"][1], new["bracket"][1])]
+            if self.show_text:
+                anims += [FadeOut(old["model_label"]), FadeIn(new["model_label"]),
+                          FadeOut(old["bracket"][2]), FadeIn(new["bracket"][2])]
+                if old["strings"][1] != new["strings"][1]:
+                    anims += [FadeOut(old["note"]), FadeIn(new["note"])]
+                else:
+                    new["note"] = old["note"]
+                if to_llm:
+                    base = self.COMPARE_Y[row] + self.LLM_TEXT_DROP
+                    for string, x in zip(self.LLM_ROWS[row], (in_x, out_x)):
+                        t = u_text(string, self.LLM_TEXT_SIZE, x, base, font=TEXT_FONT, italic=True, align="center")
+                        new_text.append(t)
+                        anims.append(Write(t))
+            else:
+                new["model_label"], new["note"] = old["model_label"], old["note"]
+            new["bracket"] = VGroup(old["bracket"][0], old["bracket"][1], new["bracket"][2])    # lines stay the same mobjects
+            self.compare_rows[row] = new
+        anims += [FadeOut(t) for t in self.compare_text]
+        default = self.llm_swap_time if to_llm else self.video_swap_time
+        self.play(*anims, run_time=run_time or default)
+        self.compare_text = new_text
+        self.compare_kind = kind
 
     def beat_exposure_title(self, run_time=None):
         """The title becomes EXPOSURE BIAS."""
@@ -1680,3 +1774,164 @@ class P53(InteractiveScene):
         new_title = u_text(self.TITLE_EXPOSURE, size, x, y, bold=True, align="center", color=CHILL_BROWN)
         self.play(FadeOut(self.title), Write(new_title), run_time=run_time or self.exposure_title_time)
         self.title = new_title
+
+
+# ============================================================================= P56-58
+class P56_58(InteractiveScene):
+    # --- toggles -------------------------------------------------------------------------------------------
+    show_text = True            # titles as manim Text. False: add them in post
+    left_sync = True            # left side's single pass is stretched so both sides finish together
+
+    # --- timings (seconds) ---------------------------------------------------------------------------------
+    intro_time = 2.0            # dividing line draws down, titles write in
+    tiles_in_time = 1.5         # the noise frames (and the first real frame + arrow) fade in
+    tiles_hold = 1.0
+    step_time = 0.1             # per (faked) diffusion step; 40 steps per pass, same pace on both sides
+    pass_hold = 0.6             # a freshly denoised output sits there before it moves over
+    shuffle_time = 1.0          # output slides over to the inputs, inputs shuffle left
+    next_noise_time = 0.5       # the next noise frame fades in on the output side
+    next_noise_hold = 0.3
+    p56_end_hold = 5.0
+
+    # --- layout: storyboard p43_59-21 (192 x 108 units) ----------------------------------------------------
+    DIVIDER = (96.0, 7.49, 103.99)              # x, top y, bottom y
+    TITLES = (("BIDIRECTIONAL DIFFUSION", 48.0), ("TEACHER FORCING", 144.0))        # string, center x
+    TITLE_SIZE, TITLE_Y = 3.6, 9.9
+    FRAMES = (0, 1, 2, 3)                       # which of the 12 real frames
+    ROW_Y = 54.3                                # center line of both rows
+    LEFT_X = (6.39, 27.21, 48.02, 68.95)        # left edges of the four frames on the left
+    LEFT_W, LEFT_H = 20.15, 11.62
+    RIGHT_X = (101.91, 121.14, 140.36)          # left edges of the three input slots on the right
+    RIGHT_OUT_X = 169.03
+    RIGHT_W, RIGHT_H = 18.55, 10.7
+    RIGHT_ARROW = (161.35, 166.77)              # tail x, tip x
+    N_STEPS = len(NOISE_CURVE) - 1              # 40
+
+    def construct(self):
+        self.setup_scene()
+        # P56
+        self.beat_intro()
+        self.beat_tiles_in()
+        self.wait(self.tiles_hold)
+        self.beat_run()
+        self.wait(self.p56_end_hold)
+
+    # ------------------------------------------------------------------------------------------- helpers
+    def left_slot(self, k):
+        return (self.LEFT_X[k], self.ROW_Y - self.LEFT_H / 2, self.LEFT_W, self.LEFT_H)
+
+    def right_slot(self, x):
+        return (x, self.ROW_Y - self.RIGHT_H / 2, self.RIGHT_W, self.RIGHT_H)
+
+    def real_tile(self, index, level=0.0, noise_shift=0):
+        """A tile of real frame `index` (0-11). noise_shift picks a different noise frame, so the two sides of the
+        screen don't show the very same noise."""
+        dirs = run_step_dirs()
+        noise = dirs[0] / f"frame_{(4 * index + 3 + noise_shift) % 48:03d}.png"
+        return RealTile(tennis_paths()[index], noise, level)
+
+    @staticmethod
+    def fade(image, start=0.0, end=1.0, **kwargs):
+        return UpdateFromAlphaFunc(image, lambda m, a: m.set_opacity(interpolate(start, end, a)), **kwargs)
+
+    @staticmethod
+    def move_slot(tile, start, end, **kwargs):
+        a0, a1 = np.array(start, float), np.array(end, float)
+        return UpdateFromAlphaFunc(tile, lambda m, a: m.place(*interpolate(a0, a1, a)), **kwargs)
+
+    # ------------------------------------------------------------------------------------------- setup
+    def setup_scene(self):
+        x, y0, y1 = self.DIVIDER
+        self.divider = u_line((x, y0), (x, y1), 0.2, CHILL_BROWN)                  # (drawn top to bottom)
+        self.titles = VGroup(*[u_text(s, self.TITLE_SIZE, cx, self.TITLE_Y, bold=True, align="center",
+                                      color=CHILL_BROWN) for s, cx in self.TITLES])
+        self.left_tiles = [self.real_tile(f, level=1.0).place(*self.left_slot(k)) for k, f in enumerate(self.FRAMES)]
+        self.right_arrow = arrow((self.RIGHT_ARROW[0], self.ROW_Y), (self.RIGHT_ARROW[1], self.ROW_Y))
+        # right side: frame 0 is given; the output slot starts as frame 1 in pure noise
+        self.right_context = [self.real_tile(self.FRAMES[0]).place(*self.right_slot(self.RIGHT_X[-1]))]
+        self.right_output = self.new_right_output()
+
+    def new_right_output(self):
+        f = self.FRAMES[len(self.right_context)]
+        return self.real_tile(f, level=1.0, noise_shift=2).place(*self.right_slot(self.RIGHT_OUT_X))
+
+    # ------------------------------------------------------------------------------------------- P56
+    def beat_intro(self, run_time=None):
+        """The dividing line draws down from the top while the titles come in."""
+        anims = [ShowCreation(self.divider)]
+        if self.show_text:
+            anims.append(Write(self.titles))
+        self.play(*anims, run_time=run_time or self.intro_time)
+
+    def beat_tiles_in(self, run_time=None):
+        """Left: four noise frames. Right: the first real frame, the arrow, and a noise frame as the output."""
+        tiles = [*self.left_tiles, *self.right_context, self.right_output]
+        for t in tiles:
+            t.set_opacity(0)
+        self.add(*tiles)
+        self.play(*[self.fade(t) for t in tiles], ShowCreation(self.right_arrow[0]), FadeIn(self.right_arrow[1]),
+                  run_time=run_time or self.tiles_in_time)
+
+    def denoise_pass(self, tiles, step_time=None):
+        """All the given tiles step from pure noise to clean together."""
+        per = step_time or self.step_time
+        for t in tiles:
+            t.set_step(0)
+        for k in range(self.N_STEPS):
+            self.wait(per)
+            for t in tiles:
+                t.set_step(k + 1)
+
+    def beat_right_shuffle(self, run_time=None):
+        """The clean output slides over to become the newest input (inputs shift left); then the next frame fades
+        in as noise on the output side."""
+        out = self.right_output
+        n = len(self.right_context) + 1
+        xs = self.RIGHT_X[-n:]
+        anims = [self.move_slot(m, self.right_slot(x_old), self.right_slot(x_new))
+                 for m, x_old, x_new in zip(self.right_context, self.RIGHT_X[-(n - 1):], xs)]
+        anims.append(self.move_slot(out, self.right_slot(self.RIGHT_OUT_X), self.right_slot(xs[-1])))
+        self.bring_to_front(out)
+        self.play(*anims, run_time=run_time or self.shuffle_time)
+        self.right_context.append(out)
+        self.right_output = new = self.new_right_output().set_opacity(0)
+        self.add(new)
+        self.play(self.fade(new), run_time=self.next_noise_time)
+
+    def beat_run(self, step_time=None):
+        """Right: one denoising pass per generated frame, with the output shuffled over to the inputs in between.
+        Left: one joint pass on all four frames, spread over the whole of that (left_sync) so both sides end
+        together, or run alongside the right side's first pass."""
+        per = step_time or self.step_time
+        n_passes = len(self.RIGHT_X)
+        ticker = None
+        if self.left_sync:
+            total = (n_passes * self.N_STEPS * per
+                     + (n_passes - 1) * (self.pass_hold + self.shuffle_time + self.next_noise_time + self.next_noise_hold))
+            state = dict(t=0.0, step=0)
+            for t in self.left_tiles:
+                t.set_step(0)
+
+            def tick(mob, dt):          # runs every frame, through the waits and the shuffles alike
+                state["t"] += dt
+                step = min(self.N_STEPS, int(self.N_STEPS * state["t"] / total + 1e-6))
+                if step != state["step"]:
+                    state["step"] = step
+                    for t in self.left_tiles:
+                        t.set_step(step)
+
+            ticker = Mobject()
+            ticker.add_updater(tick)
+            self.add(ticker)
+        for p in range(n_passes):
+            tiles = [self.right_output] + (self.left_tiles if (p == 0 and not self.left_sync) else [])
+            self.denoise_pass(tiles, per)
+            if p < n_passes - 1:
+                self.wait(self.pass_hold)
+                self.beat_right_shuffle()
+                self.wait(self.next_noise_hold)
+        if ticker is not None:
+            ticker.clear_updaters()
+            self.remove(ticker)
+            for t in self.left_tiles:   # land exactly on the last step, whatever the frame rounding did
+                t.set_step(self.N_STEPS)
