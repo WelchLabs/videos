@@ -123,6 +123,40 @@ runtime; everything else is redrawn from the storyboard's coordinates.
                         the one input and one output.
     beat_tf_remove_column  everything in that column above its clean frame fades (not done for the last column,
                         which stays: storyboard -22's right side)
+  P57 (same scene)   toward storyboard p43_59-23: one diffusion axis per frame
+    beat_reveal_clear   all at once: titles, both Video Time axes, everything on the teacher forcing side, and the
+                        model graphics (live + dim copies) on the left fade. What is left: the Diffusion Progress
+                        axis and the 4 x 4 grid of frames.
+    beat_axes_explode   the axis splits into four colored axes that spread evenly across the screen (one per
+                        frame: green, light blue, yellow, orange); each column of frames travels with its axis,
+                        growing as it goes, and settles to its right; a copy of the label goes with each axis and
+                        ends up down its left side, smaller, as "Diffusion Progress - Frame N" in that axis's color
+  ... the slot machine: one fixed model in the middle of the screen, each frame's column a wheel that moves on its own
+    beat_wheels_to([0, 0, 0, 0])    every wheel (axis + label + its four frames) rolls so the middle of the screen
+                        falls between its first and second frame. A wheel's position p means "the model sits between
+                        row p and row p + 1" (rows count from 0 at the top = pure noise).
+    beat_center_model_in    VIDEO MODEL box in the middle with four lines in (from the frame above it on each wheel)
+                        and four lines out (to the frame below)
+    beat_title("BIDIRECTIONAL DIFFUSION")   the top title (blank until now) writes in
+    beat_wheels_to([1, 1, 1, 1]), then ([2, 2, 2, 2])    bidirectional diffusion = all four wheels moving in lock
+                        step: they roll up a row at a time together, until the model sits between the last noisy
+                        row and the clean one. A wheel's lines fade out while it moves and come back when it stops.
+    beat_teacher_setup  teacher forcing: the title changes; every wheel rolls back to position 0; wheels 2-4 go dim
+                        and lose their lines, so only wheel 1 is live
+    beat_wheel_to(k, p) one wheel moves on its own: wheel 1 goes 0 -> 1 -> 2 -> 3. At 3 its clean frame is above
+                        the model, feeding into it, and nothing is below: its line out of the model goes.
+    beat_wheel_activate(k)   the next wheel comes up to full brightness and its lines fade in; then it rolls 0 -> 1
+                        -> 2 -> 3 on its own, and so on. Finished wheels stay at position 3 with just their line
+                        into the model. The last wheel stops at position 2 (clean frame = the model's output).
+    beat_diffusion_forcing   the title becomes DIFFUSION FORCING while the wheels go their own ways: wheel 1 to
+                        position 2, wheel 2 to 0, wheel 3 to 1 (wheel 4 stays at 2); every wheel has both its lines
+    beat_slot_spins     then a run of randomly chosen configurations (seeded, so every render is the same), a short
+                        hold on each; on these spins the wheels stop one after another, left to right
+  Framing: the model sits a little below the middle and a strip along the top of the screen (TITLE_BAND, in the
+  background color) hides whatever rolls up under the title.
+  wheel_spacing = "dynamic": frames keep their size and the gap the model sits in opens up (the frames above it
+  ride higher, the ones below lower). "static": the spacing never changes; the frames shrink once, on the first
+  roll, so every gap is wide enough for the model.
   Same faked diffusion on the real frames as P53 (RealTile + NOISE_CURVE); the rows sit at ROW_LEVELS.
 
 The ball frames in P52 are stills from the finished Wan2.2 clip, read from the same notebook output folder
@@ -1804,6 +1838,7 @@ class P56_58(InteractiveScene):
     show_text = True            # titles as manim Text. False: add them in post
     left_sync = True            # left side's single pass is stretched so both sides finish together
     model_lines = "four"        # lines between the frames and the model: "four" (one per frame) or "single" arrow
+    wheel_spacing = "dynamic"   # slot machine: "dynamic" (the model's gap opens up) or "static" (smaller frames)
 
     # --- timings (seconds) ---------------------------------------------------------------------------------
     intro_time = 2.0            # dividing line draws down, titles write in
@@ -1838,6 +1873,36 @@ class P56_58(InteractiveScene):
     tf_remove_time = 1.0        # ... then everything above its clean frame fades
     tf_between_columns = 0.3
     tf_end_hold = 5.0
+
+    # P57: the reveal
+    reveal_clear_time = 1.5     # everything but the diffusion axis and the 16 frames fades
+    reveal_clear_hold = 1.0
+    explode_time = 5.0          # one axis -> four, columns spread out and grow, labels follow their axes
+    p57_explode_hold = 5.0
+
+    # the slot machine
+    wheel_time = 3.0            # the wheels roll to a new position
+    wheels_first_hold = 0.8
+    center_model_time = 1.2     # model + its lines fade in
+    center_model_hold = 2.0
+    line_fade = 0.15            # fraction of a roll over which the model's lines fade out (and, at the end, back in)
+    title_time = 1.0            # the top title writes in / changes
+    lockstep_hold = 1.5         # between the lock-step rolls
+    bidirectional_end_hold = 4.0
+    teacher_setup_time = 3.0    # everything rolls back to 0, wheels 2-4 dim
+    teacher_setup_hold = 1.0
+    solo_wheel_time = 2.0       # one wheel rolling one row on its own
+    solo_wheel_hold = 0.8
+    activate_time = 1.0         # the next wheel brightens, its lines fade in
+    teacher_end_hold = 5.0
+    df_setup_time = 3.0         # title -> DIFFUSION FORCING, wheels to their first mixed configuration
+    df_first_hold = 3.0
+    slot_spins = 8              # how many random configurations follow
+    slot_seed = 3               # change for a different (but still repeatable) sequence
+    slot_spin_time = 1.6
+    slot_hold = 1.0
+    slot_stagger = 0.4          # 0: wheels stop together. 0.4: the first wheel stops 40% of the spin before the last
+    df_end_hold = 5.0
 
     # --- layout: storyboard p43_59-21 (192 x 108 units) ----------------------------------------------------
     DIVIDER = (96.0, 7.49, 103.99)              # x, top y, bottom y
@@ -1877,6 +1942,31 @@ class P56_58(InteractiveScene):
     TF_BOX_W = 18.7                             # the model box sits over one column
     CONTEXT_HEAD = (0.8, 0.33, 0.6)             # arrowheads of the lines coming in from the finished frames
 
+    # --- layout: toward storyboard p43_59-23 (one axis per frame) ------------------------------------------
+    AXIS_COLORS = ("#419c52", "#5badb6", "#fcc947", "#eb8423")      # frame 1 .. 4: green, light blue, yellow, orange
+    CELL_W = 48.0                               # each frame's share of the screen
+    AXIS_IN_CELL = 10.05                        # axis x, measured from the left edge of its cell
+    FRAMES_IN_CELL = 11.55                      # left edge of that column's frames (label + axis + frames sit centered)
+    CELL_FRAME_W, CELL_FRAME_H = 30.0, 17.3     # the frames grow to this size
+    CELL_TOPS = (10.4, 33.8, 57.2, 80.6)        # top edge of each row once they have
+    AXIS_Y = (7.89, 104.39)                     # top, arrow tip
+    AXIS_LABEL = ("Diffusion Progress", " - Frame {n}", 2.6, -2.9, 56.0)
+    #             two parts of the label, size, baseline's x relative to the axis (negative = label on the axis's
+    #             left; the letters' tops face the axis), y of the label's middle
+
+    # the slot machine: a fixed model in the middle, wheels (columns) rolling past it
+    CENTER_MODEL = (96.0, 60.0, 80.0, 6.5, 0.87)        # center x, center y, width, height, corner radius
+    #   (wide enough that the outer wheels' lines turn in before they reach the inner wheels' lines)
+    CENTER_LABEL_SIZE = 4.2
+    CENTER_GAP = 13.4                           # room the model needs between the frame above it and the one below
+    CENTER_IN_BEND, CENTER_OUT_BEND = 1.6, 1.4  # how far below the frames / below the box its lines turn
+    CENTER_LINE_GAP = 0.4                       # air between a frame's edge and its line
+    STATIC_FRAME = (18.7, 10.8)                 # frame size in "static" spacing (every gap = CENTER_GAP)
+    TITLE_BAND = 12.0                           # height of the strip along the top that hides the wheels (title on it)
+    BAND_TITLE = (3.6, 96.0, 8.4)               # size, center x, baseline of the title on that strip
+    DIM_WHEEL = 0.25                            # opacity of a wheel that is waiting its turn
+    EXPLODE_CENTER_Y = 54.15                    # middle of the frame grid as the explode leaves it
+
     def construct(self):
         self.setup_scene()
         # P56
@@ -1909,6 +1999,40 @@ class P56_58(InteractiveScene):
                 self.beat_tf_remove_column()
                 self.wait(self.tf_between_columns)
         self.wait(self.tf_end_hold)
+        # P57: the reveal (toward storyboard -23)
+        self.beat_reveal_clear()
+        self.wait(self.reveal_clear_hold)
+        self.beat_axes_explode()
+        self.wait(self.p57_explode_hold)
+        # the slot machine. bidirectional diffusion: all wheels in lock step
+        self.beat_wheels_to([0, 0, 0, 0])
+        self.wait(self.wheels_first_hold)
+        self.beat_center_model_in()
+        self.wait(self.center_model_hold)
+        self.beat_title("BIDIRECTIONAL DIFFUSION")
+        self.beat_wheels_to([1, 1, 1, 1])
+        self.wait(self.lockstep_hold)
+        self.beat_wheels_to([2, 2, 2, 2])
+        self.wait(self.bidirectional_end_hold)
+        # teacher forcing: one wheel at a time
+        self.beat_teacher_setup()
+        self.wait(self.teacher_setup_hold)
+        n_wheels = len(self.GRID_X)
+        for col in range(n_wheels):
+            if col > 0:
+                self.beat_wheel_activate(col)
+            last = len(self.GRID_TOP) - 1       # position 3: the clean frame is above the model, as an input
+            # (the final wheel stops one short, at position 2: its clean frame is the model's output, lines in and out)
+            stop = last if col < n_wheels - 1 else last - 1
+            for p in range(1, stop + 1):
+                self.beat_wheel_to(col, p, lines="in" if p == last else None)
+                self.wait(self.solo_wheel_hold)
+        self.wait(self.teacher_end_hold)
+        # diffusion forcing: every wheel on its own
+        self.beat_diffusion_forcing([2, 0, 1, None])
+        self.wait(self.df_first_hold)
+        self.beat_slot_spins()
+        self.wait(self.df_end_hold)
 
     # ------------------------------------------------------------------------------------------- helpers
     def left_slot(self, k):
@@ -2272,3 +2396,342 @@ class P56_58(InteractiveScene):
                   FadeOut(parts["ghosts"]), run_time=run_time or self.tf_remove_time)
         self.remove(*parts["tiles"])
         self.tf_column_parts = None
+
+    # ------------------------------------------------------------------------------------------- P57: the reveal
+    def cell_slot(self, row, col):
+        """Slot of the frame in row `row` of frame-column `col` once every column has its own axis."""
+        return (col * self.CELL_W + self.FRAMES_IN_CELL, self.CELL_TOPS[row], self.CELL_FRAME_W, self.CELL_FRAME_H)
+
+    def axis_x(self, col):
+        return col * self.CELL_W + self.AXIS_IN_CELL
+
+    def beat_reveal_clear(self, run_time=None):
+        """All at once: titles, Video Time axes, the teacher forcing side and the left side's model graphics go.
+        The Diffusion Progress axis and the 16 frames stay."""
+        tiles = list(self.tf_bottom)
+        gone = [self.time_axes, self.model, self.model_ghosts]
+        if self.tf_column_parts:
+            tiles += self.tf_column_parts["tiles"]
+            gone += [self.tf_column_parts["graphic"], self.tf_column_parts["ghosts"]]
+        if self.show_text:
+            gone += [self.titles, self.time_labels]
+        self.play(*[FadeOut(m) for m in gone if len(m.get_family()) > 1 or m.has_points()],
+                  *[self.fade(t, 1.0, 0.0) for t in tiles],
+                  run_time=run_time or self.reveal_clear_time)
+        self.remove(*tiles)
+        self.tf_bottom, self.tf_column_parts = [], None
+
+    def beat_axes_explode(self, run_time=None):
+        """One axis becomes four colored ones spread across the screen; the columns of frames go with them, growing,
+        and each axis gets a (smaller) label down its left side."""
+        n_cols = len(self.GRID_X)
+        y0, y1 = self.AXIS_Y
+        first, rest, size, offset, mid_y = self.AXIS_LABEL
+        old_line, old_head = self.diffusion_axis
+        n_first = len(first.replace(" ", ""))
+
+        self.axes, self.axis_labels = VGroup(), VGroup()
+        anims, swung = [], False
+        self.remove(old_line, old_head)
+        for col, color in enumerate(self.AXIS_COLORS[:n_cols]):
+            x = self.axis_x(col)
+            # the axis: a copy of the old one travels to its place, changing color and length on the way
+            mover = VGroup(old_line.copy(), old_head.copy())
+            self.add(mover)
+            anims.append(Transform(mover, arrow((x, y0), (x, y1), 0.2, color=color)))
+            self.axes.add(mover)
+            # the label: down the left side of the axis (reading downwards), centered on mid_y, in the axis's color
+            string = first + rest.format(n=col + 1)
+            label = u_text(string, size, x + offset, mid_y, font=TEXT_FONT, italic=True, color=color)
+            top = mid_y - label.get_width() / U / 2
+            label.shift(P(x + offset, top) - P(x + offset, mid_y))
+            label.rotate(-PI / 2, about_point=P(x + offset, top))
+            if self.show_text:
+                old = self.diffusion_label
+                if len(label) == len(string.replace(" ", "")) and len(old) == n_first:
+                    # "Diffusion Progress" travels over from the side of the old axis; " - Frame N" fades in after it
+                    head_part, tail_part = VGroup(*label[:n_first]), VGroup(*label[n_first:])
+                    copy = old.copy()
+                    self.add(copy)
+                    anims.append(Transform(copy, head_part))
+                    anims.append(FadeIn(tail_part, rate_func=squish_rate_func(smooth, 0.5, 1.0)))
+                    label = VGroup(copy, tail_part)
+                    swung = True
+                else:
+                    anims.append(FadeIn(label))
+            self.axis_labels.add(label)
+        if self.show_text:
+            if swung:
+                self.remove(self.diffusion_label)           # its four copies carry on
+            else:
+                anims.append(FadeOut(self.diffusion_label))
+        # the frames: each column travels to the right of its axis
+        for row, tiles in enumerate(self.grid_rows):
+            for col, t in enumerate(tiles):
+                anims.append(self.move_slot(t, self.grid_slot(row, col), self.cell_slot(row, col)))
+        self.play(*anims, run_time=run_time or self.explode_time)
+
+    # ------------------------------------------------------------------------------------------- the slot machine
+    def wheel_metrics(self):
+        """(frame w, frame h, row pitch, extra opening at the model's gap) for the current wheel_spacing."""
+        if self.wheel_spacing == "static":
+            w, h = self.STATIC_FRAME
+            return w, h, h + self.CENTER_GAP, 0.0
+        w, h = self.CELL_FRAME_W, self.CELL_FRAME_H
+        pitch = self.CELL_TOPS[1] - self.CELL_TOPS[0]
+        return w, h, pitch, max(0.0, self.CENTER_GAP - (pitch - h))
+
+    def wheel_slot(self, row, col, p):
+        """Slot of the frame in row `row` of wheel `col` when that wheel is at position p: the model's line (the
+        middle of the screen) falls between row p and row p + 1."""
+        w, h, pitch, extra = self.wheel_metrics()
+        cy = self.CENTER_MODEL[1]
+        y = cy + (row - p - 0.5) * pitch + (extra / 2 if row > p else -extra / 2)
+        return (col * self.CELL_W + self.FRAMES_IN_CELL, y - h / 2, w, h)
+
+    def wheel_axis_offset(self, p):
+        """How far (storyboard units, + = down) a wheel's axis and label sit from where the explode left them."""
+        _, _, pitch, _ = self.wheel_metrics()
+        _, _, _, extra = self.wheel_metrics()
+        # the explode layout is position 1 (rows 1 and 2 either side of the grid's middle), centered on EXPLODE_CENTER_Y
+        offset = (1.0 - p) * pitch + (self.CENTER_MODEL[1] - self.EXPLODE_CENTER_Y)
+        if p >= len(self.grid_rows) - 1:        # every frame is above the model: the axis rides up with them
+            offset -= extra / 2
+        return offset
+
+    def wheels_init(self):
+        if getattr(self, "wheel_p", None) is not None:
+            return
+        n_cols = len(self.grid_rows[0])
+        self.wheel_p = [None] * n_cols                                  # None: still in the explode layout
+        self.wheel_axis_at = [0.0] * n_cols                             # current axis offset per wheel
+        self.wheel_opacity = [1.0] * n_cols
+        self.line_on = [(True, True)] * n_cols                          # per wheel: (line in showing, line out showing)
+        self.tile_slots = {(r, c): np.array(self.cell_slot(r, c), float)
+                           for r in range(len(self.grid_rows)) for c in range(n_cols)}
+        try:
+            self.bg = rgb_to_hex(self.camera.background_rgba[:3])
+        except Exception:
+            self.bg = BG_FALLBACK
+        # the strip along the top: wheels roll up behind it, the title sits on it
+        self.title_band = Rectangle(192 * U, self.TITLE_BAND * U).move_to(P(96, self.TITLE_BAND / 2))
+        self.title_band.set_fill(self.bg, 1).set_stroke(self.bg, 0)
+        self.band_title = VGroup()
+
+    def raise_overlays(self):
+        """Keep the model above the frames, and the top strip + title above everything."""
+        model = getattr(self, "center_model", None)
+        if model is not None:
+            self.bring_to_front(model)
+        if self.title_band in self.mobjects:
+            # (only titles that are on screen right now: one that is fading in gets added by its own animation,
+            #  and one that has faded out must not be put back)
+            old = getattr(self, "band_title_old", None)
+            titles = [t for t in (old, self.band_title) if t is not None and len(t) and t in self.mobjects]
+            self.bring_to_front(self.title_band, *titles)
+
+    def set_line_opacity(self, col, which, value):
+        """which: 0 = the wheel's line into the model, 1 = its line out."""
+        a = self.center_lines[2 * col + which]
+        a[0].set_stroke(opacity=value)
+        a[1].set_fill(opacity=value)
+
+    @staticmethod
+    def line_pair(value):
+        """True / False / "in" / "out" -> (line in showing, line out showing)"""
+        if isinstance(value, str):
+            return (value in ("in", "both"), value in ("out", "both"))
+        return (bool(value), bool(value))
+
+    def beat_title(self, string, run_time=None):
+        """The title on the top strip writes in (or replaces the one that is there)."""
+        self.wheels_init()
+        if not self.show_text:
+            return
+        self.play(*self.title_anims(string), run_time=run_time or self.title_time)
+        self.title_done()
+
+    def title_done(self):
+        """After a title change has played: make sure the old title is gone for good, the new one on top."""
+        old = getattr(self, "band_title_old", None)
+        if old is not None and len(old):
+            self.remove(*old.get_family())
+        self.band_title_old = None
+        if len(self.band_title) and self.band_title not in self.mobjects:
+            self.add(self.band_title)
+        self.raise_overlays()
+
+    def title_anims(self, string):
+        size, x, y = self.BAND_TITLE
+        new = u_text(string, size, x, y, bold=True, align="center", color=CHILL_BROWN)
+        anims = [FadeOut(self.band_title)] if len(self.band_title) else []
+        anims.append(FadeIn(new) if anims else Write(new))
+        self.band_title_old, self.band_title = self.band_title, new
+        return anims
+
+    def wheel_part_anim(self, mob, delta, o0, o1, is_axis, **kwargs):
+        """Animation for a wheel's axis (VGroup(line, head)) or label: slide by `delta` (a vector) while its opacity
+        goes o0 -> o1."""
+        start = mob.get_center().copy()
+
+        def update(m, alpha):
+            m.move_to(start + alpha * delta)
+            if abs(o1 - o0) > 1e-9:
+                v = interpolate(o0, o1, alpha)
+                if is_axis:
+                    m[0].set_stroke(opacity=v)
+                    m[1].set_fill(opacity=v)
+                else:
+                    m.set_fill(opacity=v)
+
+        return UpdateFromAlphaFunc(mob, update, **kwargs)
+
+    def beat_wheels_to(self, positions=None, run_time=None, opacities=None, lines=None, extra=(), stagger=0.0):
+        """Roll the wheels. Every argument is a list with one entry per wheel, None = leave that wheel alone:
+          positions   where the wheel ends up (0 = model between rows 0 and 1, 1 = between rows 1 and 2, ...)
+          opacities   brightness of the whole wheel (axis, label, frames)
+          lines       which of the wheel's two model lines show afterwards: True (both), False (neither), "in"
+                      (just the one into the model) or "out"
+        A wheel is its axis, its label and its four frames; give several the same position for lock step. The
+        lines of a wheel that moves fade out for the trip. extra: other animations to play alongside.
+        stagger: > 0 makes the wheels stop one after another, left to right (the last one takes the full run_time,
+        the first one finishes `stagger` of the run_time earlier)."""
+        self.wheels_init()
+        n_cols = len(self.wheel_p)
+        positions = list(positions or [None] * n_cols)
+        opacities = list(opacities or [None] * n_cols)
+        lines = list(lines or [None] * n_cols)
+        anims, line_plan = list(extra), {}
+        ends = [1.0 - stagger * (n_cols - 1 - col) / max(n_cols - 1, 1) for col in range(n_cols)]
+        for col in range(n_cols):
+            rate = dict(rate_func=squish_rate_func(smooth, 0.0, ends[col])) if stagger > 0 else {}
+            p, o0 = positions[col], self.wheel_opacity[col]
+            o1 = o0 if opacities[col] is None else float(opacities[col])
+            moving = p is not None and (self.wheel_p[col] is None or abs(self.wheel_p[col] - p) > 1e-9)
+            fading = abs(o1 - o0) > 1e-9
+            if moving or fading:
+                delta = 0.0
+                if moving:
+                    offset = self.wheel_axis_offset(p)
+                    delta = offset - self.wheel_axis_at[col]
+                    self.wheel_axis_at[col], self.wheel_p[col] = offset, p
+                for row, tiles in enumerate(self.grid_rows):
+                    if moving:
+                        start, end = self.tile_slots[(row, col)], np.array(self.wheel_slot(row, col, p), float)
+                        anims.append(self.move_slot(tiles[col], start, end, **rate))
+                        self.tile_slots[(row, col)] = end
+                    if fading:
+                        anims.append(self.fade(tiles[col], o0, o1, **rate))
+                anims.append(self.wheel_part_anim(self.axes[col], delta * U * DOWN, o0, o1, True, **rate))
+                if self.show_text:
+                    anims.append(self.wheel_part_anim(self.axis_labels[col], delta * U * DOWN, o0, o1, False, **rate))
+                self.wheel_opacity[col] = o1
+            was = self.line_on[col]
+            now = was if lines[col] is None else self.line_pair(lines[col])
+            for which in (0, 1):
+                if was[which] != now[which] or (was[which] and moving):
+                    line_plan[(col, which)] = (was[which], now[which])
+            self.line_on[col] = now
+        if getattr(self, "center_lines", None) is not None and line_plan:
+            fade = self.line_fade
+
+            def update(group, alpha):
+                for (col, which), (on0, on1) in line_plan.items():
+                    a = min(1.0, alpha / ends[col])                 # this wheel's own progress (it may stop early)
+                    out, back = max(0.0, 1 - a / fade), max(0.0, (a - (1 - fade)) / fade)
+                    self.set_line_opacity(col, which, (out if on0 else 0.0) + (back if on1 else 0.0))
+
+            anims.append(UpdateFromAlphaFunc(self.center_lines, update, rate_func=linear))
+        if not anims:
+            return
+        self.raise_overlays()
+        self.play(*anims, run_time=run_time or self.wheel_time)
+        if self.title_band not in self.mobjects:        # goes on once the first roll has cleared the top of the screen
+            self.add(self.title_band)
+        self.title_done()
+
+    def beat_wheel_to(self, col, p, run_time=None, lines=None):
+        """One wheel rolls to position p on its own. lines: as in beat_wheels_to, for this wheel."""
+        n = len(self.grid_rows[0])
+        positions, line_list = [None] * n, [None] * n
+        positions[col], line_list[col] = p, lines
+        self.beat_wheels_to(positions, run_time=run_time or self.solo_wheel_time, lines=line_list)
+
+    def beat_teacher_setup(self, run_time=None):
+        """Teacher forcing: title changes, every wheel rolls back to position 0, wheels 2-4 go dim and lose their
+        lines. Only wheel 1 is live."""
+        n = len(self.grid_rows[0])
+        extra = self.title_anims("TEACHER FORCING") if self.show_text else []
+        self.beat_wheels_to([0] * n, run_time=run_time or self.teacher_setup_time,
+                            opacities=[1.0] + [self.DIM_WHEEL] * (n - 1), lines=[True] + [False] * (n - 1),
+                            extra=extra)
+
+    def beat_wheel_activate(self, col, run_time=None):
+        """A waiting wheel comes up to full brightness and its lines to the model fade in."""
+        n = len(self.grid_rows[0])
+        opacities, lines = [None] * n, [None] * n
+        opacities[col], lines[col] = 1.0, True
+        self.beat_wheels_to(run_time=run_time or self.activate_time, opacities=opacities, lines=lines)
+
+    def beat_center_model_in(self, run_time=None):
+        """The one model, fixed in the middle of the screen: box, four lines in from the frames above it, four
+        lines out to the frames below."""
+        self.wheels_init()
+        cx, cy, bw, bh, br = self.CENTER_MODEL
+        bg = self.bg
+        w, h, pitch, extra = self.wheel_metrics()
+        box = RoundedRectangle(bw * U, bh * U, corner_radius=br * U).move_to(P(cx, cy))
+        box.set_stroke(CHILL_BROWN, self.LINE_STROKE * STROKE_PER_U).set_fill(bg, 1)    # frames pass behind it
+        label = VGroup()
+        if self.show_text:
+            size = self.CENTER_LABEL_SIZE
+            label = u_text("VIDEO MODEL", size, cx, cy + CAP[LABEL_FONT] * size / 2, bold=True, align="center",
+                           color=CHILL_BROWN)
+        gap = pitch - h + extra
+        above, below = cy - gap / 2, cy + gap / 2           # bottom edge of the frames above / top of the ones below
+        top, bottom = cy - bh / 2, cy + bh / 2
+        lines = VGroup()
+        n_cols = len(self.grid_rows[0])
+        for col in range(n_cols):
+            frame_x = col * self.CELL_W + self.FRAMES_IN_CELL + w / 2
+            box_x = cx - bw / 2 + self.LINE_SPREAD[col] * bw
+            lines.add(self.bent_arrow(frame_x, above + self.CENTER_LINE_GAP, box_x, top, above + self.CENTER_IN_BEND))
+            lines.add(self.bent_arrow(box_x, bottom, frame_x, below - self.CENTER_LINE_GAP,
+                                      bottom + self.CENTER_OUT_BEND))
+        self.center_lines = lines                           # in, out, in, out, ... one pair per wheel
+        self.center_model = VGroup(box, label, lines)
+        self.play(FadeIn(self.center_model), run_time=run_time or self.center_model_time)
+        self.raise_overlays()
+
+    # ------------------------------------------------------------------------------------------- diffusion forcing
+    def beat_diffusion_forcing(self, positions, run_time=None):
+        """The title becomes DIFFUSION FORCING and the wheels go to `positions` (None = stay), each on its own;
+        every wheel is at full brightness with both its lines."""
+        n = len(self.grid_rows[0])
+        extra = self.title_anims("DIFFUSION FORCING") if self.show_text else []
+        self.beat_wheels_to(positions, run_time=run_time or self.df_setup_time, opacities=[1.0] * n,
+                            lines=[True] * n, extra=extra)
+
+    def slot_configurations(self, count=None, seed=None):
+        """`count` random wheel configurations (positions 0 .. 2 per wheel), repeatable for a given seed. Each one
+        changes at least two wheels from the one before, and never has every wheel at the same position (that is
+        just bidirectional diffusion)."""
+        rng = np.random.default_rng(self.slot_seed if seed is None else seed)
+        n = len(self.grid_rows[0])
+        top = len(self.grid_rows) - 2                       # highest position that still has a frame below the model
+        previous, out = list(self.wheel_p), []
+        while len(out) < (self.slot_spins if count is None else count):
+            cand = [int(v) for v in rng.integers(0, top + 1, n)]
+            if len(set(cand)) > 1 and sum(a != b for a, b in zip(cand, previous)) >= 2:
+                out.append(cand)
+                previous = cand
+        return out
+
+    def beat_slot_spins(self, configurations=None, run_time=None, hold=None):
+        """Roll through a list of configurations (default: random ones from slot_configurations), holding on each.
+        The wheels stop one after another (slot_stagger)."""
+        configurations = configurations or self.slot_configurations()
+        for k, config in enumerate(configurations):
+            self.beat_wheels_to(config, run_time=run_time or self.slot_spin_time, stagger=self.slot_stagger)
+            if k < len(configurations) - 1:
+                self.wait(self.slot_hold if hold is None else hold)
