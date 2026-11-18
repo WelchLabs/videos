@@ -1,72 +1,30 @@
-from manimlib import *
-sys.path.append('/Users/stephen/manim/videos/welch_assets') #hacks
-from welch_axes import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_scene import manual_camera_interpolation
+from landscape_geometry import get_numerical_gradient
+from welch_geometry import diagram_axes_3d
+import numpy as np
+from welch_axes import WelchXAxis, WelchYAxis
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, set_surface_shading, textured_surface
+from welch_text import math_tex
 
 CHILL_BROWN='#948979'
 YELLOW='#EC2027' #Actually red now sike!
 BLUE='#65c8d0'
 
-save_dir='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/hackin/p50/'
+save_dir=welch_path('backpropagation/hackin/p50/')
 xy=np.linspace(-2.5, 2.5, 256)
 
-def get_numerical_gradient(surface_fn, u, v, epsilon=0.01):
-    height = surface_fn(u, v)[2]
-    height_du = surface_fn(u + epsilon, v)[2]
-    du = (height_du - height) / epsilon
-    height_dv = surface_fn(u, v + epsilon)[2]
-    dv = (height_dv - height) / epsilon
-    return (du, dv)
 
-class Dot3D(Sphere):
-    def __init__(self, center=ORIGIN, radius=0.05, **kwargs):
+class Dot3D(m.Sphere):
+    def __init__(self, center=m.ORIGIN, radius=0.05, **kwargs):
         super().__init__(radius=radius, **kwargs)
         self.move_to(center)
 
 
-def manual_camera_interpolation(start_orientation, end_orientation, num_steps):
-    """
-    Linearly interpolate between two camera orientations.
-    
-    Parameters:
-    - start_orientation: List containing camera parameters with a tuple at index 3
-    - end_orientation: List containing camera parameters with a tuple at index 3
-    - num_steps: Number of interpolation steps (including start and end)
-    
-    Returns:
-    - List of interpolated orientations
-    """
-    result = []
-    
-    for step in range(num_steps):
-        # Calculate interpolation factor (0 to 1)
-        t = step / (num_steps - 1) if num_steps > 1 else 0
-        
-        # Create a new orientation for this step
-        interpolated = []
-        
-        for i in range(len(start_orientation)):
-            if i == 3:  # Handle the tuple at position 3
-                start_tuple = start_orientation[i]
-                end_tuple = end_orientation[i]
-                
-                # Interpolate each element of the tuple
-                interpolated_tuple = tuple(
-                    start_tuple[j] + t * (end_tuple[j] - start_tuple[j])
-                    for j in range(len(start_tuple))
-                )
-                
-                interpolated.append(interpolated_tuple)
-            else:  # Handle regular numeric values
-                start_val = start_orientation[i]
-                end_val = end_orientation[i]
-                interpolated_val = start_val + t * (end_val - start_val)
-                interpolated.append(interpolated_val)
-        
-        result.append(interpolated)
-    
-    return result
 
-class P50a_book_2(InteractiveScene):
+class P50a_book_2(WelchScene):
     def construct(self):
         '''
         Ok, this has been like a gruelling 10 day animation process - last big scene here. 
@@ -84,7 +42,7 @@ class P50a_book_2(InteractiveScene):
         surf=np.load(save_dir+'p50_2d.npy') #Optionally add scaling factor here
 
         # Create the surface
-        axes = ThreeDAxes(
+        axes = diagram_axes_3d(
             x_range=[-2.5, 2.5, 1],
             y_range=[-2.5, 2.5, 1],
             z_range=[0.0, 3.5, 1.0],
@@ -102,13 +60,13 @@ class P50a_book_2(InteractiveScene):
 
         
         # Add labels
-        x_label = Tex(r'\theta_{1}', font_size=40).set_color(CHILL_BROWN)
-        y_label = Tex(r'\theta_{2}', font_size=40).set_color(CHILL_BROWN)
-        z_label = Tex('Loss', font_size=30).set_color(CHILL_BROWN)
-        x_label.next_to(axes.x_axis, RIGHT)
-        y_label.next_to(axes.y_axis, UP)
-        z_label.next_to(axes.z_axis, OUT)
-        z_label.rotate(90*DEGREES, [1,0,0])
+        x_label = math_tex(r'\theta_{1}', font_size=40).set_color(CHILL_BROWN)
+        y_label = math_tex(r'\theta_{2}', font_size=40).set_color(CHILL_BROWN)
+        z_label = math_tex('Loss', font_size=30).set_color(CHILL_BROWN)
+        x_label.next_to(axes.x_axis, m.RIGHT)
+        y_label.next_to(axes.y_axis, m.UP)
+        z_label.next_to(axes.z_axis, m.OUT)
+        z_label.rotate(90*m.DEGREES, [1,0,0])
 
         def param_surface(u, v):
             u_idx = np.abs(xy - u).argmin()
@@ -120,22 +78,22 @@ class P50a_book_2(InteractiveScene):
             return np.array([u, v, z])
 
         # Create main surface
-        surface = ParametricSurface(
+        surface = parametric_surface(
             param_surface,
             u_range=[-2.5, 2.5],
             v_range=[-2.5, 2.5],
             resolution=(256, 256),
         )
         
-        ts = TexturedSurface(surface, save_dir+'p50_2d.png')
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, save_dir+'p50_2d.png')
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(0.7)
 
         # Create gridlines using polylines instead of parametric curves
         num_lines = 20  # Number of gridlines in each direction
         num_points = 256  # Number of points per line
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = m.VGroup()
+        v_gridlines = m.VGroup()
         
         # Create u-direction gridlines
         u_values = np.linspace(-2.5, 2.5, num_lines)
@@ -143,38 +101,38 @@ class P50a_book_2(InteractiveScene):
         
         for u in u_values:
             points = [param_surface(u, v) for v in v_points]
-            line = VMobject()
+            line = m.VMobject()
             # line.set_points_as_corners(points)
             line.set_points_smoothly(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.3)
+            line.set_stroke(width=1, color=m.WHITE, opacity=0.3)
             u_gridlines.add(line)
         
         # Create v-direction gridlines
         u_points = np.linspace(-2.5, 2.5, num_points)
         for v in u_values:  # Using same number of lines for both directions
             points = [param_surface(u, v) for u in u_points]
-            line = VMobject()
+            line = m.VMobject()
             # line.set_points_as_corners(points)
             line.set_points_smoothly(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.3)
+            line.set_stroke(width=1, color=m.WHITE, opacity=0.3)
             v_gridlines.add(line)
 
         #i think there's a better way to do this
-        offset=surface.get_corner(BOTTOM+LEFT)-axes.get_corner(BOTTOM+LEFT)
+        offset=surface.get_corner((m.config.frame_height / 2 * m.DOWN)+m.LEFT)-axes.get_corner((m.config.frame_height / 2 * m.DOWN)+m.LEFT)
         axes.shift(offset); x_label.shift(offset); y_label.shift(offset); z_label.shift(offset);
         
         # Add everything to the scene
-        self.frame.reorient(23, 53, 0, (0.11, 0.34, 0.31), 8.28)
+        self.set_view(23, 53, 0, (0.11, 0.34, 0.31), 8.28)
         self.add(axes[:2], x_label, y_label)#, z_label) #Don't really need vertical axis here!
         self.wait()
 
-        self.play(ShowCreation(ts),
-                ShowCreation(u_gridlines),
-                 ShowCreation(v_gridlines), 
+        self.play(m.Create(ts),
+                m.Create(u_gridlines),
+                 m.Create(v_gridlines),
                  run_time=6.0)
         self.wait()
 
-        self.play(self.frame.animate.reorient(31, 44, 0, (-0.03, 0.45, 0.53), 7.36), run_time=4.0)
+        self.play(self.animate_view(31, 44, 0, (-0.03, 0.45, 0.53), 7.36), run_time=4.0)
         self.wait()
 
         # Alrighty, now I need to visualize slices and run gradient descent
@@ -183,12 +141,12 @@ class P50a_book_2(InteractiveScene):
         slice_1_index=-0.5
         u_points = np.linspace(-2.5, 2.5, num_points)
         points = [param_surface(u, slice_1_index) for u in u_points] #Theta2 isn't exactly 0, but pretty close. 
-        slice_1 = VMobject()
+        slice_1 = m.VMobject()
         slice_1.set_points_smoothly(points)
         slice_1.set_stroke(width=4, color=YELLOW, opacity=1.0)
         self.wait()
 
-        self.play(ShowCreation(slice_1))
+        self.play(m.Create(slice_1))
         self.wait()
 
         starting_coords=[-1,-0.5] 
@@ -216,7 +174,7 @@ class P50a_book_2(InteractiveScene):
         way_point_2=71
         way_point_3=96
 
-        t = VMobject()
+        t = m.VMobject()
         t.set_stroke(width=5, color="#FF00FF", opacity=0.9)
         self.add(t)
         for i in range(way_point_1): #Go partially and then add countour
@@ -229,12 +187,12 @@ class P50a_book_2(InteractiveScene):
         slice_2_index=trajectory[way_point_1][1]
         u_points = np.linspace(-2.5, 2.5, num_points)
         points = [param_surface(u, slice_2_index) for u in u_points] #Theta2 isn't exactly 0, but pretty close. 
-        slice_2 = VMobject()
+        slice_2 = m.VMobject()
         slice_2.set_points_smoothly(points)
         slice_2.set_stroke(width=4, color=YELLOW, opacity=0.7)
         self.wait()
 
-        self.play(ShowCreation(slice_2))
+        self.play(m.Create(slice_2))
         self.wait()
 
         for i in range(way_point_1, way_point_2): #Go partially and then add countour
@@ -246,12 +204,12 @@ class P50a_book_2(InteractiveScene):
         slice_3_index=trajectory[way_point_2][1]
         u_points = np.linspace(-2.5, 2.5, num_points)
         points = [param_surface(u, slice_3_index) for u in u_points] #Theta2 isn't exactly 0, but pretty close. 
-        slice_3 = VMobject()
+        slice_3 = m.VMobject()
         slice_3.set_points_smoothly(points)
         slice_3.set_stroke(width=4, color=YELLOW, opacity=0.5)
         self.wait()
 
-        self.play(ShowCreation(slice_3))
+        self.play(m.Create(slice_3))
         self.wait()
 
 
@@ -263,7 +221,7 @@ class P50a_book_2(InteractiveScene):
         for i in range(way_point_2, way_point_3): #Go partially and then add countour
             s1.move_to(trajectory[i])
             t.set_points_smoothly(trajectory[:i])
-            self.frame.reorient(*interp_orientations[i-way_point_2])
+            self.set_view(*interp_orientations[i-way_point_2])
             self.wait(0.1)
         self.wait()
 
@@ -271,15 +229,15 @@ class P50a_book_2(InteractiveScene):
         slice_4_index=trajectory[way_point_3][1]
         u_points = np.linspace(-2.5, 2.5, num_points)
         points = [param_surface(u, slice_4_index) for u in u_points] #Theta2 isn't exactly 0, but pretty close. 
-        slice_4 = VMobject()
+        slice_4 = m.VMobject()
         slice_4.set_points_smoothly(points)
         slice_4.set_stroke(width=4, color=YELLOW, opacity=0.3)
         self.wait()
 
-        self.play(ShowCreation(slice_4))
+        self.play(m.Create(slice_4))
         self.wait()
 
-        self.frame.reorient(87, 82, 0, (-0.0, 0.47, 0.53), 7.94)
+        self.set_view(87, 82, 0, (-0.0, 0.47, 0.53), 7.94)
         self.wait()
 
 
@@ -303,8 +261,8 @@ class P50a_book_2(InteractiveScene):
         # Let's see here...
 
         self.remove(slice_1, slice_2, slice_3, slice_4, ts, u_gridlines, v_gridlines, axes, s1, t, x_label, y_label)
-        # self.frame.reorient(0, 0, 0, (0,0,0), 8.00)
-        self.frame.reorient(0, 0, 0, (5.16, 1.19, -0.0), 7.14)
+        # self.set_view(0, 0, 0, (0,0,0), 8.00)
+        self.set_view(0, 0, 0, (5.16, 1.19, -0.0), 7.14)
         self.wait()
 
         x_axis_1=WelchXAxis(x_min=-2.5, x_max=2.5, x_ticks=[], x_tick_height=0.15,        
@@ -312,57 +270,57 @@ class P50a_book_2(InteractiveScene):
         y_axis_1=WelchYAxis(y_min=-1, y_max=2, y_ticks=[], y_tick_width=0.15,        
                           y_label_font_size=20, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=3)
 
-        x_label_1 = Tex(r'\theta_1', font_size=28).set_color(CHILL_BROWN)
-        y_label_1 = Tex('Loss', font_size=22).set_color(CHILL_BROWN)
-        x_label_1.next_to(x_axis_1, RIGHT, buff=0.05)
-        y_label_1.next_to(y_axis_1, UP, buff=0.08)
+        x_label_1 = math_tex(r'\theta_1', font_size=28).set_color(CHILL_BROWN)
+        y_label_1 = math_tex('Loss', font_size=22).set_color(CHILL_BROWN)
+        x_label_1.next_to(x_axis_1, m.RIGHT, buff=0.05)
+        y_label_1.next_to(y_axis_1, m.UP, buff=0.08)
 
 
-        axes_1=VGroup(x_axis_1, y_axis_1, x_label_1, y_label_1)
+        axes_1=m.VGroup(x_axis_1, y_axis_1, x_label_1, y_label_1)
         self.add(axes_1)
         self.wait()
 
         points_1 = [param_surface(u, slice_1_index)[2] for u in u_points]
         mapped_x_1=x_axis_1.map_to_canvas(u_points) 
         mapped_y_1=y_axis_1.map_to_canvas(np.array(points_1))
-        curve_1=VMobject()         
+        curve_1=m.VMobject()
         curve_1.set_points_smoothly(np.vstack((mapped_x_1, mapped_y_1, np.zeros_like(mapped_x_1))).T)
         curve_1.set_stroke(width=4, color=YELLOW, opacity=1.0)
-        self.play(ShowCreation(curve_1))
+        self.play(m.Create(curve_1))
         self.wait()
 
 
         points_2 = [param_surface(u, slice_2_index)[2] for u in u_points]
         mapped_x_1=x_axis_1.map_to_canvas(u_points) 
         mapped_y_1=y_axis_1.map_to_canvas(np.array(points_2))
-        curve_2=VMobject()         
+        curve_2=m.VMobject()
         curve_2.set_points_smoothly(np.vstack((mapped_x_1, mapped_y_1, np.zeros_like(mapped_x_1))).T)
         curve_2.set_stroke(width=4, color=YELLOW, opacity=0.7)
-        self.play(ShowCreation(curve_2))
+        self.play(m.Create(curve_2))
         self.wait()
 
         points_2 = [param_surface(u, slice_3_index)[2] for u in u_points]
         mapped_x_1=x_axis_1.map_to_canvas(u_points) 
         mapped_y_1=y_axis_1.map_to_canvas(np.array(points_2))
-        curve_2=VMobject()         
+        curve_2=m.VMobject()
         curve_2.set_points_smoothly(np.vstack((mapped_x_1, mapped_y_1, np.zeros_like(mapped_x_1))).T)
         curve_2.set_stroke(width=4, color=YELLOW, opacity=0.5)
-        self.play(ShowCreation(curve_2))
+        self.play(m.Create(curve_2))
         self.wait()
 
         points_2 = [param_surface(u, slice_4_index)[2] for u in u_points]
         mapped_x_1=x_axis_1.map_to_canvas(u_points) 
         mapped_y_1=y_axis_1.map_to_canvas(np.array(points_2))
-        curve_2=VMobject()         
+        curve_2=m.VMobject()
         curve_2.set_points_smoothly(np.vstack((mapped_x_1, mapped_y_1, np.zeros_like(mapped_x_1))).T)
         curve_2.set_stroke(width=4, color=YELLOW, opacity=0.3)
-        self.play(ShowCreation(curve_2))
+        self.play(m.Create(curve_2))
         self.wait()
 
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 

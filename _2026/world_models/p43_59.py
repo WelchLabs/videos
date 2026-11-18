@@ -1,7 +1,7 @@
 """
-P43-59 - bidirectional diffusion -> attention patterns -> causal masking -> exposure bias  (ManimGL)
+P43-59 - bidirectional diffusion -> attention patterns -> causal masking -> exposure bias  (ManimGX)
 
-    manimgl <path to this file> P43
+    uv run manimgx render p43_59.py P43
 
 One growing file for the whole sequence; scenes get split out when it makes sense. So far:
 
@@ -83,322 +83,68 @@ Wan2.1 output (p43_59_2: 31 x 45) still runs. Set WM_P43_59 to point somewhere e
 Timings and toggles are class attributes on the scene classes.
 """
 import json
-import os
 import re
-import xml.etree.ElementTree as ET
 from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
-from manimlib import *
+import manimgx as gx
 
-try:
-    import moderngl
-except Exception:      # only needed for hard-edged pixels in the patch zoom
-    moderngl = None
+from welch_storyboard import TEXT_FONT
+from transformer_gx import (
+    BG_FALLBACK,
+    FRESH_TAN,
+    P,
+    RUN,
+    STROKE_PER_U,
+    U,
+    arrow,
+    fade_image,
+    move_slot,
+    place_rect,
+    pulse,
+    settle_group,
+    step_dirs,
+    StoryboardTile,
+    wan_frame_path,
+    u_line,
+    u_text,
+    DIM_FONT,
+    transformer_graphic as build_transformer,
+)
 
 # ----------------------------------------------------------------------------- config
 HERE = Path(__file__).resolve().parent
 SKETCHES = HERE / "p43_59_sketches_1"
-RUN = Path(os.environ.get(
-    "WM_P43_59",
-    "/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/world_models/hackin/Wan2.2/"
-    "attn_runs/ball_drop_s252/p43_59_3"))
-
-FRESH_TAN = "#f4ebd9"       # line art, prompt, TRANSFORMER
 RED = "#d73b2f"             # NON CAUSAL highlights (storyboard -08)
 GREEN = "#419c52"           # CAUSAL highlights (storyboard -09)
 YELLOW = "#fcc947"          # block / frame highlights and their dashed arrows (storyboard -05)
 FRAME_NUM = "#063336"       # the big frame numbers set over the highlighted frames
 PINK = "#ed5e78"            # the highlighted attention-pattern icon + its bracket
 CHILL_BROWN = "#948678"     # title, feedback loop
-BG_FALLBACK = "#031e1e"     # node fill = scene background (read from the camera at runtime when possible)
-SVG_BG = "#031e1e"          # the background color used inside the storyboards (swapped for the scene's)
-LABEL_FONT = "Open Sans"
-TEXT_FONT = "STIX Two Text"
-DIM_FONT = "Latin Modern Roman"                 # the 18,720 dimension labels
-CAP = {LABEL_FONT: 0.714, TEXT_FONT: 0.656, DIM_FONT: 0.683}    # cap height / em, to match Illustrator's point sizes
-
 PROMPT = [
     "“A single red rubber ball is dropped from the top of the frame onto a wooden",
     "floor and bounces several times, each bounce lower than the last, until it comes",
     "to rest. Static camera, soft daylight, plain white wall behind, realistic physics.”",
 ]
 
-# ----------------------------------------------------------------------------- storyboard coordinates
-U = FRAME_HEIGHT / 108              # manim units per storyboard unit (192 x 108 viewBox)
-STROKE_PER_U = 10 / 2.03            # manim stroke_width that renders 1 storyboard unit wide (measured at 1080p)
-
-
-def P(x, y):
-    """Storyboard point (192 x 108, y down) -> manim point."""
-    return np.array([(x - 96) * U, (54 - y) * U, 0.0])
-
-
-def u_line(a, b, stroke_u=0.2, color=FRESH_TAN, opacity=1.0):
-    return Line(P(*a), P(*b)).set_stroke(color, stroke_u * STROKE_PER_U, opacity)
-
-
-def arrow(tail, tip, stroke_u=0.2, head=(1.99, 0.815, 1.52), color=FRESH_TAN):
-    """Storyboard-style arrow: shaft + notched head. head = (length, half width, notch depth). -> VGroup(shaft, barb)"""
-    tail, tip = np.array(tail, float), np.array(tip, float)
-    u = (tip - tail) / np.linalg.norm(tip - tail)
-    n = np.array([-u[1], u[0]])
-    length, half, notch = head
-    shaft = u_line(tail, tip - notch * u, stroke_u, color)
-    barb = Polygon(P(*tip), P(*(tip - length * u + half * n)), P(*(tip - notch * u)), P(*(tip - length * u - half * n)))
-    barb.set_fill(color, 1).set_stroke(color, 0)
-    return VGroup(shaft, barb)
-
-
-def u_text(string, size_u, x, y, font=LABEL_FONT, bold=False, italic=False, align="left", color=FRESH_TAN,
-           weight=None):
-    """Text at storyboard size with its baseline at y. x is its left edge ("left"), right edge ("right") or middle.
-
-    A throwaway "H" is set in front of the string: its height fixes the scale and its bottom is the baseline, so
-    strings with descenders sit correctly without per-string fudge factors.
-    """
-    full = Text("H" + string, font=font, weight=weight or (BOLD if bold else NORMAL),
-                slant=ITALIC if italic else NORMAL, font_size=48)
-    full.scale(CAP.get(font, 0.7) * size_u * U / full[0].get_height())
-    t = full[1:]
-    baseline = full[0].get_bottom()[1]
-    edge_x = {"left": t.get_left()[0], "right": t.get_right()[0]}.get(align, t.get_center()[0])
-    t.shift(P(x, y) - np.array([edge_x, baseline, 0.0]))
-    return t.set_color(color)
-
-
-# ----------------------------------------------------------------------------- reading storyboard SVGs
-_NUM = r"-?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?"
-
-
-def _css_classes(svg_text):
-    """{class name: {property: value}} from the <style> block Illustrator writes."""
-    styles = {}
-    m = re.search(r"<style[^>]*>(.*?)</style>", svg_text, flags=re.S)
-    for selectors, body in re.findall(r"([^{}]+)\{([^}]*)\}", m.group(1) if m else ""):
-        props = dict((k.strip(), v.strip()) for k, v in (kv.split(":", 1) for kv in body.split(";") if ":" in kv))
-        for sel in selectors.split(","):
-            styles.setdefault(sel.strip().lstrip("."), {}).update(props)
-    return styles
-
-
-def _matrix(transform):
-    """SVG transform attribute (translate / rotate / scale) -> 3x3 matrix."""
-    M = np.eye(3)
-    for name, args in re.findall(r"(\w+)\(([^)]*)\)", transform or ""):
-        a = [float(v) for v in re.findall(_NUM, args)]
-        T = np.eye(3)
-        if name == "translate":
-            T[0, 2], T[1, 2] = a[0], (a[1] if len(a) > 1 else 0.0)
-        elif name == "rotate":
-            c, s = np.cos(np.radians(a[0])), np.sin(np.radians(a[0]))
-            T[:2, :2] = [[c, -s], [s, c]]
-        elif name == "scale":
-            T[0, 0], T[1, 1] = a[0], (a[1] if len(a) > 1 else a[0])
-        M = M @ T
-    return M
-
-
-def _path_mob(d, M):
-    """SVG path data (M L H V C S Z, absolute or relative, implicit repeats) -> VMobject."""
-    tokens = re.findall(r"[A-Za-z]|" + _NUM, d)
-    mob = VMobject()
-    pos, start, last_ctrl, cmd, i = np.zeros(2), np.zeros(2), None, None, 0
-
-    def pt(xy):
-        v = M @ np.array([xy[0], xy[1], 1.0])
-        return P(v[0], v[1])
-
-    def nums(n):
-        nonlocal i
-        vals = [float(t) for t in tokens[i:i + n]]
-        i += n
-        return vals
-
-    while i < len(tokens):
-        if re.match(r"[A-Za-z]", tokens[i]):
-            cmd = tokens[i]
-            i += 1
-        rel, c = cmd.islower(), cmd.upper()
-        if c == "Z":
-            mob.add_line_to(pt(start))
-            pos, last_ctrl = start.copy(), None
-            continue
-        if c == "M":
-            xy = np.array(nums(2))
-            pos = pos + xy if rel else xy
-            start = pos.copy()
-            mob.start_new_path(pt(pos))
-            cmd, last_ctrl = ("l" if rel else "L"), None
-        elif c == "L":
-            xy = np.array(nums(2))
-            pos = pos + xy if rel else xy
-            mob.add_line_to(pt(pos))
-            last_ctrl = None
-        elif c == "H":
-            x, = nums(1)
-            pos = np.array([pos[0] + x if rel else x, pos[1]])
-            mob.add_line_to(pt(pos))
-            last_ctrl = None
-        elif c == "V":
-            y, = nums(1)
-            pos = np.array([pos[0], pos[1] + y if rel else y])
-            mob.add_line_to(pt(pos))
-            last_ctrl = None
-        elif c in "CS":
-            if c == "C":
-                v = np.array(nums(6)).reshape(3, 2)
-                c1, c2, end = (v + pos if rel else v)
-            else:
-                v = np.array(nums(4)).reshape(2, 2)
-                c2, end = (v + pos if rel else v)
-                c1 = 2 * pos - last_ctrl if last_ctrl is not None else pos
-            mob.add_cubic_bezier_curve_to(pt(c1), pt(c2), pt(end))
-            pos, last_ctrl = np.array(end), np.array(c2)
-        else:
-            raise ValueError(f"SVG path command {cmd!r} not handled")
-    return mob
-
-
-def read_svg_shapes(path, region=None, bg=BG_FALLBACK):
-    """Vector shapes of a storyboard SVG (line, rect, circle, polygon, polyline, path) as styled VMobjects, in
-    document order. region = (x0, y0, x1, y1) in storyboard units keeps only shapes that lie entirely inside it.
-
-    Each mobject gets .svg_tag, .svg_class and .svg (its resolved style: fill, stroke, stroke_u, opacity, rounded).
-    """
-    svg_text = Path(path).read_text()
-    css = _css_classes(svg_text)
-    root = ET.fromstring(svg_text)
-    out = []
-
-    def walk(node, M):
-        tag = node.tag.split("}")[-1]
-        if tag in ("defs", "style", "text", "use", "image"):
-            return
-        M = M @ _matrix(node.get("transform"))
-        if tag in ("svg", "g"):
-            for child in node:
-                walk(child, M)
-            return
-        A = lambda k, default=0.0: float(node.get(k, default))
-        tp = lambda x, y: P(*(M @ np.array([x, y, 1.0]))[:2])
-        rounded = False
-        if tag == "line":
-            mob = Line(tp(A("x1"), A("y1")), tp(A("x2"), A("y2")))
-        elif tag == "rect":
-            x, y, w, h = A("x"), A("y"), A("width"), A("height")
-            corners = np.array([tp(x, y), tp(x + w, y), tp(x + w, y + h), tp(x, y + h)])
-            ext = corners.max(0) - corners.min(0)
-            rx = A("rx")
-            rounded = rx > 0
-            mob = RoundedRectangle(ext[0], ext[1], corner_radius=rx * U) if rounded else Rectangle(ext[0], ext[1])
-            mob.move_to(corners.mean(0))
-        elif tag == "circle":
-            mob = Circle(radius=A("r") * U).move_to(tp(A("cx"), A("cy")))
-        elif tag in ("polygon", "polyline"):
-            v = np.array([float(t) for t in re.findall(_NUM, node.get("points", ""))]).reshape(-1, 2)
-            pts = [tp(*q) for q in v]
-            mob = Polygon(*pts) if tag == "polygon" else VMobject().set_points_as_corners(pts)
-        elif tag == "path":
-            mob = _path_mob(node.get("d", ""), M)
-        else:
-            return
-        if region is not None:
-            x0, x1 = mob.get_left()[0] / U + 96, mob.get_right()[0] / U + 96
-            y0, y1 = 54 - mob.get_top()[1] / U, 54 - mob.get_bottom()[1] / U
-            if not (region[0] <= x0 and x1 <= region[2] and region[1] <= y0 and y1 <= region[3]):
-                return      # (whole shape must be inside: the full-frame background shapes share the same center)
-        st = {}
-        for name in (node.get("class") or "").split():
-            st.update(css.get(name, {}))
-        fill, stroke = st.get("fill", "#000000"), st.get("stroke", "none")
-        opacity = float(st.get("opacity", 1))
-        stroke_u = float(st.get("stroke-width", "1").replace("px", ""))
-        swap = lambda col: bg if col.lower() == SVG_BG else col
-        if fill == "none" or tag in ("line", "polyline"):
-            mob.set_fill(opacity=0)
-        else:
-            mob.set_fill(swap(fill), opacity)
-        if stroke == "none":
-            mob.set_stroke(width=0)
-        else:
-            mob.set_stroke(swap(stroke), stroke_u * STROKE_PER_U, opacity)
-        mob.svg_tag, mob.svg_class = tag, node.get("class", "")
-        mob.svg = dict(fill=fill, stroke=stroke, stroke_u=stroke_u, opacity=opacity, rounded=rounded)
-        out.append(mob)
-
-    walk(root, np.eye(3))
-    return out
-
-
-# ----------------------------------------------------------------------------- transformer graphic
 TF_SVG = SKETCHES / "p43_59-01.svg"
-TF_REGION = (69.0, 43.0, 124.0, 67.6)       # the transformer's box in p43_59-01.svg
-TF_CENTER = (96.52, 54.93)                  # center of its border there
+TF_REGION = (69.0, 43.0, 124.0, 67.6)
 
 
 def transformer_graphic(bg=BG_FALLBACK, label=True):
-    """The TRANSFORMER box from storyboard -01, at its storyboard position.
-
-    -> VGroup with named layers (also in this order, back to front):
-       .border  .columns  .cells  .grid  .wires  .nodes  .dots  .label
-    Move / scale it as one piece (use scale_with_strokes for a "camera zoom" look).
-    """
-    layers = {k: VGroup() for k in ("border", "columns", "cells", "grid", "wires", "nodes", "dots")}
-    for m in read_svg_shapes(TF_SVG, TF_REGION, bg):
-        s = m.svg
-        thin = s["stroke"] != "none" and s["stroke_u"] < 0.1
-        if m.svg_tag == "rect":
-            key = "columns" if s["rounded"] else "cells"
-        elif m.svg_tag == "circle":
-            key = "nodes"
-        elif m.svg_tag in ("line", "polyline"):
-            key = "grid" if thin else "wires"
-        elif m.svg_tag == "path":
-            key = "border" if s["fill"] == "none" else ("nodes" if s["fill"].lower() == SVG_BG else "dots")
-        else:
-            continue
-        if key == "grid":       # one of the nine little grids is a different color in the mockup; make them match
-            m.set_stroke(FRESH_TAN, 0.07 * STROKE_PER_U, 1)
-        layers[key].add(m)
-    g = VGroup(*layers.values())
-    for z, (k, v) in enumerate(layers.items()):
-        setattr(g, k, v)
-        for m in v:     # manimgl draws a batch's fills, then its strokes; a per-layer tag keeps the layers in separate
-            m.uniforms["z_layer"] = float(z)    # batches so e.g. the node fills really do cover the wires behind them
-    g.label = VGroup()
-    if label:
-        g.label = u_text("TRANSFORMER", 3.06, 84.77, 67.49, bold=True)
-        g.add(g.label)
-    return g
-
-
-def scale_with_strokes(mob, factor, about_point=None):
-    """Scale a VMobject and its stroke widths together (what a camera zoom would show)."""
-    mob.scale(factor, about_point=about_point)
-    for sm in mob.family_members_with_points():
-        sm.set_stroke(width=float(sm.get_stroke_width()) * factor)
-    return mob
+    return build_transformer(
+        TF_SVG, TF_REGION, (3.06, 84.77, 67.49), bg=bg, label=label,
+        thin_u=0.1, grid_stroke_u=0.07, outline_grid=False,
+    )
 
 
 # ----------------------------------------------------------------------------- video frames
-def step_dirs(kind="xt"):
-    """Sorted step folders: step_00 ... step_29, step_30_final."""
-    root = RUN / "p43" / kind
-    dirs = sorted(d for d in root.glob("step_*") if d.is_dir())
-    if not dirs:
-        raise FileNotFoundError(
-            f"No step folders in {root}\n  -> point WM_P43_59 at the notebook's p43_59_3 output folder")
-    return dirs
-
-
 @lru_cache(maxsize=160)
 def _rgba(path):
     with Image.open(path) as im:
-        im = im.convert("RGBA")
-        return im.size, im.tobytes()
+        return np.asarray(im.convert("RGBA"))
 
 
 class Clock:
@@ -412,75 +158,41 @@ class Clock:
         return int(self.fixed) if self.fixed is not None else int(self.t * self.fps) % self.n
 
 
-class StepVideo(ImageMobject):
-    """One quad showing <RUN>/p43/<kind>/step_SS/frame_FFF.png. Its texture is rewritten in place, so a whole
-    video (at any diffusion step) costs one mobject and one texture instead of one ImageMobject per frame.
-
-        v = StepVideo(clock, step=0)        v.set_step(12)        v.sync()   # scene calls sync() every frame
-        StepVideo(clock, step=40, frame=47)                                  # a still: always video frame 47
-    """
-    _count = 0
+class StepVideo(StoryboardTile):
+    """One image showing a selected diffusion step and video frame."""
 
     def __init__(self, clock, step=0, kind="xt", height=2.0, frame=None):
-        self.clock, self.step, self.kind, self.frame = clock, step, kind, frame
-        self.pixelated = False
+        self.clock = clock
+        self.step = int(step)
+        self.frame = frame
         self.dirs = step_dirs(kind)
-        self._shown = None
-        super().__init__(str(self.frame_path()), height=height)
-        try:
-            self.image.load()               # don't hold the file handle open
-        except Exception:
-            pass
-        StepVideo._count += 1
-        self.uniforms["video_slot"] = float(StepVideo._count)   # keeps two videos from being batched onto one texture
+        self._shown = self.frame_path()
+        super().__init__(_rgba(self._shown), resampling_algorithm=gx.RESAMPLING_ALGORITHMS["linear"])
+        self.scale_to_fit_height(height)
 
     def frame_path(self):
         frame = self.clock.frame() if self.frame is None else self.frame
-        return self.dirs[int(np.clip(self.step, 0, len(self.dirs) - 1))] / f"frame_{frame:03d}.png"
+        return wan_frame_path(self.dirs, self.step, frame)
 
     def set_step(self, step):
         self.step = int(step)
         return self
 
-    def init_shader_wrapper(self, ctx):
-        super().init_shader_wrapper(ctx)
-        path = self.frame_path()
-        size, data = _rgba(path)
-        # a private texture (the stock one is cached per file path and shared between mobjects)
-        self.shader_wrapper.textures[0] = ctx.texture(size=size, components=4, data=data)
-        self._shown = path
-        self.set_pixelated(self.pixelated)
-
     def set_pixelated(self, on=True):
-        """Hard-edged pixels when the image is blown up (instead of smooth interpolation)."""
-        self.pixelated = on
-        if moderngl is not None and self.shader_wrapper is not None and self.shader_wrapper.textures:
-            self.shader_wrapper.textures[0].filter = (moderngl.LINEAR, moderngl.NEAREST if on else moderngl.LINEAR)
-        return self
+        """Choose nearest-neighbor sampling for the enlarged source pixels."""
+        filter_name = "nearest" if on else "linear"
+        return self.set_resampling_algorithm(gx.RESAMPLING_ALGORITHMS[filter_name])
 
     def set_quad(self, ul, dl, ur, dr):
-        """Put the image's four corners anywhere (used for the tilted block)."""
-        self.set_points(np.array([ul, dl, ur, dr, ur, dl]))
-        return self
+        """Place the four image vertices for the tilted block."""
+        return self.set_points(np.array([ul, ur, dl, dr]))
 
     def sync(self):
         path = self.frame_path()
-        if path == self._shown or self.shader_wrapper is None or not self.shader_wrapper.textures:
-            return self
-        self.shader_wrapper.textures[0].write(_rgba(path)[1])
-        self._shown = path
+        if path != self._shown:
+            self.show(_rgba(path))
+            self._shown = path
         return self
-
-    def place(self, x, y, w, h):
-        """Fill the storyboard slot with top-left (x, y) and size (w, h)."""
-        return place_rect(self, x, y, w, h)
-
-
-def place_rect(mob, x, y, w, h):
-    """Stretch a mobject to fill the storyboard rectangle with top-left (x, y) and size (w, h)."""
-    mob.set_width(w * U, stretch=True).set_height(h * U, stretch=True)
-    mob.move_to(P(x + w / 2, y + h / 2))
-    return mob
 
 
 def polyline_point(points, alpha):
@@ -494,7 +206,7 @@ def polyline_point(points, alpha):
 
 
 # ============================================================================= P43
-class P43(InteractiveScene):
+class P43(gx.Scene):
     # --- toggles -------------------------------------------------------------------------------------------
     show_text = True            # title / prompt / TRANSFORMER as manim Text. False: add them in post
     show_step_counter = True    # small "STEP 12 / 40" under the plus node (not in the storyboard)
@@ -770,23 +482,21 @@ class P43(InteractiveScene):
 
     # ------------------------------------------------------------------------------------------- pieces
     def setup_scene(self):
-        try:
-            self.bg = rgb_to_hex(self.camera.background_rgba[:3])
-        except Exception:
-            self.bg = BG_FALLBACK
+        self.camera.background_color = BG_FALLBACK
+        self.bg = BG_FALLBACK
 
         # everything that plays video hangs off one clock, advanced by an invisible mobject's updater
         self.n_steps = len(step_dirs("xt")) - 1                         # 40 model calls -> 41 step folders
         n_frames = len(list(step_dirs("xt")[0].glob("frame_*.png")))    # 48
         self.clock = Clock(self.video_fps, n_frames)
         self.videos, self.on_tick = [], []
-        self.ticker = Mobject()
+        self.ticker = gx.Mobject()
         self.ticker.add_updater(self._tick)
         self.add(self.ticker)
 
         self.title = u_text("BIDIRECTIONAL DIFFUSION", 4.2, 68.07, 9.86, bold=True, color=CHILL_BROWN)
         self.tf = transformer_graphic(self.bg, label=self.show_text)
-        self.prompt = VGroup(*[
+        self.prompt = gx.VGroup(*[
             u_text(s, 2.2, 96.0, 28.42 + 2.64 * k, font=TEXT_FONT, italic=True, align="center")
             for k, s in enumerate(PROMPT)])
         self.prompt_arrow = arrow((95.95, 35.86), (95.95, 40.76))
@@ -796,27 +506,27 @@ class P43(InteractiveScene):
         # feedback loop: down from under the output, along the bottom, back up to the input
         (sx, sy), (ex, ey), ly, r = self.LOOP_START, self.LOOP_END, self.LOOP_Y, self.LOOP_R
         # (built from many equal-length pieces: manim draws partial paths by piece count, so this makes
-        #  ShowCreation / passing flashes move along it at an even speed)
-        t = np.linspace(0, PI / 2, 12)
+        #  Create / passing flashes move along it at an even speed)
+        t = np.linspace(0, gx.PI / 2, 12)
         corner_r = [(sx - r + r * np.cos(a), ly - r + r * np.sin(a)) for a in t]
-        corner_l = [(ex + r + r * np.cos(a), ly - r + r * np.sin(a)) for a in t + PI / 2]
+        corner_l = [(ex + r + r * np.cos(a), ly - r + r * np.sin(a)) for a in t + gx.PI / 2]
         outline = np.array([(sx, sy), *corner_r, *corner_l, (ex, ey + 1.52)])
         n_pieces = int(np.linalg.norm(np.diff(outline, axis=0), axis=1).sum() / 0.25)
-        loop = VMobject().set_points_as_corners(
+        loop = gx.VMobject().set_points_as_corners(
             [P(*polyline_point(outline, k / n_pieces)) for k in range(n_pieces + 1)])
         loop.set_stroke(CHILL_BROWN, 0.2 * STROKE_PER_U).set_fill(opacity=0)
-        barb = Polygon(P(ex, ey), P(ex + 0.815, ey + 1.99), P(ex, ey + 1.52), P(ex - 0.815, ey + 1.99))
+        barb = gx.Polygon(P(ex, ey), P(ex + 0.815, ey + 1.99), P(ex, ey + 1.52), P(ex - 0.815, ey + 1.99))
         barb.set_fill(CHILL_BROWN, 1).set_stroke(CHILL_BROWN, 0)
-        self.loop = VGroup(loop, barb)
+        self.loop = gx.VGroup(loop, barb)
         px, py, pr = self.PLUS
-        self.plus = VGroup(
-            Circle(radius=pr * U).move_to(P(px, py)).set_fill(self.bg, 1).set_stroke(CHILL_BROWN, 0.2 * STROKE_PER_U),
+        self.plus = gx.VGroup(
+            gx.Circle(radius=pr * U).move_to(P(px, py)).set_fill(self.bg, 1).set_stroke(CHILL_BROWN, 0.2 * STROKE_PER_U),
             u_line((px - 0.62, py), (px + 0.62, py), 0.26, CHILL_BROWN),
             u_line((px, py - 0.62), (px, py + 0.62), 0.26, CHILL_BROWN))
 
         self.left = self.new_video(0).place(*self.SLOT_L)
         self.right = self.new_video(1).place(*self.SLOT_R)
-        self.counter = VGroup()
+        self.counter = gx.VGroup()
         self._counter_cache = {}
 
     def new_video(self, step, kind="xt", frame=None):
@@ -831,11 +541,6 @@ class P43(InteractiveScene):
         for v in self.videos:
             v.sync()
 
-    def settle(self, group):
-        """After animating a group's pieces one by one, put the group itself back on screen as a single mobject."""
-        self.remove(*group.get_family())
-        self.add(group)
-
     def set_counter(self, n):
         if not (self.show_step_counter and self.show_text):
             return
@@ -843,54 +548,37 @@ class P43(InteractiveScene):
         if (n, x, y) not in self._counter_cache:
             self._counter_cache[(n, x, y)] = u_text(f"STEP {n} / {self.n_steps}", 2.0, x, y, bold=True,
                                                     align="center", color=CHILL_BROWN)
-        self.counter.set_submobjects([self._counter_cache[(n, x, y)]])
+        self.counter.submobjects = [self._counter_cache[(n, x, y)]]
         if self.counter not in self.mobjects:
             self.add(self.counter)
-
-    @staticmethod
-    def move_slot(video, start, end, **kwargs):
-        """Animate a StepVideo from one (x, y, w, h) slot to another."""
-        a0, a1 = np.array(start, float), np.array(end, float)
-        return UpdateFromAlphaFunc(video, lambda m, a: m.place(*interpolate(a0, a1, a)), **kwargs)
-
-    @staticmethod
-    def fade(image, start=0.0, end=1.0, **kwargs):
-        """Opacity animation for a StepVideo (keeps the mobject itself, and so its texture, on screen)."""
-        return UpdateFromAlphaFunc(image, lambda m, a: m.set_opacity(interpolate(start, end, a)), **kwargs)
-
-    @staticmethod
-    def pulse(vmob, width_factor=3.0, time_width=0.6, **kwargs):
-        """A brighter, thicker flash running along a stroke."""
-        hot = vmob.copy().set_fill(opacity=0).set_stroke(FRESH_TAN, float(vmob.get_stroke_width()) * width_factor, 1)
-        return VShowPassingFlash(hot, time_width=time_width, **kwargs)
 
     # ------------------------------------------------------------------------------------------- beats
     def beat_intro(self, run_time=None):
         """Title, transformer and prompt draw in together."""
         tf = self.tf
         anims = [
-            LaggedStart(
-                AnimationGroup(ShowCreation(tf.border), FadeIn(tf.columns, lag_ratio=0.3)),
-                AnimationGroup(FadeIn(tf.cells, lag_ratio=0.02), ShowCreation(tf.grid, lag_ratio=0.02), FadeIn(tf.dots)),
-                AnimationGroup(ShowCreation(tf.wires, lag_ratio=0.01), FadeIn(tf.nodes, lag_ratio=0.02)),
-                *([Write(tf.label)] if len(tf.label) else []),
+            gx.LaggedStart(
+                gx.AnimationGroup(gx.Create(tf.border), gx.FadeIn(tf.columns, lag_ratio=0.3)),
+                gx.AnimationGroup(gx.FadeIn(tf.cells, lag_ratio=0.02), gx.Create(tf.grid, lag_ratio=0.02), gx.FadeIn(tf.dots)),
+                gx.AnimationGroup(gx.Create(tf.wires, lag_ratio=0.01), gx.FadeIn(tf.nodes, lag_ratio=0.02)),
+                *([gx.Write(tf.label)] if len(tf.label) else []),
                 lag_ratio=0.35),
-            ShowCreation(self.prompt_arrow[0]),
-            FadeIn(self.prompt_arrow[1]),
+            gx.Create(self.prompt_arrow[0]),
+            gx.FadeIn(self.prompt_arrow[1]),
         ]
         if self.show_text:
-            anims += [Write(self.title), Write(self.prompt, lag_ratio=0.05)]
+            anims += [gx.Write(self.title), gx.Write(self.prompt, lag_ratio=0.05)]
         self.play(*anims, run_time=run_time or self.intro_time)
-        self.settle(tf)
+        settle_group(self, tf)
 
     def beat_io(self, run_time=None):
         self.left.set_opacity(0)
         self.add(self.left)
         self.play(
-            self.fade(self.left),
-            LaggedStart(
-                AnimationGroup(ShowCreation(self.in_arrow[0]), FadeIn(self.in_arrow[1])),
-                AnimationGroup(ShowCreation(self.out_arrow[0]), FadeIn(self.out_arrow[1])),
+            fade_image(self.left),
+            gx.LaggedStart(
+                gx.AnimationGroup(gx.Create(self.in_arrow[0]), gx.FadeIn(self.in_arrow[1])),
+                gx.AnimationGroup(gx.Create(self.out_arrow[0]), gx.FadeIn(self.out_arrow[1])),
                 lag_ratio=0.6),
             run_time=run_time or self.io_time)
 
@@ -899,11 +587,11 @@ class P43(InteractiveScene):
         self.right.set_step(step + 1).place(*self.SLOT_R).set_opacity(0)
         self.add(self.right)
         nodes = sorted(self.tf.nodes, key=lambda m: m.get_center()[0])
-        wave = LaggedStart(*[
-            UpdateFromAlphaFunc(n, lambda m, a: m.set_fill(interpolate_color(self.bg, FRESH_TAN, there_and_back(a)), 1))
+        wave = gx.LaggedStart(*[
+            gx.UpdateFromAlphaFunc(n, lambda m, a: m.set_fill(gx.interpolate_color(self.bg, FRESH_TAN, gx.there_and_back(a)), 1))
             for n in nodes], lag_ratio=0.03)
         self.play(
-            LaggedStart(self.pulse(self.in_arrow[0]), wave, self.pulse(self.out_arrow[0]), self.fade(self.right),
+            gx.LaggedStart(pulse(self.in_arrow[0]), wave, pulse(self.out_arrow[0]), fade_image(self.right),
                         lag_ratio=0.45),
             run_time=run_time or self.forward_time)
         for n in nodes:
@@ -924,16 +612,16 @@ class P43(InteractiveScene):
         full_h, small = rh * U, self.TRAVEL_SCALE
 
         def ride(m, a):
-            grow = max(smooth(1 - a / 0.2), smooth((a - 0.8) / 0.2))      # 1 at both ends, 0 through the middle
-            h = interpolate(small, 1.0, np.clip(grow, 0, 1)) * full_h
-            m.set_width(h * rw / rh, stretch=True).set_height(h, stretch=True)
-            m.move_to(polyline_point(route, smooth(a)))
+            grow = max(gx.smooth(1 - a / 0.2), gx.smooth((a - 0.8) / 0.2))      # 1 at both ends, 0 through the middle
+            h = gx.interpolate(small, 1.0, np.clip(grow, 0, 1)) * full_h
+            m.stretch_to_fit_width(h * rw / rh).stretch_to_fit_height(h)
+            m.move_to(polyline_point(route, gx.smooth(a)))
 
         if not getattr(self, "loop_drawn", False):
             self.loop_drawn = True
             seg = np.linalg.norm(np.diff(np.array(route), axis=0), axis=1)
             total, d0, loop_len = seg.sum(), seg[0], seg[1:4].sum()
-            pos = lambda a: smooth(a) * total                                   # how far along the route the video is
+            pos = lambda a: gx.smooth(a) * total                                   # how far along the route the video is
             d_plus = d0 + seg[1] + (sx - self.PLUS[0]) * U                      # ... and where the plus node sits on it
             ramp = lambda a, start, length: float(np.clip((pos(a) - start) / length, 0, 1))
             line, barb = self.loop
@@ -941,17 +629,17 @@ class P43(InteractiveScene):
             barb.set_opacity(0)
             self.add(line, self.plus, barb)         # under the video, so the line appears to trail out from behind it
             self.bring_to_front(self.right)
-            self.play(UpdateFromAlphaFunc(self.right, ride, rate_func=linear),
-                      ShowCreation(line, rate_func=lambda a: ramp(a, d0, loop_len)),     # line tip stays under the video
-                      UpdateFromAlphaFunc(self.plus, lambda m, a: m.set_opacity(ramp(a, d_plus - 10 * U, 8 * U)),
-                                          rate_func=linear),
-                      UpdateFromAlphaFunc(barb, lambda m, a: m.set_opacity(ramp(a, d0 + loop_len - 2 * U, 4 * U)),
-                                          rate_func=linear),
+            self.play(gx.UpdateFromAlphaFunc(self.right, ride, rate_func=gx.linear),
+                      gx.Create(line, rate_func=lambda a: ramp(a, d0, loop_len)),     # line tip stays under the video
+                      gx.UpdateFromAlphaFunc(self.plus, lambda m, a: m.set_opacity(ramp(a, d_plus - 10 * U, 8 * U)),
+                                          rate_func=gx.linear),
+                      gx.UpdateFromAlphaFunc(barb, lambda m, a: m.set_opacity(ramp(a, d0 + loop_len - 2 * U, 4 * U)),
+                                          rate_func=gx.linear),
                       run_time=run_time or self.first_feedback_time)
         else:
             self.bring_to_front(self.right)
-            self.play(UpdateFromAlphaFunc(self.right, ride, rate_func=linear),
-                      self.pulse(self.loop[0], time_width=0.25, rate_func=smooth),
+            self.play(gx.UpdateFromAlphaFunc(self.right, ride, rate_func=gx.linear),
+                      pulse(self.loop[0], time_width=0.25, rate_func=gx.smooth),
                       run_time=run_time or self.feedback_time)
         self.left.set_step(self.right.step)
         self.remove(self.right)
@@ -1007,21 +695,21 @@ class P43(InteractiveScene):
         going = [self.in_arrow, self.plus]
         going += [self.loop] if getattr(self, "loop_drawn", False) else []
         going += [self.counter] if len(self.counter) else []
-        anims = [FadeOut(m) for m in going]
+        anims = [gx.FadeOut(m) for m in going]
         if other in self.mobjects:
-            anims.append(self.fade(other, 1.0, 0.0))
+            anims.append(fade_image(other, 1.0, 0.0))
         anims += [self.tf.animate.shift(d), self.prompt_arrow.animate.shift(d), self.out_arrow.animate.shift(d)]
         if self.show_text:
             anims += [self.title.animate.shift(dt),
                       self.prompt.animate.scale(self.PROMPT_SCALE, about_point=self.prompt.get_bottom()).shift(d)]
 
         self.remove(video)      # so it's re-added last, on top of the transformer it passes over
-        self.play(*anims, self.move_slot(video, start, self.BIG), run_time=run_time or self.rearrange_time)
+        self.play(*anims, move_slot(video, start, self.BIG), run_time=run_time or self.rearrange_time)
         for m in going:
             self.remove(*m.get_family())
         self.remove(other)
         self.bring_to_front(video)
-        self.counter.set_submobjects([])
+        self.counter.submobjects = []
         self.counter_pos = self.COUNTER_44
         self.big = video
 
@@ -1053,7 +741,7 @@ class P43(InteractiveScene):
                       for f in self.GRID_FRAMES]
         self.add(*self.tiles)               # last tile on top: it shows the frame the video stopped on
         self.remove(self.big)
-        self.play(LaggedStart(*[self.move_slot(t, self.BIG, self.grid_slot(k)) for k, t in enumerate(self.tiles)],
+        self.play(gx.LaggedStart(*[move_slot(t, self.BIG, self.grid_slot(k)) for k, t in enumerate(self.tiles)],
                               lag_ratio=0.08),
                   run_time=run_time or self.split_time)
 
@@ -1104,7 +792,7 @@ class P43(InteractiveScene):
         pad = 0.8 * U
         lines = [l for l in self.tf.grid
                  if min(xs) - pad <= l.get_center()[0] <= max(xs) + pad and min(ys) - pad <= l.get_center()[1] <= max(ys) + pad]
-        icon = VGroup(*cells, *lines)
+        icon = gx.VGroup(*cells, *lines)
         icon.cells, icon.lines = cells, lines
         return icon
 
@@ -1117,7 +805,7 @@ class P43(InteractiveScene):
         self.icon = icon = self.tf_icon(*self.ICON)
         mine = set(id(m) for m in icon)
         layers = (tf.border, tf.columns, tf.cells, tf.grid, tf.wires, tf.nodes, tf.dots)
-        self.tf_rest = VGroup(*[m for layer in layers for m in layer if id(m) not in mine],
+        self.tf_rest = gx.VGroup(*[m for layer in layers for m in layer if id(m) not in mine],
                               *([tf.label] if len(tf.label) else []))
         self.remove(*tf.get_family())           # from here on the transformer is two mobjects: the icon and the rest
         self.add(self.tf_rest, icon)
@@ -1130,14 +818,14 @@ class P43(InteractiveScene):
         going = [self.tf_rest, self.prompt_arrow, self.out_arrow]
         going += [self.prompt] if self.show_text else []
         going += [self.counter] if len(self.counter) else []
-        anims = [FadeOut(m) for m in going]
-        anims += [self.move_slot(t, self.grid_slot(k), self.small_grid_slot(k)) for k, t in enumerate(self.tiles)]
+        anims = [gx.FadeOut(m) for m in going]
+        anims += [move_slot(t, self.grid_slot(k), self.small_grid_slot(k)) for k, t in enumerate(self.tiles)]
         if self.show_text:
             anims.append(self.title.animate.shift(np.array([self.TITLE_SHIFT_3[0] * U, -self.TITLE_SHIFT_3[1] * U, 0.0])))
         self.play(*anims, run_time=run_time or self.clear_left_time)
         for m in going:
             self.remove(*m.get_family())
-        self.counter.set_submobjects([])
+        self.counter.submobjects = []
 
     def beat_icon_to_bracket(self, run_time=None, bracket_time=None):
         """The icon drops to the bottom of the screen, centered under where the pattern goes; then a line runs out
@@ -1145,23 +833,23 @@ class P43(InteractiveScene):
         ax, ay, aw, ah = self.ATTN
         cx, by = ax + aw / 2, self.BRACKET_Y
         target = self.icon.copy()
-        scale_with_strokes(target, self.ICON_SCALE)
+        target.scale(self.ICON_SCALE, scale_stroke=True)
         target.move_to(P(cx, by))
-        self.play(Transform(self.icon, target), run_time=run_time or self.icon_move_time)
+        self.play(gx.Transform(self.icon, target), run_time=run_time or self.icon_move_time)
 
         half = self.icon.get_width() / U / 2 + 0.9          # where the lines start, in storyboard units from center
         r = self.BRACKET_R
-        arms = VGroup()
+        arms = gx.VGroup()
         for sgn, edge in ((-1, ax), (1, ax + aw)):
             # icon side -> out along the bottom -> round the corner -> short tick up (in equal-length pieces, so it
             # draws at an even speed)
-            corner = [(edge - sgn * r + sgn * r * np.sin(a), by - r + r * np.cos(a)) for a in np.linspace(0, PI / 2, 10)]
+            corner = [(edge - sgn * r + sgn * r * np.sin(a), by - r + r * np.cos(a)) for a in np.linspace(0, gx.PI / 2, 10)]
             outline = np.array([(cx + sgn * half, by), *corner, (edge, self.BRACKET_TOP)])
             n = int(np.linalg.norm(np.diff(outline, axis=0), axis=1).sum() / 0.25)
-            arms.add(VMobject().set_points_as_corners([P(*polyline_point(outline, k / n)) for k in range(n + 1)]))
+            arms.add(gx.VMobject().set_points_as_corners([P(*polyline_point(outline, k / n)) for k in range(n + 1)]))
         arms.set_stroke(PINK, 0.2 * STROKE_PER_U).set_fill(opacity=0)
         self.bracket = arms
-        self.play(*[ShowCreation(a) for a in arms], run_time=bracket_time or self.bracket_time)
+        self.play(*[gx.Create(a) for a in arms], run_time=bracket_time or self.bracket_time)
 
     def dimension(self, a, b, string, gap_pad=1.6):
         """A storyboard-style dimension: a line from a to b with the number sitting in a gap at its middle."""
@@ -1170,32 +858,28 @@ class P43(InteractiveScene):
         text = u_text(string, 3.2, 0, 0, font=DIM_FONT, align="center", color=CHILL_BROWN)
         gap = text.get_width() / U / 2 + gap_pad
         if abs(u[1]) > abs(u[0]):
-            text.rotate(PI / 2)
+            text.rotate(gx.PI / 2)
         text.move_to(P(*mid))
-        lines = VGroup(u_line(mid - gap * u, a, 0.1, CHILL_BROWN), u_line(mid + gap * u, b, 0.1, CHILL_BROWN))
-        return VGroup(lines, text)
+        lines = gx.VGroup(u_line(mid - gap * u, a, 0.1, CHILL_BROWN), u_line(mid + gap * u, b, 0.1, CHILL_BROWN))
+        return gx.VGroup(lines, text)
 
     def beat_pattern(self, run_time=None, dims_time=None):
         """The full attention pattern grows up from just above the icon; then its dimensions and label come in."""
         path = RUN / "p44" / "attn" / f"{self.ATTN_NAME}.png"
         if not path.exists():
             raise FileNotFoundError(f"Attention pattern not found: {path}")
-        self.pattern = img = ImageMobject(str(path))
-        try:
-            img.image.load()
-        except Exception:
-            pass
+        self.pattern = img = gx.ImageMobject(str(path))
         end = np.array(self.ATTN, float)
         w = self.icon.get_width() / U           # starts icon-sized, sitting on the pattern's bottom edge above the icon,
         start = np.array([end[0] + end[2] / 2 - w / 2, end[1] + end[3] - w, w, w])     # so it never covers the icon
 
         def grow(m, a):
-            place_rect(m, *interpolate(start, end, a))
+            place_rect(m, *gx.interpolate(start, end, a))
             m.set_opacity(float(np.clip(a / 0.25, 0, 1)))
 
         grow(img, 0)
         self.add(img)
-        self.play(UpdateFromAlphaFunc(img, grow), run_time=run_time or self.pattern_time)
+        self.play(gx.UpdateFromAlphaFunc(img, grow), run_time=run_time or self.pattern_time)
 
         ax, ay, aw, ah = self.ATTN
         try:
@@ -1203,14 +887,14 @@ class P43(InteractiveScene):
         except Exception:
             n_tokens = 18720
         number = f"{n_tokens:,}"
-        self.dims = VGroup(self.dimension((ax, self.DIM_TOP_Y), (ax + aw, self.DIM_TOP_Y), number),
+        self.dims = gx.VGroup(self.dimension((ax, self.DIM_TOP_Y), (ax + aw, self.DIM_TOP_Y), number),
                            self.dimension((self.DIM_LEFT_X, ay + ah), (self.DIM_LEFT_X, ay), number))
-        anims = [ShowCreation(l) for d in self.dims for l in d[0]]
+        anims = [gx.Create(l) for d in self.dims for l in d[0]]
         if self.show_text:
             m = re.search(r"layer_(\d+)_head_(\d+)", self.ATTN_NAME)
             self.attn_label = u_text(f"LAYER {int(m.group(1))} HEAD {int(m.group(2))}", 2.2, ax + aw / 2,
                                      self.ATTN_LABEL_Y, weight="SEMIBOLD", align="center", color=CHILL_BROWN)
-            anims += [Write(d[1]) for d in self.dims] + [Write(self.attn_label)]
+            anims += [gx.Write(d[1]) for d in self.dims] + [gx.Write(self.attn_label)]
         self.play(*anims, run_time=dims_time or self.dims_time)
 
     # ------------------------------------------------------------------------------------------- P44: spacetime patch
@@ -1256,7 +940,7 @@ class P43(InteractiveScene):
         Z = self.PATCH_ZOOM
         self.blk_fixed = (Z * front - P(*self.PATCH_VIEW)) / (Z - 1)
         self.blk_lines = []
-        self.blk_driver = Mobject()
+        self.blk_driver = gx.Mobject()
 
     def patch_bounds(self, f, r, c):
         """Block-space extent of token (frame, row, col): (x0, x1), (y0, y1), (z front, z back)."""
@@ -1274,9 +958,9 @@ class P43(InteractiveScene):
             if t >= 1:
                 corners = self.blk_screen(local + depth)
             else:       # part-way between its flat grid slot and its place in the block
-                gx, gy, gw, gh = self.small_grid_slot(k)
-                center = interpolate(P(gx + gw / 2, gy + gh / 2), self.blk_center + self.blk_proj([depth])[0], t)
-                corners = center + interpolate(gw / W, 1.0, t) * self.blk_proj(local, frac=t)
+                grid_x, gy, gw, gh = self.small_grid_slot(k)
+                center = gx.interpolate(P(grid_x + gw / 2, gy + gh / 2), self.blk_center + self.blk_proj([depth])[0], t)
+                corners = center + gx.interpolate(gw / W, 1.0, t) * self.blk_proj(local, frac=t)
             tile.set_quad(*corners)
         for m in self.blk_lines:
             m.set_points_as_corners(self.blk_screen(m.bpts))
@@ -1286,7 +970,7 @@ class P43(InteractiveScene):
         """A patch grid (52 x 30 cells) for one frame, as a single mobject. Its points are kept in the frame's own
         coordinates (.uv: 0-1 across, 0-1 down) so it can be laid onto the frame wherever and however it sits."""
         nx, ny = 832 // self.PATCH_PX, 480 // self.PATCH_PX
-        g = VMobject()
+        g = gx.VMobject()
         for u in np.linspace(0, 1, nx + 1):
             g.start_new_path(np.array([u, 0.0, 0.0]))
             g.add_line_to(np.array([u, 1.0, 0.0]))
@@ -1300,12 +984,12 @@ class P43(InteractiveScene):
     def sync_tile_grids(self):
         """Lay each frame's patch grid onto its frame (call after moving the frames once the grids exist)."""
         for tile, g in zip(self.tiles, getattr(self, "tile_grids", [])):
-            ul, dl, ur = tile.get_points()[:3]
+            ul, ur, dl = tile.points[:3]
             g.set_points(ul + g.uv[:, :1] * (ur - ul) + g.uv[:, 1:2] * (dl - ul))
 
     def blk_line(self, pts, color, stroke_u, opacity=1.0, fill=None):
         """A polyline (or filled polygon) that lives in block space and follows the block."""
-        m = VMobject()
+        m = gx.VMobject()
         m.bpts = np.array(pts, float)
         m.set_points_as_corners(self.blk_screen(m.bpts))
         m.set_stroke(color, stroke_u * STROKE_PER_U, opacity)
@@ -1329,7 +1013,7 @@ class P43(InteractiveScene):
         def step(m, a):
             func(a)
             self.blk_update()
-        self.play(UpdateFromAlphaFunc(self.blk_driver, step, **kwargs), run_time=run_time)
+        self.play(gx.UpdateFromAlphaFunc(self.blk_driver, step, **kwargs), run_time=run_time)
 
     def beat_stack(self, run_time=None):
         """The 12 frames lift off the grid into a tilted block, the last frame of the video in front."""
@@ -1338,12 +1022,10 @@ class P43(InteractiveScene):
         self.add(*sorted(self.tiles, key=lambda t: self.blk_z(self.tiles.index(t))))    # back to front, nearer covers farther
         # background-colored masks: once the block is scaled up it only shows on the right half, below the title
         fw, fh = 192.0, 108.0
-        self.blk_masks = VGroup(
-            place_rect(Rectangle(), -10, -10, self.MASK_X + 10, fh + 20),
-            place_rect(Rectangle(), -10, -10, fw + 20, self.MASK_Y + 10))
+        self.blk_masks = gx.VGroup(
+            place_rect(gx.Rectangle(), -10, -10, self.MASK_X + 10, fh + 20),
+            place_rect(gx.Rectangle(), -10, -10, fw + 20, self.MASK_Y + 10))
         self.blk_masks.set_fill(self.bg, 1).set_stroke(width=0)
-        for m in self.blk_masks:        # tagged so manimgl never batches the masks with the lines under them (within
-            m.uniforms["z_layer"] = 99.0    # a batch all fills are drawn before all strokes, which would let lines through)
         self.blk_restack()
 
         def state(a):
@@ -1364,10 +1046,10 @@ class P43(InteractiveScene):
         rules = [[(x, y1, zf), (x, -y1, zf)] for x in xs] + [[(x0, y, zf), (-x0, y, zf)] for y in ys]     # front
         rules += [[(x, y1, zf), (x, y1, zb)] for x in xs] + [[(x0, y1, z), (-x0, y1, z)] for z in zs]     # top
         rules += [[(x0, y, zf), (x0, y, zb)] for y in ys] + [[(x0, y1, z), (x0, -y1, z)] for z in zs]     # left side
-        self.token_grid = VGroup(*[self.blk_line(r, col, self.RULE_WIDTHS[0], 0.9) for r in rules])
+        self.token_grid = gx.VGroup(*[self.blk_line(r, col, self.RULE_WIDTHS[0], 0.9) for r in rules])
         self.add(self.token_grid)
         self.blk_restack()
-        self.play(ShowCreation(self.token_grid, lag_ratio=0.01), run_time=run_time or self.rule_patches_time)
+        self.play(gx.Create(self.token_grid, lag_ratio=0.01), run_time=run_time or self.rule_patches_time)
 
     def beat_patch_zoom(self, run_time=None, box_time=None, labels_time=None):
         """Scale the block up onto one spacetime patch (its outline is already there), then fill it in: tinted
@@ -1378,7 +1060,7 @@ class P43(InteractiveScene):
 
         def state(a):
             self.blk_zoom = Z ** a
-            self.token_grid.set_stroke(width=float(interpolate(*self.RULE_WIDTHS, a) * STROKE_PER_U))
+            self.token_grid.set_stroke(width=float(gx.interpolate(*self.RULE_WIDTHS, a) * STROKE_PER_U))
         self.blk_restack()
         self.blk_run(state, run_time or self.patch_zoom_time)
 
@@ -1388,29 +1070,29 @@ class P43(InteractiveScene):
         front = [(x0, y1, zf), (x1, y1, zf), (x1, y0, zf), (x0, y0, zf), (x0, y1, zf)]
         top = [(x0, y1, zf), (x1, y1, zf), (x1, y1, zb), (x0, y1, zb), (x0, y1, zf)]
         left = [(x0, y1, zf), (x0, y0, zf), (x0, y0, zb), (x0, y1, zb), (x0, y1, zf)]
-        self.patch_faces = VGroup(self.blk_line(front, col, 0, fill=(col, 0.12)),
+        self.patch_faces = gx.VGroup(self.blk_line(front, col, 0, fill=(col, 0.12)),
                                   self.blk_line(top, col, 0, fill=(col, 0.45)),
                                   self.blk_line(left, col, 0, fill=(col, 0.30)))
         edges = [front[:-1] + front[:1],
                  [(x0, y1, zf), (x0, y1, zb), (x1, y1, zb), (x1, y1, zf)],
                  [(x0, y1, zb), (x0, y0, zb), (x0, y0, zf)]]
-        self.patch_edges = VGroup(*[self.blk_line(e, col, 0.35) for e in edges])
+        self.patch_edges = gx.VGroup(*[self.blk_line(e, col, 0.35) for e in edges])
         # pixel grid: 16 x 16 on the front, 16 pixels x 4 frames on the top and the side
         xs, ys = np.linspace(x0, x1, n + 1)[1:-1], np.linspace(y1, y0, n + 1)[1:-1]
         zs = np.linspace(zf, zb, nf + 1)[1:-1]
         grid = [[(x, y1, zf), (x, y0, zf)] for x in xs] + [[(x0, y, zf), (x1, y, zf)] for y in ys]
         grid += [[(x, y1, zf), (x, y1, zb)] for x in xs] + [[(x0, y1, z), (x1, y1, z)] for z in zs]
         grid += [[(x0, y, zf), (x0, y, zb)] for y in ys] + [[(x0, y1, z), (x0, y0, z)] for z in zs]
-        self.patch_grid = VGroup(*[self.blk_line(g, dark, 0.07, 0.45) for g in grid])
+        self.patch_grid = gx.VGroup(*[self.blk_line(g, dark, 0.07, 0.45) for g in grid])
 
         self.add(self.patch_faces, self.patch_edges)
         self.blk_restack()
-        self.play(FadeIn(self.patch_faces), ShowCreation(self.patch_edges, lag_ratio=0.3),
+        self.play(gx.FadeIn(self.patch_faces), gx.Create(self.patch_edges, lag_ratio=0.3),
                   run_time=box_time or self.patch_box_time)
         self.blk_restack()
 
-        anims = [FadeIn(self.patch_grid, lag_ratio=0.02)]
-        self.patch_labels = VGroup()
+        anims = [gx.FadeIn(self.patch_grid, lag_ratio=0.02)]
+        self.patch_labels = gx.VGroup()
         if self.show_text:
             def at(block_pt, dx=0.0, dy=0.0):       # block point -> storyboard (x, y), nudged by (dx, dy) units
                 q = self.blk_screen([block_pt])[0]
@@ -1420,12 +1102,12 @@ class P43(InteractiveScene):
             mid_x = (corners[:, 0].max() + corners[:, 0].min()) / 2 / U + 96
             px, fr = f"{n} pixels", f"{nf} frames"
             dim = dict(font=DIM_FONT, color=CHILL_BROWN)
-            self.patch_labels = VGroup(
+            self.patch_labels = gx.VGroup(
                 u_text("SPACETIME PATCH", 3.4, mid_x, top_y - 4.0, bold=True, align="center", color=col),
                 u_text(px, 3.2, *at(((x0 + x1) / 2, y0, zf), 0, 4.2), align="center", **dim),
                 u_text(px, 3.2, *at((x1, (y0 + y1) / 2, zf), 1.8, 1.1), align="left", **dim),
                 u_text(fr, 3.2, *at((x0, y0, (zf + zb) / 2), -1.8, 3.0), align="right", **dim))
-            anims.append(Write(self.patch_labels))
+            anims.append(gx.Write(self.patch_labels))
         self.play(*anims, run_time=labels_time or self.patch_labels_time)
 
     def beat_pull_back(self, run_time=None):
@@ -1439,10 +1121,10 @@ class P43(InteractiveScene):
             early = float(np.clip(a / 0.15, 0, 1))                 # labels + pixel grid clear out first
             self.patch_labels.set_opacity(float(1 - early))
             self.patch_grid.set_stroke(opacity=grid0 * (1 - early))
-            self.token_grid.set_stroke(width=float(interpolate(*self.RULE_WIDTHS[::-1], a) * STROKE_PER_U))
-            self.patch_edges.set_stroke(width=float(interpolate(0.35, 0.12, a) * STROKE_PER_U))
+            self.token_grid.set_stroke(width=float(gx.interpolate(*self.RULE_WIDTHS[::-1], a) * STROKE_PER_U))
+            self.patch_edges.set_stroke(width=float(gx.interpolate(0.35, 0.12, a) * STROKE_PER_U))
             for t in self.tiles:
-                t.set_opacity(float(interpolate(1.0, self.DIM_OPACITY, a)))
+                t.set_opacity(float(gx.interpolate(1.0, self.DIM_OPACITY, a)))
         self.blk_run(state, run_time or self.pull_back_time)
         self.blk_zoom = 1.0
         self.blk_update()
@@ -1474,18 +1156,18 @@ class P43(InteractiveScene):
             for f, o in zip(self.patch_faces, fills):
                 f.set_fill(opacity=float(o * (1 - a)))
             for g in self.tile_grids:
-                g.set_stroke(opacity=float(interpolate(0.0, rule_op, a)))
+                g.set_stroke(opacity=float(gx.interpolate(0.0, rule_op, a)))
             for t in self.tiles:
-                t.set_opacity(float(interpolate(self.DIM_OPACITY, 1.0, a)))
-        self.play(UpdateFromAlphaFunc(self.blk_driver, fade), run_time=run_time * 0.35)
+                t.set_opacity(float(gx.interpolate(self.DIM_OPACITY, 1.0, a)))
+        self.play(gx.UpdateFromAlphaFunc(self.blk_driver, fade), run_time=run_time * 0.35)
         self.remove(self.token_grid, self.patch_edges, self.patch_faces)
         self.blk_lines = []
 
         def state(a):
             self.blk_t = 1 - a
             for g in self.tile_grids:
-                g.set_stroke(width=float(interpolate(self.RULE_WIDTHS[0], flat_w, a) * STROKE_PER_U),
-                             opacity=float(interpolate(rule_op, flat_op, a)))
+                g.set_stroke(width=float(gx.interpolate(self.RULE_WIDTHS[0], flat_w, a) * STROKE_PER_U),
+                             opacity=float(gx.interpolate(rule_op, flat_op, a)))
         self.blk_run(state, run_time * 0.65)
         self.remove(self.blk_masks)
         for k, t in enumerate(self.tiles):
@@ -1501,10 +1183,10 @@ class P43(InteractiveScene):
         w, op = self.BLOCK_LINE
         xs = [ax + k * aw / n for k in range(1, n)]
         ys = [ay + k * ah / n for k in range(1, n)]
-        self.col_lines = VGroup(*[u_line((x, ay), (x, ay + ah), w, FRESH_TAN, op) for x in xs])
-        self.row_lines = VGroup(*[u_line((ax, y), (ax + aw, y), w, FRESH_TAN, op) for y in ys])
-        self.play(ShowCreation(self.col_lines, lag_ratio=0.15), run_time=run_time or self.col_lines_time)
-        self.play(ShowCreation(self.row_lines, lag_ratio=0.15), run_time=row_time or self.row_lines_time)
+        self.col_lines = gx.VGroup(*[u_line((x, ay), (x, ay + ah), w, FRESH_TAN, op) for x in xs])
+        self.row_lines = gx.VGroup(*[u_line((ax, y), (ax + aw, y), w, FRESH_TAN, op) for y in ys])
+        self.play(gx.Create(self.col_lines, lag_ratio=0.15), run_time=run_time or self.col_lines_time)
+        self.play(gx.Create(self.row_lines, lag_ratio=0.15), run_time=row_time or self.row_lines_time)
 
     def beat_frames_to_blocks(self, run_time=None):
         """Frame k's patch grid -> block k on one row of the pattern.
@@ -1523,29 +1205,29 @@ class P43(InteractiveScene):
             self.sync_tile_grids()
             self.add(*grids)
         grid_op = [float(g.get_stroke_opacity()) for g in grids]
-        self.panels = VGroup()
+        self.panels = gx.VGroup()
         anims = []
         for k, (tile, g) in enumerate(zip(self.tiles, grids)):
-            ul, dl, ur = [np.array(q) for q in tile.get_points()[:3]]
+            ul, ur, dl = tile.points[:3].copy()
             y0 = ay + self.PANEL_ROW * ch
             cul, cdl, cur = P(ax + k * cw, y0), P(ax + k * cw, y0 + ch), P(ax + (k + 1) * cw, y0)
-            panel = VMobject().set_points_as_corners([ul, ur, ur + dl - ul, dl, ul])
+            panel = gx.VMobject().set_points_as_corners([ul, ur, ur + dl - ul, dl, ul])
             panel.set_fill(col, 0.0).set_stroke(col, 0.12 * STROKE_PER_U, 0.0)
             self.panels.add(panel)
 
             def fly(m, a, g=g, panel=panel, src=(ul, dl, ur), dst=(cul, cdl, cur), op=grid_op[k]):
                 rise = float(np.clip(a / 0.2, 0, 1))                    # panel fades up on the frame ...
-                go = smooth(float(np.clip((a - 0.2) / 0.8, 0, 1)))      # ... then it and the grid head for the block
-                p_ul, p_dl, p_ur = [interpolate(s0, d0, go) for s0, d0 in zip(src, dst)]
+                go = gx.smooth(float(np.clip((a - 0.2) / 0.8, 0, 1)))      # ... then it and the grid head for the block
+                p_ul, p_dl, p_ur = [gx.interpolate(s0, d0, go) for s0, d0 in zip(src, dst)]
                 panel.set_points_as_corners([p_ul, p_ur, p_ur + p_dl - p_ul, p_dl, p_ul])
                 panel.set_fill(opacity=self.PANEL_OPACITY * rise).set_stroke(opacity=rise)
                 g.set_points(p_ul + g.uv[:, :1] * (p_ur - p_ul) + g.uv[:, 1:2] * (p_dl - p_ul))
                 g.set_stroke(opacity=float(op * (1 - go)))
 
-            anims.append(UpdateFromAlphaFunc(Group(panel, g), fly, rate_func=linear))
+            anims.append(gx.UpdateFromAlphaFunc(gx.Group(panel, g), fly, rate_func=gx.linear))
         self.add(self.panels)
         self.bring_to_front(*grids)
-        self.play(LaggedStart(*anims, lag_ratio=self.PANEL_LAG), run_time=run_time or self.frames_to_blocks_time)
+        self.play(gx.LaggedStart(*anims, lag_ratio=self.PANEL_LAG), run_time=run_time or self.frames_to_blocks_time)
         self.remove(*grids)
         self.tile_grids = []            # the grids are gone: they turned into the panels
         self.add(self.panels)
@@ -1560,7 +1242,7 @@ class P43(InteractiveScene):
     def dashed_arrow(self, corners, color=YELLOW, stroke_u=0.2, start_head=False):
         """Storyboard-style connector: a dashed line through `corners` (storyboard points) with rounded corners and
         a notched arrowhead at the end (and at the start too with start_head). -> VGroup(dashes, head[, start head]);
-        the dashes are in order, so ShowCreation(dashes, lag_ratio=1) draws the line from start to end."""
+        the dashes are in order, so Create(dashes, lag_ratio=1) draws the line from start to end."""
         pts = [np.array(c, float) for c in corners]
         r = self.LINK_R
         u0 = (pts[1] - pts[0]) / np.linalg.norm(pts[1] - pts[0])
@@ -1568,8 +1250,8 @@ class P43(InteractiveScene):
         for a, b, c in zip(pts, pts[1:], pts[2:]):          # round each corner with a quarter turn
             u, v = (b - a) / np.linalg.norm(b - a), (c - b) / np.linalg.norm(c - b)
             rr = min(r, np.linalg.norm(b - a) / 2, np.linalg.norm(c - b) / 2)
-            p0, center = b - rr * u, b - rr * u + rr * v
-            outline += [center - rr * v * np.cos(t) + rr * u * np.sin(t) for t in np.linspace(0, PI / 2, 8)]
+            center = b - rr * u + rr * v
+            outline += [center - rr * v * np.cos(t) + rr * u * np.sin(t) for t in np.linspace(0, gx.PI / 2, 8)]
         tip = pts[-1]
         u = (pts[-1] - pts[-2]) / np.linalg.norm(pts[-1] - pts[-2])
         nrm = np.array([-u[1], u[0]])
@@ -1577,20 +1259,20 @@ class P43(InteractiveScene):
         outline = np.array(outline)
         total = np.linalg.norm(np.diff(outline, axis=0), axis=1).sum()
         dash, gap = self.LINK_DASH
-        dashes, d = VGroup(), 0.0
+        dashes, d = gx.VGroup(), 0.0
         while d < total:
             e = min(d + dash, total)
             seg = [P(*polyline_point(outline, q / total)) for q in np.linspace(d, e, 4)]
-            dashes.add(VMobject().set_points_as_corners(seg))
+            dashes.add(gx.VMobject().set_points_as_corners(seg))
             d += dash + gap
         dashes.set_stroke(color, stroke_u * STROKE_PER_U).set_fill(opacity=0)
-        head = Polygon(P(*tip), P(*(tip - 1.99 * u + 0.815 * nrm)), P(*(tip - 1.52 * u)), P(*(tip - 1.99 * u - 0.815 * nrm)))
+        head = gx.Polygon(P(*tip), P(*(tip - 1.99 * u + 0.815 * nrm)), P(*(tip - 1.52 * u)), P(*(tip - 1.99 * u - 0.815 * nrm)))
         head.set_fill(color, 1).set_stroke(color, 0)
-        out = VGroup(dashes, head)
+        out = gx.VGroup(dashes, head)
         if start_head:
             n0 = np.array([-u0[1], u0[0]])
             a = pts[0]
-            head0 = Polygon(P(*a), P(*(a + 1.99 * u0 + 0.815 * n0)), P(*(a + 1.52 * u0)), P(*(a + 1.99 * u0 - 0.815 * n0)))
+            head0 = gx.Polygon(P(*a), P(*(a + 1.99 * u0 + 0.815 * n0)), P(*(a + 1.52 * u0)), P(*(a + 1.99 * u0 - 0.815 * n0)))
             out.add(head0.set_fill(color, 1).set_stroke(color, 0))
         return out
 
@@ -1598,12 +1280,12 @@ class P43(InteractiveScene):
         """Yellow border around one block of the pattern (row = HL_ROW_FRAME, column = HL_COL_FRAME). The pink
         panels from the last beat fade out with it."""
         bx, by, bw, bh = self.hl_block_rect()
-        self.block_hl = place_rect(Rectangle(), bx, by, bw, bh)
+        self.block_hl = place_rect(gx.Rectangle(), bx, by, bw, bh)
         self.block_hl.set_stroke(YELLOW, self.HL_STROKE * STROKE_PER_U).set_fill(opacity=0)
-        anims = [ShowCreation(self.block_hl)]
+        anims = [gx.Create(self.block_hl)]
         panels = getattr(self, "panels", None)
         if panels is not None and len(panels):
-            anims.append(FadeOut(panels))
+            anims.append(gx.FadeOut(panels))
         self.play(*anims, run_time=run_time or self.block_hl_time)
         if panels is not None:
             self.remove(*panels.get_family())
@@ -1620,7 +1302,7 @@ class P43(InteractiveScene):
         num = self.HL_ROW_FRAME if kind == "row" else self.HL_COL_FRAME
         fx, fy, fw, fh = self.small_grid_slot(num - 1)
         gap = 1.2                                   # between an arrow's ends and the borders
-        border = place_rect(Rectangle(), fx, fy, fw, fh)
+        border = place_rect(gx.Rectangle(), fx, fy, fw, fh)
         border.set_stroke(YELLOW, self.HL_STROKE * STROKE_PER_U).set_fill(opacity=0)
         if kind == "row":
             cy = by + bh / 2
@@ -1631,19 +1313,19 @@ class P43(InteractiveScene):
             route = [(fx + fw + gap, fy + fh / 2), (self.LINK_SIDE_X, fy + fh / 2), (self.LINK_SIDE_X, self.LINK_TOP_Y),
                      (cx, self.LINK_TOP_Y), (cx, by - gap)]
         arrow = self.dashed_arrow(route)
-        anims = [ShowCreation(border)]
-        label = VGroup()
+        anims = [gx.Create(border)]
+        label = gx.VGroup()
         if self.show_text:
             label = u_text(str(num), 4.8, fx + fw / 2, fy + fh / 2 + 0.5 * 0.714 * 4.8, bold=True, align="center",
                            color=FRAME_NUM)
-            anims.append(Write(label))
+            anims.append(gx.Write(label))
         self.play(*anims, run_time=run_time or self.frame_hl_time)
         t = arrow_time or self.link_arrow_time
-        self.play(ShowCreation(arrow[0], lag_ratio=1), run_time=t * 0.9, rate_func=smooth)
-        self.play(FadeIn(arrow[1]), run_time=t * 0.1)
+        self.play(gx.Create(arrow[0], lag_ratio=1), run_time=t * 0.9, rate_func=gx.smooth)
+        self.play(gx.FadeIn(arrow[1]), run_time=t * 0.1)
         if not hasattr(self, "links"):
             self.links = {}
-        self.links[kind] = VGroup(border, label, arrow)
+        self.links[kind] = gx.VGroup(border, label, arrow)
 
     # ============================================================================================= P45 (-06, -07)
     def load_query(self, name=None, scale=None):
@@ -1661,9 +1343,9 @@ class P43(InteractiveScene):
         ax, ay, aw, ah = self.ATTN
         self.q_y = ay + (self.q_tok + 0.5) / self.q_row.size * ah          # the row's height on the pattern
         f, r, c = self.q_fhw
-        gx, gy, gw, gh = self.small_grid_slot(f)
+        grid_x, gy, gw, gh = self.small_grid_slot(f)
         nf, nr, nc = self.q_row.shape
-        self.q_patch = (gx + (c + 0.5) * gw / nc, gy + (r + 0.5) * gh / nr)      # center of its patch on its frame
+        self.q_patch = (grid_x + (c + 0.5) * gw / nc, gy + (r + 0.5) * gh / nr)      # center of its patch on its frame
 
     def beat_clear_block_links(self, run_time=None):
         """Fade the P44 highlights, and the left-hand dimension (the row's number goes there)."""
@@ -1673,7 +1355,7 @@ class P43(InteractiveScene):
             going.append(self.dims[1])
         going = [m for m in going if m is not None and len(m.get_family()) > 0]
         if going:
-            self.play(*[FadeOut(m) for m in going], run_time=run_time or self.clear_links_time)
+            self.play(*[gx.FadeOut(m) for m in going], run_time=run_time or self.clear_links_time)
         for m in going:
             self.remove(*m.get_family())
 
@@ -1682,12 +1364,12 @@ class P43(InteractiveScene):
         self.load_query()
         ax, ay, aw, ah = self.ATTN
         self.row_line = u_line((ax, self.q_y), (ax + aw, self.q_y), self.ROW_STROKE, YELLOW)
-        anims = [ShowCreation(self.row_line)]
-        self.row_label = VGroup()
+        anims = [gx.Create(self.row_line)]
+        self.row_label = gx.VGroup()
         if self.show_text:
             self.row_label = u_text(f"{self.q_tok:,}", 3.2, ax - 1.6, self.q_y + 0.5 * 0.683 * 3.2, font=DIM_FONT,
                                     align="right", color=YELLOW)
-            anims.append(Write(self.row_label))
+            anims.append(gx.Write(self.row_label))
         self.play(*anims, run_time=run_time or self.row_hl_time)
 
     def beat_patch_link(self, run_time=None, link_time=None):
@@ -1696,21 +1378,21 @@ class P43(InteractiveScene):
         ax, ay, aw, ah = self.ATTN
         px, py = self.q_patch
         half = self.PATCH_BOX / 2
-        self.patch_box = place_rect(Rectangle(), px - half, py - half, 2 * half, 2 * half)
+        self.patch_box = place_rect(gx.Rectangle(), px - half, py - half, 2 * half, 2 * half)
         self.patch_box.set_stroke(YELLOW, self.PATCH_BOX_STROKE * STROKE_PER_U).set_fill(opacity=0)
-        self.play(ShowCreation(self.patch_box), run_time=run_time or self.patch_hl_time)
+        self.play(gx.Create(self.patch_box), run_time=run_time or self.patch_hl_time)
 
         f = self.q_fhw[0]
-        gx, gy, gw, gh = self.small_grid_slot(f)
+        _, gy, _, gh = self.small_grid_slot(f)
         last_row = f // 3 == len(self.GRID3_Y) - 1
         under = gy + gh + (4.2 if last_row else (self.GRID3_Y[f // 3 + 1] - gy - gh) / 2)     # a clear run under that frame
         route = [(ax + aw + 0.8, self.q_y), (self.ROW_LINK_X, self.q_y), (self.ROW_LINK_X, under), (px, under),
                  (px, py + half + 0.9)]
         self.row_link = self.dashed_arrow(route, stroke_u=self.ROW_STROKE, start_head=True)
         t = link_time or self.patch_link_time
-        self.play(FadeIn(self.row_link[2]), run_time=t * 0.1)
-        self.play(ShowCreation(self.row_link[0], lag_ratio=1), run_time=t * 0.8)
-        self.play(FadeIn(self.row_link[1]), run_time=t * 0.1)
+        self.play(gx.FadeIn(self.row_link[2]), run_time=t * 0.1)
+        self.play(gx.Create(self.row_link[0], lag_ratio=1), run_time=t * 0.8)
+        self.play(gx.FadeIn(self.row_link[1]), run_time=t * 0.1)
 
     def heat_strength(self):
         """The row mapped to 0-1 [12, 30, 52] for coloring, by the loaded query's scale (see load_query)."""
@@ -1754,16 +1436,18 @@ class P43(InteractiveScene):
         start = np.stack([(ax + (i + 0.5) / n * aw - 96) * U, np.full(n, (54 - self.q_y) * U), np.zeros(n)], axis=1)
         end = np.zeros((nf, nr, nc, 3))
         for f in range(nf):
-            gx, gy, gw, gh = self.small_grid_slot(f)
-            xs = (gx + (np.arange(nc) + 0.5) * gw / nc - 96) * U
+            grid_x, gy, gw, gh = self.small_grid_slot(f)
+            xs = (grid_x + (np.arange(nc) + 0.5) * gw / nc - 96) * U
             ys = (54 - (gy + (np.arange(nr) + 0.5) * gh / nr)) * U
             end[f, :, :, 0], end[f, :, :, 1] = xs[None, :], ys[:, None]
         end = end.reshape(n, 3)
         r0, r1 = self.DOT_RADII[0] * U, self.DOT_RADII[1] * U
         rgba = np.concatenate([rgb.reshape(n, 3), np.zeros((n, 1))], axis=1)
 
-        dots = DotCloud(start.copy(), radius=r0)
-        dots.set_rgba_array(rgba)
+        # GX point clouds use one size per object. A small set of sizes keeps the
+        # independently growing dots batched while preserving their individual colors.
+        diameters = 200 * np.linspace(r0, r1, 16)
+        dots = gx.Group(*(gx.PMobject(stroke_width=width) for width in diameters))
         self.heat_dots = dots
         lag, order = self.HEAT_LAG, i / (n - 1)
         strength = self.heat_strength().reshape(n)
@@ -1772,12 +1456,15 @@ class P43(InteractiveScene):
         def fly(m, a):
             s = np.clip((a - lag * order) / (1 - lag), 0, 1)       # each dot's own progress, staggered by token index
             s = s * s * (3 - 2 * s)
-            m.set_points(start + (end - start) * s[:, None])
-            m.set_radii(r0 + (r1 - r0) * s)
+            positions = start + (end - start) * s[:, None]
+            sizes = np.rint(s * (len(dots) - 1)).astype(int)
             left = (a - lag * order) > 0                             # has this dot left the row yet?
             fade = np.clip(s / self.DOT_FADE_IN, 0, 1) if self.DOT_FADE_IN > 0 else 1.0
             rgba[:, 3] = left * fade * dot_alpha
-            m.set_rgba_array(rgba)
+            for index, cloud in enumerate(m):
+                selected = sizes == index
+                cloud.set_points(positions[selected])
+                cloud.paint = cloud.paint.but(fill=rgba[selected])
             if marker is not None:      # rides the row at the token that is leaving right now
                 front = float(np.clip(a / lag, 0, 1)) if lag > 0 else 1.0
                 marker.move_to(P(ax + front * aw, self.q_y))
@@ -1785,30 +1472,26 @@ class P43(InteractiveScene):
 
         marker = None
         if self.ROW_MARKER > 0:
-            marker = Circle(radius=self.ROW_MARKER * U).set_fill("#ffffff", 1).set_stroke(YELLOW, self.ROW_STROKE * STROKE_PER_U)
+            marker = gx.Circle(radius=self.ROW_MARKER * U).set_fill("#ffffff", 1).set_stroke(YELLOW, self.ROW_STROKE * STROKE_PER_U)
         fly(dots, 0)
         self.add(dots)
         if marker is not None:
             self.add(marker)
-        self.play(UpdateFromAlphaFunc(dots, fly, rate_func=linear), run_time=run_time or self.row_to_heat_time)
+        self.play(gx.UpdateFromAlphaFunc(dots, fly, rate_func=gx.linear), run_time=run_time or self.row_to_heat_time)
         if marker is not None:
             self.remove(marker)
 
         # the landed dots hand over to one heatmap image per frame (square patches, HEAT_ALPHA over the video)
         cache = HERE / "_p43_59_cache"
         cache.mkdir(exist_ok=True)
-        self.heat_images = Group()
+        self.heat_images = gx.Group()
         for f in range(nf):
             tag = self.heat_tag()
             path = cache / f"heat_{self.QUERY_NAME}_{self.HEAT_CMAP}_{tag}_f{f:02d}.png"
             if not path.exists():
                 im = Image.fromarray((rgb[f] * 255).round().astype(np.uint8))
                 im.resize((nc * 16, nr * 16), Image.NEAREST).save(path)
-            img = ImageMobject(str(path))
-            try:
-                img.image.load()
-            except Exception:
-                pass
+            img = gx.ImageMobject(str(path))
             place_rect(img, *self.small_grid_slot(f)).set_opacity(0)
             self.heat_images.add(img)
         self.add(self.heat_images)
@@ -1816,12 +1499,14 @@ class P43(InteractiveScene):
         if hasattr(self, "patch_box"):
             self.bring_to_front(self.patch_box, self.row_link)
 
+        landed_colors = [cloud.paint.fill for cloud in dots]
+
         def settle(m, a):
             for img in self.heat_images:
                 img.set_opacity(float(self.HEAT_ALPHA * a))
-            rgba[:, 3] = (1 - a) * dot_alpha
-            dots.set_rgba_array(rgba)
-        self.play(UpdateFromAlphaFunc(dots, settle), run_time=settle_time or self.heat_settle_time)
+            for cloud, colors in zip(dots, landed_colors):
+                cloud.paint = cloud.paint.but(fill=colors * [1, 1, 1, 1 - a])
+        self.play(gx.UpdateFromAlphaFunc(dots, settle), run_time=settle_time or self.heat_settle_time)
         self.remove(dots)
         self.heat_alpha_now = self.HEAT_ALPHA
 
@@ -1833,17 +1518,13 @@ class P43(InteractiveScene):
         cache = HERE / "_p43_59_cache"
         cache.mkdir(exist_ok=True)
         tag = self.heat_tag()
-        images = Group()
+        images = gx.Group()
         for f in range(nf):
             path = cache / f"heat_{self.q_name}_{self.HEAT_CMAP}_{tag}_f{f:02d}.png"
             if not path.exists():
                 im = Image.fromarray((rgb[f] * 255).round().astype(np.uint8))
                 im.resize((nc * 16, nr * 16), Image.NEAREST).save(path)
-            img = ImageMobject(str(path))
-            try:
-                img.image.load()
-            except Exception:
-                pass
+            img = gx.ImageMobject(str(path))
             images.add(place_rect(img, *self.small_grid_slot(f)).set_opacity(0))
         return images
 
@@ -1852,10 +1533,10 @@ class P43(InteractiveScene):
         heat = getattr(self, "heat_images", None)
         going = [getattr(self, n, None) for n in ("patch_box", "row_link", "row_line", "row_label")]
         going = [m for m in going if m is not None and len(m.get_family()) > 0]
-        anims = [FadeOut(m) for m in going]
+        anims = [gx.FadeOut(m) for m in going]
         if heat is not None and len(heat):
             now = getattr(self, "heat_alpha_now", self.HEAT_ALPHA)      # whatever opacity the heatmap went up at
-            anims.append(UpdateFromAlphaFunc(
+            anims.append(gx.UpdateFromAlphaFunc(
                 heat, lambda m, a: [img.set_opacity(float(now * (1 - a))) for img in m]))
         if anims:
             self.play(*anims, run_time=run_time or self.drop_query_time)
@@ -1863,7 +1544,7 @@ class P43(InteractiveScene):
             self.remove(*m.get_family())
         if heat is not None:
             self.remove(*heat)
-            self.heat_images = Group()
+            self.heat_images = gx.Group()
 
     def beat_swap_pattern(self, name, run_time=None):
         """Crossfade the attention pattern to <RUN>/p44/attn/<name>.png, and its LAYER / HEAD label with it."""
@@ -1871,23 +1552,19 @@ class P43(InteractiveScene):
         if not path.exists():
             raise FileNotFoundError(f"Attention pattern not found: {path}")
         old = self.pattern
-        new = ImageMobject(str(path))
-        try:
-            new.image.load()
-        except Exception:
-            pass
+        new = gx.ImageMobject(str(path))
         place_rect(new, *self.ATTN).set_opacity(0)
         self.add(new)
-        anims = [UpdateFromAlphaFunc(new, lambda m, a: m.set_opacity(float(a)))]     # new one fades in over the old
+        anims = [gx.UpdateFromAlphaFunc(new, lambda m, a: m.set_opacity(float(a)))]     # new one fades in over the old
         old_label, new_label = getattr(self, "attn_label", None), None
         if self.show_text:
             ax, ay, aw, ah = self.ATTN
             m = re.search(r"layer_(\d+)_head_(\d+)", name)
             new_label = u_text(f"LAYER {int(m.group(1))} HEAD {int(m.group(2))}", 2.2, ax + aw / 2,
                                self.ATTN_LABEL_Y, weight="SEMIBOLD", align="center", color=CHILL_BROWN)
-            anims.append(FadeIn(new_label))
+            anims.append(gx.FadeIn(new_label))
             if old_label is not None:
-                anims.append(FadeOut(old_label))
+                anims.append(gx.FadeOut(old_label))
         self.play(*anims, run_time=run_time or self.swap_pattern_time)
         self.remove(old)
         if old_label is not None:
@@ -1904,20 +1581,20 @@ class P43(InteractiveScene):
         self.load_query(name, scale)
         ax, ay, aw, ah = self.ATTN
         self.row_line = u_line((ax, self.q_y), (ax + aw, self.q_y), self.ROW_STROKE, YELLOW)
-        anims = [ShowCreation(self.row_line)]
-        self.row_label = VGroup()
+        anims = [gx.Create(self.row_line)]
+        self.row_label = gx.VGroup()
         if self.show_text:
             self.row_label = u_text(f"{self.q_tok:,}", 3.2, ax - 1.6, self.q_y + 0.5 * 0.683 * 3.2, font=DIM_FONT,
                                     align="right", color=YELLOW)
-            anims.append(Write(self.row_label))
+            anims.append(gx.Write(self.row_label))
         self.play(*anims, run_time=run_time or self.row_hl_time)
 
         px, py = self.q_patch
         half = self.PATCH_BOX / 2
-        self.patch_box = place_rect(Rectangle(), px - half, py - half, 2 * half, 2 * half)
+        self.patch_box = place_rect(gx.Rectangle(), px - half, py - half, 2 * half, 2 * half)
         self.patch_box.set_stroke(YELLOW, self.PATCH_BOX_STROKE * STROKE_PER_U).set_fill(opacity=0)
         f = self.q_fhw[0]
-        gx, gy, gw, gh = self.small_grid_slot(f)
+        _, gy, _, gh = self.small_grid_slot(f)
         last_row = f // 3 == len(self.GRID3_Y) - 1
         under = gy + gh + (4.2 if last_row else (self.GRID3_Y[f // 3 + 1] - gy - gh) / 2)
         route = [(ax + aw + 0.8, self.q_y), (self.ROW_LINK_X, self.q_y), (self.ROW_LINK_X, under), (px, under),
@@ -1930,11 +1607,11 @@ class P43(InteractiveScene):
         t = link_time or self.query_heat_time
         # one play, each piece confined to its own slice of it (and invisible until its slice starts)
         self.play(
-            UpdateFromAlphaFunc(self.heat_images, lambda m, a: [img.set_opacity(float(alpha * a)) for img in m]),
-            ShowCreation(box, rate_func=squish_rate_func(smooth, 0, 0.25)),
-            FadeIn(head0, rate_func=squish_rate_func(smooth, 0, 0.25)),
-            ShowCreation(dashes, lag_ratio=1, rate_func=squish_rate_func(smooth, 0.25, 0.9)),
-            FadeIn(head, rate_func=squish_rate_func(smooth, 0.9, 1)),
+            gx.UpdateFromAlphaFunc(self.heat_images, lambda m, a: [img.set_opacity(float(alpha * a)) for img in m]),
+            gx.Create(box, rate_func=gx.squish_rate_func(gx.smooth, 0, 0.25)),
+            gx.FadeIn(head0, rate_func=gx.squish_rate_func(gx.smooth, 0, 0.25)),
+            gx.Create(dashes, lag_ratio=1, rate_func=gx.squish_rate_func(gx.smooth, 0.25, 0.9)),
+            gx.FadeIn(head, rate_func=gx.squish_rate_func(gx.smooth, 0.9, 1)),
             run_time=t)
 
     # ============================================================================================= P47
@@ -1948,16 +1625,16 @@ class P43(InteractiveScene):
 
         def pop(g, pts, c):
             def f(m, a):
-                m.set_points(c + (pts - c) * (1 + self.TITLE_POP * there_and_back(a)))
-                m.set_fill(interpolate_color(CHILL_BROWN, YELLOW, smooth(a)), 1)
-            return UpdateFromAlphaFunc(g, f, rate_func=linear)
+                m.set_points(c + (pts - c) * (1 + self.TITLE_POP * gx.there_and_back(a)))
+                m.set_fill(gx.interpolate_color(CHILL_BROWN, YELLOW, gx.smooth(a)), 1)
+            return gx.UpdateFromAlphaFunc(g, f, rate_func=gx.linear)
 
-        self.play(LaggedStart(*[pop(g, *b) for g, b in zip(letters, base)], lag_ratio=0.12),
+        self.play(gx.LaggedStart(*[pop(g, *b) for g, b in zip(letters, base)], lag_ratio=0.12),
                   run_time=run_time or self.title_hl_time)
         for g, (pts, c) in zip(letters, base):
             g.set_points(pts)
         self.wait(self.title_hl_hold if hold is None else hold)
-        self.play(*[UpdateFromAlphaFunc(g, lambda m, a: m.set_fill(interpolate_color(YELLOW, CHILL_BROWN, a), 1))
+        self.play(*[gx.UpdateFromAlphaFunc(g, lambda m, a: m.set_fill(gx.interpolate_color(YELLOW, CHILL_BROWN, a), 1))
                     for g in letters], run_time=restore_time or self.title_restore_time)
 
     # ============================================================================================= P49 (-08, -09)
@@ -1969,7 +1646,7 @@ class P43(InteractiveScene):
         pts = [(ax + c, ay), (ax + aw, ay), (ax + aw, ay + (n - 1) * c)]
         for r in range(n - 2, -1, -1):                      # back up the staircase along the diagonal
             pts += [(ax + (r + 1) * c, ay + (r + 1) * c), (ax + (r + 1) * c, ay + r * c)]
-        self.causal_mask = Polygon(*[P(*q) for q in pts]).set_fill(self.bg, 0.0).set_stroke(width=0)
+        self.causal_mask = gx.Polygon(*[P(*q) for q in pts]).set_fill(self.bg, 0.0).set_stroke(width=0)
         self.add(self.causal_mask)
         self.play(self.causal_mask.animate.set_fill(self.bg, self.MASK_OPACITY),
                   run_time=run_time or self.causal_mask_time)
@@ -1983,13 +1660,13 @@ class P43(InteractiveScene):
         bx, by = ax + (col_frame - 1) * c, ay + (row_frame - 1) * c
         gap, w = 1.2, self.PAIR_BORDER * STROKE_PER_U
 
-        block = place_rect(Rectangle(), bx, by, c, c).set_stroke(color, w).set_fill(opacity=0)
+        block = place_rect(gx.Rectangle(), bx, by, c, c).set_stroke(color, w).set_fill(opacity=0)
         slots = {f: self.small_grid_slot(f - 1) for f in (row_frame, col_frame)}
-        borders = VGroup(*[place_rect(Rectangle(), *slots[f]).set_stroke(color, w).set_fill(opacity=0)
+        borders = gx.VGroup(*[place_rect(gx.Rectangle(), *slots[f]).set_stroke(color, w).set_fill(opacity=0)
                            for f in (row_frame, col_frame)])
-        numbers = VGroup()
+        numbers = gx.VGroup()
         if self.show_text:
-            numbers = VGroup(*[u_text(str(f), 4.8, slots[f][0] + slots[f][2] / 2,
+            numbers = gx.VGroup(*[u_text(str(f), 4.8, slots[f][0] + slots[f][2] / 2,
                                       slots[f][1] + slots[f][3] / 2 + 0.5 * 0.714 * 4.8, bold=True, align="center",
                                       color=FRAME_NUM) for f in (row_frame, col_frame)])
 
@@ -2026,19 +1703,19 @@ class P43(InteractiveScene):
         nrm = np.array([-u[1], u[0]])
         k = 2.2                              # head size relative to the small connector heads
         shaft = u_line(tail, tip - 1.52 * k * u, self.PAIR_STROKE, color)
-        head = Polygon(P(*tip), P(*(tip - 1.99 * k * u + 0.815 * k * nrm)), P(*(tip - 1.52 * k * u)),
+        head = gx.Polygon(P(*tip), P(*(tip - 1.99 * k * u + 0.815 * k * nrm)), P(*(tip - 1.52 * k * u)),
                        P(*(tip - 1.99 * k * u - 0.815 * k * nrm))).set_fill(color, 1).set_stroke(color, 0)
-        text = VGroup()
+        text = gx.VGroup()
         if self.show_text and label:
             mid = (tail + tip) / 2
             word = u_text(label, 3.6, mid[0] + 2.6, mid[1] + 1.3, bold=True, color=color)
-            plate = RoundedRectangle(width=word.get_width() + 1.6 * U, height=word.get_height() + 1.6 * U,
+            plate = gx.RoundedRectangle(width=word.get_width() + 1.6 * U, height=word.height + 1.6 * U,
                                      corner_radius=0.5 * U).move_to(word)
             plate.set_fill(self.bg, self.LABEL_PLATE).set_stroke(width=0)      # so it reads over the frame behind it
-            text = VGroup(plate, word)
-        arrow = VGroup(shaft, head)
+            text = gx.VGroup(plate, word)
+        arrow = gx.VGroup(shaft, head)
         return dict(block=block, borders=borders, numbers=numbers, links=links, arrow=arrow, text=text,
-                    group=VGroup(block, borders, numbers, *links, arrow, text),
+                    group=gx.VGroup(block, borders, numbers, *links, arrow, text),
                     others=[t for i, t in enumerate(self.tiles) if i + 1 not in (row_frame, col_frame)])
 
     def beat_block_pair(self, row_frame, col_frame, color, label, run_time=None):
@@ -2053,23 +1730,23 @@ class P43(InteractiveScene):
         if run_time:
             parts = [p * run_time / sum(parts) for p in parts]
 
-        self.play(ShowCreation(d["block"]), run_time=parts[0])
-        anims = [ShowCreation(d["borders"], lag_ratio=0.3),
-                 UpdateFromAlphaFunc(Group(*d["others"]),
-                                     lambda m, a: [t.set_opacity(float(interpolate(1.0, self.PAIR_DIM, a))) for t in m])]
+        self.play(gx.Create(d["block"]), run_time=parts[0])
+        anims = [gx.Create(d["borders"], lag_ratio=0.3),
+                 gx.UpdateFromAlphaFunc(gx.Group(*d["others"]),
+                                     lambda m, a: [t.set_opacity(float(gx.interpolate(1.0, self.PAIR_DIM, a))) for t in m])]
         if len(d["numbers"]):
-            anims.append(Write(d["numbers"]))
+            anims.append(gx.Write(d["numbers"]))
         self.play(*anims, run_time=parts[1])
         self.bring_to_front(d["borders"], d["numbers"])
         links = d["links"]
-        self.play(*[ShowCreation(l[0], lag_ratio=1, rate_func=squish_rate_func(smooth, 0, 0.9)) for l in links],
-                  *[FadeIn(l[1], rate_func=squish_rate_func(smooth, 0.9, 1)) for l in links],
+        self.play(*[gx.Create(l[0], lag_ratio=1, rate_func=gx.squish_rate_func(gx.smooth, 0, 0.9)) for l in links],
+                  *[gx.FadeIn(l[1], rate_func=gx.squish_rate_func(gx.smooth, 0.9, 1)) for l in links],
                   run_time=parts[2])
         shaft, head = d["arrow"]
-        anims = [ShowCreation(shaft, rate_func=squish_rate_func(smooth, 0, 0.7)),
-                 FadeIn(head, rate_func=squish_rate_func(smooth, 0.6, 1))]
+        anims = [gx.Create(shaft, rate_func=gx.squish_rate_func(gx.smooth, 0, 0.7)),
+                 gx.FadeIn(head, rate_func=gx.squish_rate_func(gx.smooth, 0.6, 1))]
         if len(d["text"]):
-            anims += [FadeIn(d["text"][0]), Write(d["text"][1])]
+            anims += [gx.FadeIn(d["text"][0]), gx.Write(d["text"][1])]
         self.play(*anims, run_time=parts[3])
         self.block_pair, self.pair_dimmed = d["group"], d["others"]
 
@@ -2082,11 +1759,11 @@ class P43(InteractiveScene):
         levels = [(t, dim(t, old_others) if old is not None else 1.0, dim(t, d["others"])) for t in self.tiles]
         # (the frames' animation goes first: play() re-adds what it animates in order, and the highlights must end
         #  up above the frames)
-        anims = [UpdateFromAlphaFunc(Group(*self.tiles),
-                                     lambda m, a: [t.set_opacity(float(interpolate(o0, o1, a))) for t, o0, o1 in levels])]
+        anims = [gx.UpdateFromAlphaFunc(gx.Group(*self.tiles),
+                                     lambda m, a: [t.set_opacity(float(gx.interpolate(o0, o1, a))) for t, o0, o1 in levels])]
         if old is not None:
-            anims.append(FadeOut(old))
-        anims.append(FadeIn(d["group"]))
+            anims.append(gx.FadeOut(old))
+        anims.append(gx.FadeIn(d["group"]))
         self.play(*anims, run_time=run_time or self.pair_crossfade_time)
         if old is not None:
             self.remove(*old.get_family())
@@ -2098,8 +1775,8 @@ class P43(InteractiveScene):
         pair, others = getattr(self, "block_pair", None), getattr(self, "pair_dimmed", [])
         if pair is None:
             return
-        self.play(FadeOut(pair),
-                  UpdateFromAlphaFunc(Group(*others), lambda m, a: [t.set_opacity(float(interpolate(self.PAIR_DIM, 1.0, a)))
+        self.play(gx.FadeOut(pair),
+                  gx.UpdateFromAlphaFunc(gx.Group(*others), lambda m, a: [t.set_opacity(float(gx.interpolate(self.PAIR_DIM, 1.0, a)))
                                                                     for t in m]),
                   run_time=run_time or self.clear_pair_time)
         self.remove(*pair.get_family())

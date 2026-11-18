@@ -1,12 +1,32 @@
+from welch_paths import welch_path
 from functools import partial
 import sys
 
 sys.path.append('_2025/backprop_3') #Point to folder where plane_folding_utils.py is
-from geometric_dl_utils import *
-from plane_folding_utils import *
-from geometric_dl_utils_simplified import *
+import copy
+import manimgx as gx
+import numpy as np
+import pickle
+import torch
+from geometric_dl_utils import (
+    BaarleNet,
+    compute_adaptive_viz_scales,
+    manim_polygons_from_np_list,
+    surface_func_from_model,
+)
+from geometric_dl_utils_simplified import (
+    clip_polygons,
+    compute_top_polytope,
+    merge_zero_regions,
+    process_with_layers,
+    recompute_tiling_polygonize,
+    split_polygons_with_relu_simple,
+)
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, textured_surface
+from welch_text import markup_text
 from polytope_intersection_utils import intersect_polytopes
-from manimlib import *
+from welch_surface import set_surface_shading
 from tqdm import tqdm
 from order_matching_tools import reorder_polygons_optimal, reorder_polygons_greedy
 from gap_filler import fill_gaps
@@ -21,12 +41,12 @@ CHILL_BLUE='#3d5c6f'
 FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/graphics/' #Point to folder where map images are
-colors = [BLUE, GREY, GREEN, TEAL, PURPLE, PINK, TEAL, YELLOW, FRESH_TAN, CHILL_BLUE, CHILL_GREEN, YELLOW_FADE]
+graphics_dir=welch_path('backprop_3/graphics/') #Point to folder where map images are
+colors = [BLUE, gx.GREY, GREEN, gx.TEAL, gx.PURPLE, gx.PINK, gx.TEAL, YELLOW, FRESH_TAN, CHILL_BLUE, CHILL_GREEN, YELLOW_FADE]
 # colors = [GREY, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
 
 
-class p64(InteractiveScene):
+class p64(WelchScene):
     '''Ok so this is the transition of my 3d shape for the 2d view -> try blending in premiere!'''
     def construct(self):
 
@@ -36,7 +56,7 @@ class p64(InteractiveScene):
         vertical_spacing=1.0
 
 
-        data_path='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/hackin/training_caches/32_32_32_32_1.pkl'
+        data_path=welch_path('backprop_3/hackin/training_caches/32_32_32_32_1.pkl')
         with open(data_path, 'rb') as file:
             training_cache = pickle.load(file) #Training cache
 
@@ -45,17 +65,18 @@ class p64(InteractiveScene):
         prev_layer_3_polygons=None
         prev_layer_4_polygons=None
 
-        self.frame.reorient(0, 0, 0, (3.94, 0.38, 0.0), 2.04)
+        self.set_view(0, 0, 0, (3.94, 0.38, 0.0), 2.04)
         # for train_step in tqdm(range(len(training_cache['weights_history']))): #All steps
         # for train_step in tqdm(np.arange(0, len(training_cache['weights_history']), 100)):
         # for train_step in tqdm(np.arange(0,  1000, 1)):
         # for train_step in tqdm(np.arange(0, 600, 100)):
         # train_step=2697 #OK FUCKING DOPE -> If I can make it to 2697, we get all the regions!
+        layer_1_polygons_flat = layer_2_polygons_flat = layer_3_polygons_flat = layer_4_polygons_flat = final_map_group = border_map_only = None
         for train_step in tqdm(list(range(0,  2690, 10))+[2697]):
 
             try:
 
-                if 'layer_1_polygons_flat' in locals():
+                if layer_1_polygons_flat is not None:
                     self.remove(layer_1_polygons_flat, layer_2_polygons_flat, layer_3_polygons_flat, layer_4_polygons_flat, final_map_group, border_map_only)
 
 
@@ -92,14 +113,14 @@ class p64(InteractiveScene):
                 surfaces=[]
                 surface_funcs=[]
                 for layer_idx in range(len(model.model)):
-                    s=Group()
+                    s=gx.Group()
                     surface_funcs.append([])
                     if layer_idx>7: #Skip early surfaces to save time. 
                         for neuron_idx in range(num_neurons[layer_idx]):
                             surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=adaptive_viz_scales[layer_idx][neuron_idx]) #viz_scales[layer_idx])
-                            bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                            ts=TexturedSurface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
-                            ts.set_shading(0,0,0).set_opacity(0.8)
+                            bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                            ts=textured_surface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
+                            set_surface_shading(ts, 0,0,0).set_opacity(0.8)
                             s.add(ts)
                             surface_funcs[-1].append(surface_func)
                     surfaces.append(s)
@@ -172,7 +193,7 @@ class p64(InteractiveScene):
 
 
                 #Outputs surfaces
-                groups_output=Group()
+                groups_output=gx.Group()
                 layer_idx=len(model.model)-1
                 total_height = (num_neurons[layer_idx] - 1) * vertical_spacing
                 start_z = total_height / 2  # Start from top
@@ -180,7 +201,7 @@ class p64(InteractiveScene):
                     # split_polygons_unraveled=[item for sublist in polygons['1.split_polygons_merged'][neuron_idx] for item in sublist]
                     pgs=manim_polygons_from_np_list(polygons['3.linear_out'][neuron_idx], colors=colors, viz_scale=adaptive_viz_scales[layer_idx][neuron_idx], opacity=0.6)
                     s=surfaces[layer_idx][neuron_idx]
-                    g=Group(s, pgs) 
+                    g=gx.Group(s, pgs)
                     groups_output.add(g)
 
 
@@ -189,14 +210,14 @@ class p64(InteractiveScene):
                 group_combined_output[0].set_color(BLUE)
                 group_combined_output[1].set_color(YELLOW)
 
-                top_polygons_vgroup=VGroup()
+                top_polygons_vgroup=gx.VGroup()
                 for j, p in enumerate(my_top_polygons):
                     if len(p)<3: continue
                     if my_indicator[j]: color=YELLOW
                     else: color=BLUE
                     p_scaled=copy.deepcopy(p) #Scaling for viz
                     p_scaled[:,2]=p_scaled[:,2]*adaptive_viz_scales[-1][0] #Flatten that shit!
-                    poly_3d = Polygon(*p_scaled,
+                    poly_3d = gx.Polygon(*p_scaled,
                                      fill_color=color,
                                      fill_opacity=0.4,
                                      stroke_color=color,
@@ -204,22 +225,22 @@ class p64(InteractiveScene):
                     poly_3d.set_opacity(0.5)
                     top_polygons_vgroup.add(poly_3d)
 
-                lines=VGroup()
+                lines=gx.VGroup()
                 for loop in intersection_lines: 
                     loop=loop*np.array([1, 1, viz_scales[2]])
-                    line = VMobject()
+                    line = gx.VMobject()
                     line.set_points_as_corners(loop)
                     line.set_stroke(color='#FF00FF', width=4)
                     lines.add(line)
 
-                top_polygons_vgroup_flat=VGroup()
+                top_polygons_vgroup_flat=gx.VGroup()
                 for j, p in enumerate(my_top_polygons):
                     if len(p)<3: continue
                     if my_indicator[j]: color=YELLOW
                     else: color=BLUE
                     p_scaled=copy.deepcopy(p) #Scaling for viz
                     p_scaled[:,2]=0 #p_scaled[:,2]*viz_scales[2] #Flatten that shit!
-                    poly_3d = Polygon(*p_scaled,
+                    poly_3d = gx.Polygon(*p_scaled,
                                      fill_color=color,
                                      fill_opacity=0.4,
                                      stroke_color=color,
@@ -228,22 +249,22 @@ class p64(InteractiveScene):
                     top_polygons_vgroup_flat.add(poly_3d)
 
                 def flat_surf_func(u, v): return [u, v, 0]
-                flat_map_surf = ParametricSurface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                flat_map_2=TexturedSurface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
-                flat_map_2.set_shading(0,0,0).set_opacity(0.8)
+                flat_map_surf = parametric_surface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                flat_map_2=textured_surface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
+                set_surface_shading(flat_map_2, 0,0,0).set_opacity(0.8)
 
-                lines_flat=VGroup()
+                lines_flat=gx.VGroup()
                 for loop in intersection_lines: 
                     # loop=np.hstack((loop, np.zeros((len(loop), 1))))
                     loop[:,2]=0
-                    line = VMobject()
+                    line = gx.VMobject()
                     line.set_points_as_corners(loop)
                     line.set_stroke(color='#FF00FF', width=4)
                     lines_flat.add(line)    
 
                 group_combined_output.set_opacity(0.3)
-                final_map_group=Group(flat_map_2, top_polygons_vgroup_flat, lines_flat)
-                border_map_only=Group(flat_map_2.copy(), lines_flat.copy())
+                final_map_group=gx.Group(flat_map_2, top_polygons_vgroup_flat, lines_flat)
+                border_map_only=gx.Group(flat_map_2.copy(), lines_flat.copy())
 
                 # I can change locations in premiere pretty easily if I need to!
                 layer_1_polygons_flat.shift([ 0.,  2., 0.])                                                                                                                                                       
@@ -254,9 +275,9 @@ class p64(InteractiveScene):
                 border_map_only.shift([ 2*2.35, -0.35, 0.  ])
 
                 # self.wait()
-                # self.frame.reorient(0, 0, 0, (3.94, 0.38, 0.0), 2.04) #Could do a nice zoom in animation from not sure if it's worth it or not
-                # self.frame.reorient(0, 0, 0, (3.07, 0.82, 0.0), 0.77)
-                self.frame.reorient(0, 0, 0, (2.97, 0.81, 0.0), 4.80)
+                # self.set_view(0, 0, 0, (3.94, 0.38, 0.0), 2.04) #Could do a nice zoom in animation from not sure if it's worth it or not
+                # self.set_view(0, 0, 0, (3.07, 0.82, 0.0), 0.77)
+                self.set_view(0, 0, 0, (2.97, 0.81, 0.0), 4.80)
                 self.add(layer_1_polygons_flat)
                 self.add(layer_2_polygons_flat)
                 self.add(layer_3_polygons_flat)
@@ -276,10 +297,10 @@ class p64(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
-class p64b(InteractiveScene):
+class p64b(WelchScene):
     '''Ok so this is the transition of my 3d shape for the 2d view -> try blending in premiere!'''
     def construct(self):
 
@@ -289,19 +310,20 @@ class p64b(InteractiveScene):
         vertical_spacing=1.0
 
 
-        data_path='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/hackin/training_caches/32_32_32_32_1.pkl'
+        data_path=welch_path('backprop_3/hackin/training_caches/32_32_32_32_1.pkl')
         with open(data_path, 'rb') as file:
             training_cache = pickle.load(file) #Training cache
 
-        self.frame.reorient(27, 54, 0, (-0.02, 0.05, -0.55), 3.99)
+        self.set_view(27, 54, 0, (-0.02, 0.05, -0.55), 3.99)
         # for train_step in tqdm(range(len(training_cache['weights_history']))): #All steps
         # for train_step in tqdm(np.arange(0, len(training_cache['weights_history']), 100)):
         # for train_step in tqdm(np.arange(0,  1000, 1)):
         # for train_step in tqdm(np.arange(0, 600, 100)):
         # train_step=2697 #OK FUCKING DOPE -> If I can make it to 2697, we get all the regions!
+        layer_1_polygons_flat = layer_2_polygons_flat = layer_3_polygons_flat = layer_4_polygons_flat = final_map_group = border_map_only = None
         for train_step in [2697]: #tqdm(list(range(0,  2690, 10))+[2697]):
 
-            if 'layer_1_polygons_flat' in locals():
+            if layer_1_polygons_flat is not None:
                 self.remove(layer_1_polygons_flat, layer_2_polygons_flat, layer_3_polygons_flat, layer_4_polygons_flat, final_map_group, border_map_only)
 
 
@@ -339,14 +361,14 @@ class p64b(InteractiveScene):
             surfaces=[]
             surface_funcs=[]
             for layer_idx in range(len(model.model)):
-                s=Group()
+                s=gx.Group()
                 surface_funcs.append([])
                 if layer_idx>7: #Skip early surfaces to save time. 
                     for neuron_idx in range(num_neurons[layer_idx]):
                         surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=adaptive_viz_scales[layer_idx][neuron_idx]) #viz_scales[layer_idx])
-                        bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                        ts=TexturedSurface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
-                        ts.set_shading(0,0,0).set_opacity(0.8)
+                        bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                        ts=textured_surface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
+                        set_surface_shading(ts, 0,0,0).set_opacity(0.8)
                         s.add(ts)
                         surface_funcs[-1].append(surface_func)
                 surfaces.append(s)
@@ -392,7 +414,7 @@ class p64b(InteractiveScene):
             print(len(my_top_polygons), len(my_indicator))
 
             #Outputs surfaces
-            groups_output=Group()
+            groups_output=gx.Group()
             layer_idx=len(model.model)-1
             total_height = (num_neurons[layer_idx] - 1) * vertical_spacing
             start_z = total_height / 2  # Start from top
@@ -400,7 +422,7 @@ class p64b(InteractiveScene):
                 # split_polygons_unraveled=[item for sublist in polygons['1.split_polygons_merged'][neuron_idx] for item in sublist]
                 pgs=manim_polygons_from_np_list(polygons['3.linear_out'][neuron_idx], colors=colors, viz_scale=adaptive_viz_scales[layer_idx][neuron_idx], opacity=0.6)
                 s=surfaces[layer_idx][neuron_idx]
-                g=Group(s, pgs) 
+                g=gx.Group(s, pgs)
                 groups_output.add(g)
 
 
@@ -409,14 +431,14 @@ class p64b(InteractiveScene):
             group_combined_output[0].set_color(BLUE)
             group_combined_output[1].set_color(YELLOW)
 
-            top_polygons_vgroup=VGroup()
+            top_polygons_vgroup=gx.VGroup()
             for j, p in enumerate(my_top_polygons):
                 if len(p)<3: continue
                 if my_indicator[j]: color=YELLOW
                 else: color=BLUE
                 p_scaled=copy.deepcopy(p) #Scaling for viz
                 p_scaled[:,2]=p_scaled[:,2]*adaptive_viz_scales[-1][0] #Flatten that shit!
-                poly_3d = Polygon(*p_scaled,
+                poly_3d = gx.Polygon(*p_scaled,
                                  fill_color=color,
                                  fill_opacity=0.4,
                                  stroke_color=color,
@@ -424,22 +446,22 @@ class p64b(InteractiveScene):
                 poly_3d.set_opacity(0.5)
                 top_polygons_vgroup.add(poly_3d)
 
-            lines=VGroup()
+            lines=gx.VGroup()
             for loop in intersection_lines: 
-                loop=loop*np.array([1, 1, viz_scales[d2]])
-                line = VMobject()
+                loop = loop * np.array([1, 1, adaptive_viz_scales[-1][0]])
+                line = gx.VMobject()
                 line.set_points_as_corners(loop)
                 line.set_stroke(color='#FF00FF', width=4)
                 lines.add(line)
 
-            top_polygons_vgroup_flat=VGroup()
+            top_polygons_vgroup_flat=gx.VGroup()
             for j, p in enumerate(my_top_polygons):
                 if len(p)<3: continue
                 if my_indicator[j]: color=YELLOW
                 else: color=BLUE
                 p_scaled=copy.deepcopy(p) #Scaling for viz
                 p_scaled[:,2]=0 #p_scaled[:,2]*viz_scales[2] #Flatten that shit!
-                poly_3d = Polygon(*p_scaled,
+                poly_3d = gx.Polygon(*p_scaled,
                                  fill_color=color,
                                  fill_opacity=0.4,
                                  stroke_color=color,
@@ -453,7 +475,7 @@ class p64b(InteractiveScene):
             
             # self.add(layer_1_polygons_flat, layer_2_polygons_flat, layer_3_polygons_flat, final_map_group)
 
-            combined_3d_group=Group(group_combined_output, top_polygons_vgroup, lines)
+            combined_3d_group=gx.Group(group_combined_output, top_polygons_vgroup, lines)
             # combined_3d_group.move_to(ORIGIN)
             self.add(combined_3d_group)
             self.wait(0.1)
@@ -465,11 +487,11 @@ class p64b(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 
-class p64_playaround_on_last_frame_d(InteractiveScene):
+class p64_playaround_on_last_frame_d(WelchScene):
     '''Ok so this is the transition of my 3d shape for the 2d view -> try blending in premiere!'''
     def construct(self):
 
@@ -479,7 +501,7 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
         vertical_spacing=1.0
 
 
-        data_path='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/hackin/training_caches/32_32_32_32_1.pkl'
+        data_path=welch_path('backprop_3/hackin/training_caches/32_32_32_32_1.pkl')
         with open(data_path, 'rb') as file:
             training_cache = pickle.load(file) #Training cache
 
@@ -488,7 +510,7 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
         prev_layer_3_polygons=None
         prev_layer_4_polygons=None
 
-        self.frame.reorient(0, 0, 0, (3.94, 0.38, 0.0), 2.04)
+        self.set_view(0, 0, 0, (3.94, 0.38, 0.0), 2.04)
         # for train_step in tqdm(range(len(training_cache['weights_history']))): #All steps
         # for train_step in tqdm(np.arange(0, len(training_cache['weights_history']), 100)):
         # for train_step in tqdm(np.arange(0,  1000, 1)):
@@ -496,8 +518,6 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
         # train_step=2697 #OK FUCKING DOPE -> If I can make it to 2697, we get all the regions!
         train_step=2697
 
-        if 'layer_1_polygons_flat' in locals():
-            self.remove(layer_1_polygons_flat, layer_2_polygons_flat, layer_3_polygons_flat, layer_4_polygons_flat, final_map_group, border_map_only)
 
 
         w1=training_cache['weights_history'][train_step]['model.0.weight'].numpy()
@@ -533,14 +553,14 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
         surfaces=[]
         surface_funcs=[]
         for layer_idx in range(len(model.model)):
-            s=Group()
+            s=gx.Group()
             surface_funcs.append([])
             if layer_idx>7: #Skip early surfaces to save time. 
                 for neuron_idx in range(num_neurons[layer_idx]):
                     surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=adaptive_viz_scales[layer_idx][neuron_idx]) #viz_scales[layer_idx])
-                    bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                    ts=TexturedSurface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
-                    ts.set_shading(0,0,0).set_opacity(0.8)
+                    bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                    ts=textured_surface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
+                    set_surface_shading(ts, 0,0,0).set_opacity(0.8)
                     s.add(ts)
                     surface_funcs[-1].append(surface_func)
             surfaces.append(s)
@@ -613,7 +633,7 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
 
 
         #Outputs surfaces
-        groups_output=Group()
+        groups_output=gx.Group()
         layer_idx=len(model.model)-1
         total_height = (num_neurons[layer_idx] - 1) * vertical_spacing
         start_z = total_height / 2  # Start from top
@@ -621,7 +641,7 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
             # split_polygons_unraveled=[item for sublist in polygons['1.split_polygons_merged'][neuron_idx] for item in sublist]
             pgs=manim_polygons_from_np_list(polygons['3.linear_out'][neuron_idx], colors=colors, viz_scale=adaptive_viz_scales[layer_idx][neuron_idx], opacity=0.6)
             s=surfaces[layer_idx][neuron_idx]
-            g=Group(s, pgs) 
+            g=gx.Group(s, pgs)
             groups_output.add(g)
 
 
@@ -630,14 +650,14 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
         group_combined_output[0].set_color(BLUE)
         group_combined_output[1].set_color(YELLOW)
 
-        top_polygons_vgroup=VGroup()
+        top_polygons_vgroup=gx.VGroup()
         for j, p in enumerate(my_top_polygons):
             if len(p)<3: continue
             if my_indicator[j]: color=YELLOW
             else: color=BLUE
             p_scaled=copy.deepcopy(p) #Scaling for viz
             p_scaled[:,2]=p_scaled[:,2]*adaptive_viz_scales[-1][0] #Flatten that shit!
-            poly_3d = Polygon(*p_scaled,
+            poly_3d = gx.Polygon(*p_scaled,
                              fill_color=color,
                              fill_opacity=0.4,
                              stroke_color=color,
@@ -645,22 +665,22 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
             poly_3d.set_opacity(0.5)
             top_polygons_vgroup.add(poly_3d)
 
-        lines=VGroup()
+        lines=gx.VGroup()
         for loop in intersection_lines: 
             loop=loop*np.array([1, 1, viz_scales[2]])
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(loop)
             line.set_stroke(color='#FF00FF', width=4)
             lines.add(line)
 
-        top_polygons_vgroup_flat=VGroup()
+        top_polygons_vgroup_flat=gx.VGroup()
         for j, p in enumerate(my_top_polygons):
             if len(p)<3: continue
             if my_indicator[j]: color=YELLOW
             else: color=BLUE
             p_scaled=copy.deepcopy(p) #Scaling for viz
             p_scaled[:,2]=0 #p_scaled[:,2]*viz_scales[2] #Flatten that shit!
-            poly_3d = Polygon(*p_scaled,
+            poly_3d = gx.Polygon(*p_scaled,
                              fill_color=color,
                              fill_opacity=0.4,
                              stroke_color=color,
@@ -669,22 +689,22 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
             top_polygons_vgroup_flat.add(poly_3d)
 
         def flat_surf_func(u, v): return [u, v, 0]
-        flat_map_surf = ParametricSurface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        flat_map_2=TexturedSurface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
-        flat_map_2.set_shading(0,0,0).set_opacity(0.8)
+        flat_map_surf = parametric_surface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        flat_map_2=textured_surface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
+        set_surface_shading(flat_map_2, 0,0,0).set_opacity(0.8)
 
-        lines_flat=VGroup()
+        lines_flat=gx.VGroup()
         for loop in intersection_lines: 
             # loop=np.hstack((loop, np.zeros((len(loop), 1))))
             loop[:,2]=0
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(loop)
             line.set_stroke(color='#FF00FF', width=4)
             lines_flat.add(line)    
 
         group_combined_output.set_opacity(0.3)
-        final_map_group=Group(flat_map_2, top_polygons_vgroup_flat, lines_flat)
-        border_map_only=Group(flat_map_2.copy(), lines_flat.copy())
+        final_map_group=gx.Group(flat_map_2, top_polygons_vgroup_flat, lines_flat)
+        border_map_only=gx.Group(flat_map_2.copy(), lines_flat.copy())
 
         # I can change locations in premiere pretty easily if I need to!
         layer_1_polygons_flat.shift([ 0.,  2., 0.])                                                                                                                                                       
@@ -695,9 +715,9 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
         border_map_only.shift([ 2*2.35, -0.35, 0.  ])
 
         # self.wait()
-        # self.frame.reorient(0, 0, 0, (3.94, 0.38, 0.0), 2.04) #Could do a nice zoom in animation from not sure if it's worth it or not
-        # self.frame.reorient(0, 0, 0, (3.07, 0.82, 0.0), 0.77)
-        self.frame.reorient(0, 0, 0, (2.97, 0.81, 0.0), 4.80)
+        # self.set_view(0, 0, 0, (3.94, 0.38, 0.0), 2.04) #Could do a nice zoom in animation from not sure if it's worth it or not
+        # self.set_view(0, 0, 0, (3.07, 0.82, 0.0), 0.77)
+        self.set_view(0, 0, 0, (2.97, 0.81, 0.0), 4.80)
         self.add(layer_1_polygons_flat)
         self.add(layer_2_polygons_flat)
         self.add(layer_3_polygons_flat)
@@ -709,7 +729,7 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
 
         #Some nice moves at the end here, and region count - at least on screen - maybe say it?
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (4.77, -0.36, 0.0), 2.26), run_time=12, rate_func=linear)
+        self.play(self.animate_view(0, 0, 0, (4.77, -0.36, 0.0), 2.26), run_time=12, rate_func=gx.linear)
         self.wait()
 
 
@@ -718,50 +738,50 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
 
 
         
-        regions_label=MarkupText('29,797 REGIONS', font_size=11, font='myriad-pro')
+        regions_label=markup_text('29,797 REGIONS', font_size=11, font='myriad-pro')
         regions_label.set_color(CHILL_BROWN)
         regions_label.move_to([2.35, -1.45, 0])
 
         self.add(regions_label)
         # self.remove(regions_label)
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (2.36, -0.4, 0.0), 2.31), run_time=5)
+        self.play(self.animate_view(0, 0, 0, (2.36, -0.4, 0.0), 2.31), run_time=5)
         self.wait()
 
 
-        # self.play(self.frame.animate.reorient(0, 0, 0, (2.61, -0.35, 0.0), 2.26), run_time=5)
+        # self.play(self.animate_view(0, 0, 0, (2.61, -0.35, 0.0), 2.26), run_time=5)
         # self.wait()
         self.remove(regions_label)
-        self.play(self.frame.animate.reorient(0, 0, 0, (2.37, 0.81, 0.0), 4.77), run_time=12)
+        self.play(self.animate_view(0, 0, 0, (2.37, 0.81, 0.0), 4.77), run_time=12)
         self.wait()
 
 
-        # self.play(self.frame.animate.reorient(0, 0, 0, (2.53, -0.45, 0.0), 0.52), run_time=12)
+        # self.play(self.animate_view(0, 0, 0, (2.53, -0.45, 0.0), 0.52), run_time=12)
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(0, 0, 0, (2.97, 0.81, 0.0), 4.80), run_time=12)
+        # self.play(self.animate_view(0, 0, 0, (2.97, 0.81, 0.0), 4.80), run_time=12)
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(0, 0, 0, (4.82, -0.38, 0.0), 0.80), run_time=12)
+        # self.play(self.animate_view(0, 0, 0, (4.82, -0.38, 0.0), 0.80), run_time=12)
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(0, 0, 0, (2.97, 0.81, 0.0), 4.80), run_time=12)
+        # self.play(self.animate_view(0, 0, 0, (2.97, 0.81, 0.0), 4.80), run_time=12)
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(0, 45, 0, (2.33, -0.1, -0.63), 2.02), run_time=12)
+        # self.play(self.animate_view(0, 45, 0, (2.33, -0.1, -0.63), 2.02), run_time=12)
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(0, 0, 0, (2.97, 0.81, 0.0), 4.80), run_time=12)
+        # self.play(self.animate_view(0, 0, 0, (2.97, 0.81, 0.0), 4.80), run_time=12)
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(35, 52, 0, (3.27, 0.42, -0.34), 4.85), run_time=12)
+        # self.play(self.animate_view(35, 52, 0, (3.27, 0.42, -0.34), 4.85), run_time=12)
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(0, 0, 0, (2.97, 0.81, 0.0), 4.80), run_time=12)
+        # self.play(self.animate_view(0, 0, 0, (2.97, 0.81, 0.0), 4.80), run_time=12)
         # self.wait()
 
 
-        # self.play(self.frame.animate.)
+        # self.play(self.camera.frame.animate.)
         # self.wait()
 
 #Maybe polygon count below each panel?
@@ -785,5 +805,5 @@ class p64_playaround_on_last_frame_d(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass
 

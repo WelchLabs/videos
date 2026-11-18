@@ -1,4 +1,12 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+from sora_motion import CustomTracedPath, create_noisy_arrow_animation, manual_camera_interpolation
+import numpy as np
+from sora_fields import TrackerControlledVectorField
+from welch_geometry import diagram_arrow, diagram_axes
+from welch_scene import WelchScene
+from welch_text import markup_text, math_tex
+
 import glob
 
 CHILL_BROWN='#948979'
@@ -20,217 +28,7 @@ from tqdm import tqdm
 import torch
 from itertools import pairwise
 
-def manual_camera_interpolation(start_orientation, end_orientation, num_steps):
-    """
-    Linearly interpolate between two camera orientations.
-    
-    Parameters:
-    - start_orientation: List containing camera parameters with a tuple at index 3
-    - end_orientation: List containing camera parameters with a tuple at index 3
-    - num_steps: Number of interpolation steps (including start and end)
-    
-    Returns:
-    - List of interpolated orientations
-    """
-    result = []
-    
-    for step in range(num_steps):
-        # Calculate interpolation factor (0 to 1)
-        t = step / (num_steps - 1) if num_steps > 1 else 0
-        
-        # Create a new orientation for this step
-        interpolated = []
-        
-        for i in range(len(start_orientation)):
-            if i == 3:  # Handle the tuple at position 3
-                start_tuple = start_orientation[i]
-                end_tuple = end_orientation[i]
-                
-                # Interpolate each element of the tuple
-                interpolated_tuple = tuple(
-                    start_tuple[j] + t * (end_tuple[j] - start_tuple[j])
-                    for j in range(len(start_tuple))
-                )
-                
-                interpolated.append(interpolated_tuple)
-            else:  # Handle regular numeric values
-                start_val = start_orientation[i]
-                end_val = end_orientation[i]
-                interpolated_val = start_val + t * (end_val - start_val)
-                interpolated.append(interpolated_val)
-        
-        result.append(interpolated)
-    
-    return result
-
-
-class CustomTracedPath(VMobject):
-    """
-    A custom traced path that supports:
-    - Reverse playback with segment removal
-    - Variable opacity based on distance from end
-    - Manual control over path segments
-    """
-    def __init__(
-        self,
-        traced_point_func,
-        stroke_width=2.0,
-        stroke_color=YELLOW,
-        opacity_range=(0.1, 0.8),  # (min_opacity, max_opacity)
-        fade_length=20,  # Number of segments to fade over
-        **kwargs
-    ):
-        super().__init__(**kwargs)
-        self.traced_point_func = traced_point_func
-        self.stroke_width = stroke_width
-        self.stroke_color = stroke_color
-        self.opacity_range = opacity_range
-        self.fade_length = fade_length
-        
-        # Store path segments as individual VMobjects
-        self.segments = VGroup()
-        self.traced_points = []
-        self.is_tracing = True
-        
-        # Add updater for forward tracing
-        self.add_updater(lambda m, dt: m.update_path(dt))
-    
-    def update_path(self, dt=0):
-        """Update path during forward animation"""
-        if not self.is_tracing or dt == 0:
-            return
-            
-        point = self.traced_point_func()
-        self.traced_points.append(point.copy())
-        
-        if len(self.traced_points) >= 2:
-            # Create a new segment
-            segment = Line(
-                self.traced_points[-2], 
-                self.traced_points[-1],
-                stroke_width=self.stroke_width,
-                stroke_color=self.stroke_color
-            )
-            
-            # Apply opacity gradient
-            self.segments.add(segment)
-            self.update_segment_opacities()
-            self.add(segment)
-    
-    def update_segment_opacities(self):
-        """Update opacity of all segments based on their position"""
-        n_segments = len(self.segments)
-        if n_segments == 0:
-            return
-            
-        min_op, max_op = self.opacity_range
-        
-        for i, segment in enumerate(self.segments):
-            if i >= n_segments - self.fade_length:
-                # Calculate fade based on distance from end
-                fade_progress = (i - (n_segments - self.fade_length)) / self.fade_length
-                opacity = min_op + (max_op - min_op) * fade_progress
-            else:
-                opacity = min_op
-            segment.set_opacity(opacity)
-    
-    def remove_last_segment(self):
-        """Remove the last segment (for reverse playback)
-        Kinda hacky but just run 2x to fix bug
-        """
-        if len(self.segments) > 0:
-            last_segment = self.segments[-1]
-            self.segments.remove(last_segment)
-            self.remove(last_segment)
-            if len(self.traced_points) > 0:
-                self.traced_points.pop()
-            # self.update_segment_opacities()
-
-        if len(self.segments) > 0:
-            last_segment = self.segments[-1]
-            self.segments.remove(last_segment)
-            self.remove(last_segment)
-            if len(self.traced_points) > 0:
-                self.traced_points.pop()
-
-        self.update_segment_opacities()
-    
-    def stop_tracing(self):
-        """Stop the automatic tracing updater"""
-        self.is_tracing = False
-    
-    def start_tracing(self):
-        """Resume automatic tracing"""
-        self.is_tracing = True
-    
-    def get_num_segments(self):
-        """Get the current number of segments"""
-        return len(self.segments)
-
-
-def create_noisy_arrow_animation(self, start_point, end_point, target_point, num_steps=100, noise_level=0.1, overshoot_factor=0.3):
-    """
-    Creates a sequence of arrow end positions that converge from end_point to target_point
-    with parameterizable noise and overshoot past the target direction.
-    """
-    
-    # Calculate initial and target directions
-    initial_direction = np.array(end_point) - np.array(start_point)
-    target_direction = np.array(target_point) - np.array(start_point)
-    
-    # Calculate the constant length
-    arrow_length = np.linalg.norm(initial_direction)
-    
-    # Calculate angles
-    initial_angle = np.arctan2(initial_direction[1], initial_direction[0])
-    target_angle = np.arctan2(target_direction[1], target_direction[0])
-    
-    # Handle angle wrapping (choose the shorter path)
-    angle_diff = target_angle - initial_angle
-    if angle_diff > np.pi:
-        angle_diff -= 2 * np.pi
-    elif angle_diff < -np.pi:
-        angle_diff += 2 * np.pi
-    
-    # Create interpolation parameter
-    t_values = np.linspace(0, 1, num_steps)
-    
-    # Generate noise that decreases over time
-    np.random.seed(42)
-    noise_decay = np.exp(-3 * t_values)
-    angle_noise = noise_level * noise_decay * np.random.randn(num_steps)
-    
-    # Generate overshoot in angle space - this will make it swing past the target angle
-    overshoot_frequency = 3.0
-    overshoot_decay = np.exp(-2 * t_values)
-    overshoot_oscillation = overshoot_factor * overshoot_decay * np.sin(overshoot_frequency * np.pi * t_values)
-    
-    # The key: let the angle interpolation overshoot past the target
-    t_effective = t_values + overshoot_oscillation
-    # Ensure final angle is exactly the target
-    t_effective[-1] = 1.0
-    
-    arrow_positions = []
-    
-    for i, t_eff in enumerate(t_effective):
-        # Interpolate angle - this is where the overshoot happens
-        current_angle = initial_angle + t_eff * angle_diff
-        
-        # Add angular noise (but not on final step)
-        if i < len(t_effective) - 1:
-            current_angle += angle_noise[i]
-        
-        # Convert back to cartesian coordinates
-        end_x = np.array(start_point)[0] + arrow_length * np.cos(current_angle)
-        end_y = np.array(start_point)[1] + arrow_length * np.sin(current_angle)
-        
-        arrow_positions.append([end_x, end_y, 0])
-    
-    return arrow_positions
-
-
-
-class p48_51v4(InteractiveScene):
+class p48_51v4(WelchScene):
     def construct(self):
         '''
         Ok ok ok need to do a direct transition from p47b after fading out all the traces etc -> then bring
@@ -241,7 +39,7 @@ class p48_51v4(InteractiveScene):
         loader = DataLoader(dataset, batch_size=batch_size)
         batch=next(iter(loader)).numpy()
 
-        axes = Axes(
+        axes = diagram_axes(
             x_range=[-1.2, 1.2, 0.5],
             y_range=[-1.2, 1.2, 0.5],
             height=7,
@@ -257,7 +55,7 @@ class p48_51v4(InteractiveScene):
         )
 
         # Create extended axes with SAME center point and proportional scaling
-        extended_axes = Axes(
+        extended_axes = diagram_axes(
             x_range=[-2.0, 2.0, 0.5],    # Extended range
             y_range=[-2.0, 2.0, 0.5],    # Extended range
             height=7 * (4.0/2.4),        # Scale height proportionally: original_height * (new_range/old_range)
@@ -269,11 +67,11 @@ class p48_51v4(InteractiveScene):
         extended_axes.move_to(axes.get_center())
 
 
-        dots = VGroup()
+        dots = gx.VGroup()
         for point in batch:
             # Map the point coordinates to the axes
             screen_point = axes.c2p(point[0], point[1])
-            dot = Dot(screen_point, radius=0.04)
+            dot = gx.Dot(screen_point, radius=0.04)
             # dot.set_color(YELLOW)
             dots.add(dot)
         dots.set_color(YELLOW)
@@ -297,7 +95,7 @@ class p48_51v4(InteractiveScene):
         random_walk=np.hstack((random_walk, np.zeros((len(random_walk), 1))))
         random_walk_shifted=random_walk+np.array([batch[i][0], batch[i][1], 0])
         
-        dot_history=VGroup()
+        dot_history=gx.VGroup()
         dot_history.add(dot_to_move.copy().scale(0.4).set_color(YELLOW))
         # self.play(dot_to_move.animate.move_to(axes.c2p(*random_walk_shifted[0])), run_time=1.0)
         # dot_to_move.move_to(axes.c2p(*random_walk_shifted[1]))
@@ -313,14 +111,14 @@ class p48_51v4(InteractiveScene):
         dot_to_move.set_opacity(1.0)
 
         #Ok let me try to get all the big elements in here
-        x100=Tex('x_{100}', font_size=24).set_color(YELLOW)
-        x100.next_to(dot_to_move, 0.07*UP+0.001*RIGHT)
+        x100=math_tex('x_{100}', font_size=24).set_color(YELLOW)
+        x100.next_to(dot_to_move, 0.07*gx.UP+0.001*gx.RIGHT)
 
-        x0=Tex('x_{0}', font_size=24).set_color('#00FFFF')
-        x0.next_to(dots[i], 0.2*UP)
+        x0=math_tex('x_{0}', font_size=24).set_color('#00FFFF')
+        x0.next_to(dots[i], 0.2*gx.UP)
         dots[i].set_color('#00FFFF').set_opacity(1.0)
 
-        arrow_x100_to_x0 = Arrow(
+        arrow_x100_to_x0 = diagram_arrow(
             start=dot_to_move.get_center(),
             end=dots[i].get_center(),
             thickness=1,
@@ -331,7 +129,7 @@ class p48_51v4(InteractiveScene):
         arrow_x100_to_x0.set_opacity(0.6)
 
 
-        arrow_x100_to_x99 = Arrow(
+        arrow_x100_to_x99 = diagram_arrow(
             start=dot_to_move.get_center(),
             end=[4.739921625933185, 2.8708813273028455, 0], #Just pul in from previous paragraph, kinda hacky but meh. ,
             thickness=1.5,
@@ -352,7 +150,7 @@ class p48_51v4(InteractiveScene):
         # )
 
 
-        self.frame.reorient(0, 0, 0, (3.58, 2.57, 0.0), 2.69)
+        self.set_view(0, 0, 0, (3.58, 2.57, 0.0), 2.69)
         self.add(axes, dots, dot_to_move)
         # self.add(traced_path)
         self.add(x100,  x0, arrow_x100_to_x0, arrow_x100_to_x99)
@@ -365,10 +163,10 @@ class p48_51v4(InteractiveScene):
 
         self.play(
                 # FadeOut(traced_path), 
-                  FadeOut(dot_to_move), 
-                  FadeOut(x100), 
-                  FadeOut(x0), 
-                  FadeOut(arrow_x100_to_x0), 
+                  gx.FadeOut(dot_to_move),
+                  gx.FadeOut(x100),
+                  gx.FadeOut(x0),
+                  gx.FadeOut(arrow_x100_to_x0),
                  dots.animate.set_opacity(1.0).set_color(YELLOW), run_time=1.5)
 
         # Ok ok ok so I now in need some vector fields. These come from trained models. Do I want to import the model 
@@ -378,7 +176,7 @@ class p48_51v4(InteractiveScene):
         # Lets see here....
         # Hmm kinda unclear if this is going to work on mac/CPU -> i guess it's worth a try? Pretty sure I can't train w/o cuda. 
 
-        model=torch.load('/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/hackin/jun_20_1.pt')
+        model=torch.load(welch_path('sora/hackin/jun_20_1.pt'))
 
         schedule = ScheduleLogLinear(N=256, sigma_min=0.01, sigma_max=10) #N=200
         bound=2.0 #Need to match extended axes bro
@@ -435,7 +233,7 @@ class p48_51v4(InteractiveScene):
         # Hmm maybe not actually?
 
 
-        time_tracker = ValueTracker(0.0)  # Start at time 0
+        time_tracker = gx.ValueTracker(0.0)  # Start at time 0
 
         def vector_function_with_tracker(coords_array):
             """Vector function that uses the ValueTracker for time"""
@@ -450,54 +248,6 @@ class p48_51v4(InteractiveScene):
                 return np.zeros((len(coords_array), 2))
 
         # Create a custom VectorField that updates based on the tracker
-        class TrackerControlledVectorField(VectorField):
-            def __init__(self, time_tracker, max_radius=2.0, min_opacity=0.1, max_opacity=0.7, **kwargs):
-                self.time_tracker = time_tracker
-                self.max_radius = max_radius  # Maximum radius for opacity calculation
-                self.min_opacity = min_opacity  # Minimum opacity at max radius
-                self.max_opacity = max_opacity  # Maximum opacity at origin
-                super().__init__(**kwargs)
-                
-                # Add updater that triggers when tracker changes
-                self.add_updater(self.update_from_tracker)
-            
-            def update_from_tracker(self, mob, dt):
-                """Update vectors when tracker value changes"""
-                # Only update if tracker value has changed significantly
-                current_time = self.time_tracker.get_value()
-                if not hasattr(self, '_last_time') or abs(current_time - self._last_time) > 0.01:
-                    self._last_time = current_time
-                    self.update_vectors()  # Redraw vectors with new time
-                    self.apply_radial_opacity()  # Apply opacity falloff after updating
-            
-            def apply_radial_opacity(self):
-                """Apply radial opacity falloff from origin"""
-                # Get the stroke opacities array (this creates it if it doesn't exist)
-                opacities = self.get_stroke_opacities()
-                
-                # In ManimGL VectorField, each vector is represented by 8 points
-                # Points 0,2,4,6 are the key points of each vector, with point 0 being the base
-                n_vectors = len(self.sample_points)
-                
-                for i in range(n_vectors):
-                    # Get the base point of this vector (every 8th point starting from 0)
-                    base_point = self.sample_points[i]
-                    
-                    # Calculate distance from origin (assuming origin is at [0,0,0])
-                    distance = np.linalg.norm(base_point[:2])  # Only use x,y components
-                    
-                    # Calculate opacity based on distance
-                    # Linear falloff: opacity decreases linearly with distance
-                    opacity_factor = max(0, 1 - distance / self.max_radius)
-                    final_opacity = self.min_opacity + (self.max_opacity - self.min_opacity) * opacity_factor
-                    
-                    # Apply the opacity to all 8 points of this vector (except the last one)
-                    start_idx = i * 8
-                    end_idx = min(start_idx + 8, len(opacities))
-                    opacities[start_idx:end_idx] = final_opacity
-                
-                # Make sure the data is marked as changed
-                self.note_changed_data()
 
 
         # Create the tracker-controlled vector field
@@ -525,19 +275,19 @@ class p48_51v4(InteractiveScene):
 
         # self.play(ShowCreation(vector_field), 
         #          arrow_x100_to_x99.animate.rotate(-14*DEGREES).shift([0.17, -0.07, 0]).scale([0.6, 1.2, 1]).set_opacity(0.8),
-        #          self.frame.animate.reorient(0, 0, 0, (-0.06, 0.09, 0.0), 8.31), 
+        #          self.animate_view(0, 0, 0, (-0.06, 0.09, 0.0), 8.31),
         #          run_time=6.0)
 
         #ok i think fading in teh vector field is probably th emove. 
-        self.play(FadeIn(vector_field), 
+        self.play(gx.FadeIn(vector_field),
                  dots.animate.set_opacity(0.75),
-                 arrow_x100_to_x99.animate.rotate(-14*DEGREES).shift([0.17, -0.07, 0]).scale([0.6, 1.2, 1]).set_opacity(0.5),
-                 self.frame.animate.reorient(0, 0, 0, (-0.21, 0.02, 0.0), 8.08), 
+                 arrow_x100_to_x99.animate.rotate(-14*gx.DEGREES).shift([0.17, -0.07, 0]).scale([0.6, 1.2, 1]).set_opacity(0.5),
+                 self.animate_view(0, 0, 0, (-0.21, 0.02, 0.0), 8.08),
                  run_time=16.0)
         self.remove(arrow_x100_to_x99)
         self.wait()
 
-        # self.frame.reorient(0, 0, 0, (-0.06, 0.09, 0.0), 8.31)
+        # self.set_view(0, 0, 0, (-0.06, 0.09, 0.0), 8.31)
         # self.play(FadeIn(vector_field), run_time=2.0)
         # self.wait()
         # arrow_x100_to_x99.rotate(-14*DEGREES).shift([0.17, -0.07, 0]).scale([0.6, 1.2, 1]).set_opacity(0.8)
@@ -552,11 +302,11 @@ class p48_51v4(InteractiveScene):
         # Probably completele fade out vectors while I play forward diffusion, then bring back in??
         # self.wait()
 
-        dots_to_move = VGroup()
+        dots_to_move = gx.VGroup()
         for point in batch:
             # Map the point coordinates to the axes
             screen_point = axes.c2p(point[0], point[1])
-            dot = Dot(screen_point, radius=0.04)
+            dot = gx.Dot(screen_point, radius=0.04)
             # dot.set_color(YELLOW)
             dots_to_move.add(dot)
         dots_to_move.set_color(YELLOW)
@@ -578,7 +328,7 @@ class p48_51v4(InteractiveScene):
             rw_shifted=rw+np.array([batch[i][0], batch[i][1], 0])
             random_walks.append(rw_shifted)
 
-        traced_paths=VGroup()
+        traced_paths=gx.VGroup()
         for idx, d in enumerate(dots_to_move): 
             tp = CustomTracedPath(
                     d.get_center, 
@@ -591,17 +341,17 @@ class p48_51v4(InteractiveScene):
             traced_paths.add(tp)
         self.add(traced_paths)
 
-        step_count=MarkupText(str(1), font_size=35)
+        step_count=markup_text(str(1), font_size=35)
         step_count.set_color(CHILL_BROWN)
         step_count.move_to([-6.8, -3.3, 0])
 
-        step_label=MarkupText("STEP", font_size=18, font='myriad-pro')  
+        step_label=markup_text("STEP", font_size=18, font='myriad-pro')
         step_label.set_color(CHILL_BROWN).set_opacity(0.7)
-        step_label.next_to(step_count, DOWN, buff=0.1)
+        step_label.next_to(step_count, gx.DOWN, buff=0.1)
 
 
         self.wait()
-        self.play(FadeOut(vector_field), FadeIn(step_label), FadeIn(step_count))
+        self.play(gx.FadeOut(vector_field), gx.FadeIn(step_label), gx.FadeIn(step_count))
 
 
         self.wait()
@@ -609,9 +359,9 @@ class p48_51v4(InteractiveScene):
         dots.set_opacity(0.3)
         for step in range(100):
             self.play(*[dots_to_move[i].animate.move_to(axes.c2p(*random_walks[i][step])) for i in range(len(dots_to_move))], 
-                     run_time=0.1, rate_func=linear)
+                     run_time=0.1, rate_func=gx.linear)
             self.remove(step_count)
-            step_count=MarkupText(str(step+1), font_size=35)
+            step_count=markup_text(str(step+1), font_size=35)
             step_count.set_color(CHILL_BROWN)
             step_count.move_to([-6.8, -3.3, 0])
             self.add(step_count)
@@ -622,7 +372,7 @@ class p48_51v4(InteractiveScene):
 
         #Ok now fade back in Vector field (at t=100)
         vector_field.set_color('#FFFFFF')
-        self.play(FadeIn(vector_field),
+        self.play(gx.FadeIn(vector_field),
                   dots_to_move.animate.set_opacity(0.3))
         self.wait()
 
@@ -633,13 +383,13 @@ class p48_51v4(InteractiveScene):
         # why I can't render paths backwards. 
         # Might try adding a real noise schedule to earlier paths too
         # Ok let me back track and fix that, then will return here. 
-        self.play(FadeOut(vector_field))
+        self.play(gx.FadeOut(vector_field))
 
         # Ok i spent like 30-40 minutes trying to make backwards diffusion work 
         # in export mode, no luck. 
         # I think I can just do it in post? Let me think through it here. 
         self.wait()
-        editor_warning=MarkupText('Reverse in Post!')
+        editor_warning=markup_text('Reverse in Post!')
         self.add(editor_warning)
         self.wait()
         self.remove(editor_warning)
@@ -648,17 +398,17 @@ class p48_51v4(InteractiveScene):
         self.remove(dots_to_move, traced_paths)
 
         #Jump cut to step 1, will play back smoothly in post. 
-        dots_to_move_2 = VGroup()
+        dots_to_move_2 = gx.VGroup()
         for point in batch:
             # Map the point coordinates to the axes
             screen_point = axes.c2p(point[0], point[1])
-            dot = Dot(screen_point, radius=0.04)
+            dot = gx.Dot(screen_point, radius=0.04)
             # dot.set_color(YELLOW)
             dots_to_move_2.add(dot)
         dots_to_move_2.set_color(YELLOW)
         dots_to_move_2.set_opacity(1.0)
 
-        traced_paths_2=VGroup()
+        traced_paths_2=gx.VGroup()
         for idx, d in enumerate(dots_to_move_2): 
             tp = CustomTracedPath(
                     d.get_center, 
@@ -673,7 +423,7 @@ class p48_51v4(InteractiveScene):
 
 
         self.remove(step_count)
-        step_count=MarkupText(str(1), font_size=35)
+        step_count=markup_text(str(1), font_size=35)
         step_count.set_color(CHILL_BROWN)
         step_count.move_to([-6.8, -3.3, 0])
         self.add(step_count)
@@ -682,7 +432,7 @@ class p48_51v4(InteractiveScene):
         dots.set_opacity(0.3)
         for step in range(2):
             self.play(*[dots_to_move_2[i].animate.move_to(axes.c2p(*random_walks[i][step])) for i in range(len(dots_to_move_2))], 
-                     run_time=0.1, rate_func=linear)
+                     run_time=0.1, rate_func=gx.linear)
         self.wait()
 
         # time_tracker.set_value(8.0)
@@ -694,7 +444,7 @@ class p48_51v4(InteractiveScene):
 
 
 
-        self.play(FadeIn(vector_field), dots_to_move_2.animate.set_opacity(0.3))
+        self.play(gx.FadeIn(vector_field), dots_to_move_2.animate.set_opacity(0.3))
 
         # self.play(time_tracker.animate.set_value(8.0), run_time=8.0)
         # self.play(time_tracker.animate.set_value(0.0), run_time=4.0)
@@ -707,31 +457,31 @@ class p48_51v4(InteractiveScene):
 
 
         #Roll all these into big unified move
-        self.play(FadeOut(vector_field),
-                  FadeOut(dots_to_move_2),
-                  FadeOut(traced_paths_2),
-                  FadeOut(step_count),
-                  FadeOut(step_label),
-                  FadeIn(traced_path),
-                  FadeIn(dot_to_move),
-                  self.frame.animate.reorient(0, 0, 0, (3.58, 2.57, 0.0), 2.69),
+        self.play(gx.FadeOut(vector_field),
+                  gx.FadeOut(dots_to_move_2),
+                  gx.FadeOut(traced_paths_2),
+                  gx.FadeOut(step_count),
+                  gx.FadeOut(step_label),
+                  gx.FadeIn(traced_path),
+                  gx.FadeIn(dot_to_move),
+                  self.animate_view(0, 0, 0, (3.58, 2.57, 0.0), 2.69),
                   run_time=5.0
                   )
         self.wait()
 
         # self.add(traced_path)
         # self.add(dot_to_move)
-        # self.frame.reorient(0, 0, 0, (3.58, 2.57, 0.0), 2.69)
+        # self.set_view(0, 0, 0, (3.58, 2.57, 0.0), 2.69)
         # self.add(axes, dots, traced_path, dot_to_move)
         # self.add(x100,  x0, arrow_x100_to_x0, arrow_x100_to_x99)
         # self.wait()
 
 
-        x100=Tex('x_{100}', font_size=24).set_color(YELLOW)
-        x100.next_to(dot_to_move, 0.07*UP+0.001*RIGHT)
+        x100=math_tex('x_{100}', font_size=24).set_color(YELLOW)
+        x100.next_to(dot_to_move, 0.07*gx.UP+0.001*gx.RIGHT)
 
-        x0=Tex('x_{0}', font_size=24).set_color('#00FFFF')
-        x0.next_to(dots[75], 0.2*UP)
+        x0=math_tex('x_{0}', font_size=24).set_color('#00FFFF')
+        x0.next_to(dots[75], 0.2*gx.UP)
 
         #Probably do a big fade in here
         arrow_x100_to_x0.set_opacity(1.0)
@@ -741,14 +491,14 @@ class p48_51v4(InteractiveScene):
         self.wait()
 
 
-        eq_1=Tex("f(x_{100})", font_size=24)
+        eq_1=math_tex("f(x_{100})", font_size=24)
         eq_1.set_color('#00FFFF')
         eq_1.move_to([3.5, 2.2, 0])
         self.add(eq_1)
 
-        eq_2=Tex("f(x_{100}, t)", font_size=24)
+        eq_2=math_tex("f(x_{100}, t)", font_size=24)
         eq_2.set_color('#00FFFF')
-        eq_2.move_to(eq_1, aligned_edge=LEFT)
+        eq_2.move_to(eq_1, aligned_edge=gx.LEFT)
         self.wait()
 
         # self.add(eq_2)
@@ -760,9 +510,9 @@ class p48_51v4(InteractiveScene):
         self.remove(eq_1)
         self.wait()
         #Now fade in , t???
-        eq_3=Tex("f(x_{100}, t=1.0)", font_size=24)
+        eq_3=math_tex("f(x_{100}, t=1.0)", font_size=24)
         eq_3.set_color('#00FFFF')
-        eq_3.move_to(eq_1, aligned_edge=LEFT)
+        eq_3.move_to(eq_1, aligned_edge=gx.LEFT)
         self.wait()
 
         # eq_2[-1].move_to([4.65, 2.2, 0])
@@ -772,7 +522,7 @@ class p48_51v4(InteractiveScene):
         self.wait()
         #Ok now I want little arrows pointing from x99, and then maybe one from like x3?
 
-        arrow_x99_to_x0 = Arrow(
+        arrow_x99_to_x0 = diagram_arrow(
             start=traced_path.traced_points[-2],
             end=dots[75].get_center(),
             thickness=1,
@@ -781,21 +531,21 @@ class p48_51v4(InteractiveScene):
         )
         arrow_x99_to_x0.set_color('#FF00FF')
         arrow_x99_to_x0.set_opacity(1.0)
-        dot99=Dot(traced_path.traced_points[-2], radius=0.04)
+        dot99=gx.Dot(traced_path.traced_points[-2], radius=0.04)
         dot99.set_color("#FF00FF")
 
-        eq_4=Tex("f(x_{99}, t=0.99)", font_size=20)
+        eq_4=math_tex("f(x_{99}, t=0.99)", font_size=20)
         eq_4.set_color('#FF00FF')
         eq_4.move_to([3.1, 2.9, 0])
         # self.add(eq_4)
 
         self.wait()
-        self.play(FadeIn(arrow_x99_to_x0), FadeIn(dot99), FadeIn(eq_4))
+        self.play(gx.FadeIn(arrow_x99_to_x0), gx.FadeIn(dot99), gx.FadeIn(eq_4))
         self.wait()
 
 
 
-        arrow_x3_to_x0 = Arrow(
+        arrow_x3_to_x0 = diagram_arrow(
             start=traced_path.traced_points[2],
             end=dots[75].get_center(),
             thickness=1,
@@ -804,16 +554,16 @@ class p48_51v4(InteractiveScene):
         )
         arrow_x3_to_x0.set_color(GREEN)
         arrow_x3_to_x0.set_opacity(1.0)
-        dot3=Dot(traced_path.traced_points[2], radius=0.04)
+        dot3=gx.Dot(traced_path.traced_points[2], radius=0.04)
         dot3.set_color(GREEN)
 
-        eq_5=Tex("f(x_{2}, t=0.02)", font_size=20)
+        eq_5=math_tex("f(x_{2}, t=0.02)", font_size=20)
         eq_5.set_color(GREEN)
         eq_5.move_to([1.93, 2.45, 0])
         # self.add(eq_4)
 
         self.wait()
-        self.play(FadeIn(arrow_x3_to_x0), FadeIn(dot3), FadeIn(eq_5))
+        self.play(gx.FadeIn(arrow_x3_to_x0), gx.FadeIn(dot3), gx.FadeIn(eq_5))
         self.wait()
 
         
@@ -824,21 +574,21 @@ class p48_51v4(InteractiveScene):
         # Alright lets keep rollin here I guess? 
         # Fade basically all of this new stuff out, zoom back to center view, and run vector field animation
 
-        self.play(FadeOut(arrow_x3_to_x0),
-                  FadeOut(eq_5),
-                  FadeOut(eq_4),
-                  FadeOut(eq_3),
-                  FadeOut(arrow_x99_to_x0),
-                  FadeOut(arrow_x100_to_x0),
-                  FadeOut(traced_path),
-                  FadeOut(dot_to_move),
-                  FadeOut(x100),
-                  FadeOut(dot3),
-                  FadeOut(dot99),
-                  FadeOut(dot_to_move),
+        self.play(gx.FadeOut(arrow_x3_to_x0),
+                  gx.FadeOut(eq_5),
+                  gx.FadeOut(eq_4),
+                  gx.FadeOut(eq_3),
+                  gx.FadeOut(arrow_x99_to_x0),
+                  gx.FadeOut(arrow_x100_to_x0),
+                  gx.FadeOut(traced_path),
+                  gx.FadeOut(dot_to_move),
+                  gx.FadeOut(x100),
+                  gx.FadeOut(dot3),
+                  gx.FadeOut(dot99),
+                  gx.FadeOut(dot_to_move),
                   dots[75].animate.set_color(YELLOW).set_opacity(0.3),
-                  FadeOut(x0),
-                  self.frame.animate.reorient(0, 0, 0, (-0.21, 0.02, 0.0), 8.08),
+                  gx.FadeOut(x0),
+                  self.animate_view(0, 0, 0, (-0.21, 0.02, 0.0), 8.08),
                   run_time=4.0)
         self.wait()
 
@@ -853,8 +603,8 @@ class p48_51v4(InteractiveScene):
 
         # Ok so now i need to figure out how to upate a t="" little counter in the lower left corner like I did before. 
         # I need to incrementally move t from 1.0 down to 0.0 as the animation above runs. Claude can you help?
-        time_value = ValueTracker(1.0)  # Start at t=1.0
-        time_display = DecimalNumber(
+        time_value = gx.ValueTracker(1.0)  # Start at t=1.0
+        time_display = gx.DecimalNumber(
             1.0,
             num_decimal_places=2,
             font_size=35,
@@ -862,41 +612,32 @@ class p48_51v4(InteractiveScene):
         )
         time_display.move_to([-6.3, -3.3, 0])  # Same position as your step counter
 
-        time_label = MarkupText("t =", font_size=35)
+        time_label = markup_text("t =", font_size=35)
         time_label.set_color(CHILL_BROWN)
-        time_label.next_to(time_display, LEFT, buff=0.15)
+        time_label.next_to(time_display, gx.LEFT, buff=0.15)
 
         # Add updater to keep the display synchronized with the tracker
         time_display.add_updater(lambda m: m.set_value(time_value.get_value()))
 
         # Replace your final animation section with this:
         time_tracker.set_value(0)
-        self.play(FadeIn(vector_field), FadeIn(time_label), FadeIn(time_display))
+        self.play(gx.FadeIn(vector_field), gx.FadeIn(time_label), gx.FadeIn(time_display))
         self.wait()
         # Animate both the vector field time progression AND the display counter
         self.play(
             time_tracker.animate.set_value(8.0),  # Your existing vector field animation
             time_value.animate.set_value(0.0),    # Time counter goes from 1.0 to 0.0
             run_time=10.0, 
-            rate_func=linear
+            rate_func=gx.linear
         )
         self.wait()
 
 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-
-
-
-
-
-
-
-
-class p47bv2(InteractiveScene):
+class p47bv2(WelchScene):
     def construct(self):
         '''
         Alright need to pick up where i left off on p44_47, and get ready for another crazy particle fly by lol
@@ -908,7 +649,7 @@ class p47bv2(InteractiveScene):
         loader = DataLoader(dataset, batch_size=batch_size)
         batch=next(iter(loader)).numpy()
 
-        axes = Axes(
+        axes = diagram_axes(
             x_range=[-1.2, 1.2, 0.5],
             y_range=[-1.2, 1.2, 0.5],
             height=7,
@@ -923,11 +664,11 @@ class p47bv2(InteractiveScene):
             }
         )
 
-        dots = VGroup()
+        dots = gx.VGroup()
         for point in batch:
             # Map the point coordinates to the axes
             screen_point = axes.c2p(point[0], point[1])
-            dot = Dot(screen_point, radius=0.04)
+            dot = gx.Dot(screen_point, radius=0.04)
             # dot.set_color(YELLOW)
             dots.add(dot)
         dots.set_color(YELLOW)
@@ -951,7 +692,7 @@ class p47bv2(InteractiveScene):
         random_walk=np.hstack((random_walk, np.zeros((len(random_walk), 1))))
         random_walk_shifted=random_walk+np.array([batch[i][0], batch[i][1], 0])
         
-        dot_history=VGroup()
+        dot_history=gx.VGroup()
         dot_history.add(dot_to_move.copy().scale(0.4).set_color(YELLOW))
         # self.play(dot_to_move.animate.move_to(axes.c2p(*random_walk_shifted[0])), run_time=1.0)
         # dot_to_move.move_to(axes.c2p(*random_walk_shifted[1]))
@@ -965,25 +706,25 @@ class p47bv2(InteractiveScene):
         traced_path.stop_tracing()
 
         dot_to_move.set_opacity(1.0)
-        self.frame.reorient(0, 0, 0, (3.58, 2.57, 0.0), 2.69)
+        self.set_view(0, 0, 0, (3.58, 2.57, 0.0), 2.69)
         self.add(axes, dots, traced_path, dot_to_move)
         self.wait()
 
 
         #Ok let me try to get all the big elements in here
-        x100=Tex('x_{100}', font_size=24).set_color(YELLOW)
-        x100.next_to(dot_to_move, 0.07*UP+0.001*RIGHT)
+        x100=math_tex('x_{100}', font_size=24).set_color(YELLOW)
+        x100.next_to(dot_to_move, 0.07*gx.UP+0.001*gx.RIGHT)
 
-        x99=Tex('x_{99}', font_size=24).set_color(CHILL_BROWN)
-        x99.next_to(dot_history[-1], 0.1*UP+0.01*RIGHT)
-        dot99=Dot(dot_history[-1].get_center(), radius=0.04)
+        x99=math_tex('x_{99}', font_size=24).set_color(CHILL_BROWN)
+        x99.next_to(dot_history[-1], 0.1*gx.UP+0.01*gx.RIGHT)
+        dot99=gx.Dot(dot_history[-1].get_center(), radius=0.04)
         dot99.set_color(CHILL_BROWN)
 
-        x0=Tex('x_{0}', font_size=24).set_color('#00FFFF')
-        x0.next_to(dots[i], 0.2*UP)
+        x0=math_tex('x_{0}', font_size=24).set_color('#00FFFF')
+        x0.next_to(dots[i], 0.2*gx.UP)
         dots[i].set_color('#00FFFF').set_opacity(1.0)
 
-        arrow_x100_to_x0 = Arrow(
+        arrow_x100_to_x0 = diagram_arrow(
             start=dot_to_move.get_center(),
             end=dots[i].get_center(),
             thickness=1,
@@ -993,7 +734,7 @@ class p47bv2(InteractiveScene):
         arrow_x100_to_x0.set_color('#00FFFF')
         arrow_x100_to_x0.set_opacity(0.6)
 
-        arrow_x100_to_x99 = Arrow(
+        arrow_x100_to_x99 = diagram_arrow(
             start=dot_to_move.get_center(),
             end=dot_history[-1].get_center(),
             thickness=1.5,
@@ -1060,18 +801,18 @@ class p47bv2(InteractiveScene):
         # random_walks=random_walks[:100] #Comment out to do all the points.
         print(len(random_walks))
 
-        dots_to_move = VGroup()
+        dots_to_move = gx.VGroup()
         for j in range(len(random_walks)):
             # Map the point coordinates to the axes
             screen_point = axes.c2p(batch[j%len(batch)][0], batch[j%len(batch)][1])
-            dot = Dot(screen_point, radius=0.04)
+            dot = gx.Dot(screen_point, radius=0.04)
             # dot.set_color(YELLOW)
             dots_to_move.add(dot)
         dots_to_move.set_color(FRESH_TAN)
         dots_to_move.set_opacity(0.2)
 
 
-        traced_paths=VGroup()
+        traced_paths=gx.VGroup()
         for idx, d in enumerate(dots_to_move): 
             # tp = TracedPath(d.get_center, stroke_color=YELLOW, stroke_width=2)
             if idx != 75:  # Skip the already traced dot
@@ -1089,8 +830,8 @@ class p47bv2(InteractiveScene):
         self.wait()
         for step in range(100):
             self.play(*[dots_to_move[i].animate.move_to(axes.c2p(*random_walks[i][step])) for i in range(len(random_walks))], 
-                     # self.frame.animate.reorient(*interp_orientations[step]), 
-                     run_time=0.1, rate_func=linear)
+                     # self.animate_view(*interp_orientations[step]),
+                     run_time=0.1, rate_func=gx.linear)
             if step>start_delay:
                 arrow_index=np.clip(step-start_delay, 0, len(arrow_end_positions)-1)
                 arrow_x100_to_x99.put_start_and_end_on(dot_to_move.get_center(), arrow_end_positions[arrow_index])
@@ -1099,11 +840,9 @@ class p47bv2(InteractiveScene):
         self.remove(dots_to_move, traced_paths, dot99) #Might be nice to do a fade out
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-
-class p44_47(InteractiveScene):
+class p44_47(WelchScene):
     def construct(self):
         '''
         Ok going to try a "clean break" here on the full spiral!
@@ -1114,7 +853,7 @@ class p44_47(InteractiveScene):
         loader = DataLoader(dataset, batch_size=batch_size)
         batch=next(iter(loader)).numpy()
 
-        axes = Axes(
+        axes = diagram_axes(
             x_range=[-1.2, 1.2, 0.5],
             y_range=[-1.2, 1.2, 0.5],
             height=7,
@@ -1128,14 +867,14 @@ class p44_47(InteractiveScene):
                 "tip_config": {"color": CHILL_BROWN, "length": 0.15, "width": 0.15}
             }
         )
-        dots = VGroup()
+        dots = gx.VGroup()
         for point in batch:
             # Map the point coordinates to the axes
             screen_point = axes.c2p(point[0], point[1])
-            dot = Dot(screen_point, radius=0.05)
+            dot = gx.Dot(screen_point, radius=0.05)
             # dot.set_color(YELLOW)
             dots.add(dot)
-        dots.set_color(BLACK)
+        dots.set_color(gx.BLACK)
 
         i=75
         dot_to_move=dots[i].copy()
@@ -1155,7 +894,7 @@ class p44_47(InteractiveScene):
         random_walk=np.hstack((random_walk, np.zeros((len(random_walk), 1))))
         random_walk_shifted=random_walk+np.array([batch[i][0], batch[i][1], 0])
         
-        dot_history=VGroup()
+        dot_history=gx.VGroup()
         dot_history.add(dot_to_move.copy().scale(0.4).set_color(YELLOW))
         # self.play(dot_to_move.animate.move_to(axes.c2p(*random_walk_shifted[0])), run_time=1.0)
         # dot_to_move.move_to(axes.c2p(*random_walk_shifted[1]))
@@ -1170,7 +909,7 @@ class p44_47(InteractiveScene):
         self.wait()
 
 
-        self.frame.reorient(0, 0, 0, (-0.07, 0.01, 0.0), 7.59)
+        self.set_view(0, 0, 0, (-0.07, 0.01, 0.0), 7.59)
         self.add(axes, dots)
         # self.add(traced_path)
         # self.add(dot_to_move)
@@ -1182,14 +921,14 @@ class p44_47(InteractiveScene):
 
 
         #P45, zoom in and fade in walk
-        self.play(FadeIn(traced_path), 
-                  FadeIn(dot_to_move), 
+        self.play(gx.FadeIn(traced_path),
+                  gx.FadeIn(dot_to_move),
                   # FadeIn(dot_history)
                   )
 
 
         # self.wait()
-        # self.play(self.frame.animate.reorient(0, 0, 0, (3.58, 2.57, 0.0), 2.69),
+        # self.play(self.animate_view(0, 0, 0, (3.58, 2.57, 0.0), 2.69),
         #          dots.animate.set_opacity(0.3), run_time=3.0)
         # self.wait()
 
@@ -1200,11 +939,11 @@ class p44_47(InteractiveScene):
         dots.set_opacity(0.2)
         self.remove(dots[75])
 
-        self.frame.reorient(0, 0, 0, (3.16, 1.7, 0.0), 3.86)
+        self.set_view(0, 0, 0, (3.16, 1.7, 0.0), 3.86)
         self.wait(2)
 
 
-        self.frame.reorient(0, 0, 0, 8.00)
+        self.set_view(0, 0, 0, 8.00)
         self.wait(2)
 
 
@@ -1237,18 +976,18 @@ class p44_47(InteractiveScene):
         # random_walks=random_walks[:100]
         print(len(random_walks))
 
-        dots_to_move = VGroup()
+        dots_to_move = gx.VGroup()
         for j in range(len(random_walks)):
             # Map the point coordinates to the axes
             screen_point = axes.c2p(batch[j%len(batch)][0], batch[j%len(batch)][1])
-            dot = Dot(screen_point, radius=0.04)
+            dot = gx.Dot(screen_point, radius=0.04)
             # dot.set_color(YELLOW)
             dots_to_move.add(dot)
         dots_to_move.set_color(FRESH_TAN)
         dots_to_move.set_opacity(0.3)
 
 
-        traced_paths=VGroup()
+        traced_paths=gx.VGroup()
         for idx, d in enumerate(dots_to_move): 
             # tp = TracedPath(d.get_center, stroke_color=YELLOW, stroke_width=2)
             if idx != 75:  # Skip the already traced dot
@@ -1272,9 +1011,9 @@ class p44_47(InteractiveScene):
 
         
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (2.74, 1.72, 0.0), 3.99))
+        self.play(self.animate_view(0, 0, 0, (2.74, 1.72, 0.0), 3.99))
 
-        r=RoundedRectangle(1.5, 1.0, 0.05)
+        r=gx.RoundedRectangle(width=1.5, height=1.0, corner_radius=0.05)
         r.set_stroke(color='#00FFFF', width=2)
         r.move_to(dot_to_move)
         self.add(r)
@@ -1282,29 +1021,26 @@ class p44_47(InteractiveScene):
         self.wait()
         for step in range(100):
             self.play(*[dots_to_move[i].animate.move_to(axes.c2p(*random_walks[i][step])) for i in range(len(random_walks))], 
-                     # self.frame.animate.reorient(*interp_orientations[step]), 
-                     run_time=0.1, rate_func=linear)
+                     # self.animate_view(*interp_orientations[step]),
+                     run_time=0.1, rate_func=gx.linear)
         self.wait()
         
         for tp in traced_paths: tp.stop_tracing()
 
         self.remove(dots_to_move, traced_paths)
         # self.play(FadeOut(dots_to_move), FadeOut(traced_paths), FadeOut(r))
-        self.play(FadeOut(r))
+        self.play(gx.FadeOut(r))
         self.wait()
 
         #Zoom back in
-        self.play(self.frame.animate.reorient(0, 0, 0, (3.58, 2.57, 0.0), 2.69), run_time=3)
+        self.play(self.animate_view(0, 0, 0, (3.58, 2.57, 0.0), 2.69), run_time=3)
         self.wait()
 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-
-
-class p40_44v2_black(InteractiveScene):
+class p40_44v2_black(WelchScene):
     def construct(self):
         '''
         May want to adopt an actual noise schedule here so we don't that big snap at the end - we'll see. 
@@ -1315,7 +1051,7 @@ class p40_44v2_black(InteractiveScene):
         loader = DataLoader(dataset, batch_size=batch_size)
         batch=next(iter(loader)).numpy()
 
-        axes = Axes(
+        axes = diagram_axes(
             x_range=[-1.2, 1.2, 0.5],
             y_range=[-1.2, 1.2, 0.5],
             height=7,
@@ -1333,14 +1069,14 @@ class p40_44v2_black(InteractiveScene):
         self.add(axes)
         # self.wait()
 
-        dots = VGroup()
+        dots = gx.VGroup()
         for point in batch:
             # Map the point coordinates to the axes
             screen_point = axes.c2p(point[0], point[1])
-            dot = Dot(screen_point, radius=0.05)
+            dot = gx.Dot(screen_point, radius=0.05)
             # dot.set_color(YELLOW)
             dots.add(dot)
-        dots.set_color(BLACK)
+        dots.set_color(gx.BLACK)
 
         self.wait()
 
@@ -1370,13 +1106,13 @@ class p40_44v2_black(InteractiveScene):
         self.wait()
         # self.play(dots.animate.set_opacity(0.1), 
         #          dot_to_move.animate.scale(1.25), #Make main dot a little bigger!
-        #          self.frame.animate.reorient(0, 0, 0, (2.92, 1.65, 0.0), 4.19), 
+        #          self.animate_view(0, 0, 0, (2.92, 1.65, 0.0), 4.19),
         #          run_time=2.0)
 
 
         self.wait()
 
-        traced_path = CustomTracedPath(dot_to_move.get_center, stroke_color=BLACK, stroke_width=3, 
+        traced_path = CustomTracedPath(dot_to_move.get_center, stroke_color=gx.BLACK, stroke_width=3,
                                       opacity_range=(0.35, 0.35), fade_length=90)
 
         # self.wait()
@@ -1408,7 +1144,7 @@ class p40_44v2_black(InteractiveScene):
         #Hmm do I want an arrow or does the point just move with a tail?
         # self.wait()
         
-        dot_history=VGroup()
+        dot_history=gx.VGroup()
         # dot_history.add(dot_to_move.copy().scale(0.22).set_color(YELLOW_FADE))
         # self.add(dot_history[-1])
         # self.play(dot_to_move.animate.move_to(axes.c2p(*random_walk_shifted[0])), run_time=1.0)
@@ -1423,10 +1159,10 @@ class p40_44v2_black(InteractiveScene):
 
         for j in range(100):
             if j>0: 
-                dot_history.add(dot_to_move.copy().scale(0.75).set_color(BLACK))
+                dot_history.add(dot_to_move.copy().scale(0.75).set_color(gx.BLACK))
                 #self.add(dot_history[-1])
             # dot_to_move.move_to(axes.c2p(*random_walk_shifted[i]))
-            self.play(dot_to_move.animate.move_to(axes.c2p(*random_walk_shifted[j])), run_time=0.1, rate_func=linear)
+            self.play(dot_to_move.animate.move_to(axes.c2p(*random_walk_shifted[j])), run_time=0.1, rate_func=gx.linear)
 
         
 
@@ -1438,13 +1174,9 @@ class p40_44v2_black(InteractiveScene):
         # in adobe - Ok i think i want to break this apart though into two secense. let's do that. 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
- 
-
-
-
-class p40_44v2b(InteractiveScene):
+class p40_44v2b(WelchScene):
     def construct(self):
         '''
         Scene just for the book where we just do the global diffusion ish
@@ -1455,7 +1187,7 @@ class p40_44v2b(InteractiveScene):
         loader = DataLoader(dataset, batch_size=batch_size)
         batch=next(iter(loader)).numpy()
 
-        axes = Axes(
+        axes = diagram_axes(
             x_range=[-1.2, 1.2, 0.5],
             y_range=[-1.2, 1.2, 0.5],
             height=7,
@@ -1473,14 +1205,14 @@ class p40_44v2b(InteractiveScene):
         self.add(axes)
         # self.wait()
 
-        dots = VGroup()
+        dots = gx.VGroup()
         for point in batch:
             # Map the point coordinates to the axes
             screen_point = axes.c2p(point[0], point[1])
-            dot = Dot(screen_point, radius=0.05)
+            dot = gx.Dot(screen_point, radius=0.05)
             # dot.set_color(YELLOW)
             dots.add(dot)
-        dots.set_color(BLACK)
+        dots.set_color(gx.BLACK)
 
         self.wait()
 
@@ -1510,13 +1242,13 @@ class p40_44v2b(InteractiveScene):
         # self.wait()
         # # self.play(dots.animate.set_opacity(0.1), 
         # #          dot_to_move.animate.scale(1.25), #Make main dot a little bigger!
-        # #          self.frame.animate.reorient(0, 0, 0, (2.92, 1.65, 0.0), 4.19), 
+        # #          self.animate_view(0, 0, 0, (2.92, 1.65, 0.0), 4.19),
         # #          run_time=2.0)
 
 
         # self.wait()
 
-        traced_path = CustomTracedPath(dot_to_move.get_center, stroke_color=BLACK, stroke_width=3, 
+        traced_path = CustomTracedPath(dot_to_move.get_center, stroke_color=gx.BLACK, stroke_width=3,
                                       opacity_range=(0.35, 0.35), fade_length=90)
 
         # self.wait()
@@ -1548,7 +1280,7 @@ class p40_44v2b(InteractiveScene):
         #Hmm do I want an arrow or does the point just move with a tail?
         # self.wait()
         
-        dot_history=VGroup()
+        dot_history=gx.VGroup()
         # dot_history.add(dot_to_move.copy().scale(0.22).set_color(YELLOW_FADE))
         # self.add(dot_history[-1])
         # self.play(dot_to_move.animate.move_to(axes.c2p(*random_walk_shifted[0])), run_time=1.0)
@@ -1579,7 +1311,7 @@ class p40_44v2b(InteractiveScene):
 
 
         #Ok so I want to fadd in rest of point and center my plot. Then diffuse everybody!!
-        # self.play(self.frame.animate.reorient(0, 0, 0, (-0.07, 0.01, 0.0), 7.59), 
+        # self.play(self.animate_view(0, 0, 0, (-0.07, 0.01, 0.0), 7.59),
         #                 dots.animate.set_opacity(1.0), 
         #                 run_time=3.0)
         # self.wait()
@@ -1602,7 +1334,7 @@ class p40_44v2b(InteractiveScene):
         # maybe we actually totally lost the spiral for this animation? That might make for a more dramatic
         # bringing stuff back together phase
 
-        traced_paths=VGroup()
+        traced_paths=gx.VGroup()
         for idx, d in enumerate(dots): 
             # tp = TracedPath(d.get_center, stroke_color=YELLOW, stroke_width=2)
             # if idx != 75:  # Skip the already traced dot
@@ -1632,10 +1364,10 @@ class p40_44v2b(InteractiveScene):
         self.wait()
 
         #A bit wide but captures everything
-        self.frame.reorient(0, 0, 0, (-0.07, -0.49, 0.0), 12.54)
+        self.set_view(0, 0, 0, (-0.07, -0.49, 0.0), 12.54)
 
         for step in range(1, 100):
-            self.play(*[dots[i].animate.move_to(axes.c2p(*random_walks[i][step])) for i in range(len(dots))], run_time=0.1, rate_func=linear)
+            self.play(*[dots[i].animate.move_to(axes.c2p(*random_walks[i][step])) for i in range(len(dots))], run_time=0.1, rate_func=gx.linear)
             self.wait(0.2)
 
         self.wait()
@@ -1643,7 +1375,7 @@ class p40_44v2b(InteractiveScene):
         # remaining_indices=np.concatenate((np.arange(75), np.arange(76,len(batch))))
         # for step in range(100): #100
         #     self.play(*[dots[i].animate.move_to(axes.c2p(*random_walks[i][step])) for i in remaining_indices], 
-        #              # self.frame.animate.reorient(*interp_orientations[step]), 
+        #              # self.animate_view(*interp_orientations[step]),
         #              run_time=0.1, rate_func=linear)
 
         #     #Kinda hacky but just try removing these after first step for now - that first path is distracting for big animation
@@ -1669,7 +1401,7 @@ class p40_44v2b(InteractiveScene):
         # self.wait()
         # for j, step in enumerate(range(99, -1, -1)): #99
         #     self.play(*[dots[i].animate.move_to(axes.c2p(*random_walks[i][step])) for i in remaining_indices], 
-        #              self.frame.animate.reorient(*interp_orientations[step]), 
+        #              self.animate_view(*interp_orientations[step]),
         #              run_time=0.1, rate_func=linear)
         #     for tp in traced_paths:
         #         tp.remove_last_segment()
@@ -1686,11 +1418,7 @@ class p40_44v2b(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
-
-
-
-
+        # Scene authoring stops here in the interactive editor.
 
 # class p48_51_deprecated_2(InteractiveScene):
 #     def construct(self):
@@ -1804,7 +1532,7 @@ class p40_44v2b(InteractiveScene):
 #         # arrow_x100_to_x99.set_opacity(0.6)
 
 
-#         self.frame.reorient(0, 0, 0, (3.58, 2.57, 0.0), 2.69)
+#         self.set_view(0, 0, 0, (3.58, 2.57, 0.0), 2.69)
 #         self.add(axes, dots, traced_path, dot_to_move)
 #         self.add(x100,  x0, arrow_x100_to_x0, arrow_x100_to_x99)
 #         self.wait()
@@ -1911,7 +1639,7 @@ class p40_44v2b(InteractiveScene):
 #             color=CHILL_BROWN
 #         )
 
-#         self.frame.reorient(0, 0, 0, (-0.06, 0.09, 0.0), 8.31)
+#         self.set_view(0, 0, 0, (-0.06, 0.09, 0.0), 8.31)
 #         self.play(FadeIn(vector_field), run_time=2.0)
 #         self.wait()
 
@@ -2086,7 +1814,7 @@ class p40_44v2b(InteractiveScene):
 #         # arrow_x100_to_x99.set_opacity(0.6)
 
 
-#         self.frame.reorient(0, 0, 0, (3.58, 2.57, 0.0), 2.69)
+#         self.set_view(0, 0, 0, (3.58, 2.57, 0.0), 2.69)
 #         self.add(axes, dots, traced_path, dot_to_move)
 #         self.add(x100,  x0, arrow_x100_to_x0, arrow_x100_to_x99)
 #         self.wait()
@@ -2216,7 +1944,7 @@ class p40_44v2b(InteractiveScene):
 #             color=CHILL_BROWN
 #         )
 
-#         self.frame.reorient(0, 0, 0, (-0.06, 0.09, 0.0), 8.31)
+#         self.set_view(0, 0, 0, (-0.06, 0.09, 0.0), 8.31)
 #         self.play(FadeIn(vector_field), run_time=2.0)
 #         self.wait()
 

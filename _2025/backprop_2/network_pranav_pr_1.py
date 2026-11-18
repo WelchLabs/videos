@@ -1,11 +1,11 @@
-from manimlib import *
+import manimgx as m
 import numpy as np
 import random
 import matplotlib.pyplot as plt
 
 CHILL_BROWN='#cabba6'
 
-class Neuron(VMobject):
+class Neuron(m.VMobject):
     def __init__(
         self,
         node_radius=0.1,
@@ -30,29 +30,29 @@ class Neuron(VMobject):
 
         
     def build(self):
-        circle = Circle(
+        circle = m.Circle(
             radius=self.node_radius,
             stroke_color=self.node_stroke_color,
             stroke_width=self.node_stroke_width,
             fill_color=self.node_fill_color,
             fill_opacity=self.node_fill_opacity,
         )
-        circle.move_to(ORIGIN)
+        circle.move_to(m.ORIGIN)
         self.add(circle)
         
     def map_value_to_style(self, value):
         value_clipped = np.clip(value, 0, 1)
         rgba = self.colormap(value_clipped)
-        color = Color(rgb=rgba[:3])
+        color = m.rgb_to_color(rgba[:3])
         opacity = value_clipped 
         return {"color": color, "opacity": opacity}
     
     def get_connection_point(self, target_point):
         center = self.get_center()
-        direction = normalize(target_point - center)
+        direction = m.normalize(target_point - center)
         return center + direction * self.node_radius   
 
-class AttentionPattern(VMobject):
+class AttentionPattern(m.VMobject):
     def __init__(
         self,
         matrix,
@@ -79,30 +79,30 @@ class AttentionPattern(VMobject):
     def map_value_to_style(self, val):
         val_clipped = np.clip(val, 0, 1)
         rgba = self._colormap(val_clipped)
-        color = Color(rgb=rgba[:3])
+        color = m.rgb_to_color(rgba[:3])
         opacity = self.min_opacity + val_clipped * (self.max_opacity - self.min_opacity)
         return {"color": color, "opacity": opacity}
 
     def build(self):
         self.clear()
-        squares = VGroup()
+        squares = m.VGroup()
         for i in range(self.n_rows):
             for j in range(self.n_cols):
                 val = self.matrix[i, j]
                 style = self.map_value_to_style(val)
 
-                square = Square(side_length=self.square_size)
+                square = m.Square(side_length=self.square_size)
                 square.set_fill(style["color"], opacity=style["opacity"])
                 square.set_stroke(self.stroke_color, width=self.stroke_width)
 
-                pos = RIGHT * j * self.square_size + DOWN * i * self.square_size
+                pos = m.RIGHT * j * self.square_size + m.DOWN * i * self.square_size
                 square.move_to(pos)
                 squares.add(square)
 
-        squares.move_to(ORIGIN)
+        squares.move_to(m.ORIGIN)
         self.add(squares)
    
-class Connection(VMobject):
+class Connection(m.VMobject):
     def __init__(
         self,
         start_obj,
@@ -139,8 +139,20 @@ class Connection(VMobject):
         start_point = self._get_point_from_object(self.start_obj, True)
         end_point = self._get_point_from_object(self.end_obj, False)
         
-        if self.arrow:
-            line = Arrow(
+        if self.dashed:
+            line = m.DashedLine(
+                start_point,
+                end_point,
+                dash_length=0.1,
+                dashed_ratio=0.5,
+                stroke_color=self.stroke_color,
+                stroke_width=self.stroke_width,
+                stroke_opacity=self.stroke_opacity,
+            )
+            if self.arrow:
+                line.add_tip(tip_length=min(line.tip_length, line.get_length() / 4))
+        elif self.arrow:
+            line = m.Arrow(
                 start=start_point,
                 end=end_point,
                 stroke_color=self.stroke_color,
@@ -148,21 +160,12 @@ class Connection(VMobject):
                 stroke_opacity=self.stroke_opacity,
             )
         else:
-            line = Line(
+            line = m.Line(
                 start_point,
                 end_point,
                 stroke_color=self.stroke_color,
                 stroke_width=self.stroke_width,
                 stroke_opacity=self.stroke_opacity,
-            )
-            
-        if self.dashed:
-            line.set_stroke(
-                color=self.stroke_color,
-                width=self.stroke_width,
-                opacity=self.stroke_opacity,
-                dash_length=0.1,
-                dash_spacing=0.1,
             )
             
         self.add(line)
@@ -172,7 +175,7 @@ class Connection(VMobject):
     def map_value_to_style(self, value):
         value_clipped = np.clip(value, 0, 1)
         rgba = self.colormap(value_clipped)
-        color = Color(rgb=rgba[:3])
+        color = m.rgb_to_color(rgba[:3])
         opacity = value_clipped 
         return {"color": color, "opacity": opacity}
     
@@ -205,7 +208,7 @@ class Connection(VMobject):
                 other_center = base_point 
         
         direction = other_center - base_point
-        unit = normalize(direction)
+        unit = m.normalize(direction)
         
         if hasattr(obj, "node_radius"):
             radius = obj.node_radius
@@ -236,28 +239,28 @@ class Connection(VMobject):
             
     def pulse(self, duration=1.0, scale=1.5):
         original_width = self.line.get_stroke_width()
-        return Succession(
-            ApplyMethod(self.line.set_stroke_width, original_width * scale, run_time=duration/2),
-            ApplyMethod(self.line.set_stroke_width, original_width, run_time=duration/2)
+        return m.Succession(
+            self.line.animate(run_time=duration / 2).set_stroke(width=original_width * scale),
+            self.line.animate(run_time=duration / 2).set_stroke(width=original_width)
         )
         
     def animate_flow(self, duration=1.0):
         if self.dashed:
-            return MoveAlongPath(
-                Dot(color=self.stroke_color),
+            return m.MoveAlongPath(
+                m.Dot(color=self.stroke_color),
                 self.line.copy(),
                 run_time=duration
             )
         else:
             line_copy = self.line.copy()
             line_copy.set_stroke(width=self.stroke_width * 1.5)
-            return ShowPassingFlash(
+            return m.ShowPassingFlash(
                 line_copy,
                 time_width=0.5,
                 run_time=duration
             )
     
-class Layer(VMobject):
+class Layer(m.VMobject):
     def __init__(
         self,
         values=None,
@@ -267,7 +270,7 @@ class Layer(VMobject):
         node_stroke_color=CHILL_BROWN,
         node_stroke_width=6,
         colormap=plt.get_cmap("viridis"),
-        position=ORIGIN,
+        position=m.ORIGIN,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -284,16 +287,16 @@ class Layer(VMobject):
         self.ellipsis_size = self.node_radius * 0.6
         self.ellipsis_spacing = self.node_radius * 2.5
         
-        self.neurons = VGroup()
-        self.ellipsis_dots = VGroup()
+        self.neurons = m.VGroup()
+        self.ellipsis_dots = m.VGroup()
         
         self.build()
         self.move_to(position)
         
     def build(self):
         self.clear()
-        self.neurons = VGroup()
-        self.ellipsis_dots = VGroup()
+        self.neurons = m.VGroup()
+        self.ellipsis_dots = m.VGroup()
         
         total_neurons = len(self.values)
         if total_neurons <= self.max_display:
@@ -317,7 +320,7 @@ class Layer(VMobject):
                 node_stroke_width=self.node_stroke_width,
                 value=value,
                 colormap=self.colormap
-            ).move_to(UP * y)
+            ).move_to(m.UP * y)
             self.neurons.add(neuron)
             
     def _create_truncated_layer(self):
@@ -335,7 +338,7 @@ class Layer(VMobject):
                 node_stroke_width=self.node_stroke_width,
                 value=self.values[i],
                 colormap=self.colormap
-            ).move_to(UP * y)
+            ).move_to(m.UP * y)
             self.neurons.add(neuron)
             
         last_top_node_y = start_y - (visible_per_side - 1) * self.node_spacing
@@ -343,7 +346,7 @@ class Layer(VMobject):
         
         for j in range(3):
             y_offset = first_ellipsis_y - j * self.ellipsis_spacing
-            dot = Dot(radius=self.ellipsis_size, color=self.node_stroke_color).move_to(UP * y_offset)
+            dot = m.Dot(radius=self.ellipsis_size, color=self.node_stroke_color).move_to(m.UP * y_offset)
             self.ellipsis_dots.add(dot)
             
         last_ellipsis_y = first_ellipsis_y - 2 * self.ellipsis_spacing
@@ -358,7 +361,7 @@ class Layer(VMobject):
                 node_stroke_width=self.node_stroke_width,
                 value=self.values[idx],
                 colormap=self.colormap
-            ).move_to(UP * y)
+            ).move_to(m.UP * y)
             self.neurons.add(neuron)
             
     def get_neuron(self, index):
@@ -391,7 +394,7 @@ class Layer(VMobject):
                 neuron.node_fill_opacity = style["opacity"]
                 neuron.build()
                 
-    def highlight_neuron(self, index, color=YELLOW):
+    def highlight_neuron(self, index, color=m.YELLOW):
         neuron = self.get_neuron(index)
         if neuron:
             original_stroke = neuron.node_stroke_color
@@ -412,7 +415,7 @@ class Layer(VMobject):
     def get_all_neurons(self):
         return self.neurons
     
-class AttentionPatternLayer(VMobject):
+class AttentionPatternLayer(m.VMobject):
     def __init__(
         self,
         matrices,
@@ -445,41 +448,41 @@ class AttentionPatternLayer(VMobject):
         self.frame_corner_radius = frame_corner_radius
         self.colormap = colormap
 
-        self.patterns = VGroup()
-        self.ellipsis_dots = VGroup()
-        self.frame = None
+        self.patterns = m.VGroup()
+        self.ellipsis_dots = m.VGroup()
+        self.camera.frame = None
 
         self.build()
 
     def build(self):
         self.clear()
-        self.patterns = VGroup()
-        self.ellipsis_dots = VGroup()
+        self.patterns = m.VGroup()
+        self.ellipsis_dots = m.VGroup()
 
         if self.max_display >= len(self.matrices):
             self._create_simple_layer()
         else:
             self._create_truncated_layer()
 
-        self.patterns.move_to(ORIGIN)
-        self.ellipsis_dots.move_to(ORIGIN)
+        self.patterns.move_to(m.ORIGIN)
+        self.ellipsis_dots.move_to(m.ORIGIN)
         self.ellipsis_dots.set_color(CHILL_BROWN)
 
         self.add(self.patterns, self.ellipsis_dots)
 
-        content = VGroup(self.patterns, self.ellipsis_dots)
+        content = m.VGroup(self.patterns, self.ellipsis_dots)
         content_center = content.get_center()
-        content_width = content.get_width() + 2 * self.frame_padding
-        content_height = content.get_height() + 2 * self.frame_padding
+        content_width = content.width + 2 * self.frame_padding
+        content_height = content.height + 2 * self.frame_padding
 
-        self.frame = RoundedRectangle(
+        self.camera.frame = m.RoundedRectangle(
             width=content_width,
             height=content_height,
             corner_radius=self.frame_corner_radius,
             stroke_color=self.stroke_color
         )
-        self.frame.move_to(content_center)
-        self.add(self.frame)
+        self.camera.frame.move_to(content_center)
+        self.add(self.camera.frame)
 
 
     def _create_simple_layer(self):
@@ -487,7 +490,7 @@ class AttentionPatternLayer(VMobject):
 
         for i, mat in enumerate(self.matrices):
             y = total_height / 2 - i * self.spacing
-            pattern = self._make_pattern(mat).move_to(UP * y)
+            pattern = self._make_pattern(mat).move_to(m.UP * y)
             self.patterns.add(pattern)
 
     def _create_truncated_layer(self):
@@ -504,24 +507,24 @@ class AttentionPatternLayer(VMobject):
         top_matrices = self.matrices[:top_count]
         bottom_matrices = self.matrices[-bottom_count:]
 
-        top_patterns = VGroup(*[self._make_pattern(m) for m in top_matrices])
-        bottom_patterns = VGroup(*[self._make_pattern(m) for m in bottom_matrices])
+        top_patterns = m.VGroup(*[self._make_pattern(m) for m in top_matrices])
+        bottom_patterns = m.VGroup(*[self._make_pattern(m) for m in bottom_matrices])
 
-        pattern_height = top_patterns[0].get_height() if top_patterns else 1.0
+        pattern_height = top_patterns[0].height if top_patterns else 1.0
         actual_spacing = self.spacing * pattern_height
-        top_patterns.arrange(DOWN, buff=actual_spacing)
-        bottom_patterns.arrange(DOWN, buff=actual_spacing)
+        top_patterns.arrange(m.DOWN, buff=actual_spacing)
+        bottom_patterns.arrange(m.DOWN, buff=actual_spacing)
 
         gap_between_clusters = self.dot_spacing * 4
-        bottom_patterns.next_to(top_patterns, DOWN, buff=gap_between_clusters)
+        bottom_patterns.next_to(top_patterns, m.DOWN, buff=gap_between_clusters)
 
         y_top = top_patterns.get_bottom()[1]
         y_bottom = bottom_patterns.get_top()[1]
         center_y = (y_top + y_bottom) / 2
 
         for j in range(3):
-            dot = Dot(radius=self.dot_radius, color=self.stroke_color)
-            dot.move_to(UP * (center_y - j * self.dot_spacing + self.dot_spacing))
+            dot = m.Dot(radius=self.dot_radius, color=self.stroke_color)
+            dot.move_to(m.UP * (center_y - j * self.dot_spacing + self.dot_spacing))
             self.ellipsis_dots.add(dot)
 
         self.patterns.add(*top_patterns, *bottom_patterns)
@@ -538,7 +541,7 @@ class AttentionPatternLayer(VMobject):
             colormap=self.colormap
         )        
     
-class Network(VMobject):
+class Network(m.VMobject):
     def __init__(
         self,
         weight_matrices, 
@@ -568,15 +571,15 @@ class Network(VMobject):
         self.connection_opacity = connection_opacity
         self.connection_colormap = connection_colormap
 
-        self.layers = VGroup()
-        self.connections = VGroup()
+        self.layers = m.VGroup()
+        self.connections = m.VGroup()
 
         self.build()
 
     def build(self):
         self.clear()
-        self.layers = VGroup()
-        self.connections = VGroup()
+        self.layers = m.VGroup()
+        self.connections = m.VGroup()
 
         layer_sizes = [self.weight_matrices[0].shape[0]]  # input layer
         for matrix in self.weight_matrices:
@@ -593,7 +596,7 @@ class Network(VMobject):
                 node_stroke_width=self.node_stroke_width,
                 colormap=self.colormap
             )
-            layer.move_to(RIGHT * i * self.layer_spacing)
+            layer.move_to(m.RIGHT * i * self.layer_spacing)
             self.layers.add(layer)
 
         self.add(self.layers)
@@ -622,7 +625,7 @@ class Network(VMobject):
                     self.connections.add(conn)
 
         self.add(self.connections)
-        self.move_to(ORIGIN)
+        self.move_to(m.ORIGIN)
 
     def update_weights(self, new_matrices):
         self.weight_matrices = new_matrices
@@ -634,49 +637,49 @@ class Network(VMobject):
         return None
 
         
-class NeuronExample(Scene):
+class NeuronExample(m.Scene):
     def construct(self):
         neuron = Neuron()
         self.add(neuron)
         
-        self.embed()
+        pass
         
-class AttentionPatternExample(Scene):
+class AttentionPatternExample(m.Scene):
     def construct(self):
         matrix = np.random.rand(4, 4)
         attn_pattern = AttentionPattern(matrix=matrix)
         
         self.add(attn_pattern)
         
-        self.embed()
+        pass
                
-class ConnectionExample(Scene):
+class ConnectionExample(m.Scene):
     def construct(self):
-        neuron1 = Neuron().move_to(LEFT)
-        neuron2 = Neuron().move_to(RIGHT)
+        neuron1 = Neuron().move_to(m.LEFT)
+        neuron2 = Neuron().move_to(m.RIGHT)
         
         connection = Connection(neuron1, neuron2)
         
         self.add(neuron1, neuron2, connection)
         
-        self.embed()
+        pass
         
-class LayerExample(Scene):
+class LayerExample(m.Scene):
     def construct(self):
         values = [round(random.uniform(0, 1), 2) for _ in range(2048)]
         layer = Layer(values=values)
 
         self.add(layer)
-        self.embed()
+        pass
 
-class AttentionPatternLayerExample(Scene):
+class AttentionPatternLayerExample(m.Scene):
     def construct(self):
         matrices = [np.random.rand(5, 8) for _ in range(10)]
         attn_layer = AttentionPatternLayer(matrices=matrices, max_display=8)
-        self.play(ShowCreation(attn_layer))
-        self.embed()
+        self.play(m.Create(attn_layer))
+        pass
 
-class NetworkExample(Scene):
+class NetworkExample(m.Scene):
     def construct(self):
         W1 = np.random.uniform(-1, 1, (4, 6))  # 4 -> 6
         W2 = np.random.uniform(-1, 1, (6, 3))  # 6 -> 3
@@ -684,5 +687,5 @@ class NetworkExample(Scene):
 
         net = Network([W1, W2, W3])
         self.add(net)
-        self.embed()
+        pass
 

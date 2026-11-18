@@ -1,7 +1,15 @@
-from manimlib import *
+from welch_paths import welch_path
+from pathlib import Path
+
+import manimgx as gx
+from welch_scene import WelchScene, image_at_height
+from welch_text import math_tex
+
 import numpy as np
 import pandas as pd
  
+HERE = Path(__file__).resolve().parent
+
 CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
 YELLOW_FADE='#7f6a2d'
@@ -27,19 +35,19 @@ def line_intersection(p1, p2, p3, p4):
     except np.linalg.LinAlgError:
         return None
 
-class P20(InteractiveScene):
+class P20(WelchScene):
     def construct(self):
-        stephen_no_hat_p20 = ImageMobject("me_no_hat_cropped_1.jpeg").scale(0.55)         
-        stephen_hat_p20 = ImageMobject("me_with_hat.jpeg").scale(0.55)
+        stephen_no_hat_p20 = image_at_height(HERE / 'me_no_hat_cropped_1.jpeg').scale(0.55)
+        stephen_hat_p20 = image_at_height(HERE / 'me_with_hat.jpeg').scale(0.55)
 
-        Group(stephen_no_hat_p20, stephen_hat_p20).arrange(DOWN, buff=1).shift(LEFT * 5.5)
+        gx.Group(stephen_no_hat_p20, stephen_hat_p20).arrange(gx.DOWN, buff=1).shift(gx.LEFT * 5.5)
         
-        arrows = SVGMobject("p_20_21_to_manim-03.svg")[1:].scale(6)
-        top_left_arrow = arrows[0].next_to(stephen_no_hat_p20, RIGHT)
-        bottom_left_arrow = arrows[1].next_to(stephen_hat_p20, RIGHT)
+        arrows = gx.SVGMobject(HERE / 'p_20_21_to_manim-03.svg')[1:].scale(6)
+        top_left_arrow = arrows[0].next_to(stephen_no_hat_p20, gx.RIGHT)
+        bottom_left_arrow = arrows[1].next_to(stephen_hat_p20, gx.RIGHT)
         
-        top_image_encoder_text = SVGMobject("top_image_encoder.svg")[3:].scale(5).next_to(top_left_arrow, RIGHT)
-        bottom_image_encoder_text = SVGMobject("bottom_image_encoder.svg")[3:].scale(5).next_to(bottom_left_arrow, RIGHT)
+        top_image_encoder_text = gx.SVGMobject(HERE / 'top_image_encoder.svg')[3:].scale(5).next_to(top_left_arrow, gx.RIGHT)
+        bottom_image_encoder_text = gx.SVGMobject(HERE / 'bottom_image_encoder.svg')[3:].scale(5).next_to(bottom_left_arrow, gx.RIGHT)
         
         
         
@@ -51,7 +59,7 @@ class P20(InteractiveScene):
             scale_factor * np.array([670.56, 240.21, 0]),
         ]
 
-        rhombus = Polygon(*points,
+        rhombus = gx.Polygon(*points,
                           fill_color="#6c946f",
                           fill_opacity=0.2,
                           stroke_color="#6c946f",
@@ -62,41 +70,41 @@ class P20(InteractiveScene):
 
         bottom_image_encoder_outer = rhombus.copy().move_to(bottom_image_encoder_text.get_center())
         
-        top_image_encoder = VGroup(top_image_encoder_outer, top_image_encoder_text)
+        top_image_encoder = gx.VGroup(top_image_encoder_outer, top_image_encoder_text)
 
-        bottom_image_encoder = VGroup(bottom_image_encoder_outer, bottom_image_encoder_text)
+        bottom_image_encoder = gx.VGroup(bottom_image_encoder_outer, bottom_image_encoder_text)
         
-        top_right_arrow = arrows[2].next_to(top_image_encoder, RIGHT)
-        bottom_right_arrow = arrows[3].next_to(bottom_image_encoder, RIGHT)
+        top_right_arrow = arrows[2].next_to(top_image_encoder, gx.RIGHT)
+        bottom_right_arrow = arrows[3].next_to(bottom_image_encoder, gx.RIGHT)
         
-        stephen_no_hat_equation = Tex(r"I_{man} = [-0.13\ -0.10\ \cdots\ -0.56]").set_color(GREEN).next_to(top_right_arrow, RIGHT).scale(0.9).shift(LEFT * 0.3)
+        stephen_no_hat_equation = math_tex(r"I_{man} = [-0.13\ -0.10\ \cdots\ -0.56]").set_color(GREEN).next_to(top_right_arrow, gx.RIGHT).scale(0.9).shift(gx.LEFT * 0.3)
 
-        stephen_hat_equation = Tex(r"\hat{I}_{man} = [-0.13\ -0.10\ \cdots\ -0.56]").set_color(GREEN).next_to(bottom_right_arrow, RIGHT).scale(0.9).shift(LEFT * 0.3)
+        stephen_hat_equation = math_tex(r"\hat{I}_{man} = [-0.13\ -0.10\ \cdots\ -0.56]").set_color(GREEN).next_to(bottom_right_arrow, gx.RIGHT).scale(0.9).shift(gx.LEFT * 0.3)
 
-        self.play(FadeIn(stephen_hat_p20), FadeIn(stephen_no_hat_p20))
-        self.play(GrowFromEdge(top_left_arrow, LEFT), GrowFromEdge(bottom_left_arrow, LEFT))
-        self.play(ShowCreation(top_image_encoder), ShowCreation(bottom_image_encoder))
-        self.play(GrowFromEdge(top_right_arrow, LEFT), GrowFromEdge(bottom_right_arrow, LEFT))
-        self.play(Write(stephen_no_hat_equation), Write(stephen_hat_equation))
-        self.embed()
+        self.play(gx.FadeIn(stephen_hat_p20), gx.FadeIn(stephen_no_hat_p20))
+        self.play(gx.GrowFromEdge(top_left_arrow, gx.LEFT), gx.GrowFromEdge(bottom_left_arrow, gx.LEFT))
+        self.play(gx.Create(top_image_encoder), gx.Create(bottom_image_encoder))
+        self.play(gx.GrowFromEdge(top_right_arrow, gx.LEFT), gx.GrowFromEdge(bottom_right_arrow, gx.LEFT))
+        self.play(gx.Write(stephen_no_hat_equation), gx.Write(stephen_hat_equation))
+        # Scene authoring stops here in the interactive editor.
 
-class P21(InteractiveScene):
+class P21(WelchScene):
     def construct(self):
-        x_axis = WelchXAxis(0, 8).move_to(ORIGIN)
-        y_axis = WelchYAxis(0, 8).move_to(ORIGIN)
+        x_axis = WelchXAxis(0, 8).move_to(gx.ORIGIN)
+        y_axis = WelchYAxis(0, 8).move_to(gx.ORIGIN)
         x_axis.ticks.set_opacity(0)
         x_axis.labels.set_opacity(0)
         y_axis.ticks.set_opacity(0)
         y_axis.labels.set_opacity(0)
         
-        axes = VGroup(x_axis, y_axis)
-        axes.shift(LEFT * 4.5)
+        axes = gx.VGroup(x_axis, y_axis)
+        axes.shift(gx.LEFT * 4.5)
         
-        stephen_no_hat = ImageMobject("me_no_hat_cropped_1.jpeg").scale(0.3)         
-        stephen_hat = ImageMobject("me_with_hat.jpeg").scale(0.3)
+        stephen_no_hat = image_at_height(HERE / 'me_no_hat_cropped_1.jpeg').scale(0.3)
+        stephen_hat = image_at_height(HERE / 'me_with_hat.jpeg').scale(0.3)
         
-        stephen_hat.move_to((y_axis.get_center() + y_axis.get_top())/2).shift(LEFT * 0.6)
-        stephen_no_hat.move_to((x_axis.get_center() + x_axis.get_right())/2).shift(DOWN * 0.6)
+        stephen_hat.move_to((y_axis.get_center() + y_axis.get_top())/2).shift(gx.LEFT * 0.6)
+        stephen_no_hat.move_to((x_axis.get_center() + x_axis.get_right())/2).shift(gx.DOWN * 0.6)
         
         # Define the angle (in radians) to rotate the arrow up (e.g., 15 degrees)
 
@@ -120,15 +128,15 @@ class P21(InteractiveScene):
         stephen_hat_arrow.shift(axes_intersection - stephen_hat_arrow.get_axis_line().get_left())
         stephen_no_hat_arrow.shift(axes_intersection - stephen_no_hat_arrow.get_axis_line().get_left())
         
-        stephen_hat_arrow.rotate(65 * DEGREES, about_point=axes_intersection)
-        stephen_no_hat_arrow.rotate(15 * DEGREES, about_point=axes_intersection)
+        stephen_hat_arrow.rotate(65 * gx.DEGREES, about_point=axes_intersection)
+        stephen_no_hat_arrow.rotate(15 * gx.DEGREES, about_point=axes_intersection)
         
-        stephen_delta_arrow_line = Line(stephen_hat_arrow.arrow.get_all_points()[0], stephen_no_hat_arrow.arrow.get_all_points()[0], stroke_width=5, color=YELLOW)
-        stephen_delta_arrow_arrow = SVGMobject("welch_arrow_tip_1.svg").scale(0.1).next_to(stephen_delta_arrow_line.get_end()).rotate(DEGREES * 310).set_color(YELLOW)
+        stephen_delta_arrow_line = gx.Line(stephen_hat_arrow.arrow.get_all_points()[0], stephen_no_hat_arrow.arrow.get_all_points()[0], stroke_width=5, color=YELLOW)
+        stephen_delta_arrow_arrow = gx.SVGMobject(HERE / 'welch_arrow_tip_1.svg').scale(0.1).next_to(stephen_delta_arrow_line.get_end()).rotate(gx.DEGREES * 310).set_color(YELLOW)
         stephen_delta_arrow_arrow.shift(stephen_no_hat_arrow.arrow.get_all_points()[0] - stephen_delta_arrow_arrow.get_all_points()[0])
         
-        stephen_hat_arrow_label = Tex(r"I_{man}").set_color(GREEN).next_to(stephen_hat_arrow.arrow, UP)
-        stephen_no_hat_arrow_label = Tex(r"\hat{I}_{man}").set_color(GREEN).next_to(stephen_no_hat_arrow.arrow, RIGHT)
+        stephen_hat_arrow_label = math_tex(r"I_{man}").set_color(GREEN).next_to(stephen_hat_arrow.arrow, gx.UP)
+        stephen_no_hat_arrow_label = math_tex(r"\hat{I}_{man}").set_color(GREEN).next_to(stephen_no_hat_arrow.arrow, gx.RIGHT)
                 
         start = stephen_hat_arrow.arrow.get_all_points()[0]
         end = stephen_no_hat_arrow.arrow.get_all_points()[0]
@@ -142,23 +150,23 @@ class P21(InteractiveScene):
         new_end = end - (direction / length) * trim_amount
 
         # Create the trimmed line
-        stephen_delta_arrow_line = Line(start, new_end, stroke_width=5, color=YELLOW)
+        stephen_delta_arrow_line = gx.Line(start, new_end, stroke_width=5, color=YELLOW)
         
-        stephen_delta_arrow = VGroup(stephen_delta_arrow_line, stephen_delta_arrow_arrow)
+        stephen_delta_arrow = gx.VGroup(stephen_delta_arrow_line, stephen_delta_arrow_arrow)
         
-        stephen_delta_arrow_label = Tex(r"\hat{I}_{man}-I_{man}").set_color(YELLOW).next_to(stephen_delta_arrow.get_center(), RIGHT).shift(UP * 0.25)
+        stephen_delta_arrow_label = math_tex(r"\hat{I}_{man}-I_{man}").set_color(YELLOW).next_to(stephen_delta_arrow.get_center(), gx.RIGHT).shift(gx.UP * 0.25)
 
-        top_header_line = Line(stroke_width=2).set_width(5.5).set_color(CHILL_BROWN).shift(RIGHT * 3.25 + UP * 2.5)
+        top_header_line = gx.Line(stroke_width=2).scale_to_fit_width(5.5).set_color(CHILL_BROWN).shift(gx.RIGHT * 3.25 + gx.UP * 2.5)
         
-        bottom_header_line = Line(stroke_width=2).set_width(5.5).set_color(CHILL_BROWN).shift(RIGHT * 3.25 + UP * 0.5)
-        bottom_header_title = Text('TOP MATCHES', font='Myriad Pro').next_to(bottom_header_line, UP, buff=0.1).set_color(CHILL_BROWN).scale(0.6)
+        bottom_header_line = gx.Line(stroke_width=2).scale_to_fit_width(5.5).set_color(CHILL_BROWN).shift(gx.RIGHT * 3.25 + gx.UP * 0.5)
+        bottom_header_title = gx.Text('TOP MATCHES', font='Myriad Pro').next_to(bottom_header_line, gx.UP, buff=0.1).set_color(CHILL_BROWN).scale(0.6)
         
-        left_align = Line(top_header_line.get_center(), bottom_header_line.get_center(), stroke_width=2).shift(LEFT * 1.4).set_length(15)
-        right_align = Line(top_header_line.get_center(), bottom_header_line.get_center(), stroke_width=2).shift(RIGHT * 1.4).set_length(15)
+        left_align = gx.Line(top_header_line.get_center(), bottom_header_line.get_center(), stroke_width=2).shift(gx.LEFT * 1.4).set_length(15)
+        right_align = gx.Line(top_header_line.get_center(), bottom_header_line.get_center(), stroke_width=2).shift(gx.RIGHT * 1.4).set_length(15)
         
 
-        top_header_word_column = Text('WORD', font='Myriad Pro').set_color(CHILL_BROWN).scale(0.6).next_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), left_align.get_top(), left_align.get_bottom()), UP, buff=0.1)
-        top_header_cosine_similarity_column = Text('COSINE SIMILARITY', font='Myriad Pro').set_color(CHILL_BROWN).scale(0.6).next_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), right_align.get_top(), right_align.get_bottom()), UP, buff=0.1)
+        top_header_word_column = gx.Text('WORD', font='Myriad Pro').set_color(CHILL_BROWN).scale(0.6).next_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), left_align.get_top(), left_align.get_bottom()), gx.UP, buff=0.1)
+        top_header_cosine_similarity_column = gx.Text('COSINE SIMILARITY', font='Myriad Pro').set_color(CHILL_BROWN).scale(0.6).next_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), right_align.get_top(), right_align.get_bottom()), gx.UP, buff=0.1)
         
         df = pd.read_csv("cosine_similarities.csv")
         
@@ -171,27 +179,27 @@ class P21(InteractiveScene):
         gap = 0.8
         max_width = 2.56
         
-        start = Point().move_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), left_align.get_top(), left_align.get_bottom())).shift(DOWN* gap)
+        start = gx.Point().move_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), left_align.get_top(), left_align.get_bottom())).shift(gx.DOWN* gap)
 
         
         points = []
         for i in range(200):
-            point = Point()
-            point.move_to(line_intersection(bottom_header_line.get_left(), bottom_header_line.get_right(), left_align.get_top(), left_align.get_bottom())).shift(DOWN * (gap * (i+1)))
+            point = gx.Point()
+            point.move_to(line_intersection(bottom_header_line.get_left(), bottom_header_line.get_right(), left_align.get_top(), left_align.get_bottom())).shift(gx.DOWN * (gap * (i+1)))
 
             points.append(point)
             
-        label_2 = Text("2.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[1].get_y(), 0])
-        label_3 = Text("3.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[2].get_y(), 0])
-        label_4 = Text("4.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[3].get_y(), 0])
-        label_5 = Text("5.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[4].get_y(), 0])
-        label_1 = Text("1.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[0].get_y(), 0])
-        labels = VGroup(label_1, label_2, label_3, label_4, label_5).shift(LEFT * 3)
+        label_2 = gx.Text("2.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[1].get_y(), 0])
+        label_3 = gx.Text("3.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[2].get_y(), 0])
+        label_4 = gx.Text("4.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[3].get_y(), 0])
+        label_5 = gx.Text("5.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[4].get_y(), 0])
+        label_1 = gx.Text("1.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[0].get_y(), 0])
+        labels = gx.VGroup(label_1, label_2, label_3, label_4, label_5).shift(gx.LEFT * 3)
             
         similarity_points = []
         for i in range(200):
-            point = Point()
-            point.move_to(line_intersection(bottom_header_line.get_left(), bottom_header_line.get_right(), right_align.get_top(), right_align.get_bottom())).shift(DOWN * (gap * (i+1)))
+            point = gx.Point()
+            point.move_to(line_intersection(bottom_header_line.get_left(), bottom_header_line.get_right(), right_align.get_top(), right_align.get_bottom())).shift(gx.DOWN * (gap * (i+1)))
 
             similarity_points.append(point)
 
@@ -216,18 +224,18 @@ class P21(InteractiveScene):
             count += 1
             word, similarity = pair
 
-            word_mobject = Text(word, font='Myriad Pro').set_color(FRESH_TAN).scale(0.9)
-            similarity_mobject = Tex(str(round(similarity, 3))).set_color(FRESH_TAN).scale(0.9).move_to([right_align.get_x(), start.get_y(), 0])
+            word_mobject = gx.Text(word, font='Myriad Pro').set_color(FRESH_TAN).scale(0.9)
+            similarity_mobject = math_tex(str(round(similarity, 3))).set_color(FRESH_TAN).scale(0.9).move_to([right_align.get_x(), start.get_y(), 0])
             word_mobject.move_to(start.get_center())
             
             if remove:
                 self.remove(last_pair)
                 
-            last_pair = VGroup(word_mobject, similarity_mobject)
+            last_pair = gx.VGroup(word_mobject, similarity_mobject)
             
             if count < 6:
-                self.play(FadeIn(word_mobject))
-                self.play(ReplacementTransform(word_mobject.copy(), similarity_mobject))
+                self.play(gx.FadeIn(word_mobject))
+                self.play(gx.ReplacementTransform(word_mobject.copy(), similarity_mobject))
             else:
                 self.add(word_mobject, similarity_mobject)
 
@@ -256,8 +264,8 @@ class P21(InteractiveScene):
                 w5, s5 = ordered[5]
                 self.remove(w5, s5)
             self.play(
-                *[MoveToTarget(w) for w, s in ordered[:5]],
-                *[MoveToTarget(s) for w, s in ordered[:5]]
+                *[gx.MoveToTarget(w) for w, s in ordered[:5]],
+                *[gx.MoveToTarget(s) for w, s in ordered[:5]]
             )
 
             # Remove the previous 5th spot if it exists
@@ -272,34 +280,32 @@ class P21(InteractiveScene):
                 
             
             
-        self.embed()
-        
-        
+        # Scene authoring stops here in the interactive editor.
 
-class P20_21v2(InteractiveScene):
+class P20_21v2(WelchScene):
     def construct(self):
         image_path='/Users/stephen/manim/videos/_2025/sora/'
-        svg_path='/Users/stephen/Stephencwelch Dropbox/welch_labs/sora/graphics/to_manim'
-        stephen_no_hat_p20 = ImageMobject(image_path+"me_no_hat_cropped_1.jpeg").scale(0.55)         
-        stephen_hat_p20 = ImageMobject(image_path+"me_with_hat.jpeg").scale(0.55)
+        svg_path=welch_path('sora/graphics/to_manim')
+        stephen_no_hat_p20 = image_at_height(image_path+"me_no_hat_cropped_1.jpeg").scale(0.55)
+        stephen_hat_p20 = image_at_height(image_path+"me_with_hat.jpeg").scale(0.55)
 
         # Place both together on the left
-        Group(stephen_no_hat_p20, stephen_hat_p20).arrange(DOWN, buff=1).shift(LEFT * 5.5)
+        gx.Group(stephen_no_hat_p20, stephen_hat_p20).arrange(gx.DOWN, buff=1).shift(gx.LEFT * 5.5)
 
         # Save the final position of the hat image
-        initial_point = Point([-5.5, -1.6,  0. ])
+        initial_point = gx.Point([-5.5, -1.6,  0. ])
 
         # Move hat image directly behind no-hat image and make it invisible
         stephen_hat_p20.move_to(stephen_no_hat_p20.get_center()).set_opacity(0)
         
         
         
-        arrows = SVGMobject(image_path+"p_20_21_to_manim-03.svg")[1:].scale(6)
-        top_left_arrow = arrows[0].next_to(stephen_no_hat_p20, RIGHT)
+        arrows = gx.SVGMobject(image_path+"p_20_21_to_manim-03.svg")[1:].scale(6)
+        top_left_arrow = arrows[0].next_to(stephen_no_hat_p20, gx.RIGHT)
         bottom_left_arrow = arrows[1].move_to([top_left_arrow.get_x(), initial_point.get_y(), 0])
         
-        top_image_encoder_text = SVGMobject(image_path+"top_image_encoder.svg")[3:].scale(5).next_to(top_left_arrow, RIGHT)
-        bottom_image_encoder_text = SVGMobject(image_path+"bottom_image_encoder.svg")[3:].scale(5).next_to(bottom_left_arrow, RIGHT)
+        top_image_encoder_text = gx.SVGMobject(image_path+"top_image_encoder.svg")[3:].scale(5).next_to(top_left_arrow, gx.RIGHT)
+        bottom_image_encoder_text = gx.SVGMobject(image_path+"bottom_image_encoder.svg")[3:].scale(5).next_to(bottom_left_arrow, gx.RIGHT)
         
         
         
@@ -311,7 +317,7 @@ class P20_21v2(InteractiveScene):
             scale_factor * np.array([670.56, 240.21, 0]),
         ]
 
-        rhombus = Polygon(*points,
+        rhombus = gx.Polygon(*points,
                           fill_color="#6c946f",
                           fill_opacity=0.2,
                           stroke_color="#6c946f",
@@ -322,32 +328,32 @@ class P20_21v2(InteractiveScene):
 
         bottom_image_encoder_outer = rhombus.copy().move_to(bottom_image_encoder_text.get_center())
         
-        top_image_encoder = VGroup(top_image_encoder_outer, top_image_encoder_text)
+        top_image_encoder = gx.VGroup(top_image_encoder_outer, top_image_encoder_text)
 
-        bottom_image_encoder = VGroup(bottom_image_encoder_outer, bottom_image_encoder_text)
+        bottom_image_encoder = gx.VGroup(bottom_image_encoder_outer, bottom_image_encoder_text)
         
-        top_right_arrow = arrows[2].next_to(top_image_encoder, RIGHT)
-        bottom_right_arrow = arrows[3].next_to(bottom_image_encoder, RIGHT)
+        top_right_arrow = arrows[2].next_to(top_image_encoder, gx.RIGHT)
+        bottom_right_arrow = arrows[3].next_to(bottom_image_encoder, gx.RIGHT)
         
-        stephen_no_hat_equation = Tex(r"I_{man} = [-0.13\ -0.10\ \cdots\ -0.56]").set_color(GREEN).next_to(top_right_arrow, RIGHT).scale(0.9).shift(LEFT * 0.3)
+        stephen_no_hat_equation = math_tex(r"I_{man} = [-0.13\ -0.10\ \cdots\ -0.56]").set_color(GREEN).next_to(top_right_arrow, gx.RIGHT).scale(0.9).shift(gx.LEFT * 0.3)
 
-        stephen_hat_equation = Tex(r"\hat{I}_{man} = [-0.13\ -0.10\ \cdots\ -0.50]").set_color(GREEN).next_to(bottom_right_arrow, RIGHT).scale(0.9).shift(LEFT * 0.3)
+        stephen_hat_equation = math_tex(r"\hat{I}_{man} = [-0.13\ -0.10\ \cdots\ -0.50]").set_color(GREEN).next_to(bottom_right_arrow, gx.RIGHT).scale(0.9).shift(gx.LEFT * 0.3)
         
-        x_axis = WelchXAxis(0, 8).move_to(ORIGIN)
-        y_axis = WelchYAxis(0, 8).move_to(ORIGIN)
+        x_axis = WelchXAxis(0, 8).move_to(gx.ORIGIN)
+        y_axis = WelchYAxis(0, 8).move_to(gx.ORIGIN)
         x_axis.ticks.set_opacity(0)
         x_axis.labels.set_opacity(0)
         y_axis.ticks.set_opacity(0)
         y_axis.labels.set_opacity(0)
         
-        axes = VGroup(x_axis, y_axis)
-        axes.shift(LEFT * 4.5)
+        axes = gx.VGroup(x_axis, y_axis)
+        axes.shift(gx.LEFT * 4.5)
         
-        stephen_no_hat = ImageMobject(image_path+"me_no_hat_cropped_1.jpeg").scale(0.3)         
-        stephen_hat = ImageMobject(image_path+"me_with_hat.jpeg").scale(0.3)
+        stephen_no_hat = image_at_height(image_path+"me_no_hat_cropped_1.jpeg").scale(0.3)
+        stephen_hat = image_at_height(image_path+"me_with_hat.jpeg").scale(0.3)
         
-        stephen_hat.move_to((y_axis.get_center() + y_axis.get_top())/2).shift(LEFT * 0.6)
-        stephen_no_hat.move_to((x_axis.get_center() + x_axis.get_right())/2).shift(DOWN * 0.6)
+        stephen_hat.move_to((y_axis.get_center() + y_axis.get_top())/2).shift(gx.LEFT * 0.6)
+        stephen_no_hat.move_to((x_axis.get_center() + x_axis.get_right())/2).shift(gx.DOWN * 0.6)
         
         # Define the angle (in radians) to rotate the arrow up (e.g., 15 degrees)
 
@@ -371,25 +377,25 @@ class P20_21v2(InteractiveScene):
         stephen_hat_arrow.shift(axes_intersection - stephen_hat_arrow.get_axis_line().get_left())
         stephen_no_hat_arrow.shift(axes_intersection - stephen_no_hat_arrow.get_axis_line().get_left())
         
-        stephen_hat_arrow.rotate(65 * DEGREES, about_point=axes_intersection)
-        stephen_no_hat_arrow.rotate(15 * DEGREES, about_point=axes_intersection)
+        stephen_hat_arrow.rotate(65 * gx.DEGREES, about_point=axes_intersection)
+        stephen_no_hat_arrow.rotate(15 * gx.DEGREES, about_point=axes_intersection)
         
         #SW - this arrows direction was backwards
-        stephen_delta_arrow_line = Line(stephen_hat_arrow.arrow.get_all_points()[0]+np.array([0.05, -0.05, 0]), stephen_no_hat_arrow.arrow.get_all_points()[0], stroke_width=5, color=YELLOW)
+        stephen_delta_arrow_line = gx.Line(stephen_hat_arrow.arrow.get_all_points()[0]+np.array([0.05, -0.05, 0]), stephen_no_hat_arrow.arrow.get_all_points()[0], stroke_width=5, color=YELLOW)
         
         # stephen_delta_arrow_line = Line(stephen_no_hat_arrow.arrow.get_all_points()[0], stephen_hat_arrow.arrow.get_all_points()[0], stroke_width=5, color=YELLOW)
         
         #stephen_delta_arrow_arrow = SVGMobject(image_path+"welch_arrow_tip_1.svg").scale(0.1).next_to(stephen_delta_arrow_line.get_end()).rotate(DEGREES * 310).set_color(YELLOW)
         #stephen_delta_arrow_arrow.shift(stephen_no_hat_arrow.arrow.get_all_points()[0] - stephen_delta_arrow_arrow.get_all_points()[0])
         
-        stephen_delta_arrow_arrow = SVGMobject(image_path+"welch_arrow_tip_1.svg").scale(0.1).set_color(YELLOW)
-        stephen_delta_arrow_arrow.rotate(DEGREES * 126)
+        stephen_delta_arrow_arrow = gx.SVGMobject(image_path+"welch_arrow_tip_1.svg").scale(0.1).set_color(YELLOW)
+        stephen_delta_arrow_arrow.rotate(gx.DEGREES * 126)
         stephen_delta_arrow_arrow.move_to(stephen_delta_arrow_line.get_start()).shift([0.065, -0.06, 0])
 
         # stephen_delta_arrow_arrow.shift(stephen_delta_arrow_arrow.get_all_points()[0] - stephen_no_hat_arrow.arrow.get_all_points()[0])
 
-        stephen_hat_arrow_label = Tex(r"\hat{I}_{man}").set_color(GREEN).next_to(stephen_hat_arrow.arrow, UP)
-        stephen_no_hat_arrow_label = Tex(r"I_{man}").set_color(GREEN).next_to(stephen_no_hat_arrow.arrow, RIGHT)
+        stephen_hat_arrow_label = math_tex(r"\hat{I}_{man}").set_color(GREEN).next_to(stephen_hat_arrow.arrow, gx.UP)
+        stephen_no_hat_arrow_label = math_tex(r"I_{man}").set_color(GREEN).next_to(stephen_no_hat_arrow.arrow, gx.RIGHT)
                 
         start = stephen_hat_arrow.arrow.get_all_points()[0]
         end = stephen_no_hat_arrow.arrow.get_all_points()[0]
@@ -405,21 +411,21 @@ class P20_21v2(InteractiveScene):
         # Create the trimmed line
         # stephen_delta_arrow_line = Line(start, new_end, stroke_width=5, color=YELLOW)
         
-        stephen_delta_arrow = VGroup(stephen_delta_arrow_line, stephen_delta_arrow_arrow)
+        stephen_delta_arrow = gx.VGroup(stephen_delta_arrow_line, stephen_delta_arrow_arrow)
         
-        stephen_delta_arrow_label = Tex(r"\hat{I}_{man}-I_{man}").set_color(YELLOW).next_to(stephen_delta_arrow.get_center(), RIGHT).shift(UP * 0.25)
+        stephen_delta_arrow_label = math_tex(r"\hat{I}_{man}-I_{man}").set_color(YELLOW).next_to(stephen_delta_arrow.get_center(), gx.RIGHT).shift(gx.UP * 0.25)
 
-        top_header_line = Line(stroke_width=2).set_width(5.5).set_color(CHILL_BROWN).shift(RIGHT * 3.25 + UP * 2.5)
+        top_header_line = gx.Line(stroke_width=2).scale_to_fit_width(5.5).set_color(CHILL_BROWN).shift(gx.RIGHT * 3.25 + gx.UP * 2.5)
         
-        bottom_header_line = Line(stroke_width=2).set_width(5.5).set_color(CHILL_BROWN).shift(RIGHT * 3.25 + UP * 0.5)
-        bottom_header_title = Text('TOP MATCHES', font='Myriad Pro').next_to(bottom_header_line, UP, buff=0.1).set_color(CHILL_BROWN).scale(0.6)
+        bottom_header_line = gx.Line(stroke_width=2).scale_to_fit_width(5.5).set_color(CHILL_BROWN).shift(gx.RIGHT * 3.25 + gx.UP * 0.5)
+        bottom_header_title = gx.Text('TOP MATCHES', font='Myriad Pro').next_to(bottom_header_line, gx.UP, buff=0.1).set_color(CHILL_BROWN).scale(0.6)
         
-        left_align = Line(top_header_line.get_center(), bottom_header_line.get_center(), stroke_width=2).shift(LEFT * 1.4).set_length(15)
-        right_align = Line(top_header_line.get_center(), bottom_header_line.get_center(), stroke_width=2).shift(RIGHT * 1.4).set_length(15)
+        left_align = gx.Line(top_header_line.get_center(), bottom_header_line.get_center(), stroke_width=2).shift(gx.LEFT * 1.4).set_length(15)
+        right_align = gx.Line(top_header_line.get_center(), bottom_header_line.get_center(), stroke_width=2).shift(gx.RIGHT * 1.4).set_length(15)
         
 
-        top_header_word_column = Text('WORD', font='Myriad Pro').set_color(CHILL_BROWN).scale(0.6).next_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), left_align.get_top(), left_align.get_bottom()), UP, buff=0.1)
-        top_header_cosine_similarity_column = Text('COSINE SIMILARITY', font='Myriad Pro').set_color(CHILL_BROWN).scale(0.6).next_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), right_align.get_top(), right_align.get_bottom()), UP, buff=0.1)
+        top_header_word_column = gx.Text('WORD', font='Myriad Pro').set_color(CHILL_BROWN).scale(0.6).next_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), left_align.get_top(), left_align.get_bottom()), gx.UP, buff=0.1)
+        top_header_cosine_similarity_column = gx.Text('COSINE SIMILARITY', font='Myriad Pro').set_color(CHILL_BROWN).scale(0.6).next_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), right_align.get_top(), right_align.get_bottom()), gx.UP, buff=0.1)
         
         df = pd.read_csv(image_path+"cosine_similarities.csv")
         
@@ -432,32 +438,32 @@ class P20_21v2(InteractiveScene):
         gap = 0.8
         max_width = 2.56
         
-        start = Point().move_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), left_align.get_top(), left_align.get_bottom())).shift(DOWN* gap)
+        start = gx.Point().move_to(line_intersection(top_header_line.get_left(), top_header_line.get_right(), left_align.get_top(), left_align.get_bottom())).shift(gx.DOWN* gap)
 
         
         points = []
         for i in range(200):
-            point = Point()
-            point.move_to(line_intersection(bottom_header_line.get_left(), bottom_header_line.get_right(), left_align.get_top(), left_align.get_bottom())).shift(DOWN * (gap * (i+1)))
+            point = gx.Point()
+            point.move_to(line_intersection(bottom_header_line.get_left(), bottom_header_line.get_right(), left_align.get_top(), left_align.get_bottom())).shift(gx.DOWN * (gap * (i+1)))
 
             points.append(point)
             
-        label_2 = Text("2.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[1].get_y(), 0])
-        label_3 = Text("3.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[2].get_y(), 0])
-        label_4 = Text("4.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[3].get_y(), 0])
-        label_5 = Text("5.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[4].get_y(), 0])
-        label_1 = Text("1.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[0].get_y(), 0])
-        labels = VGroup(label_1, label_2, label_3, label_4, label_5).shift(LEFT * 3)
+        label_2 = gx.Text("2.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[1].get_y(), 0])
+        label_3 = gx.Text("3.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[2].get_y(), 0])
+        label_4 = gx.Text("4.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[3].get_y(), 0])
+        label_5 = gx.Text("5.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[4].get_y(), 0])
+        label_1 = gx.Text("1.", font='Myriad Pro').set_color(CHILL_BROWN).move_to([bottom_header_line.get_x(), points[0].get_y(), 0])
+        labels = gx.VGroup(label_1, label_2, label_3, label_4, label_5).shift(gx.LEFT * 3)
             
         similarity_points = []
         for i in range(200):
-            point = Point()
-            point.move_to(line_intersection(bottom_header_line.get_left(), bottom_header_line.get_right(), right_align.get_top(), right_align.get_bottom())).shift(DOWN * (gap * (i+1)))
+            point = gx.Point()
+            point.move_to(line_intersection(bottom_header_line.get_left(), bottom_header_line.get_right(), right_align.get_top(), right_align.get_bottom())).shift(gx.DOWN * (gap * (i+1)))
 
             similarity_points.append(point)
 
         self.add(stephen_hat_p20)
-        self.play(FadeIn(stephen_no_hat_p20))
+        self.play(gx.FadeIn(stephen_no_hat_p20))
 
         self.wait()
 
@@ -470,35 +476,35 @@ class P20_21v2(InteractiveScene):
         self.wait()
         self.add(top_right_arrow, bottom_right_arrow, stephen_no_hat_equation, stephen_hat_equation)
         self.wait()
-        self.play(FadeOut(arrows), FadeOut(top_image_encoder), FadeOut(bottom_image_encoder))
+        self.play(gx.FadeOut(arrows), gx.FadeOut(top_image_encoder), gx.FadeOut(bottom_image_encoder))
         self.wait()
-        self.play(FadeIn(axes), 
-                  ReplacementTransform(stephen_hat_p20, stephen_hat), 
-                  ReplacementTransform(stephen_hat_equation[0:5], stephen_hat_arrow_label), 
-                  ReplacementTransform(stephen_hat_equation[6:], stephen_hat_arrow[0]), 
-                  FadeOut(stephen_hat_equation[5]),
-                  stephen_no_hat_p20.animate.shift(DOWN * 4 + LEFT * 0.3).set_opacity(0.5), run_time = 3)
+        self.play(gx.FadeIn(axes),
+                  gx.ReplacementTransform(stephen_hat_p20, stephen_hat),
+                  gx.ReplacementTransform(stephen_hat_equation[0:5], stephen_hat_arrow_label),
+                  gx.ReplacementTransform(stephen_hat_equation[6:], stephen_hat_arrow[0]),
+                  gx.FadeOut(stephen_hat_equation[5]),
+                  stephen_no_hat_p20.animate.shift(gx.DOWN * 4 + gx.LEFT * 0.3).set_opacity(0.5), run_time = 3)
 
         # self.play(ReplacementTransform(stephen_hat_equation[6:].copy(), stephen_hat_arrow[0]), run_time=3)
 
         self.wait()
-        self.play(ReplacementTransform(stephen_no_hat_p20, stephen_no_hat),
-                  FadeOut(stephen_no_hat_equation[4]), 
-                  ReplacementTransform(stephen_no_hat_equation[0:4],  stephen_no_hat_arrow_label), 
-                  ReplacementTransform(stephen_no_hat_equation[5:], stephen_no_hat_arrow[0]), #Moving to WelchAxis is weird, first index helps with animation 
+        self.play(gx.ReplacementTransform(stephen_no_hat_p20, stephen_no_hat),
+                  gx.FadeOut(stephen_no_hat_equation[4]),
+                  gx.ReplacementTransform(stephen_no_hat_equation[0:4],  stephen_no_hat_arrow_label),
+                  gx.ReplacementTransform(stephen_no_hat_equation[5:], stephen_no_hat_arrow[0]), #Moving to WelchAxis is weird, first index helps with animation
                   run_time=3)
 
         
         self.wait()
-        self.play(FadeIn(stephen_delta_arrow))
+        self.play(gx.FadeIn(stephen_delta_arrow))
         self.wait()
-        self.play(Write(stephen_delta_arrow_label))
+        self.play(gx.Write(stephen_delta_arrow_label))
         self.wait()
-        self.play(FadeIn(top_header_line), DrawBorderThenFill(top_header_word_column), DrawBorderThenFill(top_header_cosine_similarity_column))
+        self.play(gx.FadeIn(top_header_line), gx.DrawBorderThenFill(top_header_word_column), gx.DrawBorderThenFill(top_header_cosine_similarity_column))
         self.wait()
-        self.play(ReplacementTransform(top_header_line.copy(), bottom_header_line), ReplacementTransform(VGroup(top_header_word_column.copy(), top_header_cosine_similarity_column.copy()), bottom_header_title)),
+        self.play(gx.ReplacementTransform(top_header_line.copy(), bottom_header_line), gx.ReplacementTransform(gx.VGroup(top_header_word_column.copy(), top_header_cosine_similarity_column.copy()), bottom_header_title)),
         self.wait()
-        self.play(Write(labels))
+        self.play(gx.Write(labels))
         self.wait()
         
         count = 0
@@ -509,18 +515,18 @@ class P20_21v2(InteractiveScene):
             count += 1
             word, similarity = pair
 
-            word_mobject = Text(word, font='Myriad Pro').set_color(FRESH_TAN).scale(0.9)
-            similarity_mobject = Tex(str(round(similarity, 3))).set_color(FRESH_TAN).scale(0.9).move_to([right_align.get_x(), start.get_y(), 0])
+            word_mobject = gx.Text(word, font='Myriad Pro').set_color(FRESH_TAN).scale(0.9)
+            similarity_mobject = math_tex(str(round(similarity, 3))).set_color(FRESH_TAN).scale(0.9).move_to([right_align.get_x(), start.get_y(), 0])
             word_mobject.move_to(start.get_center())
             
             if remove:
                 self.remove(last_pair)
                 
-            last_pair = VGroup(word_mobject, similarity_mobject)
+            last_pair = gx.VGroup(word_mobject, similarity_mobject)
             
             if count < 6:
-                self.play(FadeIn(word_mobject))
-                self.play(ReplacementTransform(word_mobject.copy(), similarity_mobject))
+                self.play(gx.FadeIn(word_mobject))
+                self.play(gx.ReplacementTransform(word_mobject.copy(), similarity_mobject))
             else:
                 self.add(word_mobject, similarity_mobject)
 
@@ -549,8 +555,8 @@ class P20_21v2(InteractiveScene):
                 w5, s5 = ordered[5]
                 self.remove(w5, s5)
             self.play(
-                *[MoveToTarget(w) for w, s in ordered[:5]],
-                *[MoveToTarget(s) for w, s in ordered[:5]]
+                *[gx.MoveToTarget(w) for w, s in ordered[:5]],
+                *[gx.MoveToTarget(s) for w, s in ordered[:5]]
             )
 
             # Remove the previous 5th spot if it exists
@@ -646,7 +652,7 @@ def generate_nice_ticks(min_val, max_val, min_ticks=3, max_ticks=16, ignore=[0])
     
     return ticks, float(axis_min), float(axis_max)
 
-class WelchXAxis(VGroup):
+class WelchXAxis(gx.VGroup):
     def __init__(
         self,
         x_min=0,
@@ -662,7 +668,7 @@ class WelchXAxis(VGroup):
         **kwargs
     ):
         
-        VGroup.__init__(self, **kwargs)
+        gx.VGroup.__init__(self, **kwargs)
 
         # Store parameters
         self.x_ticks = x_ticks
@@ -687,27 +693,27 @@ class WelchXAxis(VGroup):
     def _create_axis_line(self):
         
         # Create a line for the x-axis
-        axis_line = Line(
+        axis_line = gx.Line(
             start=np.array([0, 0, 0]),
             end=np.array([self.axis_length_on_canvas, 0, 0]),
             color=self.axis_color,
             stroke_width=self.stroke_width
         )
         if self.include_tip:
-            arrow_tip=SVGMobject('/Users/stephen/manim/videos/_2025/sora/welch_arrow_tip_1.svg') #Dumb hardcode for now
+            arrow_tip=gx.SVGMobject('/Users/stephen/manim/videos/_2025/sora/welch_arrow_tip_1.svg') #Dumb hardcode for now
             arrow_tip.scale(self.arrow_tip_scale)
             arrow_tip.move_to([self.axis_length_on_canvas, 0, 0])
-            axis_line = VGroup(axis_line, arrow_tip)
+            axis_line = gx.VGroup(axis_line, arrow_tip)
 
         self.axis_line = axis_line
         self.arrow = arrow_tip
         self.add(axis_line)
         
     def _create_ticks(self):
-        self.ticks = VGroup()
+        self.ticks = gx.VGroup()
         
         for x_val in self.x_ticks_scaled:
-            tick = Line(
+            tick = gx.Line(
                 start=np.array([x_val, 0, 0]),
                 end=np.array([x_val, -self.x_tick_height, 0]),  # Ticks extend downward
                 color=self.axis_color,
@@ -718,16 +724,16 @@ class WelchXAxis(VGroup):
         self.add(self.ticks)
         
     def _create_labels(self):
-        self.labels = VGroup()
+        self.labels = gx.VGroup()
         
         for x_val, x_val_label in zip(self.x_ticks_scaled, self.x_ticks):
             # In 3B1B's manim, use TexMobject instead of MathTex
-            label = Tex(str(round(x_val_label, 4)))
+            label = math_tex(str(round(x_val_label, 4)))
             label.scale(self.x_label_font_size / 48)  # Approximate scaling
             label.set_color(self.axis_color)
             label.next_to(
                 np.array([x_val, -self.x_tick_height, 0]),
-                DOWN,
+                gx.DOWN,
                 buff=0.1
             )
             self.labels.add(label)
@@ -750,7 +756,7 @@ class WelchXAxis(VGroup):
         value_scaled=(value-self.x_min)/(self.x_max-self.x_min)
         return (value_scaled+axis_start)*self.axis_length_on_canvas
 
-class WelchYAxis(VGroup):
+class WelchYAxis(gx.VGroup):
     def __init__(
         self,
         y_min=0,
@@ -765,7 +771,7 @@ class WelchYAxis(VGroup):
         include_tip=True,
         **kwargs
     ):
-        VGroup.__init__(self, **kwargs)
+        gx.VGroup.__init__(self, **kwargs)
         
         # Store parameters
         self.y_ticks = y_ticks
@@ -788,7 +794,7 @@ class WelchYAxis(VGroup):
         self._create_labels()
     def _create_axis_line(self):
         # Create a line for the y-axis
-        axis_line = Line(
+        axis_line = gx.Line(
             start=np.array([0, 0, 0]),
             end=np.array([0, self.axis_length_on_canvas, 0]),
             color=self.axis_color,
@@ -797,22 +803,22 @@ class WelchYAxis(VGroup):
         
         # Add SVG arrow tip at the end
         if self.include_tip:
-            arrow_tip = SVGMobject('/Users/stephen/manim/videos/_2025/sora/welch_arrow_tip_1.svg')
+            arrow_tip = gx.SVGMobject('/Users/stephen/manim/videos/_2025/sora/welch_arrow_tip_1.svg')
             arrow_tip.scale(self.arrow_tip_scale)
             arrow_tip.move_to([0, self.axis_length_on_canvas, 0])
             # Rotate the arrow tip to point upward
-            arrow_tip.rotate(PI/2)  # Rotate 90 degrees to point up
-            axis_line = VGroup(axis_line, arrow_tip)
+            arrow_tip.rotate(gx.PI/2)  # Rotate 90 degrees to point up
+            axis_line = gx.VGroup(axis_line, arrow_tip)
 
         self.axis_line = axis_line
         self.add(axis_line)
         self.add(axis_line)
         
     def _create_ticks(self):
-        self.ticks = VGroup()
+        self.ticks = gx.VGroup()
         
         for y_val in self.y_ticks_scaled:
-            tick = Line(
+            tick = gx.Line(
                 start=np.array([0, y_val, 0]),
                 end=np.array([-self.y_tick_width, y_val, 0]),  # Ticks extend to the left
                 color=self.axis_color,
@@ -823,16 +829,16 @@ class WelchYAxis(VGroup):
         self.add(self.ticks)
         
     def _create_labels(self):
-        self.labels = VGroup()
+        self.labels = gx.VGroup()
         
         for y_val, y_val_label in zip(self.y_ticks_scaled, self.y_ticks):
             # Use Tex for labels
-            label = Tex(str(round(y_val_label,5)))
+            label = math_tex(str(round(y_val_label,5)))
             label.scale(self.y_label_font_size / 48)  # Approximate scaling
             label.set_color(self.axis_color)
             label.next_to(
                 np.array([-self.y_tick_width, y_val, 0]),
-                LEFT,
+                gx.LEFT,
                 buff=0.1
             )
             self.labels.add(label)
@@ -855,5 +861,5 @@ class WelchYAxis(VGroup):
         value_scaled=(value-self.y_min)/(self.y_max-self.y_min)
         return (value_scaled+axis_start)*self.axis_length_on_canvas
 
-class WelchArrow(VGroup):
+class WelchArrow(gx.VGroup):
     pass

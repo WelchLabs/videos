@@ -1,10 +1,22 @@
-from manimlib import *
+from welch_paths import welch_path
+from welch_surface import set_surface_shading
 from functools import partial
 import sys
 
 sys.path.append('_2025/backprop_3') #Point to folder where plane_folding_utils.py is
-from plane_folding_utils import *
-from decision_boundary_utils import *
+import manimgx as gx
+import numpy as np
+from decision_boundary_utils import create_decision_boundary_lines
+from plane_folding_utils import (
+    create_3d_polygon_regions_multi,
+    get_polygon_corners_multi,
+    get_relu_joint,
+    line_from_joint_points_1,
+    surface_func_general,
+    surface_func_second_layer_no_relu_multi,
+)
+from welch_scene import WelchScene, image_at_height
+from welch_surface import parametric_surface, textured_surface
 
 
 CHILL_BROWN='#948979'
@@ -17,15 +29,15 @@ CHILL_BLUE='#3d5c6f'
 FRESH_TAN='#dfd0b9'
 
 
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/graphics/' #Point to folder where map images are
+graphics_dir=welch_path('backprop_3/graphics/') #Point to folder where map images are
 
-class plane_folding_sketch_single_layer_2(InteractiveScene):
+class plane_folding_sketch_single_layer_2(WelchScene):
     def construct(self):
 
-        map_img=ImageMobject(graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        map_img.set_height(2)  # This sets the height to 2 units (-1 to 1)
-        map_img.set_width(2)   # This sets the width to 2 units (-1 to 1)
-        map_img.move_to(ORIGIN)
+        map_img=image_at_height(graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+        map_img.scale_to_fit_height(2)  # This sets the height to 2 units (-1 to 1)
+        map_img.scale_to_fit_width(2)   # This sets the width to 2 units (-1 to 1)
+        map_img.move_to(gx.ORIGIN)
 
         viz_scale_1=0.25
         viz_scale_2=0.1
@@ -41,35 +53,35 @@ class plane_folding_sketch_single_layer_2(InteractiveScene):
 
         # First hidden neuron
         surface_func_11=partial(surface_func_general, w1=w1[0,0], w2=w1[0,1], b=b1[0], viz_scale=viz_scale_1)
-        bent_surface_11 = ParametricSurface(surface_func_11, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        ts11=TexturedSurface(bent_surface_11, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        ts11.set_shading(0,0,0)
+        bent_surface_11 = parametric_surface(surface_func_11, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        ts11=textured_surface(bent_surface_11, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+        set_surface_shading(ts11, 0,0,0)
         ts11.set_opacity(0.75)
         joint_points_11 = get_relu_joint(w1[0,0], w1[0,1], b1[0], extent=1)
         joint_line_11=line_from_joint_points_1(joint_points_11).set_opacity(0.5)
-        group_11=Group(ts11, joint_line_11)
+        group_11=gx.Group(ts11, joint_line_11)
 
         # Second hidden neuron
         surface_func_12=partial(surface_func_general, w1=w1[1,0], w2=w1[1,1], b=b1[1], viz_scale=viz_scale_1)
-        bent_surface_12 = ParametricSurface(surface_func_12, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        ts12=TexturedSurface(bent_surface_12, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        ts12.set_shading(0,0,0)
+        bent_surface_12 = parametric_surface(surface_func_12, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        ts12=textured_surface(bent_surface_12, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+        set_surface_shading(ts12, 0,0,0)
         ts12.set_opacity(0.75)
         joint_points_12 = get_relu_joint(w1[1,0], w1[1,1], b1[1], extent=1)
         joint_line_12=line_from_joint_points_1(joint_points_12).set_opacity(0.5)
-        group_12=Group(ts12, joint_line_12)
+        group_12=gx.Group(ts12, joint_line_12)
 
         # Third hidden neuron (NEW)
         surface_func_13=partial(surface_func_general, w1=w1[2,0], w2=w1[2,1], b=b1[2], viz_scale=viz_scale_1)
-        bent_surface_13 = ParametricSurface(surface_func_13, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        ts13=TexturedSurface(bent_surface_13, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        ts13.set_shading(0,0,0)
+        bent_surface_13 = parametric_surface(surface_func_13, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        ts13=textured_surface(bent_surface_13, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+        set_surface_shading(ts13, 0,0,0)
         ts13.set_opacity(0.75)
         joint_points_13 = get_relu_joint(w1[2,0], w1[2,1], b1[2], extent=1)
         joint_line_13=line_from_joint_points_1(joint_points_13).set_opacity(0.5)
-        group_13=Group(ts13, joint_line_13)
+        group_13=gx.Group(ts13, joint_line_13)
 
-        self.frame.reorient(0, 0, 0, (0.03, -0.02, 0.0), 3.27)
+        self.set_view(0, 0, 0, (0.03, -0.02, 0.0), 3.27)
         self.add(group_11, group_12, group_13)
         
         # Position the three hidden layer visualizations
@@ -86,9 +98,9 @@ class plane_folding_sketch_single_layer_2(InteractiveScene):
             neuron_idx=neuron_idx, viz_scale=viz_scale_2
         )
 
-        bent_surface_21 = ParametricSurface(surface_func_21, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        ts21 = TexturedSurface(bent_surface_21, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        ts21.set_shading(0,0,0)
+        bent_surface_21 = parametric_surface(surface_func_21, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        ts21 = textured_surface(bent_surface_21, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+        set_surface_shading(ts21, 0,0,0)
         ts21.set_opacity(0.75)
 
         bs21_copy=bent_surface_21.copy()
@@ -123,9 +135,9 @@ class plane_folding_sketch_single_layer_2(InteractiveScene):
             neuron_idx=neuron_idx, viz_scale=viz_scale_2
         )
 
-        bent_surface_22 = ParametricSurface(surface_func_22, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        ts22 = TexturedSurface(bent_surface_22, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        ts22.set_shading(0,0,0)
+        bent_surface_22 = parametric_surface(surface_func_22, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        ts22 = textured_surface(bent_surface_22, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+        set_surface_shading(ts22, 0,0,0)
         ts22.set_opacity(0.75)
 
         bs22_copy=bent_surface_22.copy()
@@ -168,7 +180,7 @@ class plane_folding_sketch_single_layer_2(InteractiveScene):
             poly.shift([3, 0, 0.75])
             self.add(poly)
 
-        self.frame.reorient(11, 62, 0, (3.2, 0.86, 0.02), 4.39)
+        self.set_view(11, 62, 0, (3.2, 0.86, 0.02), 4.39)
 
         self.wait()
 
@@ -177,14 +189,14 @@ class plane_folding_sketch_single_layer_2(InteractiveScene):
         ## is to draw in the borders/intserctions between the two shells
         ## 
 
-        decision_boundaries=create_decision_boundary_lines(w1, b1, w2, b2, polygons, extent=1, z_offset=0, color=WHITE, stroke_width=4)
+        decision_boundaries=create_decision_boundary_lines(w1, b1, w2, b2, polygons, extent=1, z_offset=0, color=gx.WHITE, stroke_width=4)
         decision_boundaries[0].shift([3, 0, 0.75])
         self.add(decision_boundaries[0])
         self.wait()
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 

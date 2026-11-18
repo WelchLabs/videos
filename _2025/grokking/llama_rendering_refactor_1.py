@@ -7,14 +7,18 @@ moves, just the finished network. Everything you'd want to tweak lives in the
 CONFIG block below.
 
 Save a still:
-    manimgl llama_rendering_refactor_1.py LlamaRender -ws --config_file custom_config.yml
+    uv run python run_scene.py inspect _2025/grokking/llama_rendering_refactor_1.py LlamaRender -t end
     (add e.g. `-r 3840x2160` for more pixels)
 
 Variants: subclass LlamaRender and set `overrides` -- see the examples at the
 bottom of the file.
 """
+from welch_paths import welch_path
 
-from manimlib import *
+import manimgx as gx
+from welch_scene import WelchScene
+from welch_text import math_tex
+
 import glob
 import os
 import pickle
@@ -34,7 +38,7 @@ CONFIG = dict(
 
     # --- Data ----------------------------------------------------------------
     # A single .p file, or a directory of them (sorted, then SNAPSHOT_INDEX picks one).
-    SNAPSHOT_PATH='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/ai_book_vol_2/2_grokking/hackin/jun_3_1',
+    SNAPSHOT_PATH=welch_path('ai_book_vol_2/2_grokking/hackin/jun_3_1'),
     SNAPSHOT_INDEX=4,
 
     # --- What to draw --------------------------------------------------------
@@ -256,7 +260,7 @@ def cmap_hex(cmap, t):
 
 
 def make_ellipsis(center, scale, color):
-    dots = Tex("...").rotate(PI / 2, OUT).scale(scale)
+    dots = math_tex("...").rotate(gx.PI / 2, gx.OUT).scale(scale)
     dots.move_to(center)
     dots.set_color(color)
     return dots
@@ -276,7 +280,7 @@ def neuron_column(n, x, cfg, fill_colors=None, ellipsis_scale=0.5):
     Returns (neurons VGroup, ellipsis).
     """
     slots = n + 1
-    neurons = VGroup()
+    neurons = gx.VGroup()
     ellipsis = None
     k = 0
     for slot in range(slots):
@@ -284,7 +288,7 @@ def neuron_column(n, x, cfg, fill_colors=None, ellipsis_scale=0.5):
         if slot == slots // 2:
             ellipsis = make_ellipsis(pos, ellipsis_scale, cfg.ELLIPSIS_COLOR)
             continue
-        neuron = Circle(radius=cfg.NEURON_RADIUS, stroke_color=cfg.NEURON_STROKE_COLOR)
+        neuron = gx.Circle(radius=cfg.NEURON_RADIUS, stroke_color=cfg.NEURON_STROKE_COLOR)
         neuron.set_stroke(width=cfg.NEURON_STROKE_WIDTH)
         neuron.set_fill(color=cfg.EMPTY_COLOR if fill_colors is None else fill_colors[k], opacity=1.0)
         neuron.move_to(pos)
@@ -305,19 +309,19 @@ def attention_pattern(matrix, cfg, filled=True):
     matrix = np.asarray(matrix)
     vmax = np.max(matrix)
     size = cfg.ATTN_SQUARE_SIZE
-    squares = VGroup()
+    squares = gx.VGroup()
     for i in range(matrix.shape[0]):
         for j in range(matrix.shape[1]):
             if filled and vmax > 0:
                 color = cmap_hex(cfg.fill_cmap, cfg.ATTN_PATTERN_GAIN * matrix[i, j] / vmax)
             else:
                 color = cfg.EMPTY_COLOR
-            square = Square(side_length=size)
+            square = gx.Square(side_length=size)
             square.set_fill(color, opacity=1.0)
             square.set_stroke(cfg.ATTN_STROKE_COLOR, width=cfg.ATTN_GRID_STROKE_WIDTH)
-            square.move_to(RIGHT * j * size + DOWN * i * size)
+            square.move_to(gx.RIGHT * j * size + gx.DOWN * i * size)
             squares.add(square)
-    squares.move_to(ORIGIN)
+    squares.move_to(gx.ORIGIN)
     return squares
 
 
@@ -334,11 +338,11 @@ def attention_block(patterns, x, cfg):
     border_w = pattern_w + 2 * cfg.ATTN_BORDER_PAD
     top_center = (slots - 1) * pitch / 2 - cfg.ATTN_ELLIPSIS_SQUEEZE
     border_h = 2 * (top_center + pattern_h / 2 + 0.1)
-    border = RoundedRectangle(width=border_w, height=border_h, corner_radius=0.1)
+    border = gx.RoundedRectangle(width=border_w, height=border_h, corner_radius=0.1)
     border.set_stroke(width=cfg.ATTN_BORDER_STROKE_WIDTH, color=cfg.ATTN_STROKE_COLOR)
     border.move_to([x, 0, 0])
 
-    group = VGroup()
+    group = gx.VGroup()
     left_pts, right_pts = [], []
     k = 0
     for slot in range(slots):
@@ -374,7 +378,7 @@ def connection_lines(values, src, dst, style, cfg, offset, src_radius=0.0, dst_r
     o_lo, o_hi = style['opacity']
     alpha = style.get('alpha', 1.0)
 
-    lines = VGroup()
+    lines = gx.VGroup()
     for i, a in enumerate(src):
         for j, b in enumerate(dst):
             s = float(scaled[i, j])
@@ -383,7 +387,7 @@ def connection_lines(values, src, dst, style, cfg, offset, src_radius=0.0, dst_r
             if offset(i, j) > style['window']:
                 continue
             unit = (b - a) / np.linalg.norm(b - a)
-            line = Line(a + unit * src_radius, b - unit * dst_radius)
+            line = gx.Line(a + unit * src_radius, b - unit * dst_radius)
             if grad:
                 color = cmap_hex(cfg.grad_cmap, s)
                 opacity = cfg.GRAD_OPACITY if cfg.GRAD_OPACITY is not None else float(np.clip(s, o_lo, o_hi))
@@ -397,7 +401,7 @@ def connection_lines(values, src, dst, style, cfg, offset, src_radius=0.0, dst_r
 
 def io_text(token, font_size, color, x_side, slot_y, cfg):
     """Token label beside an input (x_side=-1) or output (x_side=+1) neuron at height slot_y."""
-    t = Text(token, font_size=font_size, font=cfg.FONT)
+    t = gx.Text(token, font_size=font_size, font=cfg.FONT)
     t.set_color(color)
     half_width = t.get_right()[0]
     # Small upward nudge proportional to the text's height, carried over from the original layout.
@@ -435,7 +439,7 @@ def build_network(snapshot, cfg):
     mlp_to_head = 0.25 * (A / _REF['attn']) * (_REF['mlp'] / M)
     io_to_head = 0.25 * (A / _REF['attn']) * (_REF['io'] / V)
 
-    background, weights, grads, activations, text = VGroup(), VGroup(), VGroup(), VGroup(), VGroup()
+    background, weights, grads, activations, text = gx.VGroup(), gx.VGroup(), gx.VGroup(), gx.VGroup(), gx.VGroup()
 
     # ---- Layers ----
     first_attn_left = None
@@ -469,10 +473,10 @@ def build_network(snapshot, cfg):
         col_in, dots_in = neuron_column(M, -dx, cfg, fills[0])
         col_hid, dots_hid = neuron_column(H, 0, cfg, fills[1])
         col_out, dots_out = neuron_column(M, dx, cfg, fills[2])
-        mlp = VGroup(col_in, col_hid, col_out, dots_in, dots_hid, dots_out)
+        mlp = gx.VGroup(col_in, col_hid, col_out, dots_in, dots_hid, dots_out)
         mlp.move_to([x_mlp, 0, 0])
         background.add(dots_in, dots_hid, dots_out)
-        activations.add(VGroup(col_in, col_hid, col_out))
+        activations.add(gx.VGroup(col_in, col_hid, col_out))
 
         p_in, p_hid, p_out = centers_of(col_in), centers_of(col_hid), centers_of(col_out)
 
@@ -495,11 +499,11 @@ def build_network(snapshot, cfg):
 
         # MLP wiring
         off = lambda i, j: abs(i - j)
-        mlp_w = VGroup(
+        mlp_w = gx.VGroup(
             connection_lines(snapshot[key + 'mlp.W_in'], p_in, p_hid, R['mlp_in'], cfg, off, r, r),
             connection_lines(snapshot[key + 'mlp.W_out'], p_hid, p_out, R['mlp_out'], cfg, off, r, r),
         )
-        mlp_g = VGroup(
+        mlp_g = gx.VGroup(
             connection_lines(snapshot[key + 'mlp.W_in.grad'], p_in, p_hid, R['mlp_in_grad'], cfg, off, r, r, grad=True),
             connection_lines(snapshot[key + 'mlp.W_out.grad'], p_hid, p_out, R['mlp_out_grad'], cfg, off, r, r, grad=True),
         )
@@ -525,15 +529,15 @@ def build_network(snapshot, cfg):
 
     in_fills = [cfg.FORWARD_COLOR if (cfg.SHOW_FORWARD and k in prompt_set) else cfg.EMPTY_COLOR for k in range(V)]
     in_neurons, in_dots = neuron_column(V, 0, cfg, in_fills, ellipsis_scale=0.4)
-    in_text = VGroup()
+    in_text = gx.VGroup()
     if cfg.SHOW_TEXT:
         lit = sorted(k for k in prompt_set if k < V)  # tokens read top-to-bottom
         for token, k in zip(prompt_tokens, lit):
             y = in_neurons[k].get_center()[1]
             in_text.add(io_text(token, cfg.INPUT_FONT_SIZE, cfg.TEXT_COLOR, -1, y, cfg))
-    input_layer = VGroup(in_neurons, in_dots, in_text)
+    input_layer = gx.VGroup(in_neurons, in_dots, in_text)
     input_layer.shift(-in_neurons.get_center())
-    input_layer.shift(RIGHT * (cfg.START_X - cfg.INPUT_GAP - in_neurons.get_right()[0]))
+    input_layer.shift(gx.RIGHT * (cfg.START_X - cfg.INPUT_GAP - in_neurons.get_right()[0]))
 
     # Embedding lines: rows are token neurons, columns are the residual dims that the shown
     # heads stand in for. Rows for the prompt's neurons use the prompt tokens' embeddings.
@@ -556,7 +560,7 @@ def build_network(snapshot, cfg):
     p_max = probs.max()
     out_fills = [cmap_hex(cfg.fill_cmap, probs[k] / p_max) for k in range(V)] if cfg.SHOW_FORWARD else None
     out_neurons, out_dots = neuron_column(V, 0, cfg, out_fills, ellipsis_scale=0.4)
-    out_text = VGroup()
+    out_text = gx.VGroup()
     if cfg.SHOW_TEXT:
         for k in range(V):
             font_size = cfg.OUTPUT_FONT_SIZES[0 if k == 0 else (1 if k < 4 else 2)]
@@ -566,9 +570,9 @@ def build_network(snapshot, cfg):
                 color = cfg.TEXT_COLOR
             y = out_neurons[k].get_center()[1]
             out_text.add(io_text(snapshot['topk.tokens'][k], font_size, color, +1, y, cfg))
-    output_layer = VGroup(out_neurons, out_dots, out_text)
+    output_layer = gx.VGroup(out_neurons, out_dots, out_text)
     output_layer.shift(-out_neurons.get_center())
-    output_layer.shift(RIGHT * (last_mlp_right + cfg.OUTPUT_GAP - out_neurons.get_left()[0]))
+    output_layer.shift(gx.RIGHT * (last_mlp_right + cfg.OUTPUT_GAP - out_neurons.get_left()[0]))
 
     W_U = snapshot['topk.unembed.W_U'][:, 0, :].T        # [resid, token]
     W_U_grad = snapshot['topk.unembed.W_U.grad'][:, 0, :].T
@@ -593,39 +597,40 @@ def scale_strokes(mobject, factor):
     if factor == 1.0:
         return
     for m in mobject.get_family():
-        if isinstance(m, VMobject) and m.get_num_points() > 0:
-            m.set_stroke(width=m.get_stroke_widths() * factor, recurse=False)
+        if isinstance(m, gx.VMobject) and m.get_num_points() > 0:
+            m.set_stroke(width=m.stroke_width * factor, family=False)
 
 
 # =============================================================================
 # Scenes
 # =============================================================================
-class LlamaRender(InteractiveScene):
+class LlamaRender(WelchScene):
     overrides = {}  # subclasses: any CONFIG keys to change
 
     def construct(self):
         cfg = resolve_config(self.overrides)
         # self.camera.background_rgba = list(color_to_rgba(cfg.BACKGROUND_COLOR))
-        self.camera.background_rgba = list(color_to_rgba(cfg.BACKGROUND_COLOR, cfg.BACKGROUND_OPACITY))
+        self.camera.background_color = cfg.BACKGROUND_COLOR
+        self.camera.background_opacity = cfg.BACKGROUND_OPACITY
 
         snapshot = load_snapshot(cfg.SNAPSHOT_PATH, cfg.SNAPSHOT_INDEX)
         parts = build_network(snapshot, cfg)
-        network = VGroup(*parts.values())  # dict order = drawing order
+        network = gx.VGroup(*parts.values())  # dict order = drawing order
 
         # Camera
         if cfg.FRAME is None:
-            aspect = self.frame.get_width() / self.frame.get_height()
-            width = network.get_width() + 2 * cfg.FRAME_MARGIN
-            height = network.get_height() + 2 * cfg.FRAME_MARGIN
+            aspect = self.camera.frame.width / self.camera.frame.height
+            width = network.width + 2 * cfg.FRAME_MARGIN
+            height = network.height + 2 * cfg.FRAME_MARGIN
             frame_height = max(height, width / aspect)
             center = network.get_center()
         else:
             frame_height = cfg.FRAME[2]
             center = np.array([cfg.FRAME[0], cfg.FRAME[1], 0.0])
-        self.frame.reorient(0, 0, 0, tuple(center), frame_height)
+        self.set_view(0, 0, 0, tuple(center), frame_height)
 
         #SW quick hacky reorient for bleed spacing
-        # self.frame.reorient(0, 0, 0, tuple(center), 1)
+        # self.set_view(0, 0, 0, tuple(center), 1)
 
         stroke_scale = cfg.STROKE_SCALE
         if cfg.AUTO_STROKE_SCALE:

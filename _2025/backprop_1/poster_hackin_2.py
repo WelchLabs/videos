@@ -1,6 +1,9 @@
-from manimlib import *
-sys.path.append('/Users/stephen/manim/videos/welch_assets') #hacks
-from welch_axes import *
+from welch_paths import welch_path
+import manimgx as m
+from landscape_geometry import get_pivot_and_scale
+import numpy as np
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, set_surface_shading, textured_surface
 from functools import partial
 from tqdm import tqdm
 import glob
@@ -12,7 +15,7 @@ BLUE='#65c8d0'
 
 MAX_RENDERS=100
 
-data_dir='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/poster/gpu_renders_4/'
+data_dir=welch_path('backpropagation/poster/gpu_renders_4/')
 alphas_1=np.linspace(-2.5, 2.5, 512)
 
 ##Only need to run this when the underlying npy file changes
@@ -35,18 +38,8 @@ alphas_1=np.linspace(-2.5, 2.5, 512)
 # plt.close()
 
 # Comman for rendering all scenes
-# manimgl /Users/stephen/manim/videos/_2025/backprop_1/p39_48.py P39_47 P48_moving_view_1 P48_moving_view_2 P48_moving_view_3 P48_fixed_view -w
+# manimgx render /Users/stephen/manim/videos/_2025/backprop_1/p39_48.py P39_47 P48_moving_view_1 P48_moving_view_2 P48_moving_view_3 P48_fixed_view -w
 
-
-def param_surface_1(u, v):
-    u_idx = np.abs(alphas_1 - u).argmin()
-    v_idx = np.abs(alphas_1 - v).argmin()
-    try:
-        # z = loss_2d_1[u_idx, v_idx]
-        z = 0.07*loss_2d_1[v_idx, u_idx] #Add vertical scaling here?
-    except IndexError:
-        z = 0
-    return np.array([u, v, z])
 
 def param_surface_2(u, v, surf_array):
     u_idx = np.abs(alphas_1 - u).argmin()
@@ -68,13 +61,9 @@ def param_surface_3(u, v, surf_array, scaling=0.07, surf_mean=0):
         z = 0
     return np.array([u, v, z])
 
-def get_pivot_and_scale(axis_min, axis_max, axis_end):
-    '''Above collapses into scaling around a single pivot when axis_start=0'''
-    scale = axis_end / (axis_max - axis_min)
-    return axis_min, scale
 
 
-class PosterHackinEight(InteractiveScene):
+class PosterHackinEight(WelchScene):
     def construct(self):
     
         #Load up other surfaces to visualize
@@ -103,10 +92,10 @@ class PosterHackinEight(InteractiveScene):
 
         self.wait()
 
-        surfaces=Group()
+        surfaces=m.Group()
         surf_functions=[] #Need this later to move dot around.
-        grids=Group()
-        texts=Group()
+        grids=m.Group()
+        texts=m.Group()
         print("Loading Surfaces and Gridlines...")
         for i in tqdm(range(len(paths[:MAX_RENDERS]))): #LIMIT HERE FOR TESTING
             if 'llama' in paths[i]: scaling=0.07
@@ -117,50 +106,50 @@ class PosterHackinEight(InteractiveScene):
 
             surf_func=partial(param_surface_3, surf_array=loss_arrays[i], scaling=scaling, surf_mean=np.mean(loss_arrays[i]))
             surf_functions.append(surf_func)
-            surface = ParametricSurface(
+            surface = parametric_surface(
                 surf_func,  
                 u_range=[-2.5, 2.5], #Some have different ranges, but I don't think it matters?
                 v_range=[-2.5, 2.5],
                 resolution=(512, 512),
             )
 
-            ts2 = TexturedSurface(surface, texture_paths[i])
-            ts2.set_shading(0.0, 0.1, 0)
+            ts2 = textured_surface(surface, texture_paths[i])
+            set_surface_shading(ts2, 0.0, 0.1, 0)
             surfaces.add(ts2)
 
             num_lines = 64  # Number of gridlines in each direction
             num_points = 512  # Number  of points per line
-            u_gridlines = VGroup()
-            v_gridlines = VGroup()
+            u_gridlines = m.VGroup()
+            v_gridlines = m.VGroup()
             u_values = np.linspace(-2.5, 2.5, num_lines)
             v_points = np.linspace(-2.5, 2.5, num_points)
             for u in u_values:
                 points = [surf_func(u, v) for v in v_points]
-                line = VMobject()
+                line = m.VMobject()
                 line.set_points_smoothly(points)
-                line.set_stroke(width=1, color=WHITE, opacity=0.15)
+                line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
                 u_gridlines.add(line)
 
             u_points = np.linspace(-2.5, 2.5, num_points)
             for v in u_values:  # Using same number of lines for both directions
                 points = [surf_func(u, v) for u in u_points]
-                line = VMobject()
+                line = m.VMobject()
                 line.set_points_smoothly(points)
-                line.set_stroke(width=1, color=WHITE, opacity=0.15)
+                line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
                 v_gridlines.add(line)
-            grids.add(VGroup(u_gridlines, v_gridlines))
+            grids.add(m.VGroup(u_gridlines, v_gridlines))
 
-            t=Text(paths[i][-40:])
+            t=m.Text(paths[i][-40:])
             t.scale(0.4)
-            t.rotate(DEGREES*180)
+            t.rotate(m.DEGREES*180)
             t.move_to([0, 3, 0])
             texts.add(t)
 
-        # self.frame.reorient(134, 30, 0, (0.12, 0.11, -0.15), 7.56)
-        # self.frame.reorient(132, 30, 0, (0.32, 0.4, -0.32), 6.82)
-        # self.frame.reorient(132, 30, 0, (0.24, 0.27, -0.23), 7.50)
-        # self.frame.reorient(137, 41, 0, (0.14, -0.04, -0.09), 6.81) # I think this is what looked pretty good from part 1
-        self.frame.reorient(137, 41, 0, (0.48, 0.32, -0.52), 6.81)
+        # self.set_view(134, 30, 0, (0.12, 0.11, -0.15), 7.56)
+        # self.set_view(132, 30, 0, (0.32, 0.4, -0.32), 6.82)
+        # self.set_view(132, 30, 0, (0.24, 0.27, -0.23), 7.50)
+        # self.set_view(137, 41, 0, (0.14, -0.04, -0.09), 6.81) # I think this is what looked pretty good from part 1
+        self.set_view(137, 41, 0, (0.48, 0.32, -0.52), 6.81)
         self.add(surfaces[0])
         self.add(grids[0])
         # self.add(texts[0])
@@ -176,19 +165,19 @@ class PosterHackinEight(InteractiveScene):
             self.wait()
 
 
-        # self.frame.reorient(135, 25, 0, (0.02, 0.1, -0.11), 7.56) #isometric, fiarly high
+        # self.set_view(135, 25, 0, (0.02, 0.1, -0.11), 7.56) #isometric, fiarly high
         # # self.wait()
 
-        # self.frame.reorient(137, 41, 0, (0.14, -0.04, -0.09), 6.81) #isometric, more down
+        # self.set_view(137, 41, 0, (0.14, -0.04, -0.09), 6.81) #isometric, more down
         # self.wait()
 
 
         self.wait()
-        self.embed()
+        pass
 
 
 
-class SingleTest(InteractiveScene):
+class SingleTest(WelchScene):
     def construct(self):
     
         #Load up other surfaces to visualize
@@ -217,10 +206,10 @@ class SingleTest(InteractiveScene):
 
         self.wait()
 
-        surfaces=Group()
+        surfaces=m.Group()
         surf_functions=[] #Need this later to move dot around.
-        grids=Group()
-        texts=Group()
+        grids=m.Group()
+        texts=m.Group()
         print("Loading Surfaces and Gridlines...")
 
         i=-1
@@ -235,70 +224,70 @@ class SingleTest(InteractiveScene):
 
         surf_func=partial(param_surface_3, surf_array=loss_arrays[i], scaling=scaling, surf_mean=np.mean(loss_arrays[i]))
         surf_functions.append(surf_func)
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func,  
             u_range=[-2.5, 2.5], #Some have different ranges, but I don't think it matters?
             v_range=[-2.5, 2.5],
             resolution=(512, 512),
         )
 
-        ts2 = TexturedSurface(surface, texture_paths[i])
-        ts2.set_shading(0.0, 0.1, 0)
+        ts2 = textured_surface(surface, texture_paths[i])
+        set_surface_shading(ts2, 0.0, 0.1, 0)
         surfaces.add(ts2)
 
         num_lines = 64  # Number of gridlines in each direction
         num_points = 512  # Number  of points per line
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = m.VGroup()
+        v_gridlines = m.VGroup()
         u_values = np.linspace(-2.5, 2.5, num_lines)
         v_points = np.linspace(-2.5, 2.5, num_points)
         for u in u_values:
             points = [surf_func(u, v) for v in v_points]
-            line = VMobject()
+            line = m.VMobject()
             line.set_points_smoothly(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
             u_gridlines.add(line)
 
         u_points = np.linspace(-2.5, 2.5, num_points)
         for v in u_values:  # Using same number of lines for both directions
             points = [surf_func(u, v) for u in u_points]
-            line = VMobject()
+            line = m.VMobject()
             line.set_points_smoothly(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
             v_gridlines.add(line)
-        grids.add(VGroup(u_gridlines, v_gridlines))
+        grids.add(m.VGroup(u_gridlines, v_gridlines))
 
-        t=Text(paths[i][-40:])
+        t=m.Text(paths[i][-40:])
         t.scale(0.4)
-        t.rotate(DEGREES*180)
+        t.rotate(m.DEGREES*180)
         t.move_to([0, 3, 0])
         texts.add(t)
 
-        # self.frame.reorient(134, 30, 0, (0.12, 0.11, -0.15), 7.56)
-        # self.frame.reorient(132, 30, 0, (0.32, 0.4, -0.32), 6.82)
-        # self.frame.reorient(132, 30, 0, (0.24, 0.27, -0.23), 7.50)
-        # self.frame.reorient(137, 41, 0, (0.14, -0.04, -0.09), 6.81) # I think this is what looked pretty good from part 1
-        self.frame.reorient(137, 41, 0, (0.48, 0.32, -0.52), 6.81)
+        # self.set_view(134, 30, 0, (0.12, 0.11, -0.15), 7.56)
+        # self.set_view(132, 30, 0, (0.32, 0.4, -0.32), 6.82)
+        # self.set_view(132, 30, 0, (0.24, 0.27, -0.23), 7.50)
+        # self.set_view(137, 41, 0, (0.14, -0.04, -0.09), 6.81) # I think this is what looked pretty good from part 1
+        self.set_view(137, 41, 0, (0.48, 0.32, -0.52), 6.81)
         self.add(surfaces[0])
         self.add(grids[0])
         self.add(texts[0])
         self.wait()
 
-        # self.frame.reorient(135, 25, 0, (0.02, 0.1, -0.11), 7.56) #isometric, fiarly high
+        # self.set_view(135, 25, 0, (0.02, 0.1, -0.11), 7.56) #isometric, fiarly high
         # # self.wait()
 
-        # self.frame.reorient(137, 41, 0, (0.14, -0.04, -0.09), 6.81) #isometric, more down
+        # self.set_view(137, 41, 0, (0.14, -0.04, -0.09), 6.81) #isometric, more down
         # self.wait()
 
 
         self.wait()
-        self.embed()
+        pass
 
 
 
 
 
-class PosterHackinExploreColormapsTwo(InteractiveScene):
+class PosterHackinExploreColormapsTwo(WelchScene):
     def construct(self):
     
         # for cmap in ['viridis', 'plasma', 'inferno', 'magma', 'jet', 'gist_earth', 'terrain', 'turbo', 'hsv', 'Greens', 'Oranges', 'Reds', 'Blues', 'Purples', 'cool', 'nipy_spectral', 'seismic', 'rainbow', 'gist_rainbow']:
@@ -329,10 +318,10 @@ class PosterHackinExploreColormapsTwo(InteractiveScene):
 
             self.wait()
 
-            surfaces=Group()
+            surfaces=m.Group()
             surf_functions=[] #Need this later to move dot around.
-            grids=Group()
-            texts=Group()
+            grids=m.Group()
+            texts=m.Group()
             print("Loading Surfaces and Gridlines...")
             for i in tqdm(range(len(paths[:MAX_RENDERS]))): #LIMIT HERE FOR TESTING
                 if 'llama' in paths[i]: scaling=0.07
@@ -343,48 +332,48 @@ class PosterHackinExploreColormapsTwo(InteractiveScene):
 
                 surf_func=partial(param_surface_3, surf_array=loss_arrays[i], scaling=scaling, surf_mean=np.mean(loss_arrays[i]))
                 surf_functions.append(surf_func)
-                surface = ParametricSurface(
+                surface = parametric_surface(
                     surf_func,  
                     u_range=[-2.5, 2.5], #Some have different ranges, but I don't think it matters?
                     v_range=[-2.5, 2.5],
                     resolution=(512, 512),
                 )
 
-                ts2 = TexturedSurface(surface, texture_paths[i])
-                ts2.set_shading(0.0, 0.1, 0)
+                ts2 = textured_surface(surface, texture_paths[i])
+                set_surface_shading(ts2, 0.0, 0.1, 0)
                 surfaces.add(ts2)
 
                 num_lines = 64  # Number of gridlines in each direction
                 num_points = 512  # Number  of points per line
-                u_gridlines = VGroup()
-                v_gridlines = VGroup()
+                u_gridlines = m.VGroup()
+                v_gridlines = m.VGroup()
                 u_values = np.linspace(-2.5, 2.5, num_lines)
                 v_points = np.linspace(-2.5, 2.5, num_points)
                 for u in u_values:
                     points = [surf_func(u, v) for v in v_points]
-                    line = VMobject()
+                    line = m.VMobject()
                     line.set_points_smoothly(points)
-                    line.set_stroke(width=1, color=WHITE, opacity=0.15)
+                    line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
                     u_gridlines.add(line)
 
                 u_points = np.linspace(-2.5, 2.5, num_points)
                 for v in u_values:  # Using same number of lines for both directions
                     points = [surf_func(u, v) for u in u_points]
-                    line = VMobject()
+                    line = m.VMobject()
                     line.set_points_smoothly(points)
-                    line.set_stroke(width=1, color=WHITE, opacity=0.15)
+                    line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
                     v_gridlines.add(line)
-                grids.add(VGroup(u_gridlines, v_gridlines))
+                grids.add(m.VGroup(u_gridlines, v_gridlines))
 
-                t=Text(paths[i][-40:])
+                t=m.Text(paths[i][-40:])
                 t.scale(0.4)
-                t.rotate(DEGREES*180)
+                t.rotate(m.DEGREES*180)
                 t.move_to([0, 3, 0])
                 texts.add(t)
 
-            # self.frame.reorient(134, 30, 0, (0.12, 0.11, -0.15), 7.56)
-            # self.frame.reorient(132, 30, 0, (0.32, 0.4, -0.32), 6.82)
-            self.frame.reorient(132, 30, 0, (0.24, 0.27, -0.23), 7.50)
+            # self.set_view(134, 30, 0, (0.12, 0.11, -0.15), 7.56)
+            # self.set_view(132, 30, 0, (0.32, 0.4, -0.32), 6.82)
+            self.set_view(132, 30, 0, (0.24, 0.27, -0.23), 7.50)
             self.add(surfaces[0])
             self.add(grids[0])
             self.add(texts[0])
@@ -405,13 +394,13 @@ class PosterHackinExploreColormapsTwo(InteractiveScene):
 
 
 
-        # self.frame.reorient(135, 25, 0, (0.02, 0.1, -0.11), 7.56) #isometric, fiarly high
+        # self.set_view(135, 25, 0, (0.02, 0.1, -0.11), 7.56) #isometric, fiarly high
         # # self.wait()
 
-        # self.frame.reorient(137, 41, 0, (0.14, -0.04, -0.09), 6.81) #isometric, more down
+        # self.set_view(137, 41, 0, (0.14, -0.04, -0.09), 6.81) #isometric, more down
         # self.wait()
 
 
         # self.wait(20)
-        self.embed()
+        pass
 

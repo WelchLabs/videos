@@ -1,14 +1,16 @@
-from manimlib import *
+import manimgx as gx
+from welch_scene import WelchScene, image_at_height
 import numpy as np
-import tempfile, os
+from pathlib import Path
 from PIL import Image
 
 
-class P35(InteractiveScene):
+class P35(WelchScene):
     def construct(self):
 
-        img = Image.open('pre_split_im_right.png')
-        img_array = np.array(img)
+        source = Path(__file__).resolve().parent / "pre_split_im_right.png"
+        with Image.open(source) as img:
+            img_array = np.asarray(img.convert("RGBA"))
         height, width = img_array.shape[:2]
 
         grid_n = 16
@@ -17,16 +19,12 @@ class P35(InteractiveScene):
         total_height = 3.0
         patch_size = total_height / grid_n
 
-        patch_dir = tempfile.mkdtemp()
-        pixel_squares = Group()
+        pixel_squares = gx.Group()
         for i in range(grid_n):
             for j in range(grid_n):
-                patch_img = img.crop((j*patch_w, i*patch_h, (j+1)*patch_w, (i+1)*patch_h))
-                patch_path = os.path.join(patch_dir, f'patch_{i}_{j}.png')
-                patch_img.save(patch_path)
-                patch_mob = ImageMobject(patch_path)
-                patch_mob.set_height(patch_size)
-                patch_mob.set_width(patch_size, stretch=True)
+                patch = img_array[i * patch_h:(i + 1) * patch_h, j * patch_w:(j + 1) * patch_w]
+                patch_mob = image_at_height(patch, height=patch_size)
+                patch_mob.stretch_to_fit_width(patch_size)
 
                 x_pos = (j - grid_n/2 + 0.5) * patch_size
                 y_pos = -(i - grid_n/2 + 0.5) * patch_size
@@ -35,7 +33,7 @@ class P35(InteractiveScene):
                 pixel_squares.add(patch_mob)
 
         self.wait()
-        self.play(FadeIn(pixel_squares))
+        self.play(gx.FadeIn(pixel_squares))
         self.wait()
 
         animations = []
@@ -51,9 +49,7 @@ class P35(InteractiveScene):
                 unit_vector = direction_vector / distance
                 displacement = unit_vector * distance * gap_factor
                 new_position = pixel_pos + displacement
-                animations.append(ApplyMethod(pixel.move_to, new_position))
+                animations.append(pixel.animate.move_to(new_position))
 
         self.play(*animations, run_time=2)
         self.wait()
-
-        self.embed()

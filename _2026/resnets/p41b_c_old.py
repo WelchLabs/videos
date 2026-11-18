@@ -1,22 +1,16 @@
-from manimlib import *
+import manimgx as gx
+from welch_style import BLUE, CHILL_BLUE, CHILL_BROWN, CHILL_GREEN, CYAN, FRESH_TAN, GREEN, MAGENTA, YELLOW, YELLOW_FADE
+from resnet_assets import LOCAL_DATA
+from welch_scene import WelchScene
+from resnet_geometry import swap_out, viridis
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 
 # The flat companions to p37_41: no 3D stack, just the conv-5 grids and the captioned stills.
 
-CHILL_BROWN='#948979'
-YELLOW='#ffd35a'
-YELLOW_FADE='#7f6a2d'
-BLUE='#65c8d0'
-GREEN='#00a14b'
-CHILL_GREEN='#6c946f'
-CHILL_BLUE='#3d5c6f'
-FRESH_TAN='#dfd0b9'
-CYAN='#00FFFF'
-MAGENTA='#FF00FF'
 
-data_dir='/Volumes/PG Work/Stephencwelch Dropbox/Pranav Gundu/Welch Labs/videos/_2026/resnets/data'
+data_dir = str(LOCAL_DATA)
 image_dir=data_dir+'/high_activation_imagenet_images'
 #Scratch, and deliberately outside Dropbox: these are written then read back immediately,
 #and Dropbox grabs files to hash them in between, which intermittently breaks the read
@@ -26,14 +20,6 @@ seconds_per_image=1/30
 grid_size=(16, 16)
 grid_gap=2
 conv_cut=12  #conv-5
-
-viridis_lut=plt.get_cmap('viridis')(np.linspace(0, 1, 256))
-
-
-def viridis(values):
-    x=np.clip(np.asarray(values, dtype=np.float64), 0.0, 1.0)
-    idx=np.clip((x*256).astype(np.int32), 0, 255) #matplotlib bins with int(x*N), not round(x*(N-1))
-    return viridis_lut[idx]
 
 
 def image_paths():
@@ -76,43 +62,26 @@ def activation_grid(a, path):
     return path
 
 
-def swap_out(scene, mobject):
-    """Scene.remove leaves id_to_mobject_map, reference cycles and moderngl buffers behind,
-    so without this a per-frame shot leaks until the machine runs out of memory."""
-    if mobject is None:
-        return
-    scene.remove(mobject)
-    for sm in mobject.get_family():
-        scene.id_to_mobject_map.pop(id(sm), None)
-        if sm.shader_wrapper is not None:
-            sm.shader_wrapper.release() #Buffers only: the textures are shared, ctx-wide caches
-        sm.family=None
-        sm.parents.clear()
-        sm.submobjects.clear()
-        sm.data=None
-        sm.shader_wrapper=None
-
-
 def square_image(path, side):
     """Both shots stretch their image square, matching the original 512x512 resize."""
-    img=ImageMobject(path)
-    img.set_height(side, stretch=True)
-    img.set_width(side, stretch=True)
+    img=gx.ImageMobject(path)
+    img.stretch_to_fit_height(side)
+    img.stretch_to_fit_width(side)
     return img
 
 
-class P41B_C(InteractiveScene):
+class P41B_C(WelchScene):
     def construct(self):
         from PIL import Image
-        self.camera.background_rgba=[0, 0, 0, 1]
+        self.camera.background_color = gx.BLACK
         paths=image_paths()
 
         current=None
         for idx, path in enumerate(paths):
             a=activations(Image.open(path).convert('RGB'), conv_cut)
             img=square_image(activation_grid(a/a.max(), grid_dir+f'/{idx:04d}.png'),
-                             self.camera.get_frame_height())
-            img.move_to(ORIGIN)
+                             gx.config.frame_height)
+            img.move_to(gx.ORIGIN)
             swap_out(self, current)
             self.add(img)
             current=img
@@ -122,12 +91,12 @@ class P41B_C(InteractiveScene):
         for path in paths:
             #The label is the last underscore field, so bow_tie gives "tie"
             caption=os.path.splitext(os.path.basename(path))[0].split('_')[-1]
-            img=square_image(path, self.camera.get_frame_height()-1.5)
-            img.move_to(0.4*DOWN)
-            title=Text(caption, font_size=48).set_color(WHITE)
-            title.next_to(img, UP, buff=0.3)
+            img=square_image(path, gx.config.frame_height-1.5)
+            img.move_to(0.4*gx.DOWN)
+            title=gx.Text(caption, font_size=48).set_color(gx.WHITE)
+            title.next_to(img, gx.UP, buff=0.3)
 
-            group=Group(img, title)
+            group=gx.Group(img, title)
             swap_out(self, current)
             self.add(group)
             current=group

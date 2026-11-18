@@ -1,9 +1,32 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_surface import set_surface_shading
 from functools import partial
 import sys
 
 sys.path.append('_2025/backprop_3') #Point to folder where plane_folding_utils.py is
-from geometric_dl_utils import *
+import copy
+import manimgx as gx
+import numpy as np
+import torch
+from geometric_dl_utils import (
+    BaarleNet,
+    apply_viz_scale_to_3d_polygons,
+    carve_plane_with_relu_joints,
+    compute_adaptive_viz_scales,
+    find_polygon_intersections,
+    get_3d_polygons,
+    get_3d_polygons_layer_1,
+    get_polygon_corners_layer_1,
+    get_relu_intersection_planes,
+    split_polygons_with_relu,
+    surface_func_from_model,
+    viz_3d_polygons,
+    viz_carved_regions_flat,
+)
+from welch_geometry import diagram_axes_3d
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, textured_surface
 from polytope_intersection_utils import intersect_polytopes
 
 CHILL_BROWN='#948979'
@@ -16,10 +39,10 @@ CHILL_BLUE='#3d5c6f'
 FRESH_TAN='#dfd0b9'
 
 
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/graphics/' #Point to folder where map images are
-heatmaps_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/hackin/heatmaps'
+graphics_dir=welch_path('backprop_3/graphics/') #Point to folder where map images are
+heatmaps_dir=welch_path('backprop_3/hackin/heatmaps')
 
-class refactor_sketch_1(InteractiveScene):
+class refactor_sketch_1(WelchScene):
     def construct(self):
         
         #2x2
@@ -41,7 +64,7 @@ class refactor_sketch_1(InteractiveScene):
 
         vertical_spacing=1.5
         horizontal_spacing=3
-        colors = [BLUE, RED, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+        colors = [BLUE, gx.RED, GREEN, YELLOW, gx.PURPLE, gx.ORANGE, gx.PINK, gx.TEAL]
 
         adaptive_viz_scales = compute_adaptive_viz_scales(model, max_surface_height=1.0, extent=1)
         final_layer_viz=scale=2*min(adaptive_viz_scales[-1]) #little manual ramp here
@@ -52,15 +75,15 @@ class refactor_sketch_1(InteractiveScene):
         surface_funcs=[]
         surface_funcs_no_viz_scale=[]
         for layer_idx in range(len(model.model)):
-            s=Group()
+            s=gx.Group()
             surface_funcs.append([])
             surface_funcs_no_viz_scale.append([])
             for neuron_idx in range(num_neurons[layer_idx]):
                 surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=adaptive_viz_scales[layer_idx][neuron_idx])
                 surface_func_no_scaling=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=1.0) #adaptive_viz_scales[layer_idx][neuron_idx])
-                bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                ts=TexturedSurface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-                ts.set_shading(0,0,0).set_opacity(0.75)
+                bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                ts=textured_surface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+                set_surface_shading(ts, 0,0,0).set_opacity(0.75)
                 s.add(ts)
                 surface_funcs[-1].append(surface_func)
                 surface_funcs_no_viz_scale[-1].append(surface_func_no_scaling)
@@ -72,8 +95,8 @@ class refactor_sketch_1(InteractiveScene):
                 self.add(s)
 
 
-        # self.frame.reorient(0, 54, 0, (1.41, 1.82, 4.15), 15.71)
-        self.frame.reorient(0, 56, 0, (-0.06, -0.01, 1.23), 9.57)
+        # self.set_view(0, 54, 0, (1.41, 1.82, 4.15), 15.71)
+        self.set_view(0, 56, 0, (-0.06, -0.01, 1.23), 9.57)
 
 
         #Optional but kinda nice RuLu intersection planes
@@ -196,7 +219,7 @@ class refactor_sketch_1(InteractiveScene):
             hyperspace_polygons.append(np.array(hyperspace_polygon))
 
 
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             x_range=[-8, 8, 1],
             y_range=[-8, 8, 1],
             z_range=[-8, 8, 1],
@@ -215,14 +238,14 @@ class refactor_sketch_1(InteractiveScene):
         axes_1.move_to([0*horizontal_spacing, 0, 6])
         self.add(axes_1)
 
-        polygons_activation_space_1=VGroup()
+        polygons_activation_space_1=gx.VGroup()
         for j, polygon in enumerate(hyperspace_polygons):
             color = colors[j%len(colors)]
             pts=[]
             for pt in polygon:
                 #For the 3d case:
                 pts.append(axes_1.c2p(pt[2], pt[3], pt[4]))
-            poly_3d=Polygon(*pts, fill_color=color, fill_opacity=0.7, stroke_color=color, stroke_width=2)
+            poly_3d=gx.Polygon(*pts, fill_color=color, fill_opacity=0.7, stroke_color=color, stroke_width=2)
             poly_3d.set_opacity(0.3)
             polygons_activation_space_1.add(poly_3d)
 
@@ -269,7 +292,7 @@ class refactor_sketch_1(InteractiveScene):
             hyperspace_polygons.append(np.array(hyperspace_polygon))
 
 
-        axes_2 = ThreeDAxes(
+        axes_2 = diagram_axes_3d(
             x_range=[-4, 4, 1],
             y_range=[-4, 4, 1],
             z_range=[-4, 4, 1],
@@ -288,14 +311,14 @@ class refactor_sketch_1(InteractiveScene):
         axes_2.move_to([horizontal_spacing, 0, 6])
         self.add(axes_2)
 
-        polygons_activation_space_2=VGroup()
+        polygons_activation_space_2=gx.VGroup()
         for j, polygon in enumerate(hyperspace_polygons):
             color = colors[j%len(colors)]
             pts=[]
             for pt in polygon:
                 #For the 2d case:
                 pts.append(axes_2.c2p(pt[2], pt[3], pt[4]))
-            poly_3d=Polygon(*pts, fill_color=color, fill_opacity=0.7, stroke_color=color, stroke_width=2)
+            poly_3d=gx.Polygon(*pts, fill_color=color, fill_opacity=0.7, stroke_color=color, stroke_width=2)
             poly_3d.set_opacity(0.9)
             polygons_activation_space_2.add(poly_3d)
 
@@ -324,7 +347,7 @@ class refactor_sketch_1(InteractiveScene):
             hyperspace_polygons.append(np.array(hyperspace_polygon))
 
 
-        axes_3 = ThreeDAxes(
+        axes_3 = diagram_axes_3d(
             x_range=[-4, 4, 1],
             y_range=[-4, 4, 1],
             z_range=[-4, 4, 1],
@@ -343,14 +366,14 @@ class refactor_sketch_1(InteractiveScene):
         axes_3.move_to([2*horizontal_spacing, 0, 5])
         self.add(axes_3)
 
-        polygons_activation_space_3=VGroup()
+        polygons_activation_space_3=gx.VGroup()
         for j, polygon in enumerate(hyperspace_polygons):
             color = colors[j%len(colors)]
             pts=[]
             for pt in polygon:
                 #For the 2d case:
                 pts.append(axes_3.c2p(pt[2], pt[3], 0))
-            poly_3d=Polygon(*pts, fill_color=color, fill_opacity=0.7, stroke_color=color, stroke_width=2)
+            poly_3d=gx.Polygon(*pts, fill_color=color, fill_opacity=0.7, stroke_color=color, stroke_width=2)
             poly_3d.set_opacity(0.9)
             polygons_activation_space_3.add(poly_3d)
 
@@ -362,7 +385,7 @@ class refactor_sketch_1(InteractiveScene):
 
 
         self.wait()
-        self.embed()
+        pass
 
 
 

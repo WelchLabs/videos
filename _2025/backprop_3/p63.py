@@ -1,12 +1,31 @@
+from welch_paths import welch_path
 from functools import partial
 import sys
 
 sys.path.append('_2025/backprop_3') #Point to folder where plane_folding_utils.py is
-from geometric_dl_utils import *
-from plane_folding_utils import *
-from geometric_dl_utils_simplified import *
+import copy
+import manimgx as gx
+import numpy as np
+import torch
+from geometric_dl_utils import (
+    BaarleNet,
+    compute_adaptive_viz_scales,
+    manim_polygons_from_np_list,
+    surface_func_from_model,
+)
+from geometric_dl_utils_simplified import (
+    clip_polygons,
+    compute_top_polytope,
+    merge_zero_regions,
+    process_with_layers,
+    recompute_tiling_polygonize,
+    split_polygons_with_relu_simple,
+)
+from plane_folding_utils import get_relu_joint, line_from_joint_points_1
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, textured_surface
 from polytope_intersection_utils import intersect_polytopes
-from manimlib import *
+from welch_surface import set_surface_shading
 from tqdm import tqdm
 from order_matching_tools import reorder_polygons_optimal, reorder_polygons_greedy
 
@@ -20,8 +39,8 @@ CHILL_BLUE='#3d5c6f'
 FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/graphics/' #Point to folder where map images are
-colors = [BLUE, GREY, GREEN, TEAL, PURPLE, PINK, TEAL, YELLOW, FRESH_TAN, CHILL_BLUE, CHILL_GREEN, YELLOW_FADE]
+graphics_dir=welch_path('backprop_3/graphics/') #Point to folder where map images are
+colors = [BLUE, gx.GREY, GREEN, gx.TEAL, gx.PURPLE, gx.PINK, gx.TEAL, YELLOW, FRESH_TAN, CHILL_BLUE, CHILL_GREEN, YELLOW_FADE]
 # colors = [GREY, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
 
 def create_first_layer_relu_groups(model, surfaces, num_neurons_first_layer=8, extent=1, vertical_spacing=0.9):
@@ -46,7 +65,7 @@ def create_first_layer_relu_groups(model, surfaces, num_neurons_first_layer=8, e
         b1 = model.model[0].bias.cpu().numpy()    # Shape: [num_neurons]
     
     # Create the main group to hold all neuron groups
-    all_relu_groups = Group()
+    all_relu_groups = gx.Group()
     
     # Calculate total height needed for centering
     total_height = (num_neurons_first_layer - 1) * vertical_spacing
@@ -60,9 +79,9 @@ def create_first_layer_relu_groups(model, surfaces, num_neurons_first_layer=8, e
         joint_line = line_from_joint_points_1(joint_points)
         if joint_line is not None: 
             joint_line.set_opacity(0.9)
-            neuron_group = Group(surfaces[1][neuron_idx], joint_line)
+            neuron_group = gx.Group(surfaces[1][neuron_idx], joint_line)
         else:
-            neuron_group = Group(surfaces[1][neuron_idx])
+            neuron_group = gx.Group(surfaces[1][neuron_idx])
         
         # Position the group vertically
         z_position = start_z - neuron_idx * vertical_spacing
@@ -74,7 +93,7 @@ def create_first_layer_relu_groups(model, surfaces, num_neurons_first_layer=8, e
     return all_relu_groups
 
 
-class p63(InteractiveScene):
+class p63(WelchScene):
     '''
     Ok no need for animating this one, right? And just the flat panels and one 3d view right??
     '''
@@ -111,13 +130,13 @@ class p63(InteractiveScene):
         surfaces=[]
         surface_funcs=[]
         for layer_idx in range(len(model.model)):
-            s=Group()
+            s=gx.Group()
             surface_funcs.append([])
             for neuron_idx in range(num_neurons[layer_idx]):
                 surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=adaptive_viz_scales[layer_idx][neuron_idx]) #viz_scales[layer_idx])
-                bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                ts=TexturedSurface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
-                ts.set_shading(0,0,0).set_opacity(0.8)
+                bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                ts=textured_surface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
+                set_surface_shading(ts, 0,0,0).set_opacity(0.8)
                 s.add(ts)
                 surface_funcs[-1].append(surface_func)
             surfaces.append(s)
@@ -179,7 +198,7 @@ class p63(InteractiveScene):
 
 
         #Outputs surfaces
-        groups_output=Group()
+        groups_output=gx.Group()
         layer_idx=len(model.model)-1
         total_height = (num_neurons[layer_idx] - 1) * vertical_spacing
         start_z = total_height / 2  # Start from top
@@ -187,7 +206,7 @@ class p63(InteractiveScene):
             # split_polygons_unraveled=[item for sublist in polygons['1.split_polygons_merged'][neuron_idx] for item in sublist]
             pgs=manim_polygons_from_np_list(polygons['3.linear_out'][neuron_idx], colors=colors, viz_scale=adaptive_viz_scales[layer_idx][neuron_idx], opacity=0.6)
             s=surfaces[layer_idx][neuron_idx]
-            g=Group(s, pgs) 
+            g=gx.Group(s, pgs)
             groups_output.add(g)
 
 
@@ -196,14 +215,14 @@ class p63(InteractiveScene):
         group_combined_output[0].set_color(BLUE)
         group_combined_output[1].set_color(YELLOW)
 
-        top_polygons_vgroup=VGroup()
+        top_polygons_vgroup=gx.VGroup()
         for j, p in enumerate(my_top_polygons):
             if len(p)<3: continue
             if my_indicator[j]: color=YELLOW
             else: color=BLUE
             p_scaled=copy.deepcopy(p) #Scaling for viz
             p_scaled[:,2]=p_scaled[:,2]*adaptive_viz_scales[-1][0] #Flatten that shit!
-            poly_3d = Polygon(*p_scaled,
+            poly_3d = gx.Polygon(*p_scaled,
                              fill_color=color,
                              fill_opacity=0.4,
                              stroke_color=color,
@@ -211,22 +230,22 @@ class p63(InteractiveScene):
             poly_3d.set_opacity(0.5)
             top_polygons_vgroup.add(poly_3d)
 
-        lines=VGroup()
+        lines=gx.VGroup()
         for loop in intersection_lines: 
             loop=loop*np.array([1, 1, viz_scales[2]])
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(loop)
             line.set_stroke(color='#FF00FF', width=4)
             lines.add(line)
 
-        top_polygons_vgroup_flat=VGroup()
+        top_polygons_vgroup_flat=gx.VGroup()
         for j, p in enumerate(my_top_polygons):
             if len(p)<3: continue
             if my_indicator[j]: color=YELLOW
             else: color=BLUE
             p_scaled=copy.deepcopy(p) #Scaling for viz
             p_scaled[:,2]=0 #p_scaled[:,2]*viz_scales[2] #Flatten that shit!
-            poly_3d = Polygon(*p_scaled,
+            poly_3d = gx.Polygon(*p_scaled,
                              fill_color=color,
                              fill_opacity=0.4,
                              stroke_color=color,
@@ -235,21 +254,21 @@ class p63(InteractiveScene):
             top_polygons_vgroup_flat.add(poly_3d)
 
         def flat_surf_func(u, v): return [u, v, 0]
-        flat_map_surf = ParametricSurface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        flat_map_2=TexturedSurface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
-        flat_map_2.set_shading(0,0,0).set_opacity(0.8)
+        flat_map_surf = parametric_surface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        flat_map_2=textured_surface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
+        set_surface_shading(flat_map_2, 0,0,0).set_opacity(0.8)
 
-        lines_flat=VGroup()
+        lines_flat=gx.VGroup()
         for loop in intersection_lines: 
             # loop=np.hstack((loop, np.zeros((len(loop), 1))))
             loop[:,2]=0
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(loop)
             line.set_stroke(color='#FF00FF', width=10)
             lines_flat.add(line)    
 
         group_combined_output.set_opacity(0.3)
-        final_map_group=Group(flat_map_2, top_polygons_vgroup_flat, lines_flat)
+        final_map_group=gx.Group(flat_map_2, top_polygons_vgroup_flat, lines_flat)
 
         layer_1_polygons_flat.shift([ 0.,  2., -5.])                                                                                                                                                       
         layer_2_polygons_flat.shift([ 2.35 , 2.,   -5.  ])                                                                                                                                                
@@ -258,8 +277,8 @@ class p63(InteractiveScene):
 
 
         self.wait()
-        # self.frame.reorient(0, 0, 0, (3.94, 0.38, 0.0), 2.04) #Could do a nice zoom in animation from not sure if it's worth it or not
-        self.frame.reorient(0, 0, 0, (3.07, 0.82, 0.0), 0.77)
+        # self.set_view(0, 0, 0, (3.94, 0.38, 0.0), 2.04) #Could do a nice zoom in animation from not sure if it's worth it or not
+        self.set_view(0, 0, 0, (3.07, 0.82, 0.0), 0.77)
         self.add(layer_1_polygons_flat)
         self.add(layer_2_polygons_flat)
         self.add(layer_3_polygons_flat)
@@ -275,9 +294,9 @@ class p63(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass
 
-class p63b(InteractiveScene):
+class p63b(WelchScene):
     '''
     3d version, maybe add a little "rotation around" action that I can use
     '''
@@ -314,13 +333,13 @@ class p63b(InteractiveScene):
         surfaces=[]
         surface_funcs=[]
         for layer_idx in range(len(model.model)):
-            s=Group()
+            s=gx.Group()
             surface_funcs.append([])
             for neuron_idx in range(num_neurons[layer_idx]):
                 surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=adaptive_viz_scales[-1][0]) #viz_scales[layer_idx])
-                bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                ts=TexturedSurface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
-                ts.set_shading(0,0,0).set_opacity(0.8)
+                bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                ts=textured_surface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
+                set_surface_shading(ts, 0,0,0).set_opacity(0.8)
                 s.add(ts)
                 surface_funcs[-1].append(surface_func)
             surfaces.append(s)
@@ -382,7 +401,7 @@ class p63b(InteractiveScene):
 
 
         #Outputs surfaces
-        groups_output=Group()
+        groups_output=gx.Group()
         layer_idx=len(model.model)-1
         total_height = (num_neurons[layer_idx] - 1) * vertical_spacing
         start_z = total_height / 2  # Start from top
@@ -390,7 +409,7 @@ class p63b(InteractiveScene):
             # split_polygons_unraveled=[item for sublist in polygons['1.split_polygons_merged'][neuron_idx] for item in sublist]
             pgs=manim_polygons_from_np_list(polygons['3.linear_out'][neuron_idx], colors=colors, viz_scale=adaptive_viz_scales[-1][0], opacity=0.6)
             s=surfaces[layer_idx][neuron_idx]
-            g=Group(s, pgs) 
+            g=gx.Group(s, pgs)
             groups_output.add(g)
 
 
@@ -399,14 +418,14 @@ class p63b(InteractiveScene):
         group_combined_output[0].set_color(BLUE)
         group_combined_output[1].set_color(YELLOW)
 
-        top_polygons_vgroup=VGroup()
+        top_polygons_vgroup=gx.VGroup()
         for j, p in enumerate(my_top_polygons):
             if len(p)<3: continue
             if my_indicator[j]: color=YELLOW
             else: color=BLUE
             p_scaled=copy.deepcopy(p) #Scaling for viz
             p_scaled[:,2]=p_scaled[:,2]*adaptive_viz_scales[-1][0] 
-            poly_3d = Polygon(*p_scaled,
+            poly_3d = gx.Polygon(*p_scaled,
                              fill_color=color,
                              fill_opacity=0.4,
                              stroke_color=color,
@@ -414,22 +433,22 @@ class p63b(InteractiveScene):
             poly_3d.set_opacity(0.5)
             top_polygons_vgroup.add(poly_3d)
 
-        lines=VGroup()
+        lines=gx.VGroup()
         for loop in intersection_lines: 
             loop=loop*np.array([1, 1, adaptive_viz_scales[-1][0]])
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(loop)
             line.set_stroke(color='#FF00FF', width=4)
             lines.add(line)
 
-        top_polygons_vgroup_flat=VGroup()
+        top_polygons_vgroup_flat=gx.VGroup()
         for j, p in enumerate(my_top_polygons):
             if len(p)<3: continue
             if my_indicator[j]: color=YELLOW
             else: color=BLUE
             p_scaled=copy.deepcopy(p) #Scaling for viz
             p_scaled[:,2]=0 #p_scaled[:,2]*viz_scales[2] #Flatten that shit!
-            poly_3d = Polygon(*p_scaled,
+            poly_3d = gx.Polygon(*p_scaled,
                              fill_color=color,
                              fill_opacity=0.4,
                              stroke_color=color,
@@ -438,21 +457,21 @@ class p63b(InteractiveScene):
             top_polygons_vgroup_flat.add(poly_3d)
 
         def flat_surf_func(u, v): return [u, v, 0]
-        flat_map_surf = ParametricSurface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        flat_map_2=TexturedSurface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
-        flat_map_2.set_shading(0,0,0).set_opacity(0.8)
+        flat_map_surf = parametric_surface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        flat_map_2=textured_surface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-17.png')
+        set_surface_shading(flat_map_2, 0,0,0).set_opacity(0.8)
 
-        lines_flat=VGroup()
+        lines_flat=gx.VGroup()
         for loop in intersection_lines: 
             # loop=np.hstack((loop, np.zeros((len(loop), 1))))
             loop[:,2]=0
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(loop)
             line.set_stroke(color='#FF00FF', width=8)
             lines_flat.add(line)    
 
         group_combined_output.set_opacity(0.3)
-        final_map_group=Group(flat_map_2, top_polygons_vgroup_flat, lines_flat)
+        final_map_group=gx.Group(flat_map_2, top_polygons_vgroup_flat, lines_flat)
 
         # layer_1_polygons_flat.shift([ 0.,  2., -5.])                                                                                                                                                       
         # layer_2_polygons_flat.shift([ 2.35 , 2.,   -5.  ])                                                                                                                                                
@@ -467,15 +486,15 @@ class p63b(InteractiveScene):
         
         # self.remove(group_combined_output)
 
-        combined_3d_group=Group(group_combined_output, top_polygons_vgroup, lines)
+        combined_3d_group=gx.Group(group_combined_output, top_polygons_vgroup, lines)
 
 
         self.wait()
         self.add(combined_3d_group)
 
-        self.frame.reorient(-46, 60, 0, (-0.05, -0.03, -0.3), 3.23)
+        self.set_view(-46, 60, 0, (-0.05, -0.03, -0.3), 3.23)
         self.wait()
-        self.play(self.frame.animate.reorient(20, 44, 0, (-0.01, -0.1, -0.38), 3.23), run_time=10) #optional slow pan around that I can usssse
+        self.play(self.animate_view(20, 44, 0, (-0.01, -0.1, -0.38), 3.23), run_time=10) #optional slow pan around that I can usssse
         self.wait()
 
 
@@ -484,8 +503,8 @@ class p63b(InteractiveScene):
 
 
 
-        # self.frame.reorient(0, 0, 0, (3.94, 0.38, 0.0), 2.04) #Could do a nice zoom in animation from not sure if it's worth it or not
-        # self.frame.reorient(0, 0, 0, (3.07, 0.82, 0.0), 0.77)
+        # self.set_view(0, 0, 0, (3.94, 0.38, 0.0), 2.04) #Could do a nice zoom in animation from not sure if it's worth it or not
+        # self.set_view(0, 0, 0, (3.07, 0.82, 0.0), 0.77)
         # self.add(layer_1_polygons_flat)
         # self.add(layer_2_polygons_flat)
         # self.add(layer_3_polygons_flat)
@@ -502,7 +521,7 @@ class p63b(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 

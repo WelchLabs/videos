@@ -1,4 +1,7 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+import numpy as np
+from welch_scene import WelchScene, image_at_height
 from tqdm import tqdm
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -38,14 +41,14 @@ def color_keyboard(action, keyboard_fill_svg):
         keyboard_fill_svg[1].set_opacity(0.0)
         keyboard_fill_svg[3].set_opacity(0.0)     
 
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/p67_76_to_manim')
-img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics'
-push_t_dir_1='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/hackin/push_t_episodes'
-hackin_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/hackin'
+svg_dir=Path(welch_path('jepa_2/graphics/p67_76_to_manim'))
+img_dir=welch_path('jepa_2/graphics')
+push_t_dir_1=welch_path('jepa_2/hackin/push_t_episodes')
+hackin_dir=welch_path('jepa_2/hackin')
 
 
 
-class p75b(InteractiveScene):
+class p75b(WelchScene):
     def construct(self):
 
         num_paths_to_render=500 ## 500 for full redner
@@ -54,16 +57,16 @@ class p75b(InteractiveScene):
 
         svgs_to_skip=[0]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(4.0)
             all_svgs.add(svg_image[1:])
 
-        start_im=ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5/start_img.png')
-        goal_im=ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5/goal_img_ps.png')
-        goal_im_with_border=ImageMobject(img_dir+'/goal_img_with_border.png')
+        start_im=image_at_height(hackin_dir+'/p75b/ep2167_off25_h5/start_img.png')
+        goal_im=image_at_height(hackin_dir+'/p75b/ep2167_off25_h5/goal_img_ps.png')
+        goal_im_with_border=image_at_height(img_dir+'/goal_img_with_border.png')
 
 
 
@@ -78,10 +81,10 @@ class p75b(InteractiveScene):
 
 
         self.wait()
-        self.play(Write(all_svgs[14]), run_time=3)
+        self.play(gx.Write(all_svgs[14]), run_time=3)
 
         self.wait()
-        self.play(FadeIn(all_svgs[15]), FadeIn(all_svgs[16]), run_time=3)
+        self.play(gx.FadeIn(all_svgs[15]), gx.FadeIn(all_svgs[16]), run_time=3)
         self.add(start_im, goal_im)
         self.add(all_svgs[15], all_svgs[16])
 
@@ -101,8 +104,8 @@ class p75b(InteractiveScene):
         # raw_vars (30, 1, 5, 10)  
 
         # Map 512-space (origin lower-left) to scene coords using start_im's bounds
-        ll = start_im.get_corner(DL)
-        ur = start_im.get_corner(UR)
+        ll = start_im.get_corner(gx.DL)
+        ur = start_im.get_corner(gx.UR)
         im_w = ur[0] - ll[0]
         im_h = ur[1] - ll[1]
 
@@ -165,9 +168,9 @@ class p75b(InteractiveScene):
             all_full_pts.append(scene_pts)
 
         # 2. Build path lines as degenerate (start->start) so they're invisible at t=0.
-        all_path_lines = VGroup()
+        all_path_lines = gx.VGroup()
         for full_pts in all_full_pts:
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners([full_pts[0], full_pts[0]])
             line.set_stroke(MAGENTA, width=2.0, opacity=0.2)
             all_path_lines.add(line)
@@ -179,7 +182,7 @@ class p75b(InteractiveScene):
         # start_im.set_opacity(0.15)
         self.play(start_im.animate.set_opacity(0.1),
                   all_svgs[15].animate.set_opacity(0.1),
-                  self.frame.animate.reorient(0, 0, 0, (-4.79, -1.12, 0.0), 3.10),
+                  self.animate_view(0, 0, 0, (-4.79, -1.12, 0.0), 3.10),
                   run_time=5)
 
         # 4. Grow one step at a time.
@@ -201,11 +204,11 @@ class p75b(InteractiveScene):
         path_with_start = np.concatenate([agent_xy_img[None], path], axis=0)  # (26, 2)
         scene_pts = [path_to_scene(p) for p in path_with_start]
 
-        path_line = VMobject()
+        path_line = gx.VMobject()
         path_line.set_points_as_corners(scene_pts)
         path_line.set_stroke(YELLOW, width=4)
 
-        path_dots = Group(*[Dot(p, radius=0.022, color=YELLOW) for p in scene_pts])
+        path_dots = gx.Group(*[gx.Dot(p, radius=0.022, color=YELLOW) for p in scene_pts])
         path_dots.set_color(YELLOW)
         # self.add(path_line) #, path_dots)
         # self.add(path_dots)
@@ -213,24 +216,24 @@ class p75b(InteractiveScene):
         # all_path_lines.set_stroke(opacity=0.05)
         self.wait()
         self.play(all_path_lines.animate.set_stroke(opacity=0.05), 
-                  self.frame.animate.reorient(0, 0, 0, (-4.35, -1.36, 0.0), 0.93),
-                  FadeIn(path_line),
-                  FadeIn(path_dots[0]),
+                  self.animate_view(0, 0, 0, (-4.35, -1.36, 0.0), 0.93),
+                  gx.FadeIn(path_line),
+                  gx.FadeIn(path_dots[0]),
                   run_time=6)
 
         # self.wait()
-        # self.play(#self.frame.animate.reorient(0, 0, 0, (-3.66, -0.93, 0.0), 1.83),
-        #           self.frame.animate.reorient(0, 0, 0, (-4.35, -1.36, 0.0), 0.93),
+        # self.play(#self.animate_view(0, 0, 0, (-3.66, -0.93, 0.0), 1.83),
+        #           self.animate_view(0, 0, 0, (-4.35, -1.36, 0.0), 0.93),
         #           FadeIn(path_dots[0]),
         #           run_time=5)
 
         self.wait()
         #Dot moves along path actually? Micky mouse style?
-        self.play(ReplacementTransform(path_dots[0].copy(), path_dots[1]))
-        self.play(ReplacementTransform(path_dots[1], path_dots[2]))
-        self.play(ReplacementTransform(path_dots[2], path_dots[3]))
-        self.play(ReplacementTransform(path_dots[3], path_dots[4]))
-        self.play(ReplacementTransform(path_dots[4], path_dots[5]))
+        self.play(gx.ReplacementTransform(path_dots[0].copy(), path_dots[1]))
+        self.play(gx.ReplacementTransform(path_dots[1], path_dots[2]))
+        self.play(gx.ReplacementTransform(path_dots[2], path_dots[3]))
+        self.play(gx.ReplacementTransform(path_dots[3], path_dots[4]))
+        self.play(gx.ReplacementTransform(path_dots[4], path_dots[5]))
 
         # use this framing to draw the prediction steps on to of, 
         # then I can zoom in how ever I want. 
@@ -239,14 +242,14 @@ class p75b(InteractiveScene):
         # self.add(path_dots[20])
         # self.add(path_dots[25])
 
-        rollout_ims_1=Group()
+        rollout_ims_1=gx.Group()
         for i in range(6):
-            rollout_ims_1.add(ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5/wm_rollouts/iter_000/sample_002/frame_'+str(i).zfill(2)+'.png'))
+            rollout_ims_1.add(image_at_height(hackin_dir+'/p75b/ep2167_off25_h5/wm_rollouts/iter_000/sample_002/frame_'+str(i).zfill(2)+'.png'))
 
         for r in rollout_ims_1:
             r.scale(0.105)
 
-        # self.frame.reorient(0, 0, 0, (-3.11, -0.83, 0.0), 2.35)
+        # self.set_view(0, 0, 0, (-3.11, -0.83, 0.0), 2.35)
 
         # rollout_ims_1.scale(0.105)
         rollout_ims_1[0].move_to([-4.855, -0.706, 0])
@@ -258,7 +261,7 @@ class p75b(InteractiveScene):
 
         # self.add(rollout_ims_1)
 
-        rollout_group=Group(*[all_svgs[i] for i in [17, 18, 19, 20, 21, 22, 23, 24, 25, 26]])
+        rollout_group=gx.Group(*[all_svgs[i] for i in [17, 18, 19, 20, 21, 22, 23, 24, 25, 26]])
 
         rollout_group[1].set_opacity(0.15)
         rollout_group[3].set_opacity(0.4)
@@ -272,46 +275,46 @@ class p75b(InteractiveScene):
 
         self.wait()
         # frame border must stay on top throughout the fade (else it occludes then pops)
-        self.play(FadeIn(rollout_group[1]),
-                  self.frame.animate.reorient(0, 0, 0, (-3.55, -0.85, 0.0), 1.87),
-                  FadeIn(rollout_ims_1[0]),
-                  FadeIn(rollout_ims_1[1]),
-                  FadeIn(rollout_group[0]),
+        self.play(gx.FadeIn(rollout_group[1]),
+                  self.animate_view(0, 0, 0, (-3.55, -0.85, 0.0), 1.87),
+                  gx.FadeIn(rollout_ims_1[0]),
+                  gx.FadeIn(rollout_ims_1[1]),
+                  gx.FadeIn(rollout_group[0]),
                   run_time=5)
 
         self.wait()
-        self.play(FadeIn(path_dots[10]),
-                  FadeIn(rollout_group[3]),
-                  FadeIn(rollout_ims_1[2]),
-                  FadeIn(rollout_group[2]),
+        self.play(gx.FadeIn(path_dots[10]),
+                  gx.FadeIn(rollout_group[3]),
+                  gx.FadeIn(rollout_ims_1[2]),
+                  gx.FadeIn(rollout_group[2]),
                   run_time=4)
 
         self.wait()
-        self.play(FadeIn(path_dots[15]),
-                  FadeIn(rollout_group[5]),
-                  FadeIn(rollout_ims_1[3]),
-                  FadeIn(rollout_group[4]),
+        self.play(gx.FadeIn(path_dots[15]),
+                  gx.FadeIn(rollout_group[5]),
+                  gx.FadeIn(rollout_ims_1[3]),
+                  gx.FadeIn(rollout_group[4]),
                   run_time=4)
 
         self.wait()
-        self.play(FadeIn(path_dots[20]),
-                  FadeIn(rollout_group[7]),
-                  FadeIn(rollout_ims_1[4]),
-                  self.frame.animate.reorient(0, 0, 0, (-3.46, -0.83, 0.0), 1.95),
-                  FadeIn(rollout_group[6]),
+        self.play(gx.FadeIn(path_dots[20]),
+                  gx.FadeIn(rollout_group[7]),
+                  gx.FadeIn(rollout_ims_1[4]),
+                  self.animate_view(0, 0, 0, (-3.46, -0.83, 0.0), 1.95),
+                  gx.FadeIn(rollout_group[6]),
                   run_time=4)
 
         self.wait()
-        self.play(FadeIn(path_dots[25]),
-                  FadeIn(rollout_group[9]),
-                  FadeIn(rollout_ims_1[5]),
-                  self.frame.animate.reorient(0, 0, 0, (-3.11, -0.81, 0.0), 2.38),
-                  FadeIn(rollout_group[8]),
+        self.play(gx.FadeIn(path_dots[25]),
+                  gx.FadeIn(rollout_group[9]),
+                  gx.FadeIn(rollout_ims_1[5]),
+                  self.animate_view(0, 0, 0, (-3.11, -0.81, 0.0), 2.38),
+                  gx.FadeIn(rollout_group[8]),
                   run_time=4)
 
         #Zoom in on final positions
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (-1.32, -0.69, 0.0), 0.69), run_time=5)
+        self.play(self.animate_view(0, 0, 0, (-1.32, -0.69, 0.0), 0.69), run_time=5)
 
 
 
@@ -323,26 +326,26 @@ class p75b(InteractiveScene):
         self.remove(all_svgs[16][-1])
         self.add(goal_im_with_border)
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (0.28, 0.25, 0.0), 7.68), run_time=6)
+        self.play(self.animate_view(0, 0, 0, (0.28, 0.25, 0.0), 7.68), run_time=6)
 
 
-        goal_frame_group=Group(goal_im_with_border, all_svgs[16][:-1].copy()) #Group(all_svgs[16], goal_im)
-        distance_compare_group=Group(all_svgs[27], all_svgs[28], all_svgs[29])
+        goal_frame_group=gx.Group(goal_im_with_border, all_svgs[16][:-1].copy()) #Group(all_svgs[16], goal_im)
+        distance_compare_group=gx.Group(all_svgs[27], all_svgs[28], all_svgs[29])
         distance_compare_group.scale(0.137)
         distance_compare_group.move_to([-1.03, -0.47, 0])
 
         self.wait()
         self.play(goal_frame_group.animate.scale(0.075).move_to([-0.75, -0.72, 0]),
-                  self.frame.animate.reorient(0, 0, 0, (-0.98, -0.47, 0.0), 1.10),
+                  self.animate_view(0, 0, 0, (-0.98, -0.47, 0.0), 1.10),
                   run_time=5
             )
         # self.remove(all_svgs[16]); self.add(all_svgs[16])
-        self.play(Write(distance_compare_group[0]), 
-                  Write(distance_compare_group[1]), 
+        self.play(gx.Write(distance_compare_group[0]),
+                  gx.Write(distance_compare_group[1]),
                   run_time=4)
 
         self.wait()
-        self.play(Write(distance_compare_group[2]),run_time=3) 
+        self.play(gx.Write(distance_compare_group[2]),run_time=3)
 
         # goal_frame_group.scale(0.075)
         # goal_frame_group.move_to([-0.75, -0.72, 0])
@@ -352,15 +355,15 @@ class p75b(InteractiveScene):
         # When we get the best bath, just show rollout images
         # not full network etc 
 
-        group_to_remove=Group(rollout_group, distance_compare_group, rollout_ims_1, goal_frame_group, 
+        group_to_remove=gx.Group(rollout_group, distance_compare_group, rollout_ims_1, goal_frame_group,
                               path_dots[0], path_dots[5], path_dots[10], path_dots[15], path_dots[20], path_dots[25], 
                               path_line)
 
         # self.remove(group_to_remove)
         self.wait()
         self.play(#FadeOut(group_to_remove), 
-                  # self.frame.animate.reorient(0, 0, 0, (-2.79, -1.02, 0.0), 3.58),
-                  self.frame.animate.reorient(0, 0, 0, (-4.81, -1.02, 0.0), 2.66),
+                  # self.animate_view(0, 0, 0, (-2.79, -1.02, 0.0), 3.58),
+                  self.animate_view(0, 0, 0, (-4.81, -1.02, 0.0), 2.66),
                   all_path_lines.animate.set_stroke(opacity=0.2),
                   start_im.animate.set_opacity(0.25),
                   all_svgs[15].animate.set_opacity(0.2),
@@ -420,25 +423,25 @@ class p75b(InteractiveScene):
         path_with_start = np.concatenate([agent_xy_img[None], path], axis=0)  # (26, 2)
         scene_pts_best_0 = [path_to_scene(p) for p in path_with_start]
 
-        path_dots_best_0 = Group(*[Dot(p, radius=0.022, color=YELLOW) for p in scene_pts_best_0])
+        path_dots_best_0 = gx.Group(*[gx.Dot(p, radius=0.022, color=YELLOW) for p in scene_pts_best_0])
         path_dots_best_0.set_color(YELLOW)
 
 
         self.wait()
         self.play(all_path_lines[:-1].animate.set_stroke(opacity=0.08),
-                  FadeIn(path_dots_best_0[0]),
-                  FadeIn(path_dots_best_0[5]),
-                  FadeIn(path_dots_best_0[10]),
-                  FadeIn(path_dots_best_0[15]),
-                  FadeIn(path_dots_best_0[20]),
-                  FadeIn(path_dots_best_0[25]),
+                  gx.FadeIn(path_dots_best_0[0]),
+                  gx.FadeIn(path_dots_best_0[5]),
+                  gx.FadeIn(path_dots_best_0[10]),
+                  gx.FadeIn(path_dots_best_0[15]),
+                  gx.FadeIn(path_dots_best_0[20]),
+                  gx.FadeIn(path_dots_best_0[25]),
                   run_time=5)
         self.add(all_path_lines[-1])
 
 
-        best_rollout_0=Group()
+        best_rollout_0=gx.Group()
         for i in range(6):
-            best_rollout_0.add(ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5/wm_rollouts/iter_000/best/frame_'+str(i).zfill(2)+'.png'))
+            best_rollout_0.add(image_at_height(hackin_dir+'/p75b/ep2167_off25_h5/wm_rollouts/iter_000/best/frame_'+str(i).zfill(2)+'.png'))
 
         for o in best_rollout_0:
             o.scale(0.18)
@@ -454,9 +457,9 @@ class p75b(InteractiveScene):
         all_svgs[30].move_to([-4.83, -1.09, 0])
 
         self.wait()
-        self.play(FadeIn(best_rollout_0), 
-                  FadeIn(all_svgs[30]), 
-                  self.frame.animate.reorient(0, 0, 0, (-4.75, -1.11, 0.0), 2.66), 
+        self.play(gx.FadeIn(best_rollout_0),
+                  gx.FadeIn(all_svgs[30]),
+                  self.animate_view(0, 0, 0, (-4.75, -1.11, 0.0), 2.66),
                   run_time=4)
         self.add(all_svgs[30])
 
@@ -503,9 +506,9 @@ class p75b(InteractiveScene):
         opacities_1    = [opacities_1[i]    for i in order_1]
 
         # 4. Build lines degenerate but already colored
-        all_path_lines_1 = VGroup()
+        all_path_lines_1 = gx.VGroup()
         for full_pts, hc, op in zip(all_full_pts_1, path_hex_1, opacities_1):
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners([full_pts[0], full_pts[0]])
             line.set_stroke(color=hc, width=2.0, opacity=op)
             all_path_lines_1.add(line)
@@ -562,9 +565,9 @@ class p75b(InteractiveScene):
             opacities_k    = [opacities_k[i]    for i in order_k]
 
             # 4. Build degenerate, already-colored lines
-            all_path_lines_k = VGroup()
+            all_path_lines_k = gx.VGroup()
             for full_pts, hc, op in zip(all_full_pts_k, path_hex_k, opacities_k):
-                line = VMobject()
+                line = gx.VMobject()
                 line.set_points_as_corners([full_pts[0], full_pts[0]])
                 line.set_stroke(color=hc, width=2.0, opacity=op)
                 all_path_lines_k.add(line)
@@ -601,19 +604,19 @@ class p75b(InteractiveScene):
         agent_path_224 = rollout['states'][:, :2] * SCALE_512_TO_224   # (26, 2)
         final_scene_pts = [path_to_scene(p) for p in agent_path_224]
 
-        final_path_line = VMobject()
+        final_path_line = gx.VMobject()
         final_path_line.set_points_as_corners(final_scene_pts)
         final_path_line.set_stroke(YELLOW, width=4)
 
-        final_path_dots = Group(*[Dot(p, radius=0.022, color=YELLOW) for p in final_scene_pts])
+        final_path_dots = gx.Group(*[gx.Dot(p, radius=0.022, color=YELLOW) for p in final_scene_pts])
         final_path_dots.set_color(YELLOW)
 
         # Swap: planned cloud out, final plan in
         self.wait()
         self.play(
-            FadeOut(prev_lines),
-            FadeIn(final_path_line),
-            FadeIn(final_path_dots),
+            gx.FadeOut(prev_lines),
+            gx.FadeIn(final_path_line),
+            gx.FadeIn(final_path_dots),
             run_time=3,
         )
 
@@ -626,9 +629,9 @@ class p75b(InteractiveScene):
         # all_svgs[16].set_opacity(1.0)
 
 
-        final_imgs=Group()
+        final_imgs=gx.Group()
         for i in range(26):
-            final_imgs.add(ImageMobject(hackin_dir+'/p75b/ep2167_off25_h5_rollout/frame_'+str(i).zfill(3)+'.png'))
+            final_imgs.add(image_at_height(hackin_dir+'/p75b/ep2167_off25_h5_rollout/frame_'+str(i).zfill(3)+'.png'))
 
         for im in final_imgs:
             im.scale(1.38)
@@ -637,7 +640,7 @@ class p75b(InteractiveScene):
 
         self.remove(all_svgs[15][:-1]) #Remove start frame label bfore we zoom out
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (0.2, 0.22, 0.0), 7.64), run_time=8)
+        self.play(self.animate_view(0, 0, 0, (0.2, 0.22, 0.0), 7.64), run_time=8)
 
         self.wait()
         self.remove(start_im)
@@ -658,13 +661,12 @@ class p75b(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
 
 
 
 
 
-class p71b(InteractiveScene):
+class p71b(WelchScene):
     def construct(self):
 
         # Ok yeah I think i want to run some other variants, but this is good enough for 
@@ -675,36 +677,36 @@ class p71b(InteractiveScene):
 
         svgs_to_skip=[0]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(4.0)
             all_svgs.add(svg_image[1:])
 
-        imgs_1=[Group(), Group()]
+        imgs_1=[gx.Group(), gx.Group()]
         for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[0]).zfill(4)+'/wm/').glob('*.png'))):
-            imgs_1[0].add(ImageMobject(str(p)))
+            imgs_1[0].add(image_at_height(str(p)))
         for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[0]).zfill(4)+'/real/').glob('*.png'))):
-            imgs_1[1].add(ImageMobject(str(p)))
+            imgs_1[1].add(image_at_height(str(p)))
 
-        imgs_2=[Group(), Group()]
+        imgs_2=[gx.Group(), gx.Group()]
         for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[1]).zfill(4)+'/wm/').glob('*.png'))):
-            imgs_2[0].add(ImageMobject(str(p)))
+            imgs_2[0].add(image_at_height(str(p)))
         for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[1]).zfill(4)+'/real/').glob('*.png'))):
-            imgs_2[1].add(ImageMobject(str(p)))
+            imgs_2[1].add(image_at_height(str(p)))
 
-        imgs_3=[Group(), Group()]
+        imgs_3=[gx.Group(), gx.Group()]
         for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[2]).zfill(4)+'/wm/').glob('*.png'))):
-            imgs_3[0].add(ImageMobject(str(p)))
+            imgs_3[0].add(image_at_height(str(p)))
         for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[2]).zfill(4)+'/real/').glob('*.png'))):
-            imgs_3[1].add(ImageMobject(str(p)))
+            imgs_3[1].add(image_at_height(str(p)))
 
-        imgs_4=[Group(), Group()]
+        imgs_4=[gx.Group(), gx.Group()]
         for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[3]).zfill(4)+'/wm/').glob('*.png'))):
-            imgs_4[0].add(ImageMobject(str(p)))
+            imgs_4[0].add(image_at_height(str(p)))
         for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_'+str(episodes[3]).zfill(4)+'/real/').glob('*.png'))):
-            imgs_4[1].add(ImageMobject(str(p)))
+            imgs_4[1].add(image_at_height(str(p)))
 
         print(len(imgs_1[0]), len(imgs_2[0]), len(imgs_3[0]), len(imgs_4[0]))
         print(len(imgs_1[1]), len(imgs_2[1]), len(imgs_3[1]), len(imgs_4[1]))
@@ -772,23 +774,23 @@ class p71b(InteractiveScene):
                 imgs_4[0][count], imgs_4[1][count])
         self.add(all_svgs[13])
 
-        prev_step_count_1=Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
+        prev_step_count_1=gx.Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
         prev_step_count_1.set_color(CHILL_BROWN)
         prev_step_count_1.move_to([-4.6, -3, 0])
         self.add(prev_step_count_1)
 
 #       Step counts beneath the other three pairs
-        prev_step_count_2 = Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
+        prev_step_count_2 = gx.Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
         prev_step_count_2.set_color(CHILL_BROWN)
         prev_step_count_2.move_to([-1.59, -3, 0])
         self.add(prev_step_count_2)
 
-        prev_step_count_3 = Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
+        prev_step_count_3 = gx.Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
         prev_step_count_3.set_color(CHILL_BROWN)
         prev_step_count_3.move_to([-1.59+3.0, -3, 0])
         self.add(prev_step_count_3)
 
-        prev_step_count_4 = Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
+        prev_step_count_4 = gx.Text('Step count = '+str(count), font_size=24, font='Myriad Pro')
         prev_step_count_4.set_color(CHILL_BROWN)
         prev_step_count_4.move_to([-1.59+2*3.01, -3, 0])
         self.add(prev_step_count_4)
@@ -815,7 +817,7 @@ class p71b(InteractiveScene):
                     self.remove(imgs[0][prev_idx], imgs[1][prev_idx])
                     self.add(imgs[0][curr_idx], imgs[1][curr_idx])
 
-                    new_sc = Text('Step count = '+str(curr_idx),
+                    new_sc = gx.Text('Step count = '+str(curr_idx),
                                   font_size=24, font='Myriad Pro')
                     new_sc.set_color(CHILL_BROWN)
                     new_sc.move_to([x_positions[i], -3, 0])
@@ -831,20 +833,19 @@ class p71b(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
 
 
 
-class p69_71a(InteractiveScene):
+class p69_71a(WelchScene):
     def construct(self):
 
 
         svgs_to_skip=[0]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(4.0)
             all_svgs.add(svg_image[1:])
 
@@ -855,25 +856,25 @@ class p69_71a(InteractiveScene):
         # p69_up=ImageMobject(str(hackin_dir+'/p69/move_up.png'))
         # p69_down=ImageMobject(str(hackin_dir+'/p69/move_down.png'))
 
-        p69_start=ImageMobject(str(hackin_dir+'/p71/ep_18002/before.png'))
-        p69_left=ImageMobject(str(hackin_dir+'/p71/ep_18002/left.png'))
-        p69_right=ImageMobject(str(hackin_dir+'/p71/ep_18002/right.png'))
-        p69_up=ImageMobject(str(hackin_dir+'/p71/ep_18002/up.png'))
-        p69_down=ImageMobject(str(hackin_dir+'/p71/ep_18002/down.png'))
+        p69_start=image_at_height(str(hackin_dir+'/p71/ep_18002/before.png'))
+        p69_left=image_at_height(str(hackin_dir+'/p71/ep_18002/left.png'))
+        p69_right=image_at_height(str(hackin_dir+'/p71/ep_18002/right.png'))
+        p69_up=image_at_height(str(hackin_dir+'/p71/ep_18002/up.png'))
+        p69_down=image_at_height(str(hackin_dir+'/p71/ep_18002/down.png'))
 
         seed=2
         np.random.seed(seed)
         values_1 = np.clip(np.random.normal(0.5, 0.2, size=5), 0.0, 0.94)
 
         s = f"[ {values_1[0]:.1f}, {values_1[1]:.1f}, ... , {values_1[-1]:.1f} ]"
-        emb_vector_1 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_1 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_1.set_color(FRESH_TAN)
         emb_vector_1.move_to([-3.35, 2.5, 0])
 
         values_2=values_1+np.random.randn(5)/12
 
         s = f"[ {values_2[0]:.1f}, {values_2[1]:.1f}, ... , {values_2[-1]:.1f} ]"
-        emb_vector_2 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_2 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_2.set_color(FRESH_TAN)
         emb_vector_2.move_to([3.35, 2.55, 0])
 
@@ -913,18 +914,18 @@ class p69_71a(InteractiveScene):
         self.remove(all_svgs[10]); self.add(all_svgs[10])
 
         self.wait()
-        self.play(Write(emb_vector_1), run_time=2)
+        self.play(gx.Write(emb_vector_1), run_time=2)
 
         color_keyboard([0.0, -0.8], keyboard_fill_svg=all_svgs[6])
         self.wait()
-        self.play(FadeIn(all_svgs[6]))
+        self.play(gx.FadeIn(all_svgs[6]))
 
         self.wait()
-        self.play(Write(emb_vector_2), run_time=3)
+        self.play(gx.Write(emb_vector_2), run_time=3)
 
         self.wait()
-        self.play(Write(all_svgs[11]),
-                  Write(all_svgs[9]),
+        self.play(gx.Write(all_svgs[11]),
+                  gx.Write(all_svgs[9]),
                   run_time=3)
         self.add(p69_up)
         self.remove(all_svgs[9]); self.add(all_svgs[9])
@@ -953,9 +954,9 @@ class p69_71a(InteractiveScene):
         # Need to load in the real actions here
         # And change first to setp to the actualy first step, then
         # I can rollout to the next step! 
-        episode_imgs=Group()
+        episode_imgs=gx.Group()
         for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_18002/wm/').glob('*.png'))):
-            episode_imgs.add(ImageMobject(str(p)))
+            episode_imgs.add(image_at_height(str(p)))
 
         episode_imgs[1].scale(0.7)
         episode_imgs[1].move_to([3.45, -1.95, 0])
@@ -990,11 +991,11 @@ class p69_71a(InteractiveScene):
 
         values_3=values_2+np.random.randn(5)/12
         s = f"[ {values_3[0]:.1f}, {values_3[1]:.1f}, ... , {values_3[-1]:.1f} ]"
-        emb_vector_3 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_3 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_3.set_color(FRESH_TAN)
         emb_vector_3.move_to([3.35, 2.55, 0])
 
-        rollout_group=Group(predictor_copy, predictor_out_arrow_copy, decoder_copy, next_frame_copy,  keyboard_copy, keyboard_fill_copy, emb_vector_3)
+        rollout_group=gx.Group(predictor_copy, predictor_out_arrow_copy, decoder_copy, next_frame_copy,  keyboard_copy, keyboard_fill_copy, emb_vector_3)
         
         episode_imgs[step+1].scale(0.7)
         episode_imgs[step+1].move_to([3.45+horizontal_offset*(step), -1.95, 0])
@@ -1004,7 +1005,7 @@ class p69_71a(InteractiveScene):
 
         self.wait()
         self.add(rollout_group)
-        self.play(self.frame.animate.reorient(0, 0, 0, (3.41, -0.07, 0.0), 10.30), 
+        self.play(self.animate_view(0, 0, 0, (3.41, -0.07, 0.0), 10.30),
                   rollout_group.animate.shift([horizontal_offset*(step), 0.0, 0]),
                   run_time=5
                   )
@@ -1026,11 +1027,11 @@ class p69_71a(InteractiveScene):
 
         values_4=values_3+np.random.randn(5)/12
         s = f"[ {values_4[0]:.1f}, {values_4[1]:.1f}, ... , {values_4[-1]:.1f} ]"
-        emb_vector_4 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_4 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_4.set_color(FRESH_TAN)
         emb_vector_4.move_to([3.35+step*horizontal_offset, 2.55, 0])
 
-        rollout_group=Group(predictor_copy_b, predictor_out_arrow_copy_b, decoder_copy_b, next_frame_copy_b,  keyboard_copy_b)
+        rollout_group=gx.Group(predictor_copy_b, predictor_out_arrow_copy_b, decoder_copy_b, next_frame_copy_b,  keyboard_copy_b)
 
         episode_imgs[step+1].scale(0.7)
         episode_imgs[step+1].move_to([3.45+step*horizontal_offset, -1.95, 0])
@@ -1042,7 +1043,7 @@ class p69_71a(InteractiveScene):
         self.add(rollout_group)
         color_keyboard(aggregate_actions, keyboard_fill_copy) #Opaicty
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (6.64, -0.08, 0.0), 14.45), 
+        self.play(self.animate_view(0, 0, 0, (6.64, -0.08, 0.0), 14.45),
                   rollout_group.animate.shift([horizontal_offset, 0.0, 0]),
                   run_time=5
                   )
@@ -1067,11 +1068,11 @@ class p69_71a(InteractiveScene):
 
         values_5=values_4+np.random.randn(5)/12
         s = f"[ {values_5[0]:.1f}, {values_5[1]:.1f}, ... , {values_5[-1]:.1f} ]"
-        emb_vector_5 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_5 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_5.set_color(FRESH_TAN)
         emb_vector_5.move_to([3.35+step*horizontal_offset, 2.55, 0])
 
-        rollout_group=Group(predictor_copy_c, predictor_out_arrow_copy_c, decoder_copy_c, next_frame_copy_c,  keyboard_copy_c)
+        rollout_group=gx.Group(predictor_copy_c, predictor_out_arrow_copy_c, decoder_copy_c, next_frame_copy_c,  keyboard_copy_c)
 
         episode_imgs[step+1].scale(0.7)
         episode_imgs[step+1].move_to([3.45+step*horizontal_offset, -1.95, 0])
@@ -1083,7 +1084,7 @@ class p69_71a(InteractiveScene):
         self.add(rollout_group)
         color_keyboard(aggregate_actions, keyboard_fill_copy) #Opaicty
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (9.97, -0.09, 0.0), 18.35),
+        self.play(self.animate_view(0, 0, 0, (9.97, -0.09, 0.0), 18.35),
                   rollout_group.animate.shift([horizontal_offset, 0.0, 0]),
                   run_time=5
                   )
@@ -1110,11 +1111,11 @@ class p69_71a(InteractiveScene):
 
         values_6=values_5+np.random.randn(5)/12
         s = f"[ {values_6[0]:.1f}, {values_6[1]:.1f}, ... , {values_6[-1]:.1f} ]"
-        emb_vector_6 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_6 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_6.set_color(FRESH_TAN)
         emb_vector_6.move_to([3.35+step*horizontal_offset, 2.55, 0])
 
-        rollout_group=Group(predictor_copy_d, predictor_out_arrow_copy_d, decoder_copy_d, next_frame_copy_d,  keyboard_copy_d)
+        rollout_group=gx.Group(predictor_copy_d, predictor_out_arrow_copy_d, decoder_copy_d, next_frame_copy_d,  keyboard_copy_d)
 
         episode_imgs[step+1].scale(0.7)
         episode_imgs[step+1].move_to([3.45+step*horizontal_offset, -1.95, 0])
@@ -1126,7 +1127,7 @@ class p69_71a(InteractiveScene):
         self.add(rollout_group)
         color_keyboard(aggregate_actions, keyboard_fill_copy) #Opaicty
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (13.37, 0.08, 0.0), 21.66),
+        self.play(self.animate_view(0, 0, 0, (13.37, 0.08, 0.0), 21.66),
                   rollout_group.animate.shift([horizontal_offset, 0.0, 0]),
                   run_time=5
                   )
@@ -1143,7 +1144,7 @@ class p69_71a(InteractiveScene):
         # and play as a video. I think that will be more clear!
 
 # Group everything currently on screen for removal before P72
-        everything_on_screen = Group(
+        everything_on_screen = gx.Group(
             # Original elements
             all_svgs[2],
             all_svgs[4][:-2],
@@ -1198,9 +1199,9 @@ class p69_71a(InteractiveScene):
         all_svgs[13].scale(3.0)
         all_svgs[13].move_to([26.5, 0, 0])
 
-        env_imgs=Group()
+        env_imgs=gx.Group()
         for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_18002/real/').glob('*.png'))):
-            env_imgs.add(ImageMobject(str(p)))
+            env_imgs.add(image_at_height(str(p)))
 
         for img in env_imgs:
             img.scale(2).move_to([13.4, -4.4, 0])
@@ -1230,16 +1231,16 @@ class p69_71a(InteractiveScene):
         self.add(all_svgs[13][:16]) #Just first 2 panels
 
         step=5
-        prev_step_count=Text('Step count = '+str(step), font_size=64, font='Myriad Pro')
+        prev_step_count=gx.Text('Step count = '+str(step), font_size=64, font='Myriad Pro')
         prev_step_count.set_color(CHILL_BROWN)
         prev_step_count.move_to([13.6, -9, 0])
         self.add(prev_step_count)
 
         # P72a. Loop from 5-> 18, then from 0 to 18 again. I think hard cut 
         # to P72b 
-        episode_imgs_2=Group()
+        episode_imgs_2=gx.Group()
         for i, p in enumerate(sorted(Path(hackin_dir+'/p71/ep_18002/real/').glob('*.png'))):
-            episode_imgs_2.add(ImageMobject(str(p)))
+            episode_imgs_2.add(image_at_height(str(p)))
 
         for img in episode_imgs_2:
             img.scale(2).move_to([13.4, 4, 0])
@@ -1264,7 +1265,7 @@ class p69_71a(InteractiveScene):
         # self.add(episode_imgs_2[5])
 
         for step in step_sequence:
-            new_step_count = Text('Step count = '+str(step), font_size=64, font='Myriad Pro')
+            new_step_count = gx.Text('Step count = '+str(step), font_size=64, font='Myriad Pro')
             new_step_count.set_color(CHILL_BROWN)
             new_step_count.move_to([13.6, -9, 0])
 
@@ -1285,26 +1286,25 @@ class p69_71a(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
 
 
 
-class p67(InteractiveScene):
+class p67(WelchScene):
     def construct(self):
 
         svgs_to_skip=[0]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(4.0)
             all_svgs.add(svg_image[1:])
 
         
-        episode_1_imgs=Group()
+        episode_1_imgs=gx.Group()
         for i, p in enumerate(sorted((Path(push_t_dir_1)/'ep_0055/frames').glob('*.png'))):
-            episode_1_imgs.add(ImageMobject(str(p)))
+            episode_1_imgs.add(image_at_height(str(p)))
 
         episode_1_np=np.load(Path(push_t_dir_1)/'ep_0055/data.npz')
         episode_1_np['action'] #125,2
@@ -1334,7 +1334,7 @@ class p67(InteractiveScene):
         values_1 = np.clip(np.random.normal(0.5, 0.2, size=5), 0.0, 0.94)
 
         s = f"[ {values_1[0]:.1f}, {values_1[1]:.1f}, ... , {values_1[-1]:.1f} ]"
-        emb_vector_1 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_1 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_1.set_color(FRESH_TAN)
         emb_vector_1.move_to([-3.35, 2.5, 0])
 
@@ -1342,12 +1342,12 @@ class p67(InteractiveScene):
         values_3=values_2+np.random.randn(5)/12
 
         s = f"[ {values_2[0]:.1f}, {values_2[1]:.1f}, ... , {values_2[-1]:.1f} ]"
-        emb_vector_2 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_2 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_2.set_color(FRESH_TAN)
         emb_vector_2.move_to([3.4, 2.7, 0])
 
         s = f"[ {values_3[0]:.1f}, {values_3[1]:.1f}, ... , {values_3[-1]:.1f} ]"
-        emb_vector_3 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_3 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_3.set_color(FRESH_TAN)
         emb_vector_3.move_to([3.4, 2.1, 0])
 
@@ -1361,18 +1361,18 @@ class p67(InteractiveScene):
         color_keyboard(actions_scaled[0], keyboard_fill_svg=all_svgs[6])
 
         self.wait()
-        self.play(Write(all_svgs[2]), Write(all_svgs[3]), Write(all_svgs[4]),
-                  Write(emb_vector_1), Write(emb_vector_2), Write(emb_vector_3),
-                  Write(all_svgs[7]),
+        self.play(gx.Write(all_svgs[2]), gx.Write(all_svgs[3]), gx.Write(all_svgs[4]),
+                  gx.Write(emb_vector_1), gx.Write(emb_vector_2), gx.Write(emb_vector_3),
+                  gx.Write(all_svgs[7]),
                   run_time=4
                   )
 
-        self.play(FadeIn(episode_1_imgs[0]), FadeIn(episode_1_imgs[1]),
-                  Write(all_svgs[0]), Write(all_svgs[1]),
+        self.play(gx.FadeIn(episode_1_imgs[0]), gx.FadeIn(episode_1_imgs[1]),
+                  gx.Write(all_svgs[0]), gx.Write(all_svgs[1]),
                   run_time=3)
 
-        self.play(Write(all_svgs[5]), run_time=2)
-        self.play(FadeIn(all_svgs[6]))
+        self.play(gx.Write(all_svgs[5]), run_time=2)
+        self.play(gx.FadeIn(all_svgs[6]))
 
 
 
@@ -1424,17 +1424,17 @@ class p67(InteractiveScene):
             v3 = np.clip(v2 + np.random.randn(5) * pert_step, 0.0, 0.94)
 
             # --- rebuild Text objects (cheap enough at 125 frames) ---
-            new_emb_1 = Text(
+            new_emb_1 = gx.Text(
                 f"[ {current_values_1[0]:.1f}, {current_values_1[1]:.1f}, ... , {current_values_1[-1]:.1f} ]",
                 color=FRESH_TAN, font_size=35,
             ).move_to([-3.35, 2.5, 0])
 
-            new_emb_2 = Text(
+            new_emb_2 = gx.Text(
                 f"[ {v2[0]:.1f}, {v2[1]:.1f}, ... , {v2[-1]:.1f} ]",
                 color=FRESH_TAN, font_size=35,
             ).move_to([3.4, 2.7, 0])
 
-            new_emb_3 = Text(
+            new_emb_3 = gx.Text(
                 f"[ {v3[0]:.1f}, {v3[1]:.1f}, ... , {v3[-1]:.1f} ]",
                 color=FRESH_TAN, font_size=35,
             ).move_to([3.4, 2.1, 0])
@@ -1456,24 +1456,23 @@ class p67(InteractiveScene):
         #Ok, that looks good now I gotta figure out how to lerps it
 
         self.wait()
-        self.embed(20)
 
-class p67b(InteractiveScene):
+class p67b(WelchScene):
     def construct(self):
 
         svgs_to_skip=[0]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(4.0)
             all_svgs.add(svg_image[1:])
 
         
-        episode_1_imgs=Group()
+        episode_1_imgs=gx.Group()
         for i, p in enumerate(sorted((Path(push_t_dir_1)/'ep_0070/frames').glob('*.png'))):
-            episode_1_imgs.add(ImageMobject(str(p)))
+            episode_1_imgs.add(image_at_height(str(p)))
 
         episode_1_np=np.load(Path(push_t_dir_1)/'ep_0055/data.npz')
         episode_1_np['action'] #125,2
@@ -1502,7 +1501,7 @@ class p67b(InteractiveScene):
         values_1 = np.clip(np.random.normal(0.5, 0.2, size=5), 0.0, 0.94)
 
         s = f"[ {values_1[0]:.1f}, {values_1[1]:.1f}, ... , {values_1[-1]:.1f} ]"
-        emb_vector_1 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_1 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_1.set_color(FRESH_TAN)
         emb_vector_1.move_to([-3.35, 2.5, 0])
 
@@ -1510,12 +1509,12 @@ class p67b(InteractiveScene):
         values_3=values_2+np.random.randn(5)/12
 
         s = f"[ {values_2[0]:.1f}, {values_2[1]:.1f}, ... , {values_2[-1]:.1f} ]"
-        emb_vector_2 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_2 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_2.set_color(FRESH_TAN)
         emb_vector_2.move_to([3.4, 2.7, 0])
 
         s = f"[ {values_3[0]:.1f}, {values_3[1]:.1f}, ... , {values_3[-1]:.1f} ]"
-        emb_vector_3 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_3 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_3.set_color(FRESH_TAN)
         emb_vector_3.move_to([3.4, 2.1, 0])
 
@@ -1529,18 +1528,18 @@ class p67b(InteractiveScene):
         color_keyboard(actions_scaled[0], keyboard_fill_svg=all_svgs[6])
 
         self.wait()
-        self.play(Write(all_svgs[2]), Write(all_svgs[3]), Write(all_svgs[4]),
-                  Write(emb_vector_1), Write(emb_vector_2), Write(emb_vector_3),
-                  Write(all_svgs[7]),
+        self.play(gx.Write(all_svgs[2]), gx.Write(all_svgs[3]), gx.Write(all_svgs[4]),
+                  gx.Write(emb_vector_1), gx.Write(emb_vector_2), gx.Write(emb_vector_3),
+                  gx.Write(all_svgs[7]),
                   run_time=4
                   )
 
-        self.play(FadeIn(episode_1_imgs[0]), FadeIn(episode_1_imgs[1]),
-                  Write(all_svgs[0]), Write(all_svgs[1]),
+        self.play(gx.FadeIn(episode_1_imgs[0]), gx.FadeIn(episode_1_imgs[1]),
+                  gx.Write(all_svgs[0]), gx.Write(all_svgs[1]),
                   run_time=3)
 
-        self.play(Write(all_svgs[5]), run_time=2)
-        self.play(FadeIn(all_svgs[6]))
+        self.play(gx.Write(all_svgs[5]), run_time=2)
+        self.play(gx.FadeIn(all_svgs[6]))
 
 
 
@@ -1592,17 +1591,17 @@ class p67b(InteractiveScene):
             v3 = np.clip(v2 + np.random.randn(5) * pert_step, 0.0, 0.94)
 
             # --- rebuild Text objects (cheap enough at 125 frames) ---
-            new_emb_1 = Text(
+            new_emb_1 = gx.Text(
                 f"[ {current_values_1[0]:.1f}, {current_values_1[1]:.1f}, ... , {current_values_1[-1]:.1f} ]",
                 color=FRESH_TAN, font_size=35,
             ).move_to([-3.35, 2.5, 0])
 
-            new_emb_2 = Text(
+            new_emb_2 = gx.Text(
                 f"[ {v2[0]:.1f}, {v2[1]:.1f}, ... , {v2[-1]:.1f} ]",
                 color=FRESH_TAN, font_size=35,
             ).move_to([3.4, 2.7, 0])
 
-            new_emb_3 = Text(
+            new_emb_3 = gx.Text(
                 f"[ {v3[0]:.1f}, {v3[1]:.1f}, ... , {v3[-1]:.1f} ]",
                 color=FRESH_TAN, font_size=35,
             ).move_to([3.4, 2.1, 0])
@@ -1624,24 +1623,23 @@ class p67b(InteractiveScene):
         #Ok, that looks good now I gotta figure out how to lerps it
 
         self.wait()
-        self.embed(20)
 
-class p67c(InteractiveScene):
+class p67c(WelchScene):
     def construct(self):
 
         svgs_to_skip=[0]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(4.0)
             all_svgs.add(svg_image[1:])
 
         
-        episode_1_imgs=Group()
+        episode_1_imgs=gx.Group()
         for i, p in enumerate(sorted((Path(push_t_dir_1)/'ep_0060/frames').glob('*.png'))):
-            episode_1_imgs.add(ImageMobject(str(p)))
+            episode_1_imgs.add(image_at_height(str(p)))
 
         episode_1_np=np.load(Path(push_t_dir_1)/'ep_0055/data.npz')
         episode_1_np['action'] #125,2 
@@ -1670,7 +1668,7 @@ class p67c(InteractiveScene):
         values_1 = np.clip(np.random.normal(0.5, 0.2, size=5), 0.0, 0.94)
 
         s = f"[ {values_1[0]:.1f}, {values_1[1]:.1f}, ... , {values_1[-1]:.1f} ]"
-        emb_vector_1 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_1 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_1.set_color(FRESH_TAN)
         emb_vector_1.move_to([-3.35, 2.5, 0])
 
@@ -1678,12 +1676,12 @@ class p67c(InteractiveScene):
         values_3=values_2+np.random.randn(5)/12
 
         s = f"[ {values_2[0]:.1f}, {values_2[1]:.1f}, ... , {values_2[-1]:.1f} ]"
-        emb_vector_2 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_2 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_2.set_color(FRESH_TAN)
         emb_vector_2.move_to([3.4, 2.7, 0])
 
         s = f"[ {values_3[0]:.1f}, {values_3[1]:.1f}, ... , {values_3[-1]:.1f} ]"
-        emb_vector_3 = Text(s, color=FRESH_TAN, font_size=35)
+        emb_vector_3 = gx.Text(s, color=FRESH_TAN, font_size=35)
         emb_vector_3.set_color(FRESH_TAN)
         emb_vector_3.move_to([3.4, 2.1, 0])
 
@@ -1697,18 +1695,18 @@ class p67c(InteractiveScene):
         color_keyboard(actions_scaled[0], keyboard_fill_svg=all_svgs[6])
 
         self.wait()
-        self.play(Write(all_svgs[2]), Write(all_svgs[3]), Write(all_svgs[4]),
-                  Write(emb_vector_1), Write(emb_vector_2), Write(emb_vector_3),
-                  Write(all_svgs[7]),
+        self.play(gx.Write(all_svgs[2]), gx.Write(all_svgs[3]), gx.Write(all_svgs[4]),
+                  gx.Write(emb_vector_1), gx.Write(emb_vector_2), gx.Write(emb_vector_3),
+                  gx.Write(all_svgs[7]),
                   run_time=4
                   )
 
-        self.play(FadeIn(episode_1_imgs[0]), FadeIn(episode_1_imgs[1]),
-                  Write(all_svgs[0]), Write(all_svgs[1]),
+        self.play(gx.FadeIn(episode_1_imgs[0]), gx.FadeIn(episode_1_imgs[1]),
+                  gx.Write(all_svgs[0]), gx.Write(all_svgs[1]),
                   run_time=3)
 
-        self.play(Write(all_svgs[5]), run_time=2)
-        self.play(FadeIn(all_svgs[6]))
+        self.play(gx.Write(all_svgs[5]), run_time=2)
+        self.play(gx.FadeIn(all_svgs[6]))
 
 
 
@@ -1760,17 +1758,17 @@ class p67c(InteractiveScene):
             v3 = np.clip(v2 + np.random.randn(5) * pert_step, 0.0, 0.94)
 
             # --- rebuild Text objects (cheap enough at 125 frames) ---
-            new_emb_1 = Text(
+            new_emb_1 = gx.Text(
                 f"[ {current_values_1[0]:.1f}, {current_values_1[1]:.1f}, ... , {current_values_1[-1]:.1f} ]",
                 color=FRESH_TAN, font_size=35,
             ).move_to([-3.35, 2.5, 0])
 
-            new_emb_2 = Text(
+            new_emb_2 = gx.Text(
                 f"[ {v2[0]:.1f}, {v2[1]:.1f}, ... , {v2[-1]:.1f} ]",
                 color=FRESH_TAN, font_size=35,
             ).move_to([3.4, 2.7, 0])
 
-            new_emb_3 = Text(
+            new_emb_3 = gx.Text(
                 f"[ {v3[0]:.1f}, {v3[1]:.1f}, ... , {v3[-1]:.1f} ]",
                 color=FRESH_TAN, font_size=35,
             ).move_to([3.4, 2.1, 0])
@@ -1792,7 +1790,6 @@ class p67c(InteractiveScene):
         #Ok, that looks good now I gotta figure out how to lerps it
 
         self.wait()
-        self.embed(20)
 
 
 

@@ -1,14 +1,17 @@
-from manimlib import *
+import manimgx as gx
+from welch_style import CHILL_BROWN
+from resnet_assets import ACTIVATION_ROOT
+from resnet_stream import SpinTo, SquashTo, block_layout, channel_pool, front_square, key_input_png, load_meta, load_stream, max_grid_png, stream_tensors, to_front_plane, upsampled_png
+from welch_scene import WelchScene
+from resnet_geometry import VoxelBlock, conv_data_block, layer_stats, orient, polyline, prism, viridis
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import json
 from PIL import Image
 
-CHILL_BROWN='#948979'
 
-data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
-# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin/'
+data_dir = str(ACTIVATION_ROOT) + '/'
 cache_dir=data_dir+'p63_cache/'                      #from p63_cache_activations.ipynb
 key_image_name='0111.png'                            #the single image behind streams/ and max_grids/
 key_image_fallback=data_dir+'p63_vit_input_images/stephen/0111.png'   #un-cropped original, if frames.json is missing
@@ -20,169 +23,6 @@ pixel_dim=0.5
 block_cell=0.48
 base_depth=20.0                                  #world-unit depth of one block at depth_scale=1
 G=37                                             #patch grid side (518 / 14)
-
-
-viridis_lut=plt.get_cmap('viridis')(np.linspace(0, 1, 256))
-
-
-def viridis(values):
-    x=np.clip(np.asarray(values, dtype=np.float64), 0.0, 1.0)
-    idx=np.clip((x*256).astype(np.int32), 0, 255) #matplotlib bins with int(x*N), not round(x*(N-1))
-    return viridis_lut[idx]
-
-
-# 6 faces x 4 corners of a unit cube, wound counter-clockwise seen from outside
-face_corners=np.array([
-    [[-.5, -.5,  .5], [.5, -.5,  .5], [.5,  .5,  .5], [-.5,  .5,  .5]],
-    [[ .5, -.5, -.5], [-.5, -.5, -.5], [-.5, .5, -.5], [ .5,  .5, -.5]],
-    [[ .5, -.5,  .5], [.5, -.5, -.5], [.5,  .5, -.5], [ .5,  .5,  .5]],
-    [[-.5, -.5, -.5], [-.5, -.5, .5], [-.5, .5,  .5], [-.5,  .5, -.5]],
-    [[-.5,  .5,  .5], [.5,  .5,  .5], [.5,  .5, -.5], [-.5,  .5, -.5]],
-    [[-.5, -.5, -.5], [.5, -.5, -.5], [.5, -.5,  .5], [-.5, -.5,  .5]],
-], dtype=np.float64)
-
-quad_tris=np.array([0, 1, 2, 0, 2, 3], dtype=int)
-box_edges=[(0,1), (1,2), (2,3), (3,0), (4,5), (5,6), (6,7), (7,4),
-           (0,4), (1,5), (2,6), (3,7)]
-
-
-class VoxelBlock(Surface):
-    """Every box in a layer batched into one mesh."""
-    shader_folder='surface'
-    render_primitive=moderngl.TRIANGLES
-
-    def __init__(self, centers, sizes, rgba, view_forward=None, depth_test=None, **kwargs):
-        centers=np.asarray(centers, dtype=np.float64).reshape(-1, 3)
-        rgba=np.asarray(rgba, dtype=np.float64).reshape(-1, 4)
-        sizes=np.asarray(sizes, dtype=np.float64)
-        if sizes.ndim==1:
-            sizes=np.tile(sizes.reshape(1, 3), (len(centers), 1))
-
-        if view_forward is not None and len(centers):
-            f=np.asarray(view_forward, dtype=np.float64)
-            order=np.argsort(-(centers@(f/np.linalg.norm(f)))) #farthest first
-            centers, sizes, rgba=centers[order], sizes[order], rgba[order]
-        if depth_test is None:
-            depth_test=view_forward is None
-
-        self.centers=centers
-        self.sizes=sizes
-        self.rgba=rgba
-        super().__init__(shading=(0, 0, 0), depth_test=depth_test, **kwargs) #Faces read flat
-
-    @Surface.affects_data
-    def init_points(self):
-        n=len(self.centers)
-        if n==0:
-            self.set_points(np.zeros((0, 3)))
-            self.tri_indices=np.zeros(0, dtype=int)
-            return
-
-        corners=face_corners[None,:,:,:]*self.sizes[:,None,None,:]+self.centers[:,None,None,:]
-        verts=corners.reshape(-1, 3)
-        self.set_points(verts)
-
-        c0=corners[:,:,0,:]
-        du=np.repeat((corners[:,:,1,:]-c0)[:,:,None,:], 4, axis=2)
-        dv=np.repeat((corners[:,:,3,:]-c0)[:,:,None,:], 4, axis=2)
-        self.data['du_point'][:]=verts+du.reshape(-1, 3)
-        self.data['dv_point'][:]=verts+dv.reshape(-1, 3)
-
-        self.tri_indices=(np.arange(n*6)*4).repeat(6)+np.tile(quad_tris, n*6)
-
-    def compute_triangle_indices(self):
-        self.triangle_indices=self.tri_indices
-        return self.triangle_indices
-
-    def init_colors(self):
-        if len(self.centers):
-            self.data['rgba'][:]=np.repeat(self.rgba, 24, axis=0)
-
-
-def conv_data_block(a, start_depth, vmin=None, vmax=None, keep=None, cell_size=1.0,
-                    alpha=0.5, z_step=0.125, cell_z=cell_depth, view_forward=None):
-    a=np.asarray(a, dtype=np.float64)
-    n_c, n_i, n_j=a.shape
-    kk, ii, jj=np.meshgrid(np.arange(n_c), np.arange(n_i), np.arange(n_j), indexing='ij')
-
-    vmin=a.min() if vmin is None else vmin
-    vmax=a.max() if vmax is None else vmax
-    vals=(a-vmin)/(vmax-vmin)
-    keep=np.ones(a.shape, dtype=bool) if keep is None else keep
-
-    half=np.floor(n_j/2)
-    centers=np.stack([(jj[keep]-half)*cell_size, (-ii[keep]+half)*cell_size,
-                      z_step*kk[keep]+start_depth], axis=-1)
-    rgba=viridis(vals[keep])
-    rgba[:,3]=alpha
-
-    block=VoxelBlock(centers, np.array([cell_size, cell_size, cell_z]), rgba,
-                     view_forward=view_forward)
-    half_extent=(half+0.5)*cell_size
-    bounds=(-half_extent, half_extent, -half_extent, half_extent,
-            start_depth, n_c*z_step+start_depth)
-    return block, bounds
-
-
-def polyline(points, color, radius):
-    """One independent segment per step, since manim miters the joins of a continuous path."""
-    pts=np.asarray(points, dtype=np.float64)
-    group=VGroup()
-    for start, end in zip(pts[:-1], pts[1:]):
-        if np.allclose(start, end):
-            continue
-        seg=Line(start, end)
-        seg.set_stroke(color, width=200*radius, opacity=1.0) #Width in world units
-        seg.set_fill(opacity=0.0)
-        seg.set_scale_stroke_with_zoom(True)
-        seg.apply_depth_test()
-        group.add(seg)
-    return group
-
-
-def prism(min_x, max_x, min_y, max_y, min_z, max_z, color, radius):
-    vertices=np.array([
-        [min_x, min_y, min_z], [max_x, min_y, min_z],
-        [max_x, max_y, min_z], [min_x, max_y, min_z],
-        [min_x, min_y, max_z], [max_x, min_y, max_z],
-        [max_x, max_y, max_z], [min_x, max_y, max_z],
-    ], dtype=np.float64)
-    group=VGroup()
-    for p, q in box_edges:
-        group.add(*polyline([vertices[p], vertices[q]], color, radius))
-    return group
-
-
-def front_square(cx, cz, w, y, color, radius):
-    """Axis-aligned square outline of width w in the vertical plane y=const (the grid plane)."""
-    h=0.5*w
-    corners=[(cx-h, y, cz-h), (cx+h, y, cz-h), (cx+h, y, cz+h), (cx-h, y, cz+h), (cx-h, y, cz-h)]
-    return polyline(corners, color, radius)
-
-
-def orient(mob):
-    """Network depth z -> world x, image x -> world y, image y -> world z."""
-    mob.rotate(90*DEGREES, [0, 1, 0], about_point=ORIGIN)
-    mob.rotate(90*DEGREES, [1, 0, 0], about_point=ORIGIN)
-    return mob
-
-
-def to_front_plane(mob, y=0.0):
-    """Lay a flat xy-plane mobject (ImageMobject, SVGMobject, ...) upright in the vertical
-    plane y=const, facing the camera at theta=0/phi=90. Rotates about the mobject's own center."""
-    c=mob.get_center()
-    mob.rotate(90*DEGREES, RIGHT, about_point=c)
-    mob.move_to([c[0], y, c[1]])
-    return mob
-
-
-def layer_stats(r, pct=97):
-    """Per-channel max and per-channel percentile threshold (of the normalized map)."""
-    r=np.asarray(r, dtype=np.float64)
-    vmax=r.max(axis=(1, 2), keepdims=True)
-    vmax[vmax<=0]=1.0
-    thresh=np.percentile(r/vmax, pct, axis=(1, 2), keepdims=True)
-    return vmax, thresh
 
 
 def vit_viz_block(a, z0, z_step, cell, pct=99, alpha=0.25, cell_z=cell_depth):
@@ -197,137 +37,16 @@ def vit_viz_block(a, z0, z_step, cell, pct=99, alpha=0.25, cell_z=cell_depth):
 
 ## ---- Reading the p63 cache ----
 
-def load_meta():
-    p=os.path.join(cache_dir, 'meta.json')
-    if os.path.exists(p):
-        return json.load(open(p))
-    return dict(n_skip={'plain': 1, 'reg': 5}, grid=G)
-
-
-def load_stream(model):
-    """(41, N, 1536) float16, memory-mapped. stream[i] = input to block i; stream[40] = last output."""
-    return np.load(os.path.join(cache_dir, 'streams', f'stream_{model}.npy'), mmap_mode='r')
-
-
-def channel_pool(t, factor, mode='max'):
-    """Position-independent channel pooling: (C, G, G) -> (C/factor, G, G), each output channel
-    the max (or mean) over `factor` consecutive input channels."""
-    if factor<=1:
-        return t
-    c=t.shape[0]//factor
-    t=t[:c*factor].reshape(c, factor, *t.shape[1:])
-    return t.max(axis=1) if mode=='max' else t.mean(axis=1)
-
-
-def stream_tensors(stream, n_skip, first_idx=1, depth_pool=4, pool='max', max_blocks=None):
-    """(name, (C', G, G)) for stream[first_idx:], patch tokens only, channel-first, pooled."""
-    idx=range(first_idx, stream.shape[0])
-    if max_blocks is not None:
-        idx=list(idx)[:max_blocks]
-    out=[]
-    for i in idx:
-        t=np.asarray(stream[i, n_skip:], dtype=np.float32)          #(G*G, D)
-        t=t.reshape(G, G, -1).transpose(2, 0, 1)                    #(D, G, G): row-major patches
-        out.append((f'block_{i}', channel_pool(t, depth_pool, pool)))
-    return out
-
-
-def max_grid_png(model, stream_idx):
-    return os.path.join(cache_dir, 'max_grids', model, f'layer_{stream_idx:02d}.png')
-
-
-def key_input_png():
-    """The center-cropped 518px input frame that matches the 37x37 grid (from the streaming
-    export), found through stephen/frames.json. Falls back to the original file."""
-    fj=os.path.join(cache_dir, 'stephen', 'frames.json')
-    if os.path.exists(fj):
-        for k, v in json.load(open(fj)).items():
-            if v==key_image_name:
-                return os.path.join(cache_dir, 'stephen', 'input', f'frame_{int(k):04d}.png')
-    return key_image_fallback
-
-
-def upsampled_png(path, factor):
-    """ImageMobject textures are sampled bilinearly, which turns a 37x37 png into a blur.
-    Nearest-neighbor upsample once into a sibling _upN/ folder and use that file instead."""
-    if factor is None or factor<=1:
-        return path
-    out=os.path.join(os.path.dirname(path), f'_up{factor}', os.path.basename(path))
-    if not os.path.exists(out):
-        os.makedirs(os.path.dirname(out), exist_ok=True)
-        im=Image.open(path)
-        im.resize((im.width*factor, im.height*factor), Image.NEAREST).save(out)
-    return out
-
 
 ## ---- Layout ----
-
-def block_layout(tensors, depth_scale, spacing, cell, z_start):
-    layers=[]
-    z=z_start
-    for idx, (name, a) in enumerate(tensors):
-        n_c, n, _=a.shape
-        depth=base_depth*depth_scale
-        he=(np.floor(n/2)+0.5)*cell
-        layers.append(dict(idx=idx, name=name, data=a, n_c=n_c, n=n, cell=cell,
-                           depth=depth, z_step=depth/n_c, z0=z, z1=z+depth,
-                           bounds=(-he, he, -he, he, z, z+depth)))
-        z+=depth+spacing
-    return layers, z
 
 
 ## ---- Cheap in-place animations for big meshes ----
 # Rotate/Transform copy the whole mobject per frame; a 40-block chain of VoxelBlocks is millions of
 # vertices, so these apply incremental rotations / stretches to the live points instead.
 
-class SpinTo(Animation):
-    """Incremental rotation about a fixed point, optionally drifting by `shift` over the course of
-    the spin (the pivot travels with the drift)."""
-    def __init__(self, mobject, angle, axis=OUT, about_point=None, shift=None, **kwargs):
-        self.angle=angle
-        self.axis=axis
-        self.about_point=np.asarray(about_point, dtype=np.float64)
-        self.shift_vec=None if shift is None else np.asarray(shift, dtype=np.float64)
-        self.prev=0.0
-        super().__init__(mobject, **kwargs)
 
-    def create_starting_mobject(self):
-        return self.mobject                 #skip the copy
-
-    def interpolate_mobject(self, alpha):
-        a=self.rate_func(alpha)
-        if a==self.prev:
-            return
-        pivot=self.about_point
-        if self.shift_vec is not None:
-            pivot=pivot+self.prev*self.shift_vec
-        self.mobject.rotate((a-self.prev)*self.angle, axis=self.axis, about_point=pivot)
-        if self.shift_vec is not None:
-            self.mobject.shift((a-self.prev)*self.shift_vec)
-        self.prev=a
-
-
-class SquashTo(Animation):
-    """Stretch along `dim` from factor 1 to `factor`, about a fixed point."""
-    def __init__(self, mobject, factor, dim=1, about_point=None, **kwargs):
-        self.factor=factor
-        self.dim=dim
-        self.about_point=about_point
-        self.prev=1.0
-        super().__init__(mobject, **kwargs)
-
-    def create_starting_mobject(self):
-        return self.mobject
-
-    def interpolate_mobject(self, alpha):
-        a=self.rate_func(alpha)
-        f=1.0+(self.factor-1.0)*a
-        if f!=self.prev:
-            self.mobject.stretch(f/self.prev, self.dim, about_point=self.about_point)
-            self.prev=f
-
-
-class P63_69c(InteractiveScene):
+class P63_69c(WelchScene):
     """40 residual-stream tensors of DINOv2 ViT-g/14 drawn as CNN-style activation blocks:
     spin in place -> squash flat into the max-grid pngs -> fly into a 5x8 grid."""
 
@@ -393,9 +112,9 @@ class P63_69c(InteractiveScene):
         # ---- input image block at the front of the chain ----
         img_path=key_input_png()
         print(f'input image: {img_path}  (exists={os.path.exists(img_path)})', flush=True)
-        img=ImageMobject(img_path)
-        img.set_width(image_bounds[1]-image_bounds[0], stretch=True)
-        img.set_height(image_bounds[3]-image_bounds[2], stretch=True)
+        img=gx.ImageMobject(img_path)
+        img.stretch_to_fit_width(image_bounds[1]-image_bounds[0])
+        img.stretch_to_fit_height(image_bounds[3]-image_bounds[2])
         img.set_opacity(image_opacity)
         img.move_to([0, 0, 0.5*(image_bounds[4]+image_bounds[5])])
         orient(img)
@@ -427,7 +146,7 @@ class P63_69c(InteractiveScene):
                     max(1.2*comp_h, 1.1*comp_w*9/16))
 
         # ---- draw the chain ----
-        self.frame.reorient(0, 62, 0, (np.float32(453.62), np.float32(314.9), np.float32(-181.54)), 867.08)
+        self.set_view(0, 62, 0, (np.float32(453.62), np.float32(314.9), np.float32(-181.54)), 867.08)
 
         self.add(img, image_border)
         for b, p in zip(blocks, borders):
@@ -436,27 +155,25 @@ class P63_69c(InteractiveScene):
 
         # self.wait(1)
         #First book pause to show big network
-        self.frame.reorient(0, 62, 0, (np.float32(516.24), np.float32(316.6), np.float32(-178.35)), 917.63)
+        self.set_view(0, 62, 0, (np.float32(516.24), np.float32(316.6), np.float32(-178.35)), 917.63)
         self.wait(1)
 
 
-        # self.play(self.frame.animate.reorient(0, 70, 0, (np.float32(64.0), np.float32(340.99), np.float32(-119.7)), 409.31),
+        # self.play(self.animate_view(0, 70, 0, (np.float32(64.0), np.float32(340.99), np.float32(-119.7)), 409.31),
         #           run_time=9.0)
-        self.frame.reorient(0, 70, 0, (np.float32(64.0), np.float32(340.99), np.float32(-119.7)), 409.31)
+        self.set_view(0, 70, 0, (np.float32(64.0), np.float32(340.99), np.float32(-119.7)), 409.31)
         self.wait(1)
         for i, (b, p) in enumerate(zip(blocks, borders)):
             if i>4: self.remove(b, p)
         self.wait(1)
 
-        # self.frame.reorient(42, 56, 0, (np.float32(-110.87), np.float32(222.72), np.float32(-195.12)), 395.64) #diff view
-        self.frame.reorient(42, 56, 0, (np.float32(-110.87), np.float32(222.72), np.float32(-195.12)), 395.64)
+        # self.set_view(42, 56, 0, (np.float32(-110.87), np.float32(222.72), np.float32(-195.12)), 395.64) #diff view
+        self.set_view(42, 56, 0, (np.float32(-110.87), np.float32(222.72), np.float32(-195.12)), 395.64)
 
         self.wait(1)
 
 
-
-
-class P63_69b(InteractiveScene):
+class P63_69b(WelchScene):
     """40 residual-stream tensors of DINOv2 ViT-g/14 drawn as CNN-style activation blocks:
     spin in place -> squash flat into the max-grid pngs -> fly into a 5x8 grid."""
 
@@ -522,9 +239,9 @@ class P63_69b(InteractiveScene):
         # ---- input image block at the front of the chain ----
         img_path=key_input_png()
         print(f'input image: {img_path}  (exists={os.path.exists(img_path)})', flush=True)
-        img=ImageMobject(img_path)
-        img.set_width(image_bounds[1]-image_bounds[0], stretch=True)
-        img.set_height(image_bounds[3]-image_bounds[2], stretch=True)
+        img=gx.ImageMobject(img_path)
+        img.stretch_to_fit_width(image_bounds[1]-image_bounds[0])
+        img.stretch_to_fit_height(image_bounds[3]-image_bounds[2])
         img.set_opacity(image_opacity)
         img.move_to([0, 0, 0.5*(image_bounds[4]+image_bounds[5])])
         orient(img)
@@ -556,7 +273,7 @@ class P63_69b(InteractiveScene):
                     max(1.2*comp_h, 1.1*comp_w*9/16))
 
         # ---- draw the chain ----
-        self.frame.reorient(0, 62, 0, (np.float32(453.62), np.float32(314.9), np.float32(-181.54)), 867.08)
+        self.set_view(0, 62, 0, (np.float32(453.62), np.float32(314.9), np.float32(-181.54)), 867.08)
 
         self.add(img, image_border)
         for b, p in zip(blocks, borders):
@@ -565,11 +282,10 @@ class P63_69b(InteractiveScene):
 
         self.wait(1)
         #First book pause to show big network
-        self.frame.reorient(0, 62, 0, (np.float32(516.24), np.float32(316.6), np.float32(-178.35)), 917.63)
+        self.set_view(0, 62, 0, (np.float32(516.24), np.float32(316.6), np.float32(-178.35)), 917.63)
 
 
-
-        self.play(self.frame.animate.reorient(0, 70, 0, (np.float32(64.0), np.float32(340.99), np.float32(-119.7)), 409.31),
+        self.play(self.animate_view(0, 70, 0, (np.float32(64.0), np.float32(340.99), np.float32(-119.7)), 409.31),
                   run_time=9.0)
         self.wait(1)
 
@@ -577,9 +293,9 @@ class P63_69b(InteractiveScene):
         centers=[np.array([0.5*(L['z0']+L['z1']), 0.0, 0.0]) for L in layers]
         pngs=[]
         for L, pos in zip(layers, centers):
-            im=ImageMobject(upsampled_png(L['png'], png_upsample))
-            im.set_width(face_w)
-            im.set_height(face_w, stretch=True)
+            im=gx.ImageMobject(upsampled_png(L['png'], png_upsample))
+            im.scale_to_fit_width(face_w)
+            im.stretch_to_fit_height(face_w)
             to_front_plane(im, y=grid_y)
             im.move_to(pos)
             pngs.append(im)
@@ -587,25 +303,25 @@ class P63_69b(InteractiveScene):
         # ---- Stage A: spin in place; the input image drifts left as it spins ----
         ic=np.array([0.5*image_depth, 0.0, 0.0])
         ic_final=ic+img_shift
-        spins=[AnimationGroup(SpinTo(img, -90*DEGREES, OUT, ic, shift=img_shift),
-                              SpinTo(image_border, -90*DEGREES, OUT, ic, shift=img_shift))]
+        spins=[gx.AnimationGroup(SpinTo(img, -90*gx.DEGREES, gx.OUT, ic, shift=img_shift),
+                              SpinTo(image_border, -90*gx.DEGREES, gx.OUT, ic, shift=img_shift))]
         for blk, bdr, c in zip(blocks, borders, centers):
-            spins.append(AnimationGroup(SpinTo(blk, -90*DEGREES, OUT, c),
-                                        SpinTo(bdr, -90*DEGREES, OUT, c)))
+            spins.append(gx.AnimationGroup(SpinTo(blk, -90*gx.DEGREES, gx.OUT, c),
+                                        SpinTo(bdr, -90*gx.DEGREES, gx.OUT, c)))
 
         self.wait()
-        self.play(LaggedStart(*spins, lag_ratio=lag_ratio), run_time=10.0) #Increase for final animation
+        self.play(gx.LaggedStart(*spins, lag_ratio=lag_ratio), run_time=10.0) #Increase for final animation
 
         # ---- Stage B: squash flat about each center while the png fades in there ----
-        squashes=[AnimationGroup(SquashTo(img, collapse_factor, 1, ic_final),
+        squashes=[gx.AnimationGroup(SquashTo(img, collapse_factor, 1, ic_final),
                                  SquashTo(image_border, collapse_factor, 1, ic_final))]
         for blk, bdr, png, c in zip(blocks, borders, pngs, centers):
-            squashes.append(AnimationGroup(SquashTo(blk, collapse_factor, 1, c),
+            squashes.append(gx.AnimationGroup(SquashTo(blk, collapse_factor, 1, c),
                                            SquashTo(bdr, collapse_factor, 1, c),
-                                           FadeIn(png)))
+                                           gx.FadeIn(png)))
 
         self.wait()
-        self.play(LaggedStart(*squashes, lag_ratio=lag_ratio), run_time=10.0)
+        self.play(gx.LaggedStart(*squashes, lag_ratio=lag_ratio), run_time=10.0)
 
         # swap the squashed prisms for clean squares on the grid plane; drop the voxel blocks
         self.remove(*blocks, *borders)
@@ -636,20 +352,20 @@ class P63_69b(InteractiveScene):
         pre_view=(0, 90, 0, (np.float32(436.06), np.float32(0.0), np.float32(-70.7)), 572.59)
         self.wait()
 
-        self.play(self.frame.animate.reorient(*pre_view), run_time=10.0)
+        self.play(self.animate_view(*pre_view), run_time=10.0)
         self.wait(0.5)
 
-        moves=[AnimationGroup(img.animate.move_to(image_slot).set_width(img_w)
+        moves=[gx.AnimationGroup(img.animate.move_to(image_slot).scale_to_fit_width(img_w)
                                  .set_opacity(grid_image_opacity),
-                              img_outline.animate.move_to(image_slot).set_width(img_w))]
+                              img_outline.animate.move_to(image_slot).scale_to_fit_width(img_w))]
         for png, outline, slot in zip(pngs, outlines, slots):
-            moves.append(AnimationGroup(png.animate.move_to(slot).set_width(face_w),
-                                        outline.animate.move_to(slot).set_width(face_w)))
+            moves.append(gx.AnimationGroup(png.animate.move_to(slot).scale_to_fit_width(face_w),
+                                        outline.animate.move_to(slot).scale_to_fit_width(face_w)))
 
 
         self.wait()
-        self.play(self.frame.animate.reorient(*front_view),
-                  LaggedStart(*moves, lag_ratio=lag_ratio), run_time=10.0) #tune; longer reads calmer
+        self.play(self.animate_view(*front_view),
+                  gx.LaggedStart(*moves, lag_ratio=lag_ratio), run_time=10.0) #tune; longer reads calmer
 
         self.wait(1.0)
 
@@ -665,50 +381,45 @@ class P63_69b(InteractiveScene):
 
 
         self.wait()
-        self.play(self.frame.animate.reorient(0, 90, 0, tuple(image_slot), zoom_h),
-                  overlay.animate.move_to(overlay_target).set_width(img_w),
+        self.play(self.animate_view(0, 90, 0, tuple(image_slot), zoom_h),
+                  overlay.animate.move_to(overlay_target).scale_to_fit_width(img_w),
                   run_time=7.0)
         self.wait(1.0)
 
         #Cool ok now P66, I think jsut a simple zoom back out. 
-        self.play(self.frame.animate.reorient(*front_view), run_time=7.0)
+        self.play(self.animate_view(*front_view), run_time=7.0)
 
 
         #P67 Bring in quote
 
-        #self.frame.animate.reorient(0, 89, 0, (np.float32(76.86), np.float32(-0.0), np.float32(-49.98)), 133.12)
+        #self.animate_view(0, 89, 0, (np.float32(76.86), np.float32(-0.0), np.float32(-49.98)), 133.12)
         #df"We propose the following interpretation to these elements: the model learns to \n recognize patches containing little useful information, and recycles the corresponding \n tokens to aggregate global image information while discarding spatial information."
 
         # ---- zoom back out and write in the registers-paper quote below the grid ----
         FRESH_TAN='#dfd0b9'
-        quote=Text(
+        quote=gx.Text(
             "\"We propose the following interpretation to these elements: the model learns to\n"
             "recognize patches containing little useful information, and recycles the corresponding\n"
             "tokens to aggregate global image information while discarding spatial information.\"",
             # font='Minion Pro', 
-            slant=ITALIC, font_size=28)
+            slant=gx.ITALIC, font_size=28)
         quote.set_color(FRESH_TAN)
-        quote.set_width(0.72*comp_w)              #world-size the text for this camera height; tune
+        quote.scale_to_fit_width(0.72*comp_w)              #world-size the text for this camera height; tune
         to_front_plane(quote, y=grid_y)
         quote.move_to([85, grid_y, -102]) #-103.0])    #centered under the grid; tune z to taste
-        self.play(self.frame.animate.reorient(0, 90, 0, (np.float32(76.86), np.float32(-0.0),
+        self.play(self.animate_view(0, 90, 0, (np.float32(76.86), np.float32(-0.0),
                                                          np.float32(-49.98)), 133.12),
-                  Write(quote),
+                  gx.Write(quote),
                   run_time=8.0)
         self.wait(1.0)
 
         #P69, make space for illustrator loverlay. 
-        self.play(self.frame.animate.reorient(0, 90, 0, (np.float32(205.1), np.float32(-0.0), np.float32(-40.96)), 111.84),
-                  FadeOut(quote), 
+        self.play(self.animate_view(0, 90, 0, (np.float32(205.1), np.float32(-0.0), np.float32(-40.96)), 111.84),
+                  gx.FadeOut(quote),
                   run_time=8.0)
         self.wait(1.0)
 
 
         self.wait(20)
-        self.embed()
-
-
-
-
 
 

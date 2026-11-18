@@ -1,4 +1,10 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+import numpy as np
+from welch_geometry import diagram_axes
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, set_surface_shading, textured_surface
+
 from functools import partial
 
 CHILL_BROWN='#948979'
@@ -12,7 +18,7 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-data_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grokking/grok_1764101670/'
+data_dir=welch_path('grokking/from_linux/grokking/grok_1764101670/')
 resolution=113
 
 alphas_1=np.linspace(0, 1, resolution) #Crank up here for better spatial resolution I think
@@ -26,7 +32,7 @@ def param_surface(u, v, surf_array, scale=0.15):
     return np.array([u, v, z])
 
 
-class GrokkingHackingOne(InteractiveScene):
+class GrokkingHackingOne(WelchScene):
     def construct(self):  
 
         mlp_hook_pre=np.load(data_dir+'mlp_hook_pre.npy') #Lots of data but seems fast enough?
@@ -36,15 +42,15 @@ class GrokkingHackingOne(InteractiveScene):
         neuron_idx=453 #343
 
         surf_func=partial(param_surface, surf_array=mlp_hook_pre[:,:,2,neuron_idx], scale=0.15)
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts = TexturedSurface(surface, data_dir+'activations_'+str(neuron_idx).zfill(3)+'.png')
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, data_dir+'activations_'+str(neuron_idx).zfill(3)+'.png')
+        set_surface_shading(ts, 0.0, 0.1, 0)
 
         # self.add(ts)
         # self.add(ts)
@@ -54,15 +60,15 @@ class GrokkingHackingOne(InteractiveScene):
         neuron_idx=0 #343
 
         surf_func=partial(param_surface, surf_array=mlp_hook_post[:,:,2,neuron_idx], scale=0.01)
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts = TexturedSurface(surface, data_dir+'activations_post_'+str(neuron_idx).zfill(3)+'.png')
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, data_dir+'activations_post_'+str(neuron_idx).zfill(3)+'.png')
+        set_surface_shading(ts, 0.0, 0.1, 0)
 
         # self.add(ts)
         # self.wait()
@@ -73,15 +79,15 @@ class GrokkingHackingOne(InteractiveScene):
 
 
         surf_func=partial(param_surface, surf_array=logits[:,:,logit_index], scale=0.001)
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts = TexturedSurface(surface, data_dir+'logit_'+str(logit_index)+'.png')
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, data_dir+'logit_'+str(logit_index)+'.png')
+        set_surface_shading(ts, 0.0, 0.1, 0)
 
         # self.add(ts)
         # self.wait()
@@ -91,7 +97,7 @@ class GrokkingHackingOne(InteractiveScene):
         probe_2=np.load(data_dir+'probe_2.npy')
 
 
-        axis_1 = Axes(
+        axis_1 = diagram_axes(
             x_range=[0, 1.0, 1],
             y_range=[-1.0, 1.0, 1],
             width=3,
@@ -107,25 +113,25 @@ class GrokkingHackingOne(InteractiveScene):
             )
 
         probe_1a_pts = [axis_1.c2p(i/len(probe_1), probe_1[i,0]) for i in range(len(probe_1))]
-        probe_1a_line = VMobject(stroke_width=3)
+        probe_1a_line = gx.VMobject(stroke_width=3)
         probe_1a_line.set_points_smoothly(probe_1a_pts)
         probe_1a_line.set_color(CYAN)
 
         probe_1b_pts = [axis_1.c2p(i/len(probe_1), probe_1[i,1]) for i in range(len(probe_1))]
-        probe_1b_line = VMobject(stroke_width=3)
+        probe_1b_line = gx.VMobject(stroke_width=3)
         probe_1b_line.set_points_smoothly(probe_1b_pts)
-        probe_1b_line.set_color(RED)
+        probe_1b_line.set_color(gx.RED)
 
         self.add(axis_1)
         self.add(probe_1a_line, probe_1b_line)
 
         probe_2a_pts = [axis_1.c2p(i/len(probe_2), probe_2[i,0]) for i in range(len(probe_2))]
-        probe_2a_line = VMobject(stroke_width=3)
+        probe_2a_line = gx.VMobject(stroke_width=3)
         probe_2a_line.set_points_smoothly(probe_2a_pts)
         probe_2a_line.set_color(YELLOW)
 
         probe_2b_pts = [axis_1.c2p(i/len(probe_2), probe_2[i,1]) for i in range(len(probe_2))]
-        probe_2b_line = VMobject(stroke_width=3)
+        probe_2b_line = gx.VMobject(stroke_width=3)
         probe_2b_line.set_points_smoothly(probe_2b_pts)
         probe_2b_line.set_color(MAGENTA)
 
@@ -135,9 +141,7 @@ class GrokkingHackingOne(InteractiveScene):
 
 
         self.wait()
-        self.embed()
-
-
+        # Scene authoring stops here in the interactive editor.
 
         # num_lines = 64  # Number of gridlines in each direction
         # num_points = 512  # Number of points per line
@@ -163,4 +167,4 @@ class GrokkingHackingOne(InteractiveScene):
         
 
         self.wait(20)
-        self.embed()  
+        # Scene authoring stops here in the interactive editor.

@@ -1,6 +1,11 @@
-from manimlib import *
-sys.path.append('/Users/stephen/manim/videos/welch_assets')
-from welch_axes import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_scene import manual_camera_interpolation
+from landscape_geometry import get_pivot_and_scale
+from landscape_geometry import get_numerical_gradient
+import numpy as np
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, set_surface_shading, textured_surface
 from functools import partial
 from tqdm import tqdm
 
@@ -8,24 +13,13 @@ CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
 BLUE='#65c8d0'
 
-wormhole_dir='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/hackin/apr_29_2/'
+wormhole_dir=welch_path('backpropagation/hackin/apr_29_2/')
 alphas_1=np.linspace(-2.5, 2.5, 512)
 
-class Dot3D(Sphere):
-    def __init__(self, center=ORIGIN, radius=0.05, **kwargs):
+class Dot3D(m.Sphere):
+    def __init__(self, center=m.ORIGIN, radius=0.05, **kwargs):
         super().__init__(radius=radius, **kwargs)
         self.move_to(center)
-
-def param_surface_1(u, v):
-    u_idx = np.abs(alphas_1 - u).argmin()
-    v_idx = np.abs(alphas_1 - v).argmin()
-    try:
-        # z = loss_2d_1[u_idx, v_idx]
-        # z = 0.14*loss_2d_1[v_idx, u_idx]-0.07*np.mean(loss_2d_1) #Add vertical scaling here? #V2
-        z = 0.25*loss_2d_1[v_idx, u_idx]-0.18*np.mean(loss_2d_1) #Add vertical scaling here? #V3
-    except IndexError:
-        z = 0
-    return np.array([u, v, z])
 
 def param_surface_2(u, v, surf_array):
     u_idx = np.abs(alphas_1 - u).argmin()
@@ -37,63 +31,10 @@ def param_surface_2(u, v, surf_array):
         z = 0
     return np.array([u, v, z])
 
-def get_pivot_and_scale(axis_min, axis_max, axis_end):
-    '''Above collapses into scaling around a single pivot when axis_start=0'''
-    scale = axis_end / (axis_max - axis_min)
-    return axis_min, scale
 
-def get_numerical_gradient(surface_fn, u, v, epsilon=0.01):
-    height = surface_fn(u, v)[2]
-    height_du = surface_fn(u + epsilon, v)[2]
-    du = (height_du - height) / epsilon
-    height_dv = surface_fn(u, v + epsilon)[2]
-    dv = (height_dv - height) / epsilon
-    return (du, dv)
 
-def manual_camera_interpolation(start_orientation, end_orientation, num_steps):
-    """
-    Linearly interpolate between two camera orientations.
-    
-    Parameters:
-    - start_orientation: List containing camera parameters with a tuple at index 3
-    - end_orientation: List containing camera parameters with a tuple at index 3
-    - num_steps: Number of interpolation steps (including start and end)
-    
-    Returns:
-    - List of interpolated orientations
-    """
-    result = []
-    
-    for step in range(num_steps):
-        # Calculate interpolation factor (0 to 1)
-        t = step / (num_steps - 1) if num_steps > 1 else 0
-        
-        # Create a new orientation for this step
-        interpolated = []
-        
-        for i in range(len(start_orientation)):
-            if i == 3:  # Handle the tuple at position 3
-                start_tuple = start_orientation[i]
-                end_tuple = end_orientation[i]
-                
-                # Interpolate each element of the tuple
-                interpolated_tuple = tuple(
-                    start_tuple[j] + t * (end_tuple[j] - start_tuple[j])
-                    for j in range(len(start_tuple))
-                )
-                
-                interpolated.append(interpolated_tuple)
-            else:  # Handle regular numeric values
-                start_val = start_orientation[i]
-                end_val = end_orientation[i]
-                interpolated_val = start_val + t * (end_val - start_val)
-                interpolated.append(interpolated_val)
-        
-        result.append(interpolated)
-    
-    return result
 
-class P48cV3(InteractiveScene):
+class P48cV3(WelchScene):
     def construct(self):
         '''
         Wikitext training example - man I hope this works. 
@@ -129,45 +70,45 @@ class P48cV3(InteractiveScene):
             plt.close()
 
 
-        surfaces=Group()
+        surfaces=m.Group()
         surf_functions=[] #Need this later to move dot around.
-        grids=Group()
+        grids=m.Group()
         print("Loading Surfaces and Gridlines...")
         for i in tqdm(range(len(loss_arrays_interleaved))):
             surf_func=partial(param_surface_2, surf_array=loss_arrays_interleaved[i])
             surf_functions.append(surf_func)
-            surface = ParametricSurface(
+            surface = parametric_surface(
                 surf_func,  
                 u_range=[-2.5, 2.5],
                 v_range=[-2.5, 2.5],
                 resolution=(512, 512),
             )
 
-            ts2 = TexturedSurface(surface, wormhole_dir+'loss_arrays_interleaved_'+str(i).zfill(3)+'.png')
-            ts2.set_shading(0.0, 0.1, 0)
+            ts2 = textured_surface(surface, wormhole_dir+'loss_arrays_interleaved_'+str(i).zfill(3)+'.png')
+            set_surface_shading(ts2, 0.0, 0.1, 0)
             surfaces.add(ts2)
 
             num_lines = 64  # Number of gridlines in each direction
             num_points = 512  # Number of points per line
-            u_gridlines = VGroup()
-            v_gridlines = VGroup()
+            u_gridlines = m.VGroup()
+            v_gridlines = m.VGroup()
             u_values = np.linspace(-2.5, 2.5, num_lines)
             v_points = np.linspace(-2.5, 2.5, num_points)
             for u in u_values:
                 points = [surf_func(u, v) for v in v_points]
-                line = VMobject()
+                line = m.VMobject()
                 line.set_points_smoothly(points)
-                line.set_stroke(width=1, color=WHITE, opacity=0.15)
+                line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
                 u_gridlines.add(line)
 
             u_points = np.linspace(-2.5, 2.5, num_points)
             for v in u_values:  # Using same number of lines for both directions
                 points = [surf_func(u, v) for u in u_points]
-                line = VMobject()
+                line = m.VMobject()
                 line.set_points_smoothly(points)
-                line.set_stroke(width=1, color=WHITE, opacity=0.15)
+                line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
                 v_gridlines.add(line)
-            grids.add(VGroup(u_gridlines, v_gridlines))
+            grids.add(m.VGroup(u_gridlines, v_gridlines))
 
         self.wait()
 
@@ -176,22 +117,22 @@ class P48cV3(InteractiveScene):
         starting_point=surf_functions[0](*starting_coords)
         s2=Dot3D(center=starting_point, radius=0.06, color='$FF00FF')
 
-        self.frame.reorient(180, 23, 0, (-0.06, 0.09, 0.43), 5.81) #Fixed FoV that we end Paris sequence at. 
+        self.set_view(180, 23, 0, (-0.06, 0.09, 0.43), 5.81) #Fixed FoV that we end Paris sequence at.
         
         self.wait()
         # self.add(surfaces[0], grids[0], s2)
 
 
-        self.play(ShowCreation(surfaces[0]),
-                  ShowCreation(grids[0]), run_time=6.0)
+        self.play(m.Create(surfaces[0]),
+                  m.Create(grids[0]), run_time=6.0)
         self.add(s2)
         self.wait()
 
-        # self.play(self.frame.animate.reorient(137, 47, 0, (0.26, 0.31, -0.15), 5.61), run_time=4)
-        self.play(self.frame.animate.reorient(135, 47, 0, (0.15, 0.28, -0.04), 5.61), run_time=4)
+        # self.play(self.animate_view(137, 47, 0, (0.26, 0.31, -0.15), 5.61), run_time=4)
+        self.play(self.animate_view(135, 47, 0, (0.15, 0.28, -0.04), 5.61), run_time=4)
         self.wait()
 
-        self.play(self.frame.animate.reorient(143, 52, 0, (0.0, -0.33, 0.52), 3.09), run_time=4)
+        self.play(self.animate_view(143, 52, 0, (0.0, -0.33, 0.52), 3.09), run_time=4)
         self.wait()
         
         for i in range(1, len(surfaces)):
@@ -203,8 +144,8 @@ class P48cV3(InteractiveScene):
             s2.move_to(new_point_coords) 
             self.wait()
 
-        # self.play(self.frame.animate.reorient(135, 47, 0, (0.15, 0.28, -0.04), 5.61), run_time=4)
-        self.play(self.frame.animate.reorient(180, 23, 0, (-0.06, 0.09, 0.43), 5.81), run_time=4) #v3
+        # self.play(self.animate_view(135, 47, 0, (0.15, 0.28, -0.04), 5.61), run_time=4)
+        self.play(self.animate_view(180, 23, 0, (-0.06, 0.09, 0.43), 5.81), run_time=4) #v3
         self.wait()
 
         #Replay from this perspective for some nice side by side. 
@@ -263,8 +204,8 @@ class P48cV3(InteractiveScene):
         #         surface_update_counter+=1
 
         #     # print(i, len(interp_orientations))
-        #     self.frame.reorient(*interp_orientations[i])
+        #     self.set_view(*interp_orientations[i])
         #     self.wait(0.1)
 
         self.wait(20)
-        self.embed()
+        pass

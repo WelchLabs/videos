@@ -1,6 +1,9 @@
-from manimlib import *
-sys.path.append('/Users/stephen/manim/videos/welch_assets')
-from welch_axes import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_geometry import diagram_axes
+from welch_surface import SampledSurface
+from welch_scene import WelchScene, image_at_height
+from welch_text import math_tex
 from functools import partial
 import numpy as np
 import torch
@@ -10,9 +13,9 @@ YELLOW='#ffd35a'
 BLUE='#65c8d0'
 GREEN='#00a14b'
 
-svg_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/graphics/to_manim'
-data_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/hackin'
-heatmap_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/graphics/to_manim/jun_6_1'
+svg_path=welch_path('backprop2/graphics/to_manim')
+data_path=welch_path('backprop2/hackin')
+heatmap_path=welch_path('backprop2/graphics/to_manim/jun_6_1')
 
 # map_min_x=0.38
 # map_max_x=1.54
@@ -68,74 +71,74 @@ def format_number_fixed_decimal(num, decimal_places=2, total_chars=6):
 
 def get_numbers(i, xs, weights, logits, yhats):
     x = xs[i, -1]
-    numbers = VGroup()
+    numbers = m.VGroup()
 
-    tx = Tex(str(x) + r'^\circ')
+    tx = math_tex(str(x) + r'^\circ')
     tx.scale(0.13)
     tx.move_to([-1.49, 0.02, 0])
     numbers.add(tx)
     
     # Weights - using consistent formatting
     w = weights[i, :]
-    tm1 = Tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
+    tm1 = math_tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
     tm1.scale(0.16)
     tm1.move_to([-1.195, 0.205, 0])
     numbers.add(tm1)
     
-    tm2 = Tex(format_number(w[1], total_chars=6)).set_color(YELLOW)
+    tm2 = math_tex(format_number(w[1], total_chars=6)).set_color(YELLOW)
     tm2.scale(0.15)
     tm2.move_to([-1.155, 0.015, 0])
     numbers.add(tm2)
     
-    tm3 = Tex(format_number(w[2], total_chars=6)).set_color(GREEN)
+    tm3 = math_tex(format_number(w[2], total_chars=6)).set_color(GREEN)
     tm3.scale(0.16)
     tm3.move_to([-1.19, -0.17, 0])
     numbers.add(tm3)
     
     # Biases
-    tb1 = Tex(format_number(w[3], total_chars=6)).set_color('#00FFFF')
+    tb1 = math_tex(format_number(w[3], total_chars=6)).set_color('#00FFFF')
     tb1.scale(0.16)
     tb1.move_to([-0.875, 0.365, 0])
     numbers.add(tb1)
     
-    tb2 = Tex(format_number(w[4], total_chars=6)).set_color(YELLOW)
+    tb2 = math_tex(format_number(w[4], total_chars=6)).set_color(YELLOW)
     tb2.scale(0.16)
     tb2.move_to([-0.875, 0.015, 0])
     numbers.add(tb2)
     
-    tb3 = Tex(format_number(w[5], total_chars=6)).set_color(GREEN)
+    tb3 = math_tex(format_number(w[5], total_chars=6)).set_color(GREEN)
     tb3.scale(0.16)
     tb3.move_to([-0.88, -0.335, 0])
     numbers.add(tb3)
     
     # Logits
-    tl1 = Tex(format_number(logits[i, 0], total_chars=6)).set_color('#00FFFF')
+    tl1 = math_tex(format_number(logits[i, 0], total_chars=6)).set_color('#00FFFF')
     tl1.scale(0.16)
     tl1.move_to([-0.52, 0.37, 0])
     numbers.add(tl1)
     
-    tl2 = Tex(format_number(logits[i, 1], total_chars=6)).set_color(YELLOW)
+    tl2 = math_tex(format_number(logits[i, 1], total_chars=6)).set_color(YELLOW)
     tl2.scale(0.16)
     tl2.move_to([-0.52, 0.015, 0])
     numbers.add(tl2)
     
-    tl3 = Tex(format_number(logits[i, 2], total_chars=6)).set_color(GREEN)
+    tl3 = math_tex(format_number(logits[i, 2], total_chars=6)).set_color(GREEN)
     tl3.scale(0.16)  
     tl3.move_to([-0.52, -0.335, 0])
     numbers.add(tl3)
     
     # Predictions
-    yhat1 = Tex(format_number(yhats[i, 0], total_chars=6)).set_color('#00FFFF')
+    yhat1 = math_tex(format_number(yhats[i, 0], total_chars=6)).set_color('#00FFFF')
     yhat1.scale(0.16)
     yhat1.move_to([0.22, 0.37, 0])
     numbers.add(yhat1)
     
-    yhat2 = Tex(format_number(yhats[i, 1], total_chars=6)).set_color(YELLOW)
+    yhat2 = math_tex(format_number(yhats[i, 1], total_chars=6)).set_color(YELLOW)
     yhat2.scale(0.16)
     yhat2.move_to([0.22, 0.015, 0])
     numbers.add(yhat2)
     
-    yhat3 = Tex(format_number(yhats[i, 2], total_chars=6)).set_color(GREEN)
+    yhat3 = math_tex(format_number(yhats[i, 2], total_chars=6)).set_color(GREEN)
     yhat3.scale(0.16)
     yhat3.move_to([0.22, -0.335, 0])
     numbers.add(yhat3)
@@ -197,56 +200,56 @@ def get_grad_regions(i, ys, yhats, grads):
     min_region_width=0.01
     region_scaling=0.15
 
-    grad_regions = VGroup()
+    grad_regions = m.VGroup()
 
     y_one_hot=torch.nn.functional.one_hot(torch.tensor(int(ys[i])),3).numpy()
     dldh=yhats[i]-y_one_hot
 
     rh1_width=np.clip(region_scaling*np.abs(dldh[0]), min_region_width, max_region_width)
-    rh1=Rectangle(0.425, rh1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
+    rh1=m.Rectangle(0.425, rh1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
     rh1.move_to([-0.52, 0.37, 0])
     grad_regions.add(rh1)
 
     rh2_width=np.clip(region_scaling*np.abs(dldh[1]), min_region_width, max_region_width)
-    rh2=Rectangle(0.425, rh2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
+    rh2=m.Rectangle(0.425, rh2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
     rh2.move_to([-0.52, 0.015, 0])
     grad_regions.add(rh2)
 
     rh3_width=np.clip(region_scaling*np.abs(dldh[2]), min_region_width, max_region_width)
-    rh3=Rectangle(0.425, rh3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
+    rh3=m.Rectangle(0.425, rh3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
     rh3.move_to([-0.52, -0.335, 0])
     grad_regions.add(rh3)
 
     rb1_width=np.clip(region_scaling*np.abs(grads[i,3]), min_region_width, max_region_width)
-    rb1=Rectangle(0.24, rb1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
+    rb1=m.Rectangle(0.24, rb1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
     rb1.move_to([-0.875, 0.37, 0])
     grad_regions.add(rb1)
 
     rb2_width=np.clip(region_scaling*np.abs(grads[i,4]), min_region_width, max_region_width)
-    rb2=Rectangle(0.24, rb2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
+    rb2=m.Rectangle(0.24, rb2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
     rb2.move_to([-0.875, 0.015, 0])
     grad_regions.add(rb2)
 
     rb3_width=np.clip(region_scaling*np.abs(grads[i,5]), min_region_width, max_region_width)
-    rb3=Rectangle(0.24, rb3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
+    rb3=m.Rectangle(0.24, rb3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
     rb3.move_to([-0.872, -0.335, 0])
     grad_regions.add(rb3)
 
     rm1_width=np.clip(region_scaling*np.abs(grads[i,0]), min_region_width, max_region_width)
-    rm1=Rectangle(0.42, rm1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
-    rm1.rotate(33*DEGREES)
+    rm1=m.Rectangle(0.42, rm1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
+    rm1.rotate(33*m.DEGREES)
     rm1.move_to([-1.18, 0.20, 0])
     grad_regions.add(rm1)
 
     rm2_width=np.clip(region_scaling*np.abs(grads[i,1]), min_region_width, max_region_width)
-    rm2=Rectangle(0.33, rm2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
+    rm2=m.Rectangle(0.33, rm2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
     # rm2.rotate(33*DEGREES)
     rm2.move_to([-1.18, 0.015, 0])
     grad_regions.add(rm2)
 
     rm3_width=np.clip(region_scaling*np.abs(grads[i,2]), min_region_width, max_region_width)
-    rm3=Rectangle(0.42, rm3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
-    rm3.rotate(-30.5*DEGREES)
+    rm3=m.Rectangle(0.42, rm3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
+    rm3.rotate(-30.5*m.DEGREES)
     rm3.move_to([-1.19, -0.175, 0])
     grad_regions.add(rm3)
 
@@ -271,12 +274,12 @@ def get_arrow_tip(line, color=None, scale=0.1, tip_position=1.0):
     direction = tip_point - direction_point
     
     # Create and position arrow tip
-    arrow_tip = ArrowTip().scale(scale)
+    arrow_tip = m.ArrowTip().scale(scale)
     if color is None:
         color = line.get_color()
     arrow_tip.set_color(color)
     arrow_tip.move_to(tip_point)
-    arrow_tip.rotate(angle_of_vector(direction))
+    arrow_tip.rotate(m.angle_of_vector(direction))
     
     return arrow_tip
 
@@ -307,7 +310,7 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
     top_right = end_point + np.array([0, y_extension, 0])
     
     # Create a custom surface class for this rectangular plane
-    class RectangularPlane(Surface):
+    class RectangularPlane(SampledSurface):
         def __init__(self, corners, **kwargs):
             self.corners = corners
             super().__init__(
@@ -322,11 +325,11 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
             # v goes from bottom to top (y extension)
             
             # Interpolate along bottom edge
-            bottom_point = interpolate(self.corners[0], self.corners[1], u)
+            bottom_point = m.interpolate(self.corners[0], self.corners[1], u)
             # Interpolate along top edge  
-            top_point = interpolate(self.corners[2], self.corners[3], u)
+            top_point = m.interpolate(self.corners[2], self.corners[3], u)
             # Interpolate between bottom and top
-            point = interpolate(bottom_point, top_point, v)
+            point = m.interpolate(bottom_point, top_point, v)
             
             return point
     
@@ -338,7 +341,7 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
     )
     
     # Now extrude this plane in the z direction to give it depth
-    class ExtrudedPlane(Surface):
+    class ExtrudedPlane(SampledSurface):
         def __init__(self, base_corners, depth, **kwargs):
             self.base_corners = base_corners
             self.depth = depth
@@ -354,12 +357,12 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
             # v parameter: interpolate in depth (z direction)
             
             # Get bottom and top points along the line at parameter u
-            bottom_point = interpolate(self.base_corners[0], self.base_corners[1], u)
-            top_point = interpolate(self.base_corners[2], self.base_corners[3], u)
+            bottom_point = m.interpolate(self.base_corners[0], self.base_corners[1], u)
+            top_point = m.interpolate(self.base_corners[2], self.base_corners[3], u)
             
             # Interpolate between bottom and top based on y-extension
             # For now, let's use the middle height
-            middle_point = interpolate(bottom_point, top_point, 0.5)
+            middle_point = m.interpolate(bottom_point, top_point, 0.5)
             
             # Add depth in z direction
             z_offset = v * self.depth / 2
@@ -368,7 +371,7 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
             return final_point
     
     # Actually, let's make this simpler - create a plane that extends from the line
-    class LineExtensionPlane(Surface):
+    class LineExtensionPlane(SampledSurface):
         def __init__(self, line_start, line_end, y_extension, depth, **kwargs):
             self.line_start = line_start
             self.line_end = line_end  
@@ -383,7 +386,7 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
         
         def uv_func(self, u, v):
             # u: interpolate along original line
-            line_point = interpolate(self.line_start, self.line_end, u)
+            line_point = m.interpolate(self.line_start, self.line_end, u)
             
             # v: extend in positive y direction
             extended_point = line_point + np.array([0, v * self.y_extension, 0])
@@ -428,7 +431,7 @@ def create_surface_from_curve_simple(curve, y_extension=0.5, color='#00FFFF'):
     # Create extended points (top edge of surface)
     extended_points = curve_points + np.array([0, y_extension, 0])
     
-    class SimpleCurveSurface(Surface):
+    class SimpleCurveSurface(SampledSurface):
         def __init__(self, bottom_points, top_points, **kwargs):
             self.bottom_points = bottom_points
             self.top_points = top_points
@@ -478,7 +481,7 @@ def create_matching_plane_and_surface(line, curve, y_extension=0.5, color='#00FF
     curve_points = sample_points_from_curve(curve, num_points=32)
     
     # Create plane with same resolution as surface
-    class MatchingPlane(Surface):
+    class MatchingPlane(SampledSurface):
         def __init__(self, line_start, line_end, y_extension, **kwargs):
             self.line_start = line_start
             self.line_end = line_end
@@ -499,7 +502,7 @@ def create_matching_plane_and_surface(line, curve, y_extension=0.5, color='#00FF
             return extended_point
     
     # Create surface with same resolution
-    class MatchingSurface(Surface):
+    class MatchingSurface(SampledSurface):
         def __init__(self, curve_points, y_extension, **kwargs):
             self.curve_points = curve_points
             self.y_extension = y_extension
@@ -545,7 +548,7 @@ def create_matching_plane_and_surface(line, curve, y_extension=0.5, color='#00FF
     return plane, surface
 
 
-class p44(InteractiveScene):
+class p44(WelchScene):
     def construct(self):
 
         min_long=-9.8
@@ -562,25 +565,25 @@ class p44(InteractiveScene):
         yhats=data[:, 18:]
 
 
-        net_background=SVGMobject(svg_path+'/p44_background_1.svg')
+        net_background=m.SVGMobject(svg_path+'/p44_background_1.svg')
         
         i=0
         nums=get_numbers(i, xs, weights, logits, yhats)
         grad_regions=get_grad_regions(i, ys, yhats, grads)
-        heatmaps=Group()
-        heatmap_yhat3=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_3.png')
+        heatmaps=m.Group()
+        heatmap_yhat3=image_at_height(heatmap_path +'/'+str(i)+'_yhat_3.png')
         heatmap_yhat3.scale([0.29, 0.28, 0.28])
         heatmap_yhat3.move_to([0.96,0,0])
         heatmap_yhat3.set_opacity(0.5)
         heatmaps.add(heatmap_yhat3)
 
-        heatmap_yhat1=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_1.png')
+        heatmap_yhat1=image_at_height(heatmap_path +'/'+str(i)+'_yhat_1.png')
         heatmap_yhat1.scale([0.29, 0.28, 0.28])
         heatmap_yhat1.move_to([0.96,0,0])
         heatmap_yhat1.set_opacity(0.5)
         heatmaps.add(heatmap_yhat1)
 
-        heatmap_yhat2=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_2.png')
+        heatmap_yhat2=image_at_height(heatmap_path +'/'+str(i)+'_yhat_2.png')
         heatmap_yhat2.scale([0.29, 0.28, 0.28])
         heatmap_yhat2.move_to([0.96,0,0])
         heatmap_yhat2.set_opacity(0.5)
@@ -588,17 +591,17 @@ class p44(InteractiveScene):
 
         canvas_x, canvas_y=latlong_to_canvas(xs[i][0], xs[i][1], label=ys[i], min_long=min_long, 
                                              max_long=max_long, min_lat=min_lat, max_lat=max_lat, berlin_adjust=[-0.01, 0.02, 0])
-        training_point=Dot([canvas_x, canvas_y, 0], radius=0.012)
+        training_point=m.Dot([canvas_x, canvas_y, 0], radius=0.012)
         if ys[i]==0.0: training_point.set_color('#00FFFF')
         elif ys[i]==1.0: training_point.set_color(YELLOW)
         elif ys[i]==2.0: training_point.set_color(GREEN)   
 
-        self.frame.reorient(0, 0, 0, (-0.61, 0.01, 0.0), 1.50)
+        self.set_view(0, 0, 0, (-0.61, 0.01, 0.0), 1.50)
         self.add(net_background, nums)
         self.wait()
 
 
-        self.play(FadeIn(grad_regions))
+        self.play(m.FadeIn(grad_regions))
 
         # I want to have gradients grow in, but need to keep moving - I can add an arrow in editing pointing to a lart/small grad
         # Hmm actualy I maybe just shrink and grow one and then add labels there?
@@ -613,25 +616,25 @@ class p44(InteractiveScene):
         # self.play(*[g.animate.scale([1,50,1]) for g in grad_regions], run_time=2)
         # self.wait()        
 
-        europe_map=ImageMobject(svg_path +'/map_cropped_one.png')
+        europe_map=image_at_height(svg_path +'/map_cropped_one.png')
         europe_map.scale(0.28)
         europe_map.move_to([0.96,0,0])
 
-        map_tick_overlays=SVGMobject(svg_path+'/map_tick_overlays_1.svg')[1:]
+        map_tick_overlays=m.SVGMobject(svg_path+'/map_tick_overlays_1.svg')[1:]
         map_tick_overlays.scale([0.965, 0.96, 0.965])
         map_tick_overlays.shift([-0.077, 0.0185, 0])
         self.wait()
 
-        self.play(FadeIn(europe_map), FadeIn(map_tick_overlays), self.frame.animate.reorient(0, 0, 0, (-0.04, 0.01, 0.0), 1.94), run_time=2)
+        self.play(m.FadeIn(europe_map), m.FadeIn(map_tick_overlays), self.animate_view(0, 0, 0, (-0.04, 0.01, 0.0), 1.94), run_time=2)
 
         self.wait()
         self.add(training_point)
         self.wait()
 
-        box=SurroundingRectangle(training_point, color=YELLOW, buff=0.025)
-        self.play(ShowCreation(box))
+        box=m.SurroundingRectangle(training_point, color=YELLOW, buff=0.025)
+        self.play(m.Create(box))
         self.wait()
-        self.play(FadeOut(box))
+        self.play(m.FadeOut(box))
 
         self.add(heatmaps)
         heatmaps.set_opacity(0.0)
@@ -648,17 +651,17 @@ class p44(InteractiveScene):
         self.wait() 
         
 
-        step_label=Text("Step=")  
+        step_label=m.Text("Step=")
         step_label.set_color(CHILL_BROWN)
         step_label.scale(0.12)
         step_label.move_to([1.3, -0.85, 0])
 
-        step_count=Text(str(i).zfill(3))
+        step_count=m.Text(str(i).zfill(3))
         step_count.set_color(CHILL_BROWN)
         step_count.scale(0.12)
         step_count.move_to([1.43, -0.85, 0])
 
-        self.play(FadeIn(step_label), FadeIn(step_count))
+        self.play(m.FadeIn(step_label), m.FadeIn(step_count))
         self.wait()
 
         for i in range(1, len(xs)):
@@ -678,20 +681,20 @@ class p44(InteractiveScene):
             #Ok how do I do a cool surface again? Should i actually just try images first real quick?
             #Ok maybe images are fine for a bit - I'll switch to real surfaces when I need to
 
-            heatmaps=Group()
-            heatmap_yhat3=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_3.png')
+            heatmaps=m.Group()
+            heatmap_yhat3=image_at_height(heatmap_path +'/'+str(i)+'_yhat_3.png')
             heatmap_yhat3.scale([0.29, 0.28, 0.28])
             heatmap_yhat3.move_to([0.96,0,0])
             heatmap_yhat3.set_opacity(0.5)
             heatmaps.add(heatmap_yhat3)
 
-            heatmap_yhat1=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_1.png')
+            heatmap_yhat1=image_at_height(heatmap_path +'/'+str(i)+'_yhat_1.png')
             heatmap_yhat1.scale([0.29, 0.28, 0.28])
             heatmap_yhat1.move_to([0.96,0,0])
             heatmap_yhat1.set_opacity(0.5)
             heatmaps.add(heatmap_yhat1)
 
-            heatmap_yhat2=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_2.png')
+            heatmap_yhat2=image_at_height(heatmap_path +'/'+str(i)+'_yhat_2.png')
             heatmap_yhat2.scale([0.29, 0.28, 0.28])
             heatmap_yhat2.move_to([0.96,0,0])
             heatmap_yhat2.set_opacity(0.5)
@@ -712,17 +715,17 @@ class p44(InteractiveScene):
             canvas_x, canvas_y=latlong_to_canvas(xs[i][0], xs[i][1], label=ys[i], min_long=min_long, 
                                              max_long=max_long, min_lat=min_lat, max_lat=max_lat, berlin_adjust=[-0.01, 0.02, 0], 
                                              paris_adjust=[-0.009, -0.002, 0], madrid_adjust=[-0.009, -0.002, 0])
-            training_point=Dot([canvas_x, canvas_y, 0], radius=0.012)
+            training_point=m.Dot([canvas_x, canvas_y, 0], radius=0.012)
             if ys[i]==0.0: training_point.set_color('#00FFFF')
             elif ys[i]==1.0: training_point.set_color(YELLOW)
             elif ys[i]==2.0: training_point.set_color(GREEN)   
 
-            step_label=Text("Step=")  
+            step_label=m.Text("Step=")
             step_label.set_color(CHILL_BROWN)
             step_label.scale(0.12)
             step_label.move_to([1.3, -0.85, 0])
 
-            step_count=Text(str(i).zfill(3))
+            step_count=m.Text(str(i).zfill(3))
             step_count.set_color(CHILL_BROWN)
             step_count.scale(0.12)
             step_count.move_to([1.43, -0.85, 0])
@@ -737,80 +740,80 @@ class p44(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 
 def get_numbers_b(i, xs, weights, logits, yhats):
 
-    nums = VGroup()
+    nums = m.VGroup()
     x = xs[i, -1]
-    tx = Tex(str(x) + r'^\circ')
+    tx = math_tex(str(x) + r'^\circ')
     tx.scale(0.13)
     tx.move_to([-1.49, 0.02, 0])
     nums.add(tx)
     
     # Weights - using consistent formatting
     w = weights[i, :]
-    tm1 = Tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
+    tm1 = math_tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
     tm1.scale(0.12)
     tm1.move_to([-1.185, 0.54, 0])
     nums.add(tm1)
     
-    tm2 = Tex(format_number(w[1], total_chars=6)).set_color(YELLOW)
+    tm2 = math_tex(format_number(w[1], total_chars=6)).set_color(YELLOW)
     tm2.scale(0.12)
     tm2.move_to([-1.185, 0.1, 0])
     nums.add(tm2)
     
-    tm3 = Tex(format_number(w[2], total_chars=6)).set_color(GREEN)
+    tm3 = math_tex(format_number(w[2], total_chars=6)).set_color(GREEN)
     tm3.scale(0.12)
     tm3.move_to([-1.185, -0.33, 0])
     nums.add(tm3)
     
     # Biases
-    tb1 = Tex(format_number(w[3], total_chars=6)).set_color('#00FFFF')
+    tb1 = math_tex(format_number(w[3], total_chars=6)).set_color('#00FFFF')
     tb1.scale(0.12)
     tb1.move_to([-1.185, 0.37, 0])
     nums.add(tb1)
     
-    tb2 = Tex(format_number(w[4], total_chars=6)).set_color(YELLOW)
+    tb2 = math_tex(format_number(w[4], total_chars=6)).set_color(YELLOW)
     tb2.scale(0.12)
     tb2.move_to([-1.185, -0.07, 0])
     nums.add(tb2)
     
-    tb3 = Tex(format_number(w[5], total_chars=6)).set_color(GREEN)
+    tb3 = math_tex(format_number(w[5], total_chars=6)).set_color(GREEN)
     tb3.scale(0.12)
     tb3.move_to([-1.185, -0.51, 0])
     nums.add(tb3)
     
     # Logits
-    tl1 = Tex(format_number(logits[i, 0], total_chars=6)).set_color('#00FFFF')
+    tl1 = math_tex(format_number(logits[i, 0], total_chars=6)).set_color('#00FFFF')
     tl1.scale(0.16)
     tl1.move_to([-0.52, 0.37, 0])
     nums.add(tl1)
     
-    tl2 = Tex(format_number(logits[i, 1], total_chars=6)).set_color(YELLOW)
+    tl2 = math_tex(format_number(logits[i, 1], total_chars=6)).set_color(YELLOW)
     tl2.scale(0.16)
     tl2.move_to([-0.52, 0.015, 0])
     nums.add(tl2)
     
-    tl3 = Tex(format_number(logits[i, 2], total_chars=6)).set_color(GREEN)
+    tl3 = math_tex(format_number(logits[i, 2], total_chars=6)).set_color(GREEN)
     tl3.scale(0.16)  
     tl3.move_to([-0.52, -0.335, 0])
     nums.add(tl3)
     
     # Predictions
-    yhat1 = Tex(format_number(yhats[i, 0], total_chars=6)).set_color('#00FFFF')
+    yhat1 = math_tex(format_number(yhats[i, 0], total_chars=6)).set_color('#00FFFF')
     yhat1.scale(0.16)
     yhat1.move_to([0.22, 0.37, 0])
     nums.add(yhat1)
     
-    yhat2 = Tex(format_number(yhats[i, 1], total_chars=6)).set_color(YELLOW)
+    yhat2 = math_tex(format_number(yhats[i, 1], total_chars=6)).set_color(YELLOW)
     yhat2.scale(0.16)
     yhat2.move_to([0.22, 0.015, 0])
     nums.add(yhat2)
     
-    yhat3 = Tex(format_number(yhats[i, 2], total_chars=6)).set_color(GREEN)
+    yhat3 = math_tex(format_number(yhats[i, 2], total_chars=6)).set_color(GREEN)
     yhat3.scale(0.16)
     yhat3.move_to([0.22, -0.335, 0])
     nums.add(yhat3)
@@ -818,7 +821,7 @@ def get_numbers_b(i, xs, weights, logits, yhats):
     return nums
 
 
-class p46a(InteractiveScene):
+class p46a(WelchScene):
     def construct(self):
         '''
         Ok so here i want to get the basic elements of the little linear models working
@@ -846,25 +849,25 @@ class p46a(InteractiveScene):
 
         #Snap back to first training step of p45 I think/
 
-        net_background_0=SVGMobject(svg_path+'/p44_background_1.svg')
+        net_background_0=m.SVGMobject(svg_path+'/p44_background_1.svg')
         
         i=0
         nums0=get_numbers(i, xs, weights, logits, yhats)
         grad_regions=get_grad_regions(i, ys, yhats, grads)
-        heatmaps=Group()
-        heatmap_yhat3=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_3.png')
+        heatmaps=m.Group()
+        heatmap_yhat3=image_at_height(heatmap_path +'/'+str(i)+'_yhat_3.png')
         heatmap_yhat3.scale([0.29, 0.28, 0.28])
         heatmap_yhat3.move_to([0.96,0,0])
         heatmap_yhat3.set_opacity(0.5)
         heatmaps.add(heatmap_yhat3)
 
-        heatmap_yhat1=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_1.png')
+        heatmap_yhat1=image_at_height(heatmap_path +'/'+str(i)+'_yhat_1.png')
         heatmap_yhat1.scale([0.29, 0.28, 0.28])
         heatmap_yhat1.move_to([0.96,0,0])
         heatmap_yhat1.set_opacity(0.5)
         heatmaps.add(heatmap_yhat1)
 
-        heatmap_yhat2=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_2.png')
+        heatmap_yhat2=image_at_height(heatmap_path +'/'+str(i)+'_yhat_2.png')
         heatmap_yhat2.scale([0.29, 0.28, 0.28])
         heatmap_yhat2.move_to([0.96,0,0])
         heatmap_yhat2.set_opacity(0.5)
@@ -872,30 +875,30 @@ class p46a(InteractiveScene):
 
         canvas_x, canvas_y=latlong_to_canvas(xs[i][0], xs[i][1], label=ys[i], min_long=min_long, 
                                              max_long=max_long, min_lat=min_lat, max_lat=max_lat, berlin_adjust=[-0.01, 0.02, 0])
-        training_point=Dot([canvas_x, canvas_y, 0], radius=0.012)
+        training_point=m.Dot([canvas_x, canvas_y, 0], radius=0.012)
         if ys[i]==0.0: training_point.set_color('#00FFFF')
         elif ys[i]==1.0: training_point.set_color(YELLOW)
         elif ys[i]==2.0: training_point.set_color(GREEN)   
 
-        europe_map=ImageMobject(svg_path +'/map_cropped_one.png')
+        europe_map=image_at_height(svg_path +'/map_cropped_one.png')
         europe_map.scale(0.28)
         europe_map.move_to([0.96,0,0])        
 
-        map_tick_overlays=SVGMobject(svg_path+'/map_tick_overlays_1.svg')[1:]
+        map_tick_overlays=m.SVGMobject(svg_path+'/map_tick_overlays_1.svg')[1:]
         map_tick_overlays.scale([0.965, 0.96, 0.965])
         map_tick_overlays.shift([-0.077, 0.0185, 0])
 
-        step_label=Text("Step=")  
+        step_label=m.Text("Step=")
         step_label.set_color(CHILL_BROWN)
         step_label.scale(0.12)
         step_label.move_to([1.3, -0.85, 0])
 
-        step_count=Text(str(i).zfill(3))
+        step_count=m.Text(str(i).zfill(3))
         step_count.set_color(CHILL_BROWN)
         step_count.scale(0.12)
         step_count.move_to([1.43, -0.85, 0])
 
-        self.frame.reorient(0, 0, 0, (-0.04, 0.01, 0.0), 1.94)
+        self.set_view(0, 0, 0, (-0.04, 0.01, 0.0), 1.94)
         self.add(net_background_0, nums0)
         self.add(grad_regions)
         self.add(europe_map)
@@ -907,10 +910,10 @@ class p46a(InteractiveScene):
 
 
         #Load up stuff for big transition
-        net_background=SVGMobject(svg_path+'/p44_background_2.svg')[1:] 
+        net_background=m.SVGMobject(svg_path+'/p44_background_2.svg')[1:]
         # self.add(net_background)
 
-        axes_1 = Axes(
+        axes_1 = diagram_axes(
             x_range=[-15, 15, 1],
             y_range=[-15, 15, 1],
             width=0.32,
@@ -924,7 +927,7 @@ class p46a(InteractiveScene):
                 "tip_config": {"width":0.02, "length":0.02}
                 }
         )
-        axes_2=Axes(
+        axes_2=diagram_axes(
             x_range=[-15, 15, 1],
             y_range=[-15, 15, 1],
             width=0.32,
@@ -938,7 +941,7 @@ class p46a(InteractiveScene):
                 "tip_config": {"width":0.02, "length":0.02}
                 }
         )
-        axes_3=Axes(
+        axes_3=diagram_axes(
             x_range=[-15, 15, 1],
             y_range=[-15, 15, 1],
             width=0.32,
@@ -963,31 +966,31 @@ class p46a(InteractiveScene):
 
         #End intial/transition setup
         self.wait()
-        self.play(FadeOut(grad_regions))
-        self.play(FadeOut(net_background_0), FadeIn(net_background),
-                  *[ReplacementTransform(nums0[i], nums[i]) for i in range(len(nums))], run_time=2.5)
+        self.play(m.FadeOut(grad_regions))
+        self.play(m.FadeOut(net_background_0), m.FadeIn(net_background),
+                  *[m.ReplacementTransform(nums0[i], nums[i]) for i in range(len(nums))], run_time=2.5)
         self.add(axes_1, axes_2, axes_3)
         self.wait()
 
         def line_function_1(x): return weights[i,0] * x + weights[i,3]
-        line_1 = axes_1.get_graph(line_function_1, color='#00FFFF', x_range=[-12, 12])
+        line_1 = axes_1.plot(line_function_1, color='#00FFFF', x_range=[-12, 12])
         arrow_tip_1 = get_arrow_tip(line_1, color='#00FFFF', scale=0.1)
 
         def line_function_2(x): return weights[i,1] * x + weights[i,4]
-        line_2 = axes_2.get_graph(line_function_2, color=YELLOW, x_range=[-12, 12])
+        line_2 = axes_2.plot(line_function_2, color=YELLOW, x_range=[-12, 12])
         arrow_tip_2 = get_arrow_tip(line_2, color=YELLOW, scale=0.1)
 
         def line_function_3(x): return weights[i,2] * x + weights[i,5]
-        line_3 = axes_3.get_graph(line_function_3, color=GREEN, x_range=[-12, 12])
+        line_3 = axes_3.plot(line_function_3, color=GREEN, x_range=[-12, 12])
         arrow_tip_3 = get_arrow_tip(line_3, color=GREEN, scale=0.1)
 
-        self.play(ShowCreation(VGroup(line_1, arrow_tip_1)))
+        self.play(m.Create(m.VGroup(line_1, arrow_tip_1)))
         self.wait()
 
-        self.play(ShowCreation(VGroup(line_2, arrow_tip_2)))
+        self.play(m.Create(m.VGroup(line_2, arrow_tip_2)))
         self.wait()
 
-        self.play(ShowCreation(VGroup(line_3, arrow_tip_3)))
+        self.play(m.Create(m.VGroup(line_3, arrow_tip_3)))
         self.wait()
 
         for i in range(1, len(xs)):
@@ -1005,42 +1008,42 @@ class p46a(InteractiveScene):
 
         
             def line_function_1(x): return weights[i,0] * x + weights[i,3]
-            line_1 = axes_1.get_graph(line_function_1, color='#00FFFF', x_range=[-12, 12])
+            line_1 = axes_1.plot(line_function_1, color='#00FFFF', x_range=[-12, 12])
             arrow_tip_1 = get_arrow_tip(line_1, color='#00FFFF', scale=0.1)
 
             def line_function_2(x): return weights[i,1] * x + weights[i,4]
-            line_2 = axes_2.get_graph(line_function_2, color=YELLOW, x_range=[-12, 12])
+            line_2 = axes_2.plot(line_function_2, color=YELLOW, x_range=[-12, 12])
             arrow_tip_2 = get_arrow_tip(line_2, color=YELLOW, scale=0.1)
 
             def line_function_3(x): return weights[i,2] * x + weights[i,5]
-            line_3 = axes_3.get_graph(line_function_3, color=GREEN, x_range=[-12, 12])
+            line_3 = axes_3.plot(line_function_3, color=GREEN, x_range=[-12, 12])
             arrow_tip_3 = get_arrow_tip(line_3, color=GREEN, scale=0.1)
 
-            heatmaps=Group()
-            heatmap_yhat3=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_3.png')
+            heatmaps=m.Group()
+            heatmap_yhat3=image_at_height(heatmap_path +'/'+str(i)+'_yhat_3.png')
             heatmap_yhat3.scale([0.29, 0.28, 0.28])
             heatmap_yhat3.move_to([0.96,0,0])
             heatmap_yhat3.set_opacity(0.5)
             heatmaps.add(heatmap_yhat3)
 
-            heatmap_yhat1=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_1.png')
+            heatmap_yhat1=image_at_height(heatmap_path +'/'+str(i)+'_yhat_1.png')
             heatmap_yhat1.scale([0.29, 0.28, 0.28])
             heatmap_yhat1.move_to([0.96,0,0])
             heatmap_yhat1.set_opacity(0.5)
             heatmaps.add(heatmap_yhat1)
 
-            heatmap_yhat2=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_2.png')
+            heatmap_yhat2=image_at_height(heatmap_path +'/'+str(i)+'_yhat_2.png')
             heatmap_yhat2.scale([0.29, 0.28, 0.28])
             heatmap_yhat2.move_to([0.96,0,0])
             heatmap_yhat2.set_opacity(0.5)
             heatmaps.add(heatmap_yhat2)
             
-            step_label=Text("Step=")  
+            step_label=m.Text("Step=")
             step_label.set_color(CHILL_BROWN)
             step_label.scale(0.12)
             step_label.move_to([1.3, -0.85, 0])
 
-            step_count=Text(str(i).zfill(3))
+            step_count=m.Text(str(i).zfill(3))
             step_count.set_color(CHILL_BROWN)
             step_count.scale(0.12)
             step_count.move_to([1.43, -0.85, 0])
@@ -1057,10 +1060,10 @@ class p46a(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
-class p46b_v2(InteractiveScene):
+class p46b_v2(WelchScene):
     def construct(self):
         '''
         Ok starting with p45, I'll work on animating to shared p46 plot, and then start hacking on 3d. 
@@ -1074,14 +1077,14 @@ class p46b_v2(InteractiveScene):
         yhats=data[:, 18:]
 
 
-        net_background=SVGMobject(svg_path+'/p44_background_2.svg') 
+        net_background=m.SVGMobject(svg_path+'/p44_background_2.svg')
         
-        europe_map=ImageMobject(svg_path +'/map_cropped_one.png')
+        europe_map=image_at_height(svg_path +'/map_cropped_one.png')
         europe_map.scale(0.28)
         europe_map.move_to([0.96,0,0])
         
         #Add 3d map early to layering works out.
-        europe_map_2=ImageMobject(svg_path +'/map_exports.00_00_01_13.Still001.png')
+        europe_map_2=image_at_height(svg_path +'/map_exports.00_00_01_13.Still001.png')
         europe_map_2.scale(0.28)
         europe_map_2.move_to([0.96,0,0])
         europe_map_2.scale(0.4)
@@ -1090,11 +1093,11 @@ class p46b_v2(InteractiveScene):
         europe_map_2.set_opacity(0.0)
 
 
-        map_tick_overlays=SVGMobject(svg_path+'/map_tick_overlays_1.svg')[1:]
+        map_tick_overlays=m.SVGMobject(svg_path+'/map_tick_overlays_1.svg')[1:]
         map_tick_overlays.scale([0.965, 0.96, 0.965])
         map_tick_overlays.shift([-0.077, 0.0185, 0])
  
-        axes_1 = Axes(
+        axes_1 = diagram_axes(
             x_range=[-15, 15, 1],
             y_range=[-15, 15, 1],
             width=0.32,
@@ -1108,7 +1111,7 @@ class p46b_v2(InteractiveScene):
                 "tip_config": {"width":0.015, "length":0.015}
                 }
         )
-        axes_2=Axes(
+        axes_2=diagram_axes(
             x_range=[-15, 15, 1],
             y_range=[-15, 15, 1],
             width=0.32,
@@ -1122,7 +1125,7 @@ class p46b_v2(InteractiveScene):
                 "tip_config": {"width":0.015, "length":0.015}
                 }
         )
-        axes_3=Axes(
+        axes_3=diagram_axes(
             x_range=[-15, 15, 1],
             y_range=[-15, 15, 1],
             width=0.32,
@@ -1146,38 +1149,38 @@ class p46b_v2(InteractiveScene):
         nums=get_numbers_b(i, xs, weights, logits, yhats)
     
         def line_function_1(x): return weights[i,0] * x + weights[i,3]
-        line_1 = axes_1.get_graph(line_function_1, stroke_width=3, color='#00FFFF', x_range=[-12, 12])
+        line_1 = axes_1.plot(line_function_1, stroke_width=3, color='#00FFFF', x_range=[-12, 12])
         arrow_tip_1 = get_arrow_tip(line_1, color='#00FFFF', scale=0.08)
 
         def line_function_2(x): return weights[i,1] * x + weights[i,4]
-        line_2 = axes_2.get_graph(line_function_2, stroke_width=3, color=YELLOW, x_range=[-12, 12])
+        line_2 = axes_2.plot(line_function_2, stroke_width=3, color=YELLOW, x_range=[-12, 12])
         arrow_tip_2 = get_arrow_tip(line_2, color=YELLOW, scale=0.08)
 
         def line_function_3(x): return weights[i,2] * x + weights[i,5]
-        line_3 = axes_3.get_graph(line_function_3, stroke_width=3, color=GREEN, x_range=[-12, 12])
+        line_3 = axes_3.plot(line_function_3, stroke_width=3, color=GREEN, x_range=[-12, 12])
         arrow_tip_3 = get_arrow_tip(line_3, color=GREEN, scale=0.08)
 
-        heatmaps=Group()
-        heatmap_yhat3=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_3.png')
+        heatmaps=m.Group()
+        heatmap_yhat3=image_at_height(heatmap_path +'/'+str(i)+'_yhat_3.png')
         heatmap_yhat3.scale([0.29, 0.28, 0.28])
         heatmap_yhat3.move_to([0.96,0,0])
         heatmap_yhat3.set_opacity(0.5)
         heatmaps.add(heatmap_yhat3)
 
-        heatmap_yhat1=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_1.png')
+        heatmap_yhat1=image_at_height(heatmap_path +'/'+str(i)+'_yhat_1.png')
         heatmap_yhat1.scale([0.29, 0.28, 0.28])
         heatmap_yhat1.move_to([0.96,0,0])
         heatmap_yhat1.set_opacity(0.5)
         heatmaps.add(heatmap_yhat1)
 
-        heatmap_yhat2=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_2.png')
+        heatmap_yhat2=image_at_height(heatmap_path +'/'+str(i)+'_yhat_2.png')
         heatmap_yhat2.scale([0.29, 0.28, 0.28])
         heatmap_yhat2.move_to([0.96,0,0])
         heatmap_yhat2.set_opacity(0.5)
         heatmaps.add(heatmap_yhat2)
 
 
-        self.frame.reorient(0, 0, 0, (-0.04, 0.01, 0.0), 1.94)
+        self.set_view(0, 0, 0, (-0.04, 0.01, 0.0), 1.94)
         self.add(net_background)
         self.add(europe_map)
         self.add(axes_1, axes_2, axes_3)
@@ -1193,9 +1196,9 @@ class p46b_v2(InteractiveScene):
 
 
         #Getting setup to merge plots
-        top_plot_group=VGroup(axes_1, line_1, arrow_tip_1)
-        middle_plot_group=VGroup(axes_2, line_2, arrow_tip_2)
-        bottom_plot_group=VGroup(axes_3, line_3, arrow_tip_3)
+        top_plot_group=m.VGroup(axes_1, line_1, arrow_tip_1)
+        middle_plot_group=m.VGroup(axes_2, line_2, arrow_tip_2)
+        bottom_plot_group=m.VGroup(axes_3, line_3, arrow_tip_3)
         
 
         background_elements_to_remove=background_elements_to_remove = [31, 32, 33, 34, 35, 36, 45, 46, 47, 48, 49, 50, 82, 83, 84, 85, 86, 89, 90]
@@ -1205,15 +1208,15 @@ class p46b_v2(InteractiveScene):
         self.play(top_plot_group.animate.scale(1.5).move_to([-1.0, 0.025, 0]),
                   middle_plot_group.animate.scale(1.5).move_to([-1.0, 0.025, 0]),
                   bottom_plot_group.animate.scale(1.5).move_to([-1.0, 0.025, 0]),
-                  *[FadeOut(net_background[o]) for o in background_elements_to_remove],
+                  *[m.FadeOut(net_background[o]) for o in background_elements_to_remove],
                   *[net_background[o].animate.set_opacity(0.5) for o in background_elements_to_keep],
-                  FadeOut(nums[1:7]),
+                  m.FadeOut(nums[1:7]),
                   nums[0].animate.set_opacity(0.3), 
                   nums[7:].animate.set_opacity(0.3),
                   # arrow_tip_1.animate.scale(0.7),
                   # arrow_tip_2.animate.scale(0.7),
                   # arrow_tip_3.animate.scale(0.7),
-                  self.frame.animate.reorient(0, 0, 0, (-0.64, 0.0, 0.0), 1.14),
+                  self.animate_view(0, 0, 0, (-0.64, 0.0, 0.0), 1.14),
                   run_time=4.0
             )
 
@@ -1227,20 +1230,20 @@ class p46b_v2(InteractiveScene):
         #Ok so now we ad in overlays showing mapping
         # Ok here's where I first add the -10/+20 labels, these might get me into trouble later
         # let's see how it shakes out and then make a call. 
-        overlays_1=SVGMobject(svg_path+'/p46_overlays_1.svg') 
-        overlays_2=SVGMobject(svg_path+'/p46_overlays_2.svg') 
+        overlays_1=m.SVGMobject(svg_path+'/p46_overlays_1.svg')
+        overlays_2=m.SVGMobject(svg_path+'/p46_overlays_2.svg')
         overlays_1.scale(0.57)
         overlays_1.move_to([-0.64, 0.003, 0])
 
         self.wait()
 
-        self.play(FadeIn(overlays_1[1:]), nums[0].animate.set_opacity(1.0), nums[7].animate.set_opacity(1.0))
+        self.play(m.FadeIn(overlays_1[1:]), nums[0].animate.set_opacity(1.0), nums[7].animate.set_opacity(1.0))
         self.wait()
 
-        box=SurroundingRectangle(nums[-3], color=YELLOW, buff=0.025)        
-        self.play(nums[-3].animate.set_opacity(1.0), ShowCreation(box))
+        box=m.SurroundingRectangle(nums[-3], color=YELLOW, buff=0.025)
+        self.play(nums[-3].animate.set_opacity(1.0), m.Create(box))
         self.wait()
-        self.play(nums[-3].animate.set_opacity(0.3), FadeOut(box))
+        self.play(nums[-3].animate.set_opacity(0.3), m.FadeOut(box))
         self.wait(0)
 
 
@@ -1251,7 +1254,7 @@ class p46b_v2(InteractiveScene):
         self.wait()
 
         #Zoom in and run training just on little plot
-        self.play(self.frame.animate.reorient(0, 0, 0, (-1.02, 0.02, 0.0), 0.62),
+        self.play(self.animate_view(0, 0, 0, (-1.02, 0.02, 0.0), 0.62),
                   *[net_background[o].animate.set_opacity(0.0) for o in background_elements_to_keep],
                   nums[0].animate.set_opacity(0.0), nums[7:].animate.set_opacity(0.0), 
                   overlays_1[1:].animate.set_opacity(0.0), run_time=3.0
@@ -1266,16 +1269,16 @@ class p46b_v2(InteractiveScene):
         # Ok, now I need to run training from this zoomed in spot, and then go back to the beginning I think and 
         # go to 3d! 
         # I want to include step count here for sure. 
-        step_label=Text("Step=")  
+        step_label=m.Text("Step=")
         step_label.set_color(CHILL_BROWN)
         step_label.scale(0.04)
         step_label.move_to([-0.58, -0.25, 0])
 
-        step_count=Text(str(i).zfill(3))
+        step_count=m.Text(str(i).zfill(3))
         step_count.set_color(CHILL_BROWN)
         step_count.scale(0.04)
-        step_count.next_to(step_label, RIGHT, buff=0.003)
-        self.play(FadeIn(step_label), FadeIn(step_count))
+        step_count.next_to(step_label, m.RIGHT, buff=0.003)
+        self.play(m.FadeIn(step_label), m.FadeIn(step_count))
 
         for i in range(1, len(xs)): #TO DO -> CHANGE STARTING NUMBER TO 1 TO ACTUALLY PLAY ANIMATION
             if i>0:
@@ -1287,28 +1290,28 @@ class p46b_v2(InteractiveScene):
             nums=get_numbers_b(i, xs, weights, logits, yhats)
         
             def line_function_1(x): return weights[i,0] * x + weights[i,3]
-            line_1 = axes_1.get_graph(line_function_1, color='#00FFFF', x_range=[-12, 12])
+            line_1 = axes_1.plot(line_function_1, color='#00FFFF', x_range=[-12, 12])
             arrow_tip_1 = get_arrow_tip(line_1, color='#00FFFF', scale=0.1)
 
             def line_function_2(x): return weights[i,1] * x + weights[i,4]
-            line_2 = axes_2.get_graph(line_function_2, color=YELLOW, x_range=[-12, 12])
+            line_2 = axes_2.plot(line_function_2, color=YELLOW, x_range=[-12, 12])
             arrow_tip_2 = get_arrow_tip(line_2, color=YELLOW, scale=0.1)
 
             def line_function_3(x): return weights[i,2] * x + weights[i,5]
-            line_3 = axes_3.get_graph(line_function_3, color=GREEN, x_range=[-12, 12])
+            line_3 = axes_3.plot(line_function_3, color=GREEN, x_range=[-12, 12])
             arrow_tip_3 = get_arrow_tip(line_3, color=GREEN, scale=0.1)
 
             heatmaps.add(heatmap_yhat2)
             
-            step_label=Text("Step=")  
+            step_label=m.Text("Step=")
             step_label.set_color(CHILL_BROWN)
             step_label.scale(0.04)
             step_label.move_to([-0.58, -0.25, 0])
 
-            step_count=Text(str(i).zfill(3))
+            step_count=m.Text(str(i).zfill(3))
             step_count.set_color(CHILL_BROWN)
             step_count.scale(0.04)
-            step_count.next_to(step_label, RIGHT, buff=0.003)
+            step_count.next_to(step_label, m.RIGHT, buff=0.003)
 
             self.add(step_label,step_count) 
             self.add(line_1, arrow_tip_1)
@@ -1322,30 +1325,30 @@ class p46b_v2(InteractiveScene):
         #Hmm i need ot make the lines longer...
 
         def line_function_1(x): return weights[i,0] * x + weights[i,3]
-        line_1_long = axes_1.get_graph(line_function_1, color='#00FFFF', x_range=[-14.5, 14.5])
+        line_1_long = axes_1.plot(line_function_1, color='#00FFFF', x_range=[-14.5, 14.5])
         arrow_tip_1_long = get_arrow_tip(line_1_long, color='#00FFFF', scale=0.1)
 
         def line_function_2(x): return weights[i,1] * x + weights[i,4]
-        line_2_long = axes_2.get_graph(line_function_2, color=YELLOW, x_range=[-14.5, 14.5])
+        line_2_long = axes_2.plot(line_function_2, color=YELLOW, x_range=[-14.5, 14.5])
         arrow_tip_2_long = get_arrow_tip(line_2_long, color=YELLOW, scale=0.1)
 
         def line_function_3(x): return weights[i,2] * x + weights[i,5]
-        line_3_long = axes_3.get_graph(line_function_3, color=GREEN, x_range=[-14.5, 14.5])
+        line_3_long = axes_3.plot(line_function_3, color=GREEN, x_range=[-14.5, 14.5])
         arrow_tip_3_long = get_arrow_tip(line_3_long, color=GREEN, scale=0.1)
 
 
 
         #Can i jump to 3d cleanly?
-        # self.frame.animate.reorient(0, 0, 0, (-1.02, 0.02, 0.0), 0.62)
+        # self.animate_view(0, 0, 0, (-1.02, 0.02, 0.0), 0.62)
 
         # self.play(ReplacementTransform(line_1, line_1_long))
         self.wait()
         self.remove(europe_map, heatmaps, map_tick_overlays, step_label, step_count)
-        stuff_to_rotate=VGroup(axes_2, line_1_long, line_2_long, line_3_long, arrow_tip_1_long, arrow_tip_2_long, arrow_tip_3_long, 
+        stuff_to_rotate=m.VGroup(axes_2, line_1_long, line_2_long, line_3_long, arrow_tip_1_long, arrow_tip_2_long, arrow_tip_3_long,
                               line_1, line_2, line_3, arrow_tip_1, arrow_tip_2, arrow_tip_3)
-        stuff_to_rotate.rotate(90*DEGREES, [1, 0, 0])
-        overlays_2.rotate(90*DEGREES, [1, 0, 0])
-        self.frame.reorient(0, 90, 0, (-1.02, 0.02, 0.0), 0.62)
+        stuff_to_rotate.rotate(90*m.DEGREES, [1, 0, 0])
+        overlays_2.rotate(90*m.DEGREES, [1, 0, 0])
+        self.set_view(0, 90, 0, (-1.02, 0.02, 0.0), 0.62)
         self.wait()
 
         #Ok so there is a little jump here -> I'm going to try to fix/hide it in premiere to save time. 
@@ -1373,7 +1376,7 @@ class p46b_v2(InteractiveScene):
         plane_3_full.set_opacity(0.3)
 
         self.wait()
-        self.play(self.frame.animate.reorient(-30, 59, 0, (-1.02, 0.04, -0.0), 0.62), 
+        self.play(self.animate_view(-30, 59, 0, (-1.02, 0.04, -0.0), 0.62),
                         madrid_label.animate.move_to([-1.065,  0.12     , -0.06620278]),
                         paris_label.animate.move_to([-0.97,  0.295     , -0.06596944]),
                         berlin_label.animate.move_to([-0.805,  0.38     , -0.06464722]),
@@ -1382,10 +1385,10 @@ class p46b_v2(InteractiveScene):
         self.wait()
 
         #Ok the dope thing here would be planes coming out one at a time during a continuous camera move. 
-        self.play(self.frame.animate.reorient(18, 57, 0, (-0.95, 0.08, 0.05), 0.62), 
-                 Transform(plane_1_zero, plane_1_full), 
-                 Transform(plane_2_zero, plane_2_full), 
-                 Transform(plane_3_zero, plane_3_full), 
+        self.play(self.animate_view(18, 57, 0, (-0.95, 0.08, 0.05), 0.62),
+                 m.Transform(plane_1_zero, plane_1_full),
+                 m.Transform(plane_2_zero, plane_2_full),
+                 m.Transform(plane_3_zero, plane_3_full),
                  run_time=3.0)
         self.wait()
 
@@ -1404,11 +1407,11 @@ class p46b_v2(InteractiveScene):
         
         softmax_viz_scale=5.0
         neuron_index=0
-        softmax_curve_1 = axes_2.get_graph(softmax_function, x_range=(-14.5, 14.5), color='#00FFFF', stroke_width=3)
+        softmax_curve_1 = axes_2.plot(softmax_function, x_range=(-14.5, 14.5), color='#00FFFF', stroke_width=3)
         neuron_index=1
-        softmax_curve_2 = axes_2.get_graph(softmax_function, x_range=(-14.5, 14.5), color=YELLOW, stroke_width=3)
+        softmax_curve_2 = axes_2.plot(softmax_function, x_range=(-14.5, 14.5), color=YELLOW, stroke_width=3)
         neuron_index=2
-        softmax_curve_3 = axes_2.get_graph(softmax_function, x_range=(-14.5, 14.5), color=GREEN, stroke_width=3)      
+        softmax_curve_3 = axes_2.plot(softmax_function, x_range=(-14.5, 14.5), color=GREEN, stroke_width=3)
 
         # self.add(softmax_curve_1) 
 
@@ -1450,12 +1453,12 @@ class p46b_v2(InteractiveScene):
         self.remove(plane_1_zero, plane_2_zero, plane_3_zero)
         self.add(matching_plane_1, matching_plane_2, matching_plane_3)
         self.remove(arrow_tip_1, arrow_tip_2, arrow_tip_3)
-        self.play(Transform(matching_plane_1, matching_surface_1), 
-                  ReplacementTransform(line_1, softmax_curve_1),  
-                  Transform(matching_plane_2, matching_surface_2), 
-                  ReplacementTransform(line_2, softmax_curve_2), 
-                  Transform(matching_plane_3, matching_surface_3), 
-                  ReplacementTransform(line_3, softmax_curve_3), 
+        self.play(m.Transform(matching_plane_1, matching_surface_1),
+                  m.ReplacementTransform(line_1, softmax_curve_1),
+                  m.Transform(matching_plane_2, matching_surface_2),
+                  m.ReplacementTransform(line_2, softmax_curve_2),
+                  m.Transform(matching_plane_3, matching_surface_3),
+                  m.ReplacementTransform(line_3, softmax_curve_3),
                   run_time=6)  
         matching_plane_3.shift([0,0,-0.0001]) #Removes a visual artifact 
         self.wait()
@@ -1474,7 +1477,7 @@ class p46b_v2(InteractiveScene):
         
 
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (-1.03, 0.24, 0.1), 0.62), run_time=7)
+        self.play(self.animate_view(0, 0, 0, (-1.03, 0.24, 0.1), 0.62), run_time=7)
         self.wait()
 
         #Looking good - just seeing some green jumpiness in one of the surfaces on the move? Let me do the real render and see if it persists. 
@@ -1483,7 +1486,7 @@ class p46b_v2(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 

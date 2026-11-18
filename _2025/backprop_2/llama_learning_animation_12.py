@@ -1,4 +1,8 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as m
+import pickle
+from welch_scene import WelchScene
+from welch_text import math_tex
 from functools import partial
 import numpy as np
 import torch
@@ -35,21 +39,21 @@ custom_cmap_cyan = mcolors.LinearSegmentedColormap.from_list('custom', ['#000000
 # def get_nueron_color(value, vmin=-2, vmax=2):        
 #         value_clipped = np.clip((value - vmin) / (vmax - vmin), 0, 1)
 #         rgba = custom_cmap_tans(value_clipped) #Would also like to try a monochrome tan option
-#         return Color(rgb=rgba[:3])
+#         return Color(rgba[:3])
 
 def get_nueron_color(value, vmax=0.95):        
     '''Uses abs, a little reductive'''
     value_clipped = np.clip(np.abs(value)/vmax, 0, 1)
     rgba = custom_cmap_tans(value_clipped) #Would also like to try a monochrome tan option
-    return Color(rgb=rgba[:3])
+    return m.rgb_to_color(rgba[:3])
 
 def get_grad_color(value): #, vmin=-2, vmax=2):        
     # value_clipped = np.clip((value - vmin) / (vmax - vmin), 0, 1)
     value_clipped = np.clip(np.abs(value), 0, 1)
     rgba = custom_cmap_cyan(value_clipped) #Would also like to try a monochrome tan option
-    return Color(rgb=rgba[:3])
+    return m.rgb_to_color(rgba[:3])
 
-class AttentionPattern(VMobject):
+class AttentionPattern(m.VMobject):
     def __init__(
         self,
         matrix,
@@ -80,7 +84,7 @@ class AttentionPattern(VMobject):
         # val_clipped = np.clip(val, 0, 1)
         val_scaled=np.clip(self.viz_scaling_factor*val/self.max_opacity,0, 1)
         rgba = self._colormap(val_scaled)
-        color = Color(rgb=rgba[:3])
+        color = m.rgb_to_color(rgba[:3])
         # opacity = self.min_opacity + val_clipped * (self.max_opacity - self.min_opacity)
         # opacity=val_scaled
         opacity=1.0
@@ -88,21 +92,21 @@ class AttentionPattern(VMobject):
 
     def build(self):
         self.clear()
-        squares = VGroup()
+        squares = m.VGroup()
         for i in range(self.n_rows):
             for j in range(self.n_cols):
                 val = self.matrix[i, j]
                 style = self.map_value_to_style(val)
 
-                square = Square(side_length=self.square_size)
+                square = m.Square(side_length=self.square_size)
                 square.set_fill(style["color"], opacity=style["opacity"])
                 square.set_stroke(self.stroke_color, width=self.stroke_width)
 
-                pos = RIGHT * j * self.square_size + DOWN * i * self.square_size
+                pos = m.RIGHT * j * self.square_size + m.DOWN * i * self.square_size
                 square.move_to(pos)
                 squares.add(square)
 
-        squares.move_to(ORIGIN)
+        squares.move_to(m.ORIGIN)
         self.add(squares)
 
 
@@ -127,26 +131,26 @@ def get_mlp(w1,
     DOTS_SCALE=0.5
     
     # Create layers
-    input_layer = VGroup()
-    hidden_layer = VGroup()
-    output_layer = VGroup()
-    dots = VGroup()
+    input_layer = m.VGroup()
+    hidden_layer = m.VGroup()
+    output_layer = m.VGroup()
+    dots = m.VGroup()
     
     # Input layer
     neuron_count=0
     for i in range(INPUT_NEURONS):
         if i == w1.shape[0]//2:  # Middle position for ellipsis
-            dot = Tex("...").rotate(PI/2, OUT).scale(DOTS_SCALE).move_to(LEFT * LAYER_SPACING + UP * ((INPUT_NEURONS//2 - i) * VERTICAL_SPACING))
+            dot = math_tex("...").rotate(m.PI/2, m.OUT).scale(DOTS_SCALE).move_to(m.LEFT * LAYER_SPACING + m.UP * ((INPUT_NEURONS//2 - i) * VERTICAL_SPACING))
             dot.set_color(neuron_stroke_color)
             dots.add(dot)
         else:
-            neuron = Circle(radius=NEURON_RADIUS, stroke_color=neuron_stroke_color)
+            neuron = m.Circle(radius=NEURON_RADIUS, stroke_color=neuron_stroke_color)
             neuron.set_stroke(width=neuron_stroke_width)
             if neuron_fills is None: 
                 neuron.set_fill(color='#000000', opacity=1.0)
             else: 
                 neuron.set_fill(color=get_nueron_color(neuron_fills[0][neuron_count], vmax=np.abs(neuron_fills[0]).max()), opacity=1.0)
-            neuron.move_to(LEFT * LAYER_SPACING + UP * ((INPUT_NEURONS//2 - i) * VERTICAL_SPACING))
+            neuron.move_to(m.LEFT * LAYER_SPACING + m.UP * ((INPUT_NEURONS//2 - i) * VERTICAL_SPACING))
             input_layer.add(neuron)
             neuron_count+=1
             
@@ -154,17 +158,17 @@ def get_mlp(w1,
     neuron_count=0
     for i in range(HIDDEN_NEURONS):
         if i == w1.shape[1]//2:  # Middle position for ellipsis
-            dot = Tex("...").rotate(PI/2, OUT).scale(DOTS_SCALE).move_to(UP * ((HIDDEN_NEURONS//2 - i) * VERTICAL_SPACING))
+            dot = math_tex("...").rotate(m.PI/2, m.OUT).scale(DOTS_SCALE).move_to(m.UP * ((HIDDEN_NEURONS//2 - i) * VERTICAL_SPACING))
             dot.set_color(neuron_stroke_color)
             dots.add(dot)
         else:
-            neuron = Circle(radius=NEURON_RADIUS, stroke_color=neuron_stroke_color)
+            neuron = m.Circle(radius=NEURON_RADIUS, stroke_color=neuron_stroke_color)
             neuron.set_stroke(width=neuron_stroke_width)
             if neuron_fills is None: 
                 neuron.set_fill(color='#000000', opacity=1.0)
             else: 
                 neuron.set_fill(color=get_nueron_color(neuron_fills[1][neuron_count], vmax=np.abs(neuron_fills[1]).max()), opacity=1.0)
-            neuron.move_to(UP * ((HIDDEN_NEURONS//2 - i) * VERTICAL_SPACING))
+            neuron.move_to(m.UP * ((HIDDEN_NEURONS//2 - i) * VERTICAL_SPACING))
             hidden_layer.add(neuron)
             neuron_count+=1
             
@@ -172,22 +176,22 @@ def get_mlp(w1,
     neuron_count=0
     for i in range(OUTPUT_NEURONS):
         if i == w1.shape[0]//2:  # Middle position for ellipsis
-            dot = Tex("...").rotate(PI/2, OUT).scale(DOTS_SCALE).move_to(RIGHT * LAYER_SPACING + UP * ((OUTPUT_NEURONS//2 - i) * VERTICAL_SPACING))
+            dot = math_tex("...").rotate(m.PI/2, m.OUT).scale(DOTS_SCALE).move_to(m.RIGHT * LAYER_SPACING + m.UP * ((OUTPUT_NEURONS//2 - i) * VERTICAL_SPACING))
             dot.set_color(neuron_stroke_color)
             dots.add(dot)
         else:
-            neuron = Circle(radius=NEURON_RADIUS, stroke_color=neuron_stroke_color)
+            neuron = m.Circle(radius=NEURON_RADIUS, stroke_color=neuron_stroke_color)
             neuron.set_stroke(width=neuron_stroke_width)
             if neuron_fills is None: 
                 neuron.set_fill(color='#000000', opacity=1.0)
             else: 
                 neuron.set_fill(color=get_nueron_color(neuron_fills[2][neuron_count], vmax=np.abs(neuron_fills[2]).max()), opacity=1.0)
-            neuron.move_to(RIGHT * LAYER_SPACING + UP * ((OUTPUT_NEURONS//2 - i) * VERTICAL_SPACING))
+            neuron.move_to(m.RIGHT * LAYER_SPACING + m.UP * ((OUTPUT_NEURONS//2 - i) * VERTICAL_SPACING))
             output_layer.add(neuron)
             neuron_count+=1
             
     # Create connections with edge points
-    connections = VGroup()
+    connections = m.VGroup()
     w1_abs=np.abs(w1)
     w1_scaled=w1_abs/np.percentile(w1_abs, 99)
     # w1_scaled=(w1-w1.min())/(w1.max()-w1.min())
@@ -196,7 +200,7 @@ def get_mlp(w1,
             if np.abs(w1_scaled[i, j])<0.75: continue
             if abs(i-j)>6: continue #Let's try just drawing local ones. 
             start_point, end_point = get_edge_points(in_neuron, hidden_neuron, NEURON_RADIUS)
-            line = Line(start_point, end_point)
+            line = m.Line(start_point, end_point)
 
             line.set_stroke(opacity=np.clip(w1_scaled[i,j], 0, 1), width=1.0*w1_scaled[i,j])
             # line.set_stroke(opacity=np.clip(0.8*(np.abs(w1[i, j])-connection_display_thresh), 0.1, 1), width=line_weight)
@@ -211,13 +215,13 @@ def get_mlp(w1,
             if np.abs(w2_scaled[i, j])<0.45: continue
             if abs(i-j)>6: continue #Let's try just drawing local ones.
             start_point, end_point = get_edge_points(hidden_neuron, out_neuron, NEURON_RADIUS)
-            line = Line(start_point, end_point) #, stroke_opacity=line_opacity, stroke_width=line_weight)
+            line = m.Line(start_point, end_point) #, stroke_opacity=line_opacity, stroke_width=line_weight)
             # line.set_stroke(opacity=np.clip(0.8*(np.abs(w2[i, j])-connection_display_thresh), 0.1, 1), width=line_weight)
             line.set_stroke(opacity=np.clip(w2_scaled[i,j], 0, 1), width=1.0*w2_scaled[i,j])
             line.set_color(line_stroke_color)
             connections.add(line)
 
-    grad_conections=VGroup()
+    grad_conections=m.VGroup()
     if grads_1 is not None:
         grads_1_abs=np.abs(grads_1)
         grads_1_scaled=grads_1_abs/np.percentile(grads_1_abs, 95)
@@ -226,7 +230,7 @@ def get_mlp(w1,
                 if np.abs(grads_1_scaled[i, j])<0.5: continue
                 if abs(i-j)>6: continue #Need to dial this up or lost it probably, but it is helpful!
                 start_point, end_point = get_edge_points(in_neuron, hidden_neuron, NEURON_RADIUS)
-                line_grad = Line(start_point, end_point)
+                line_grad = m.Line(start_point, end_point)
                 # line_grad.set_stroke(opacity=np.clip(0.8*(np.abs(grads_1[i, j])-grad_display_thresh), 0, 1), 
                 #                     width=np.abs(grads_1[i, j]))
                 line_grad.set_stroke(opacity=np.clip(grads_1_scaled[i,j], 0, 1), width=np.clip(2.0*grads_1_scaled[i,j], 0, 3)) #width=1)
@@ -244,7 +248,7 @@ def get_mlp(w1,
                 if np.abs(grads_2_scaled[i, j])<0.5: continue
                 if abs(i-j)>6: continue #Need to dial this up or lost it probably, but it is helpful!
                 start_point, end_point = get_edge_points(hidden_neuron, out_neuron, NEURON_RADIUS)
-                line_grad = Line(start_point, end_point)
+                line_grad = m.Line(start_point, end_point)
                 # line_grad.set_stroke(opacity=np.clip(0.8*(np.abs(grads_2[i, j])-grad_display_thresh), 0, 1), 
                 #                     width=np.abs(grads_2[i, j]))
                 # line_grad.set_stroke(opacity=0.8, width=2)
@@ -254,25 +258,25 @@ def get_mlp(w1,
                 grad_conections.add(line_grad)
 
                 
-    return VGroup(connections, grad_conections, input_layer, hidden_layer, output_layer, dots)
+    return m.VGroup(connections, grad_conections, input_layer, hidden_layer, output_layer, dots)
 
 
 def get_attention_layer(attn_patterns):
     num_attention_pattern_slots=len(attn_patterns)+1
     attention_pattern_spacing=0.51
 
-    attention_border=RoundedRectangle(width=0.59, height=5.4, corner_radius=0.1)
+    attention_border=m.RoundedRectangle(width=0.59, height=5.4, corner_radius=0.1)
     attention_border.set_stroke(width=1.0, color=CHILL_BROWN)
 
 
-    attention_patterns=VGroup()
-    connection_points_left=VGroup()
-    connection_points_right=VGroup()
+    attention_patterns=m.VGroup()
+    connection_points_left=m.VGroup()
+    connection_points_right=m.VGroup()
 
     attn_pattern_count=0
     for i in range(num_attention_pattern_slots):
         if i==num_attention_pattern_slots//2:
-            dot = Tex("...").rotate(PI/2, OUT).scale(0.5).move_to([0, num_attention_pattern_slots*attention_pattern_spacing/2 - attention_pattern_spacing*(i+0.5), 0])
+            dot = math_tex("...").rotate(m.PI/2, m.OUT).scale(0.5).move_to([0, num_attention_pattern_slots*attention_pattern_spacing/2 - attention_pattern_spacing*(i+0.5), 0])
             dot.set_color(CHILL_BROWN)
             attention_patterns.add(dot) #Just add here?
         else:
@@ -283,20 +287,20 @@ def get_attention_layer(attn_patterns):
             attn_pattern.move_to([0, num_attention_pattern_slots*attention_pattern_spacing/2+offset - attention_pattern_spacing*(i+0.5), 0])
             attention_patterns.add(attn_pattern)
 
-            connection_point_left=Circle(radius=0)
+            connection_point_left=m.Circle(radius=0)
             connection_point_left.move_to([-0.59/2.0, num_attention_pattern_slots*attention_pattern_spacing/2+offset - attention_pattern_spacing*(i+0.5), 0])
             connection_points_left.add(connection_point_left)
 
-            connection_point_right=Circle(radius=0)
+            connection_point_right=m.Circle(radius=0)
             connection_point_right.move_to([0.59/2.0, num_attention_pattern_slots*attention_pattern_spacing/2+offset - attention_pattern_spacing*(i+0.5), 0])
             connection_points_right.add(connection_point_right)
             attn_pattern_count+=1
 
-    attention_layer=VGroup(attention_patterns, attention_border, connection_points_left, connection_points_right)
+    attention_layer=m.VGroup(attention_patterns, attention_border, connection_points_left, connection_points_right)
     return attention_layer
 
 def get_mlp_connections_left(attention_connections_left, mlp_out, connection_points_left, attention_connections_left_grad=None):
-    connections_left=VGroup()
+    connections_left=m.VGroup()
     attention_connections_left_abs=np.abs(attention_connections_left)
     attention_connections_left_scaled=attention_connections_left_abs/np.max(attention_connections_left_abs) #np.percentile(attention_connections_left_abs, 99)
     for i, mlp_out_neuron in enumerate(mlp_out):
@@ -304,7 +308,7 @@ def get_mlp_connections_left(attention_connections_left, mlp_out, connection_poi
             if np.abs(attention_connections_left_scaled[i, j])<0.5: continue
             if abs(i/4-j)>3: continue #Need to dial this up or lost it probably, but it is helpful!
             start_point, end_point = get_edge_points(mlp_out_neuron, attention_neuron, 0.06)
-            line = Line(start_point, attention_neuron.get_center())
+            line = m.Line(start_point, attention_neuron.get_center())
             # line.set_stroke(width=1, opacity=0.3)
             # line.set_stroke(opacity=np.clip(0.8*(np.abs(w2[i, j])-attention_connection_display_thresh), 0.1, 1), width=1)
             line.set_stroke(opacity=np.clip(attention_connections_left_scaled[i,j], 0, 1), width=np.clip(1.0*attention_connections_left_scaled[i,j],0,3))
@@ -312,7 +316,7 @@ def get_mlp_connections_left(attention_connections_left, mlp_out, connection_poi
             connections_left.add(line)
 
 
-    connections_left_grads=VGroup()
+    connections_left_grads=m.VGroup()
     if attention_connections_left_grad is not None: 
         attention_connections_left_grad_abs=np.abs(attention_connections_left_grad)
         attention_connections_left_grad_scaled=attention_connections_left_grad_abs/np.percentile(attention_connections_left_grad_abs, 98) #np.percentile(attention_connections_left_abs, 99)
@@ -321,7 +325,7 @@ def get_mlp_connections_left(attention_connections_left, mlp_out, connection_poi
                 if np.abs(attention_connections_left_grad_scaled[i, j])<0.5: continue
                 if abs(i/4-j)>3: continue #Need to dial this up or lost it probably, but it is helpful!
                 start_point, end_point = get_edge_points(mlp_out_neuron, attention_neuron, 0.06)
-                line = Line(start_point, attention_neuron.get_center())
+                line = m.Line(start_point, attention_neuron.get_center())
                 # line.set_stroke(width=1, opacity=0.3)
                 # line.set_stroke(opacity=np.clip(0.8*(np.abs(w2[i, j])-attention_connection_display_thresh), 0.1, 1), width=1)
                 line.set_stroke(opacity=np.clip(attention_connections_left_grad_scaled[i,j], 0, 1), width=np.clip(1.0*attention_connections_left_grad_scaled[i,j],0,2))
@@ -332,7 +336,7 @@ def get_mlp_connections_left(attention_connections_left, mlp_out, connection_poi
 
 
 def get_mlp_connections_right(attention_connections_right, mlp_in, connection_points_right, attention_connections_right_grad=None):
-    connections_right=VGroup()
+    connections_right=m.VGroup()
     attention_connections_right_abs=np.abs(attention_connections_right)
     attention_connections_right_scaled=attention_connections_right_abs/np.percentile(attention_connections_right_abs, 99)
     for i, attention_neuron in enumerate(connection_points_right):
@@ -340,14 +344,14 @@ def get_mlp_connections_right(attention_connections_right, mlp_in, connection_po
             if np.abs(attention_connections_right_scaled[i, j])<0.6: continue
             if abs(j/4-i)>3: continue #Need to dial this up or lost it probably, but it is helpful!
             start_point, end_point = get_edge_points(mlp_in_neuron, attention_neuron, 0.06)
-            line = Line(start_point, attention_neuron.get_center())
+            line = m.Line(start_point, attention_neuron.get_center())
             # line.set_stroke(width=1, opacity=0.3)
             # line.set_stroke(opacity=np.clip(0.8*(np.abs(w2[i, j])-attention_connection_display_thresh), 0.1, 1), width=1)
             line.set_stroke(opacity=np.clip(attention_connections_right_scaled[i,j], 0, 1), width=np.clip(1.0*attention_connections_right_scaled[i,j],0,3))
             line.set_color(CHILL_BROWN)
             connections_right.add(line)
 
-    connections_right_grads=VGroup()
+    connections_right_grads=m.VGroup()
     if attention_connections_right_grad is not None: 
         attention_connections_right_grad_abs=np.abs(attention_connections_right_grad)
         attention_connections_right_grad_scaled=attention_connections_right_grad_abs/np.percentile(attention_connections_right_grad_abs, 98)
@@ -356,7 +360,7 @@ def get_mlp_connections_right(attention_connections_right, mlp_in, connection_po
                 if np.abs(attention_connections_right_grad_scaled[i, j])<0.5: continue
                 if abs(j/4-i)>3: continue #Need to dial this up or lost it probably, but it is helpful!
                 start_point, end_point = get_edge_points(mlp_in_neuron, attention_neuron, 0.06)
-                line = Line(start_point, attention_neuron.get_center())
+                line = m.Line(start_point, attention_neuron.get_center())
                 # line.set_stroke(width=1, opacity=0.3)
                 # line.set_stroke(opacity=np.clip(0.8*(np.abs(w2[i, j])-attention_connection_display_thresh), 0.1, 1), width=1)
                 line.set_stroke(opacity=np.clip(attention_connections_right_grad_scaled[i,j], 0, 1), width=np.clip(1.0*attention_connections_right_grad_scaled[i,j],0,3))
@@ -365,8 +369,8 @@ def get_mlp_connections_right(attention_connections_right, mlp_in, connection_po
     return connections_right, connections_right_grads
 
 def get_input_layer(prompt_neuron_indices, snapshot, num_input_neurons=36):
-    input_layer_nuerons=VGroup()
-    input_layer_text=VGroup()
+    input_layer_nuerons=m.VGroup()
+    input_layer_text=m.VGroup()
     vertical_spacing = 0.18
     neuron_radius = 0.06
     neuron_stroke_color='#dfd0b9'
@@ -377,17 +381,17 @@ def get_input_layer(prompt_neuron_indices, snapshot, num_input_neurons=36):
     neuron_count=0
     for i in range(num_input_neurons):
         if i == num_input_neurons//2:  # Middle position for ellipsis
-            dot = Tex("...").rotate(PI/2, OUT).scale(0.4).move_to(UP * ((num_input_neurons//2 - i) * vertical_spacing))
+            dot = math_tex("...").rotate(m.PI/2, m.OUT).scale(0.4).move_to(m.UP * ((num_input_neurons//2 - i) * vertical_spacing))
             dot.set_color(neuron_stroke_color)
         else:
-            neuron = Circle(radius=neuron_radius, stroke_color=neuron_stroke_color)
+            neuron = m.Circle(radius=neuron_radius, stroke_color=neuron_stroke_color)
             neuron.set_stroke(width=neuron_stroke_width)
             if neuron_count in prompt_neuron_indices:
                 neuron.set_fill(color='#dfd0b9', opacity=1.0)
-                t=Text(snapshot['prompt.tokens'][prompt_token_count], font_size=24, font='myriad-pro')
+                t=m.Text(snapshot['prompt.tokens'][prompt_token_count], font_size=24, font='myriad-pro')
                 t.set_color(neuron_stroke_color)
                 # print(t.get_center())
-                t.move_to((0.2+t.get_right()[0])*LEFT+UP * ((-t.get_bottom()+num_input_neurons//2 - i) * vertical_spacing))
+                t.move_to((0.2+t.get_right()[0])*m.LEFT+m.UP * ((-t.get_bottom()+num_input_neurons//2 - i) * vertical_spacing))
                 if snapshot['prompt.tokens'][prompt_token_count] in words_to_nudge.keys():
                     t.shift([0, words_to_nudge[snapshot['prompt.tokens'][prompt_token_count]], 0])
 
@@ -396,17 +400,17 @@ def get_input_layer(prompt_neuron_indices, snapshot, num_input_neurons=36):
             else:
                 neuron.set_fill(color='#000000', opacity=1.0)
 
-            neuron.move_to(UP * ((num_input_neurons//2 - i) * vertical_spacing))
+            neuron.move_to(m.UP * ((num_input_neurons//2 - i) * vertical_spacing))
             input_layer_nuerons.add(neuron)
             neuron_count+=1
 
-    input_layer=VGroup(input_layer_nuerons, dot, input_layer_text)
+    input_layer=m.VGroup(input_layer_nuerons, dot, input_layer_text)
     return input_layer
 
 
 def get_output_layer(snapshot, empty=False):
-    output_layer_nuerons=VGroup()
-    output_layer_text=VGroup()
+    output_layer_nuerons=m.VGroup()
+    output_layer_text=m.VGroup()
     num_output_neurons=36   
     vertical_spacing = 0.18
     neuron_radius = 0.06
@@ -416,23 +420,23 @@ def get_output_layer(snapshot, empty=False):
     neuron_count=0
     for i in range(num_output_neurons):
         if i == num_output_neurons//2:  # Middle position for ellipsis
-            dot = Tex("...").rotate(PI/2, OUT).scale(0.4).move_to(UP * ((num_output_neurons//2 - i) * vertical_spacing))
+            dot = math_tex("...").rotate(m.PI/2, m.OUT).scale(0.4).move_to(m.UP * ((num_output_neurons//2 - i) * vertical_spacing))
             dot.set_color(neuron_stroke_color)
         else:
-            n = Circle(radius=neuron_radius, stroke_color=neuron_stroke_color)
+            n = m.Circle(radius=neuron_radius, stroke_color=neuron_stroke_color)
             n.set_stroke(width=neuron_stroke_width)
             if not empty: 
                 n.set_fill(color=get_nueron_color(snapshot['topk.probs'][neuron_count],vmax=np.max(snapshot['topk.probs'])), opacity=1.0)
                 if neuron_count==0: font_size=22
                 elif neuron_count<4: font_size=16
                 else: font_size=12 
-                t=Text(snapshot['topk.tokens'][neuron_count], font_size=font_size, font='myriad-pro')
+                t=m.Text(snapshot['topk.tokens'][neuron_count], font_size=font_size, font='myriad-pro')
                 # t.set_color(neuron_stroke_color)
                 # get_nueron_color(neuron_fills[0][neuron_count], vmax=np.abs(neuron_fills[0]).max())
                 text_color=get_nueron_color(np.clip(snapshot['topk.probs'][neuron_count],0.1, 1.0),vmax=np.max(snapshot['topk.probs'])),
                 t.set_color(text_color)
                 t.set_opacity(np.clip(snapshot['topk.probs'][neuron_count], 0.3, 1.0))
-                t.move_to((0.2+t.get_right()[0])*RIGHT+ UP* ((-t.get_bottom()+num_output_neurons//2 - i) * vertical_spacing))
+                t.move_to((0.2+t.get_right()[0])*m.RIGHT+ m.UP* ((-t.get_bottom()+num_output_neurons//2 - i) * vertical_spacing))
                 output_layer_text.add(t)
 
             else: 
@@ -446,21 +450,21 @@ def get_output_layer(snapshot, empty=False):
             #     t2.move_to(t.get_right()+np.array([0.2, 0, 0]))
             #     output_layer_text.add(t2)
 
-            n.move_to(UP * ((num_output_neurons//2 - i) * vertical_spacing))
+            n.move_to(m.UP * ((num_output_neurons//2 - i) * vertical_spacing))
             output_layer_nuerons.add(n)
             neuron_count+=1
-    output_layer=VGroup(output_layer_nuerons, dot, output_layer_text)
+    output_layer=m.VGroup(output_layer_nuerons, dot, output_layer_text)
     return output_layer
 
 
-class LlamaLearningTwelveF(InteractiveScene):
+class LlamaLearningTwelveF(WelchScene):
     def construct(self):
         '''
         Getting close! Next hurdle is to bring in different examples. 
         '''
 
 
-        pickle_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/hackin/jun_3_1_manual_download'
+        pickle_path=welch_path('backprop2/hackin/jun_3_1_manual_download')
         snapshots=[]
         for p in sorted(glob.glob(pickle_path+'/*.p')):
             with open(p, 'rb') as f:
@@ -477,11 +481,11 @@ class LlamaLearningTwelveF(InteractiveScene):
         for snapshot_count, snapshot_index in enumerate([0,0,0]):
             snapshot=snapshots[snapshot_index]
 
-            all_weights=VGroup()
-            all_activations=VGroup()
-            all_activations_empty=VGroup()
-            all_grads=VGroup()
-            random_background_stuff=VGroup()
+            all_weights=m.VGroup()
+            all_activations=m.VGroup()
+            all_activations_empty=m.VGroup()
+            all_grads=m.VGroup()
+            random_background_stuff=m.VGroup()
 
 
             mlps=[]
@@ -575,10 +579,10 @@ class LlamaLearningTwelveF(InteractiveScene):
             prompt_neuron_indices=np.random.choice(np.arange(36), len(snapshot['prompt.tokens'])-1) #Don't include last token
 
             input_layer = get_input_layer(prompt_neuron_indices, snapshot, num_input_neurons=num_input_neurons)
-            input_layer.move_to([-4.7, 0, 0], aligned_edge=RIGHT)
+            input_layer.move_to([-4.7, 0, 0], aligned_edge=m.RIGHT)
 
             input_layer_empty = get_input_layer([], snapshot, num_input_neurons=num_input_neurons)
-            input_layer_empty.move_to([-4.7, 0, 0], aligned_edge=RIGHT)
+            input_layer_empty.move_to([-4.7, 0, 0], aligned_edge=m.RIGHT)
 
 
             # Okie dokie -> Let me add intput/first attention layer connections - this will need to be a separate function
@@ -599,7 +603,7 @@ class LlamaLearningTwelveF(InteractiveScene):
                 all_embeddings[i,:]=prompt_token_embeddings[count, :]
                 all_embeddings_grad[i,:]=prompt_token_embeddings_grad[count, :]
 
-            we_connections=VGroup()
+            we_connections=m.VGroup()
             all_embeddings_abs=np.abs(all_embeddings)
             all_embeddings_scaled=all_embeddings_abs/np.percentile(all_embeddings_abs, 95)
             for i, n1 in enumerate(input_layer[0]):
@@ -607,7 +611,7 @@ class LlamaLearningTwelveF(InteractiveScene):
                     # if np.abs(all_embeddings_scaled[i, j])<0.1: continue
                     if abs(j-i/4)>3: continue #Need to dial this up or lost it probably, but it is helpful!
                     start_point, end_point = get_edge_points(n1, n2, 0.06)
-                    line = Line(start_point, n2.get_center())
+                    line = m.Line(start_point, n2.get_center())
                     # line.set_stroke(width=1, opacity=0.3)
                     # line.set_stroke(opacity=np.clip(0.8*(np.abs(w2[i, j])-attention_connection_display_thresh), 0.1, 1), width=1)
                     line.set_stroke(opacity=np.clip(all_embeddings_scaled[i,j], 0.4, 1), width=np.clip(1.0*all_embeddings_scaled[i,j],0.5,1.7))
@@ -615,7 +619,7 @@ class LlamaLearningTwelveF(InteractiveScene):
                     we_connections.add(line)
 
 
-            we_connections_grad=VGroup()
+            we_connections_grad=m.VGroup()
             all_embeddings_grad_abs=np.abs(all_embeddings_grad)
             all_embeddings_grad_scaled=all_embeddings_grad_abs/np.percentile(all_embeddings_grad_abs, 95)
             for i, n1 in enumerate(input_layer[0]):
@@ -623,7 +627,7 @@ class LlamaLearningTwelveF(InteractiveScene):
                     # if np.abs(all_embeddings_grad_scaled[i, j])<0.1: continue
                     if abs(j-i/4)>4: continue #Need to dial this up or lost it probably, but it is helpful!
                     start_point, end_point = get_edge_points(n1, n2, 0.06)
-                    line = Line(start_point, n2.get_center())
+                    line = m.Line(start_point, n2.get_center())
                     # line.set_stroke(width=1, opacity=0.3)
                     # line.set_stroke(opacity=np.clip(0.8*(np.abs(w2[i, j])-attention_connection_display_thresh), 0.1, 1), width=1)
                     # line.set_stroke(opacity=np.clip(all_embeddings_grad_scaled[i,j], 0.4, 1), width=np.clip(1.0*all_embeddings_grad_scaled[i,j],0.5,1.7))
@@ -637,13 +641,13 @@ class LlamaLearningTwelveF(InteractiveScene):
             #'topk.indices', 'topk.tokens', 'topk.probs', 'topk.unembed.W_U', 'topk.unembed.W_U.grad'
 
             output_layer=get_output_layer(snapshot)
-            output_layer.move_to([mlps[-1].get_right()[0]+0.36, -3.21, 0], aligned_edge=LEFT+BOTTOM) #Was 5.45
+            output_layer.move_to([mlps[-1].get_right()[0]+0.36, -3.21, 0], aligned_edge=m.LEFT+(m.config.frame_height / 2 * m.DOWN)) #Was 5.45
 
             output_layer_empty=get_output_layer(snapshot, empty=True)
-            output_layer_empty.move_to([mlps[-1].get_right()[0]+0.36, -3.21, 0], aligned_edge=LEFT+BOTTOM)
+            output_layer_empty.move_to([mlps[-1].get_right()[0]+0.36, -3.21, 0], aligned_edge=m.LEFT+(m.config.frame_height / 2 * m.DOWN))
 
 
-            wu_connections=VGroup()
+            wu_connections=m.VGroup()
             unembed_abs=np.abs(snapshot['topk.unembed.W_U'][:,0,:].T)
             unembed_scaled=unembed_abs/np.percentile(unembed_abs, 98)
             for i, n1 in enumerate(mlps[-1][4]):
@@ -651,14 +655,14 @@ class LlamaLearningTwelveF(InteractiveScene):
                     if np.abs(unembed_scaled[i, j])<0.5: continue
                     if abs(j-i)>8: continue #Need to dial this up or lost it probably, but it is helpful!
                     start_point, end_point = get_edge_points(n1, n2, 0.06)
-                    line = Line(start_point, n2.get_center())
+                    line = m.Line(start_point, n2.get_center())
                     # line.set_stroke(width=1, opacity=0.3)
                     # line.set_stroke(opacity=np.clip(0.8*(np.abs(w2[i, j])-attention_connection_display_thresh), 0.1, 1), width=1)
                     line.set_stroke(opacity=np.clip(unembed_scaled[i,j], 0.4, 1), width=np.clip(1.0*unembed_scaled[i,j],0.5,1.7))
                     line.set_color(CHILL_BROWN)
                     wu_connections.add(line)
 
-            wu_connections_grad=VGroup()
+            wu_connections_grad=m.VGroup()
             unembed_grad_abs=np.abs(snapshot['topk.unembed.W_U.grad'][:,0,:].T)
             unembed_scaled_grad=unembed_grad_abs/np.percentile(unembed_grad_abs, 99)
             for i, n1 in enumerate(mlps[-1][4]):
@@ -666,7 +670,7 @@ class LlamaLearningTwelveF(InteractiveScene):
                     if np.abs(unembed_scaled_grad[i, j])<0.5: continue
                     if abs(j-i)>8: continue #Need to dial this up or lost it probably, but it is helpful!
                     start_point, end_point = get_edge_points(n1, n2, 0.06)
-                    line = Line(start_point, n2.get_center())
+                    line = m.Line(start_point, n2.get_center())
                     # line.set_stroke(width=1, opacity=0.3)
                     # line.set_stroke(opacity=np.clip(0.8*(np.abs(w2[i, j])-attention_connection_display_thresh), 0.1, 1), width=1)
                     # line.set_stroke(opacity=np.clip(unembed_scaled_grad[i,j], 0.4, 1), width=np.clip(1.0*unembed_scaled_grad[i,j],0.5,1.7))
@@ -675,16 +679,16 @@ class LlamaLearningTwelveF(InteractiveScene):
                     line.set_color(get_grad_color(unembed_scaled_grad[i,j]))
                     wu_connections_grad.add(line)
 
-            all_backward_passes.append(VGroup(we_connections_grad, *all_grads, wu_connections_grad))
+            all_backward_passes.append(m.VGroup(we_connections_grad, *all_grads, wu_connections_grad))
             # all_forward_passes.append(VGroup(input_layer[:-1], *all_activations, output_layer[:-1])) #Leaving out input output text for now. 
-            all_forward_passes.append(VGroup(input_layer, *all_activations, output_layer))
+            all_forward_passes.append(m.VGroup(input_layer, *all_activations, output_layer))
 
         ## -- end big ole loop
         self.wait()
 
-        # self.frame.reorient(0, 0, 0, (2.04, -0.57, 0.0), 8.63)
-        # self.frame.reorient(0, 0, 0, (1.99, -0.04, 0.0), 8.32)
-        self.frame.reorient(0, 0, 0, (2.06, -0.06, 0.0), 9.36)
+        # self.set_view(0, 0, 0, (2.04, -0.57, 0.0), 8.63)
+        # self.set_view(0, 0, 0, (1.99, -0.04, 0.0), 8.32)
+        self.set_view(0, 0, 0, (2.06, -0.06, 0.0), 9.36)
         self.add(random_background_stuff)
         self.add(we_connections, all_weights, wu_connections)
 
@@ -818,7 +822,7 @@ class LlamaLearningTwelveF(InteractiveScene):
             total_time -= pause_between_snapshots
             
             # Create the main time tracker
-            time_tracker = ValueTracker(0)
+            time_tracker = m.ValueTracker(0)
             
             # Add updaters to all objects
             all_updaters = []
@@ -861,10 +865,10 @@ class LlamaLearningTwelveF(InteractiveScene):
         self.wait()
 
         #Ok now zoom in on that one pattern!
-        # self.play(self.frame.animate.reorient(0, 0, 0, (0.8, -1.89, 0.0), 1.00), run_time=7)
+        # self.play(self.animate_view(0, 0, 0, (0.8, -1.89, 0.0), 1.00), run_time=7)
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(0, 0, 0, (2.06, -0.06, 0.0), 9.36), run_time=7)
+        # self.play(self.animate_view(0, 0, 0, (2.06, -0.06, 0.0), 9.36), run_time=7)
         # self.wait()
 
 
@@ -960,4 +964,4 @@ class LlamaLearningTwelveF(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass

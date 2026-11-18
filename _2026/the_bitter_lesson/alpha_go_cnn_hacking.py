@@ -1,4 +1,7 @@
-from manimlib import *
+import manimgx as gx
+from _2026.the_bitter_lesson.go_gx import create_cnn_layer
+import numpy as np
+from welch_scene import WelchScene
 from tqdm import tqdm
 from pathlib import Path
 
@@ -23,9 +26,9 @@ MAGENTA='#FF00FF'
     
 #     # Main box - using Prism for a rectangular shape
 #     box = Cube(side_length=1)
-#     box.set_width(layer_h, stretch=True)
-#     box.set_depth(depth, stretch=True)
-#     box.set_height(layer_w, stretch=True)
+#     box.stretch_to_fit_width(layer_h)
+#     box.stretch_to_fit_depth(depth)
+#     box.stretch_to_fit_height(layer_w)
 #     # box.set_opacity(0.5)
 #     # box.set_fill(fill_color, opacity=fill_opacity)
 #     # box.set_stroke(WHITE, width=line_width)
@@ -60,107 +63,11 @@ MAGENTA='#FF00FF'
 #     layer = Group(box, grid_lines)
 #     return layer
 
-def create_cnn_layer(width=19, height=19, cell_size=0.15, depth=0.1, 
-                     fill_color=BLUE, fill_opacity=0.8, line_width=0.02):
-    """Create a single CNN layer as a flat prism with grid lines."""
-    
-    layer_w = width * cell_size
-    layer_h = height * cell_size
-    
-    # Main box
-    box = Cube(side_length=1)
-    box.set_width(layer_h, stretch=True)
-    box.set_depth(depth, stretch=True)
-    box.set_height(layer_w, stretch=True)
-    
-    grid_lines = Group()
-    
-    front_z = depth / 2 + 0.001
-    back_z = -depth / 2 - 0.001
-    
-    # Front face grid - vertical lines
-    for i in range(width + 1):
-        x = -layer_w / 2 + i * cell_size
-        line = Line3D(
-            start=np.array([x, -layer_h / 2, front_z]),
-            end=np.array([x, layer_h / 2, front_z]),
-            width=line_width, color=WHITE,
-        )
-        grid_lines.add(line)
-    
-    # Front face grid - horizontal lines
-    for j in range(height + 1):
-        y = -layer_h / 2 + j * cell_size
-        line = Line3D(
-            start=np.array([-layer_w / 2, y, front_z]),
-            end=np.array([layer_w / 2, y, front_z]),
-            width=line_width, color=WHITE,
-        )
-        grid_lines.add(line)
-    
-    # Back face grid - vertical lines
-    for i in range(width + 1):
-        x = -layer_w / 2 + i * cell_size
-        line = Line3D(
-            start=np.array([x, -layer_h / 2, back_z]),
-            end=np.array([x, layer_h / 2, back_z]),
-            width=line_width, color=WHITE,
-        )
-        grid_lines.add(line)
-    
-    # Back face grid - horizontal lines
-    for j in range(height + 1):
-        y = -layer_h / 2 + j * cell_size
-        line = Line3D(
-            start=np.array([-layer_w / 2, y, back_z]),
-            end=np.array([layer_w / 2, y, back_z]),
-            width=line_width, color=WHITE,
-        )
-        grid_lines.add(line)
-    
-    # Edge lines connecting front to back (top and bottom edges)
-    for i in range(width + 1):
-        x = -layer_w / 2 + i * cell_size
-        # Top edge
-        line = Line3D(
-            start=np.array([x, layer_h / 2, front_z]),
-            end=np.array([x, layer_h / 2, back_z]),
-            width=line_width, color=WHITE,
-        )
-        grid_lines.add(line)
-        # Bottom edge
-        line = Line3D(
-            start=np.array([x, -layer_h / 2, front_z]),
-            end=np.array([x, -layer_h / 2, back_z]),
-            width=line_width, color=WHITE,
-        )
-        grid_lines.add(line)
-    
-    # Edge lines connecting front to back (left and right edges)
-    for j in range(height + 1):
-        y = -layer_h / 2 + j * cell_size
-        # Right edge
-        line = Line3D(
-            start=np.array([layer_w / 2, y, front_z]),
-            end=np.array([layer_w / 2, y, back_z]),
-            width=line_width, color=WHITE,
-        )
-        grid_lines.add(line)
-        # Left edge
-        line = Line3D(
-            start=np.array([-layer_w / 2, y, front_z]),
-            end=np.array([-layer_w / 2, y, back_z]),
-            width=line_width, color=WHITE,
-        )
-        grid_lines.add(line)
-    
-    layer = Group(box, grid_lines)
-    return layer
 
-class AlphaGoCNN(InteractiveScene):
+class AlphaGoCNN(WelchScene):
     def construct(self):
         spacing=0.8
-        layers=Group()
+        layers=gx.Group()
         for i in range(4):
 
             layer = create_cnn_layer(
@@ -171,7 +78,7 @@ class AlphaGoCNN(InteractiveScene):
                 fill_color=CHILL_BLUE,
             )
 
-            layer.rotate(90*DEGREES, [1, 0, 0])
+            layer.rotate(90*gx.DEGREES, [1, 0, 0])
             layer[0].set_opacity(0.6)
             layer[1].set_opacity(0.6)
             layer.move_to([0, -spacing*i, 0])
@@ -179,14 +86,14 @@ class AlphaGoCNN(InteractiveScene):
 
 
         self.add(layers)
-        # self.frame.reorient(-79, 82, 0, (0.91, -1.52, -0.24), 5.52)
-        self.frame.reorient(-59, 62, 0, (0.7, -0.79, -0.76), 6.99)
+        # self.set_view(-79, 82, 0, (0.91, -1.52, -0.24), 5.52)
+        self.set_view(-59, 62, 0, (0.7, -0.79, -0.76), 6.99)
 
         self.wait()
 
 
         # layer.rotate(90*DEGREES, [0, 1, 0])
-        # self.frame.reorient(-74, 83, 0, (0.96, -1.75, -0.16), 8.47)
+        # self.set_view(-74, 83, 0, (0.96, -1.75, -0.16), 8.47)
 
         self.wait()
 
@@ -195,9 +102,8 @@ class AlphaGoCNN(InteractiveScene):
 
         
         self.wait()
-        self.embed()
 
-class AlphaGoValueNetwork(InteractiveScene):
+class AlphaGoValueNetwork(WelchScene):
     def construct(self):
         '''
         This network should have 3 convolutional layers, and then a "pyramid" projecting
@@ -210,7 +116,7 @@ class AlphaGoValueNetwork(InteractiveScene):
         cell_size = 0.15
         layer_size = 19 * cell_size  # Width/height of the 19x19 grid
         
-        layers = Group()
+        layers = gx.Group()
         
         # Create 3 convolutional layers (green)
         for i in range(3):
@@ -221,7 +127,7 @@ class AlphaGoValueNetwork(InteractiveScene):
                 depth=0.15,
                 fill_color=CHILL_GREEN,
             )
-            layer.rotate(90 * DEGREES, [1, 0, 0])
+            layer.rotate(90 * gx.DEGREES, [1, 0, 0])
             layer[0].set_color(CHILL_GREEN) #, opacity=0.6)
             layer[0].set_opacity(0.6)
             layer[1].set_opacity(0.6)
@@ -262,12 +168,12 @@ class AlphaGoValueNetwork(InteractiveScene):
         ]
         
         # Create the 4 trapezoidal faces of the frustum/pyramid
-        pyramid_faces = Group()
+        pyramid_faces = gx.Group()
         
         for i in range(4):
             next_i = (i + 1) % 4
             # Each face is a quadrilateral: base[i], base[next_i], top[next_i], top[i]
-            face = Polygon(
+            face = gx.Polygon(
                 base_corners[i],
                 base_corners[next_i],
                 top_corners[next_i],
@@ -278,37 +184,37 @@ class AlphaGoValueNetwork(InteractiveScene):
             pyramid_faces.add(face)
         
         # Add Line3D borders to pyramid edges
-        pyramid_edges = Group()
+        pyramid_edges = gx.Group()
         line_width = 0.02
         
         # 4 angled edges connecting base to top corners
         for i in range(4):
-            edge = Line3D(
+            edge = gx.Line3D(
                 start=base_corners[i],
                 end=top_corners[i],
-                width=line_width,
-                color=WHITE,
+                thickness=line_width,
+                color=gx.WHITE,
             )
             pyramid_edges.add(edge)
         
         # 4 edges around the top square
         for i in range(4):
             next_i = (i + 1) % 4
-            edge = Line3D(
+            edge = gx.Line3D(
                 start=top_corners[i],
                 end=top_corners[next_i],
-                width=line_width,
-                color=WHITE,
+                thickness=line_width,
+                color=gx.WHITE,
             )
             pyramid_edges.add(edge)
         
         # Create single output cube with white borders
-        output_cube = Cube(side_length=output_size)
+        output_cube = gx.Cube(side_length=output_size)
         output_cube.set_color(CHILL_GREEN)
         output_cube.move_to([0, output_y, 0])
         
         # Add Line3D borders to output cube
-        cube_edges = Group()
+        cube_edges = gx.Group()
         s = output_size / 2
         
         # Define the 8 corners of the cube
@@ -334,11 +240,11 @@ class AlphaGoValueNetwork(InteractiveScene):
         ]
         
         for start_idx, end_idx in cube_edge_pairs:
-            edge = Line3D(
+            edge = gx.Line3D(
                 start=cube_corners[start_idx],
                 end=cube_corners[end_idx],
-                width=line_width,
-                color=WHITE,
+                thickness=line_width,
+                color=gx.WHITE,
             )
             cube_edges.add(edge)
         
@@ -351,12 +257,11 @@ class AlphaGoValueNetwork(InteractiveScene):
 
         
         # Set camera angle similar to AlphaGoCNN
-        # self.frame.reorient(-59, 62, 0, (0.7, -1.5, -0.76), 8.0)
+        # self.set_view(-59, 62, 0, (0.7, -1.5, -0.76), 8.0)
 
-        self.frame.reorient(-58, 62, 0, (0.4, -0.59, -0.36), 6.51)
+        self.set_view(-58, 62, 0, (0.4, -0.59, -0.36), 6.51)
         
         self.wait()
-        self.embed()
 
 
 
@@ -451,9 +356,9 @@ class AlphaGoValueNetwork(InteractiveScene):
 #         self.add(layers, pyramid_faces, output_cube)
         
 #         # Set camera angle similar to AlphaGoCNN
-#         self.frame.reorient(-59, 62, 0, (0.7, -1.5, -0.76), 8.0)
+#         self.set_view(-59, 62, 0, (0.7, -1.5, -0.76), 8.0)
         
 #         self.wait()
-#         self.embed()
+#         pass
 
 

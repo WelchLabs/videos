@@ -1,6 +1,0 @@
-[
-    {
-        "caption": "ManimRunScene: Run highlighted manim scene",
-        "command": "manim_run_scene"
-    }
-]

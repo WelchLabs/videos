@@ -1,4 +1,8 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+from deepseek_diagrams import get_attention_head
+from welch_scene import WelchScene
+
 from tqdm import tqdm
 from pathlib import Path
 
@@ -7,75 +11,12 @@ CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
 BLUE='#65c8d0'
 
-from manimlib.mobject.svg.svg_mobject import _convert_point_to_3d
-from manimlib.logger import log
 
-def get_attention_head(svg_path='/Users/stephen/welch_labs/deepseek/graphics/to_manim',
-                       svg_file='mha_2d_segments-',
-                       img_path='/Users/stephen/welch_labs/deepseek/hackin/linux_workdir/deepseek/flowchart_graphics'):
-
-    q1=ImageMobject(str(img_path/'q_1.png'))
-    q1.scale([0.0415, 0.08, 1]) 
-    q1.move_to([-0.2,0.38,0]) 
-    # self.add(q1)
-    # self.remove(q1)      
-
-    k1=ImageMobject(str(img_path/'k_1.png'))
-    k1.scale([0.0415, 0.08, 1]) 
-    k1.move_to([-0.2,-0.06,0]) 
-    # self.add(k1)
-    # self.remove(k1)
-
-    v1=ImageMobject(str(img_path/'v_1.png'))
-    v1.scale([0.0415, 0.08, 1]) 
-    v1.move_to([-0.2,-0.48,0]) 
-    # self.add(v1)
-    # self.remove(v1)
-
-    kt=ImageMobject(str(img_path/'k_1.png'))
-    kt.scale([0.0215,0.035, 1])
-    kt.rotate([0, 0, -PI/2]) 
-    kt.move_to([0.405,0.305,0])     
-    # self.add(kt)
-    # self.remove(kt)
-
-    a1=ImageMobject(str(img_path/'attention_scores.png'))
-    a1.scale([0.055,0.055, 1])
-    a1.move_to([0.66,0.37,0]) 
-    # self.add(a1)
-    # self.remove(a1)
-
-    a2=ImageMobject(str(img_path/'attention_pattern.png'))
-    a2.scale([0.13,0.13, 1])
-    a2.move_to([1.27,0.25,0]) 
-    # self.add(a2)
-    # self.remove(a2)
-
-    z1=ImageMobject(str(img_path/'z_1.png'))
-    z1.scale([0.0425, 0.08, 1]) 
-    z1.move_to([1.035,-0.48,0]) 
-    # self.add(z1)
-    # self.remove(z1)
-
-    all_images=Group(q1, k1, v1, kt, a1, a2, z1)
-
-    svg_files=list(sorted((svg_path).glob('*'+svg_file+'*')))
-    # print(svg_files)
-
-    all_labels=Group()
-    for svg_file in svg_files:
-        svg_image=SVGMobject(str(svg_file))
-        all_labels.add(svg_image[1:]) #Thowout background
- 
-    large_white_connectors=SVGMobject(str(svg_path/'mha_2d_large_white_connectors_2.svg'))
-
-    return Group(all_images, all_labels, large_white_connectors[1:])
-
-class book_3d_3(InteractiveScene):
+class book_3d_3(WelchScene):
     def construct(self):
 
-        img_path=Path('/Users/stephen/welch_labs/deepseek/hackin/linux_workdir/deepseek')
-        svg_path=Path('/Users/stephen/welch_labs/deepseek/graphics/to_manim')
+        img_path=Path(welch_path('deepseek/hackin/linux_workdir/deepseek'))
+        svg_path=Path(welch_path('deepseek/graphics/to_manim'))
 
 
         # a=get_attention_head(svg_path=svg_path, img_path=img_path/'gpt_2_attention_viz_1/0', 
@@ -87,10 +28,10 @@ class book_3d_3(InteractiveScene):
         #                             svg_file='mha_2d_grouped_separate_lines.svg')
         # self.add(x)
 
-        # self.frame.reorient(0, 0, 0, (0.00, 0.00, 0.00), 2.80)
+        # self.set_view(0, 0, 0, (0.00, 0.00, 0.00), 2.80)
         # self.wait()
 
-        # self.frame.reorient(0, 86, 0, (-0.07, -0.06, 0.06), 2.39)
+        # self.set_view(0, 86, 0, (-0.07, -0.06, 0.06), 2.39)
 
         # x=get_input_x(svg_path=svg_path, img_path=img_path/'gpt_2_attention_viz_1', 
         #                             svg_file='mha_2d_grouped_separate_lines.svg')
@@ -100,12 +41,12 @@ class book_3d_3(InteractiveScene):
 
         # self.remove(x)
 
-        attention_heads=Group()
+        attention_heads=gx.Group()
         spacing=0.25
         for i in range(12): #Render in reverse order for occlusions
             a=get_attention_head(svg_path=svg_path,svg_file='mha_2d_segments-',
                                         img_path=img_path/'gpt_2_attention_viz_1'/str(i))
-            a.rotate([PI/2,0,0], axis=RIGHT)
+            a.rotate(gx.PI/2, axis=gx.RIGHT)
             a.move_to([0, spacing*i,0])
             # a.set_opacity(0.5)
             attention_heads.add(a)
@@ -144,14 +85,14 @@ class book_3d_3(InteractiveScene):
         ## -- So, I think a really good option would be showing the keys and values collapsing down into a single matrix
         ## -- and then add in the connector. 
         # self.wait()
-        self.frame.reorient(0, 82, 0, (0.45, -0.07, -0.02), 1.43)
+        self.set_view(0, 82, 0, (0.45, -0.07, -0.02), 1.43)
         self.wait()
-        # self.frame.reorient(0, 83, 0, (0.37, -0.06, 0.01), 2.04)
-        self.play(self.frame.animate.reorient(0, 83, 0, (0.37, -0.06, 0.01), 2.04), run_time=3)
+        # self.set_view(0, 83, 0, (0.37, -0.06, 0.01), 2.04)
+        self.play(self.animate_view(0, 83, 0, (0.37, -0.06, 0.01), 2.04), run_time=3)
         self.wait()
 
 
-        self.play(*[self.frame.animate.reorient(-51, 66, 0, (-0.37, 0.6, -0.12), 2.37)]+
+        self.play(*[self.animate_view(-51, 66, 0, (-0.37, 0.6, -0.12), 2.37)]+
                 [attention_heads[i][0][0].animate.set_opacity(0.0) for i in range(12)]+ #Turn down queries
                 [attention_heads[0][1][3].animate.set_opacity(0.0)]+ #Query Labels
                 [attention_heads[i][0][1].animate.move_to([-0.53,  0.39,  -0.1  ]) for i in range(4)]+ #First key grouping
@@ -167,7 +108,7 @@ class book_3d_3(InteractiveScene):
 
 
         ##Keys
-        connector_1=SVGMobject('/Users/stephen/welch_labs/deepseek/graphics/to_manim/thick_small_white_connector.svg')
+        connector_1=gx.SVGMobject(welch_path('deepseek/graphics/to_manim/thick_small_white_connector.svg'))
         connector_1.scale([0.3, 0.39, 1])
         connector_1.move_to([0.18, 1.39, -0.11]) #[0.18, 1.38, 0.05]
         
@@ -178,7 +119,7 @@ class book_3d_3(InteractiveScene):
         connector_1c.move_to([0.18, 0.385, -0.11])
 
         ##Values
-        connector_2=SVGMobject('/Users/stephen/welch_labs/deepseek/graphics/to_manim/thick_small_white_connector.svg')
+        connector_2=gx.SVGMobject(welch_path('deepseek/graphics/to_manim/thick_small_white_connector.svg'))
         connector_2.scale([0.3, 0.39, 1])
         connector_2.move_to([ 0.18 ,  1.38, -0.5 ])
 
@@ -188,30 +129,30 @@ class book_3d_3(InteractiveScene):
         connector_2c=connector_2.copy()
         connector_2c.move_to([ 0.18 ,  0.39, -0.5 ])     
 
-        white_arrows=Group(*[attention_heads[i][2] for i in range(12)])
+        white_arrows=gx.Group(*[attention_heads[i][2] for i in range(12)])
 
-        self.play(FadeIn(connector_1b), FadeIn(connector_1), FadeIn(white_arrows), 
-                  FadeIn(connector_1c), FadeIn(connector_2), FadeIn(connector_2b),  FadeIn(connector_2c),
-                 self.frame.animate.reorient(-38, 59, 0, (0.05, 0.56, 0.06), 2.54), run_time=2)
+        self.play(gx.FadeIn(connector_1b), gx.FadeIn(connector_1), gx.FadeIn(white_arrows),
+                  gx.FadeIn(connector_1c), gx.FadeIn(connector_2), gx.FadeIn(connector_2b),  gx.FadeIn(connector_2c),
+                 self.animate_view(-38, 59, 0, (0.05, 0.56, 0.06), 2.54), run_time=2)
         self.add(attention_heads[4][0][1]) #Occlusion
         self.add(attention_heads[4][0][2]) #Occlusion
         self.add(attention_heads[0][0][1]) #Occlusion
         self.add(attention_heads[0][0][2]) #Occlusion
         self.wait()         
 
-        self.frame.reorient(-38, 59, 0, (0.12, 0.93, -0.18), 2.93) 
+        self.set_view(-38, 59, 0, (0.12, 0.93, -0.18), 2.93)
 
 
-        # self.play(self.frame.animate.reorient(-18, 58, 0, (0.29, 0.47, 0.04), 2.54), run_time=8, rate_func=linear)
+        # self.play(self.animate_view(-18, 58, 0, (0.29, 0.47, 0.04), 2.54), run_time=8, rate_func=linear)
         self.wait()
 
         #Book
         self.wait()
-        self.frame.reorient(-33, 69, 0, (0.26, 0.84, -0.18), 2.42)
+        self.set_view(-33, 69, 0, (0.26, 0.84, -0.18), 2.42)
         self.wait()
-        self.frame.reorient(-38, 66, 0, (0.28, 0.84, -0.15), 2.31)
+        self.set_view(-38, 66, 0, (0.28, 0.84, -0.15), 2.31)
         self.wait()
-        self.frame.reorient(-38, 62, 0, (0.21, 0.8, -0.31), 2.31)
+        self.set_view(-38, 62, 0, (0.21, 0.8, -0.31), 2.31)
         self.wait()
         
 
@@ -221,7 +162,4 @@ class book_3d_3(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
-
-
-
+        # Scene authoring stops here in the interactive editor.

@@ -1,4 +1,11 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+from curve_fitting import eval_legendre_poly, f, fit_legendre_pinv, get_noisy_data
+import numpy as np
+from welch_geometry import diagram_axes
+from welch_scene import WelchScene
+from welch_text import math_tex
+
 import os
 import scipy.special
 
@@ -15,41 +22,15 @@ TEST_BLUE='#008080'  # Teal color for all test/blue elements
 
 # graphics_dir = os.path.expanduser('~/Stephencwelch Dropbox/welch_labs/double_descent/graphics/')
 # svg_dir = os.path.expanduser('~/Downloads')
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/double_descent/graphics/'
-svg_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/double_descent/graphics/to_manim'
+graphics_dir=welch_path('double_descent/graphics/')
+svg_dir=welch_path('double_descent/graphics/to_manim')
 
 
-def fit_legendre_pinv(x_train, y_train, degree, x_min=-2, x_max=2):
-    """Fit Legendre polynomial using pseudoinverse"""
-    # Rescale x to [-1, 1]
-    x_scaled = 2 * (x_train - x_min) / (x_max - x_min) - 1
-    
-    feature_degrees = np.arange(degree + 1)[:, None]
-    X_train_poly = scipy.special.eval_legendre(feature_degrees, x_scaled).T
-    beta_hat = np.linalg.pinv(X_train_poly) @ y_train
-    return beta_hat
-
-def eval_legendre_poly(beta, x, degree, x_min=-2, x_max=2):
-    """Evaluate Legendre polynomial with given coefficients"""
-    # Rescale x to [-1, 1]
-    x_scaled = 2 * (x - x_min) / (x_max - x_min) - 1
-    
-    feature_degrees = np.arange(degree + 1)[:, None]
-    X_poly = scipy.special.eval_legendre(feature_degrees, x_scaled).T
-    return X_poly @ beta
-
-def get_noisy_data(n_points=10, noise_level=0.2, random_seed=428):
-    np.random.seed(random_seed) 
-    x=np.random.uniform(-2, 2, n_points)
-    y=f(x)+noise_level*np.random.randn(n_points)
-    return x,y
-
-def f(x): return 0.5*(x**2)
 # def f(x): return 0.5*(x**4-3*x**2)
 # def f(x): return np.add(2.0 * x, np.cos(x * 25)) #[:, 0]
 
 
-class P8_15V2(InteractiveScene):
+class P8_15V2(WelchScene):
     def construct(self):
         # Configuration Parameters
         random_seed = 428
@@ -57,7 +38,7 @@ class P8_15V2(InteractiveScene):
         noise_level = 0.2
         
         # Load SVG Axes
-        curve_fit_axis_svg = SVGMobject(svg_dir + '/p8_15_2a.svg')[1:] 
+        curve_fit_axis_svg = gx.SVGMobject(svg_dir + '/p8_15_2a.svg')[1:]
         curve_fit_axis_svg.scale(4.0)
         curve_fit_axis_svg.move_to([-2.86, 0.6, 0])
         
@@ -73,7 +54,7 @@ class P8_15V2(InteractiveScene):
         x_test, y_test = x[n_train_points:], y[n_train_points:]
         
         # Create First Axes (Curve Fitting Plot)
-        axes_1 = Axes(
+        axes_1 = diagram_axes(
             x_range=[-2.0, 2.0, 1],
             y_range=[-0.5, 2.0, 1],
             width=6,
@@ -90,22 +71,22 @@ class P8_15V2(InteractiveScene):
         axes_1.move_to([-3, 0, 0])
         
         # Create Parabola and Data Points
-        parabola = axes_1.get_graph(
+        parabola = axes_1.plot(
             lambda x: f(x),
             x_range=[-2, 2],
             color=CHILL_BROWN
         )
         parabola.set_stroke(width=3)
         
-        train_dots = VGroup(*[
-            Dot(axes_1.c2p(x_train[i], y_train[i]), radius=0.08) 
+        train_dots = gx.VGroup(*[
+            gx.Dot(axes_1.c2p(x_train[i], y_train[i]), radius=0.08)
             for i in range(len(x_train))
         ])
-        test_dots = VGroup(*[
-            Dot(axes_1.c2p(x_test[i], y_test[i]), radius=0.08) 
+        test_dots = gx.VGroup(*[
+            gx.Dot(axes_1.c2p(x_test[i], y_test[i]), radius=0.08)
             for i in range(len(x_test))
         ])
-        all_dots = VGroup(test_dots, train_dots)
+        all_dots = gx.VGroup(test_dots, train_dots)
         all_dots.set_color(YELLOW)
         
         # Sort dots by x-coordinate for smooth animation
@@ -136,8 +117,8 @@ class P8_15V2(InteractiveScene):
         legend_items_1 = VGroup(legend_train_1, legend_test_1, legend_line_1_item_1).arrange(RIGHT, buff=0.5)
 
         legend_box_1 = RoundedRectangle(
-            width=legend_items_1.get_width() + 0.8,
-            height=legend_items_1.get_height() + 0.4,
+            width=legend_items_1.width + 0.8,
+            height=legend_items_1.height + 0.4,
             corner_radius=0.08,
             stroke_color=CHILL_BROWN,
             stroke_width=2,
@@ -168,8 +149,8 @@ class P8_15V2(InteractiveScene):
         legend_items_2 = VGroup(legend_train_2, legend_test_2, legend_line_1_item_1, legend_line_2_item_2).arrange(RIGHT, buff=0.5)
 
         legend_box_2 = RoundedRectangle(
-            width=legend_items_2.get_width() + 0.8,
-            height=legend_items_2.get_height() + 0.4,
+            width=legend_items_2.width + 0.8,
+            height=legend_items_2.height + 0.4,
             corner_radius=0.08,
             stroke_color=CHILL_BROWN,
             stroke_width=2,
@@ -200,8 +181,8 @@ class P8_15V2(InteractiveScene):
         legend_items_3 = VGroup(legend_train_3, legend_test_3, legend_line_1_item_1, legend_line_2_item_2, legend_line_3_item_3).arrange(RIGHT, buff=0.5)
 
         legend_box_3 = RoundedRectangle(
-            width=legend_items_3.get_width() + 0.8,
-            height=legend_items_3.get_height() + 0.4,
+            width=legend_items_3.width + 0.8,
+            height=legend_items_3.height + 0.4,
             corner_radius=0.08,
             stroke_color=CHILL_BROWN,
             stroke_width=2,
@@ -232,8 +213,8 @@ class P8_15V2(InteractiveScene):
         legend_items_4 = VGroup(legend_train_4, legend_test_4, legend_line_1_item_1, legend_line_2_item_2, legend_line_3_item_3, legend_line_4_item_4).arrange(RIGHT, buff=0.5)
 
         legend_box_4 = RoundedRectangle(
-            width=legend_items_4.get_width() + 0.8,
-            height=legend_items_4.get_height() + 0.4,
+            width=legend_items_4.width + 0.8,
+            height=legend_items_4.height + 0.4,
             corner_radius=0.08,
             stroke_color=CHILL_BROWN,
             stroke_width=2,
@@ -248,30 +229,30 @@ class P8_15V2(InteractiveScene):
         legend_4.move_to(ORIGIN + DOWN * 3.2)'''
         
         # Create simplified legend with just Training Data, Testing Data, and Target Function
-        legend = VGroup()
+        legend = gx.VGroup()
         
         # Training Data item
-        legend_training_dot = Dot(radius=0.06).set_color(YELLOW)
-        legend_training_text = Text("Training Data", font_size=20, font='myraid-pro').set_color(CHILL_BROWN)
-        legend_training = VGroup(legend_training_dot, legend_training_text).arrange(RIGHT, buff=0.15, aligned_edge=ORIGIN)
+        legend_training_dot = gx.Dot(radius=0.06).set_color(YELLOW)
+        legend_training_text = gx.Text("Training Data", font_size=20, font='myraid-pro').set_color(CHILL_BROWN)
+        legend_training = gx.VGroup(legend_training_dot, legend_training_text).arrange(gx.RIGHT, buff=0.15, aligned_edge=gx.ORIGIN)
         
         # Testing Data item
-        legend_testing_dot = Dot(radius=0.06).set_color(TEST_BLUE)
-        legend_testing_text = Text("Testing Data", font_size=20, font='myraid-pro').set_color(CHILL_BROWN)
-        legend_testing = VGroup(legend_testing_dot, legend_testing_text).arrange(RIGHT, buff=0.15, aligned_edge=ORIGIN)
+        legend_testing_dot = gx.Dot(radius=0.06).set_color(TEST_BLUE)
+        legend_testing_text = gx.Text("Testing Data", font_size=20, font='myraid-pro').set_color(CHILL_BROWN)
+        legend_testing = gx.VGroup(legend_testing_dot, legend_testing_text).arrange(gx.RIGHT, buff=0.15, aligned_edge=gx.ORIGIN)
         
         # Target Function item
-        legend_target_line = Line(LEFT * 0.2, RIGHT * 0.2, color=CHILL_BROWN, stroke_width=3)
-        legend_target_text = Text("Target Function", font_size=20, font='myraid-pro').set_color(CHILL_BROWN)
-        legend_target = VGroup(legend_target_line, legend_target_text).arrange(RIGHT, buff=0.15, aligned_edge=ORIGIN)
+        legend_target_line = gx.Line(gx.LEFT * 0.2, gx.RIGHT * 0.2, color=CHILL_BROWN, stroke_width=3)
+        legend_target_text = gx.Text("Target Function", font_size=20, font='myraid-pro').set_color(CHILL_BROWN)
+        legend_target = gx.VGroup(legend_target_line, legend_target_text).arrange(gx.RIGHT, buff=0.15, aligned_edge=gx.ORIGIN)
         
         # Arrange all items in the legend
-        legend_items = VGroup(legend_training, legend_testing, legend_target).arrange(RIGHT, buff=0.4)
+        legend_items = gx.VGroup(legend_training, legend_testing, legend_target).arrange(gx.RIGHT, buff=0.4)
         
         # Create box around legend
-        legend_box = RoundedRectangle(
-            width=legend_items.get_width() + 0.5,
-            height=legend_items.get_height() + 0.35,
+        legend_box = gx.RoundedRectangle(
+            width=legend_items.width + 0.5,
+            height=legend_items.height + 0.35,
             corner_radius=0.08,
             stroke_color=CHILL_BROWN,
             stroke_width=2,
@@ -289,19 +270,19 @@ class P8_15V2(InteractiveScene):
 
 
         # Initial Animation: Show Curve and Data
-        self.frame.reorient(0, 0, 0, (-2.94, 0.08, 0.0), 7.45)
+        self.set_view(0, 0, 0, (-2.94, 0.08, 0.0), 7.45)
         
-        self.play(Write(curve_fit_axis_svg), run_time=3)
-        self.play(ShowCreation(parabola), run_time=2)  # Show the target function (brown parabola)
+        self.play(gx.Write(curve_fit_axis_svg), run_time=3)
+        self.play(gx.Create(parabola), run_time=2)  # Show the target function (brown parabola)
         self.play(
-            LaggedStart(*[FadeIn(dot) for dot in sorted_dots], lag_ratio=0.15), 
+            gx.LaggedStart(*[gx.FadeIn(dot) for dot in sorted_dots], lag_ratio=0.15),
             run_time=2
         )
         self.wait()
         
         self.play(
             test_dots.animate.set_color(TEST_BLUE),
-            FadeIn(legend)
+            gx.FadeIn(legend)
         )
         self.wait()
         
@@ -343,25 +324,25 @@ class P8_15V2(InteractiveScene):
         test_error_4 = np.mean((y_test - y_test_pred4)**2)
         
         fit_points = [axes_1.c2p(all_x[i], all_y_fit[i]) for i in range(len(all_x))]
-        fit_line_1 = VMobject(color=GREEN, stroke_width=3)
+        fit_line_1 = gx.VMobject(color=GREEN, stroke_width=3)
         fit_line_1.set_points_smoothly(fit_points)
         
         # Create equation for degree 1 - positioned right above the green line
-        eq_1 = Tex("y = ax + b", font_size=40).set_color(GREEN)
+        eq_1 = math_tex("y = ax + b", font_size=40).set_color(GREEN)
         # Position above the green line at x=0
         line_y_at_center = axes_1.c2p(0, eval_legendre_poly(beta_hat, np.array([0]), degree)[0])[1]
         eq_1.move_to([-3, line_y_at_center + 0.6, 0])  # Position above the green line
         
         self.play(
-            ShowCreation(fit_line_1),
-            Write(eq_1),
+            gx.Create(fit_line_1),
+            gx.Write(eq_1),
             run_time=1.5
         )
         self.bring_to_front(fit_line_1)  # Keep fit line in front
         self.wait()
         
         # Create Second Axes (Error Plot)
-        axes_2 = Axes(
+        axes_2 = diagram_axes(
             x_range=[0, 4, 1],
             y_range=[0, 1.2, 1],
             width=6,
@@ -382,35 +363,35 @@ class P8_15V2(InteractiveScene):
         train_errors = [0.221350, 0.031825, 0.000803, 0.000000]
         test_errors = [0.691636, 0.079449, 0.727023, 1.328535]
         
-        train_error_dots = VGroup(*[
-            Dot(axes_2.c2p(degrees[i], train_errors[i]), radius=0.08)
+        train_error_dots = gx.VGroup(*[
+            gx.Dot(axes_2.c2p(degrees[i], train_errors[i]), radius=0.08)
             for i in range(len(degrees))
         ])
-        test_error_dots = VGroup(*[
-            Dot(axes_2.c2p(degrees[i], test_errors[i]), radius=0.08)
+        test_error_dots = gx.VGroup(*[
+            gx.Dot(axes_2.c2p(degrees[i], test_errors[i]), radius=0.08)
             for i in range(len(degrees))
         ])
         train_error_dots.set_color(YELLOW)
         test_error_dots.set_color(TEST_BLUE)
         
-        error_axis_svg = SVGMobject(svg_dir + '/p8_15_2-05.svg')
+        error_axis_svg = gx.SVGMobject(svg_dir + '/p8_15_2-05.svg')
         error_axis_svg.scale(2.95)
         error_axis_svg.move_to([4.79, 0.75, 0])
         
         # Create Training Error Bars
-        train_error_bars = VGroup()
+        train_error_bars = gx.VGroup()
         for i in range(len(x_train)):
             point_pos = axes_1.c2p(x_train[i], y_train[i])
             fit_pos = axes_1.c2p(x_train[i], y_train_pred[i])
             # Always draw from the lower point to the higher point
             if point_pos[1] > fit_pos[1]:  # point is above fit
-                error_bar = Line(fit_pos, point_pos, color=YELLOW, stroke_width=3)
+                error_bar = gx.Line(fit_pos, point_pos, color=YELLOW, stroke_width=3)
             else:  # point is below fit
-                error_bar = Line(point_pos, fit_pos, color=YELLOW, stroke_width=3)
+                error_bar = gx.Line(point_pos, fit_pos, color=YELLOW, stroke_width=3)
             train_error_bars.add(error_bar)
         
         # Create target bars for error plot (stacked bars)
-        target_train_bars = VGroup()
+        target_train_bars = gx.VGroup()
         bar_height = train_errors[0] / len(train_error_bars)
         x_pos = degrees[0]
         
@@ -419,23 +400,23 @@ class P8_15V2(InteractiveScene):
             top_y = (i + 1) * bar_height
             bottom = axes_2.c2p(x_pos, bottom_y)
             top = axes_2.c2p(x_pos, top_y)
-            target_bar = Line(bottom, top, color=YELLOW, stroke_width=3)
+            target_bar = gx.Line(bottom, top, color=YELLOW, stroke_width=3)
             target_train_bars.add(target_bar)
         
         # Create Testing Error Bars
-        test_error_bars = VGroup()
+        test_error_bars = gx.VGroup()
         for i in range(len(x_test)):
             point_pos = axes_1.c2p(x_test[i], y_test[i])
             fit_pos = axes_1.c2p(x_test[i], y_test_pred[i])
             # Always draw from the lower point to the higher point
             if point_pos[1] > fit_pos[1]:  # point is above fit
-                error_bar = Line(fit_pos, point_pos, color=TEST_BLUE, stroke_width=3)
+                error_bar = gx.Line(fit_pos, point_pos, color=TEST_BLUE, stroke_width=3)
             else:  # point is below fit
-                error_bar = Line(point_pos, fit_pos, color=TEST_BLUE, stroke_width=3)
+                error_bar = gx.Line(point_pos, fit_pos, color=TEST_BLUE, stroke_width=3)
             test_error_bars.add(error_bar)
         
         # Create target bars for error plot (stacked bars)
-        target_test_bars = VGroup()
+        target_test_bars = gx.VGroup()
         bar_height = test_errors[0] / len(test_error_bars)
         x_pos = degrees[0]
         
@@ -444,13 +425,13 @@ class P8_15V2(InteractiveScene):
             top_y = (i + 1) * bar_height
             bottom = axes_2.c2p(x_pos, bottom_y)
             top = axes_2.c2p(x_pos, top_y)
-            target_bar = Line(bottom, top, color=TEST_BLUE, stroke_width=3)
+            target_bar = gx.Line(bottom, top, color=TEST_BLUE, stroke_width=3)
             target_test_bars.add(target_bar)
         
         # Animate Training Error Bars
         self.wait()
         self.play(
-            LaggedStart(*[ShowCreation(bar) for bar in train_error_bars], lag_ratio=0.1), 
+            gx.LaggedStart(*[gx.Create(bar) for bar in train_error_bars], lag_ratio=0.1),
             run_time=1.5
         )
         self.bring_to_front(fit_line_1)  # Keep fit line in front of error bars
@@ -462,27 +443,27 @@ class P8_15V2(InteractiveScene):
         self.wait()
         
         self.play(
-            self.frame.animate.reorient(0, 0, 0, (0.82, 0.46, 0.0), 8.86),
+            self.animate_view(0, 0, 0, (0.82, 0.46, 0.0), 8.86),
             # Legend stays at x=-3 aligned with axes_1, no shift needed
-            Write(error_axis_svg),
-            ReplacementTransform(train_error_bars, target_train_bars),
+            gx.Write(error_axis_svg),
+            gx.ReplacementTransform(train_error_bars, target_train_bars),
             run_time=4
         )
-        self.play(ShowCreation(train_error_dots[0]))
+        self.play(gx.Create(train_error_dots[0]))
         self.wait()
         
         # Load Error Curves SVG
-        error_curves_svg = SVGMobject(svg_dir + '/p8_15_2-06.svg')
+        error_curves_svg = gx.SVGMobject(svg_dir + '/p8_15_2-06.svg')
         error_curves_svg.scale(3.15)
         error_curves_svg.move_to([4.84, 0.74, 0])
-        error_curves_svg.shift(UP*0.51)
+        error_curves_svg.shift(gx.UP*0.51)
         error_curves_svg[0].set_color(TEST_BLUE)
         
         # Animate Testing Error Bars
         self.wait()
         
         self.play(
-            LaggedStart(*[ShowCreation(bar) for bar in test_error_bars], lag_ratio=0.1), 
+            gx.LaggedStart(*[gx.Create(bar) for bar in test_error_bars], lag_ratio=0.1),
             run_time=1.5
         )
         self.bring_to_front(fit_line_1)  # Keep fit line in front of error bars
@@ -496,9 +477,9 @@ class P8_15V2(InteractiveScene):
         self.play(target_train_bars.animate.set_opacity(0.0), run_time=1.5)
         self.bring_to_front(train_error_dots[0])
         self.bring_to_front(fit_line_1)  # Keep fit line in front
-        self.play(ReplacementTransform(test_error_bars_copy, target_test_bars), run_time=3.0)
+        self.play(gx.ReplacementTransform(test_error_bars_copy, target_test_bars), run_time=3.0)
         self.bring_to_front(train_error_dots[0])
-        self.play(ShowCreation(test_error_dots[0]))
+        self.play(gx.Create(test_error_dots[0]))
         
         self.wait()
         
@@ -506,44 +487,44 @@ class P8_15V2(InteractiveScene):
         
         # Remove all degree 1 error bars from the left plot
         self.play(
-            FadeOut(train_error_bars_copy),
-            FadeOut(test_error_bars),
+            gx.FadeOut(train_error_bars_copy),
+            gx.FadeOut(test_error_bars),
             run_time=1.0
         )
         
         # Create degree 2 fit line
         fit_points_2 = [axes_1.c2p(all_x[i], all_y_fit2[i]) for i in range(len(all_x))]
-        fit_line_2 = VMobject(color=YELLOW, stroke_width=3)
+        fit_line_2 = gx.VMobject(color=YELLOW, stroke_width=3)
         fit_line_2.set_points_smoothly(fit_points_2)
         
         # Create equation for degree 2 - centered above left graph
-        eq_2 = Tex("y = ax^2 + bx + c", font_size=40).set_color(YELLOW)
+        eq_2 = math_tex("y = ax^2 + bx + c", font_size=40).set_color(YELLOW)
         eq_2.move_to([-3, 3.2, 0])  # Centered at x=-3 (axes_1 position), above the graph
         
         self.play(
-            ShowCreation(fit_line_2),
+            gx.Create(fit_line_2),
             fit_line_1.animate.set_stroke(opacity=0.3),
-            FadeOut(eq_1),
+            gx.FadeOut(eq_1),
             run_time=2
         )
-        self.play(Write(eq_2))
+        self.play(gx.Write(eq_2))
         self.bring_to_front(fit_line_1)  # Keep all fit lines in front
         self.bring_to_front(fit_line_2)
         self.wait()
         
         # Create Training Error Bars for Degree 2
-        train_error_bars_2 = VGroup()
+        train_error_bars_2 = gx.VGroup()
         for i in range(len(x_train)):
             point_pos = axes_1.c2p(x_train[i], y_train[i])
             fit_pos_2 = axes_1.c2p(x_train[i], y_train_pred2[i])
             if point_pos[1] > fit_pos_2[1]:
-                error_bar = Line(fit_pos_2, point_pos, color=YELLOW, stroke_width=3)
+                error_bar = gx.Line(fit_pos_2, point_pos, color=YELLOW, stroke_width=3)
             else:
-                error_bar = Line(point_pos, fit_pos_2, color=YELLOW, stroke_width=3)
+                error_bar = gx.Line(point_pos, fit_pos_2, color=YELLOW, stroke_width=3)
             train_error_bars_2.add(error_bar)
         
         # Create target bars for degree 2 on error plot
-        target_train_bars_2 = VGroup()
+        target_train_bars_2 = gx.VGroup()
         bar_height_2 = train_errors[1] / len(train_error_bars_2)
         x_pos_2 = degrees[1]
         
@@ -552,12 +533,12 @@ class P8_15V2(InteractiveScene):
             top_y = (i + 1) * bar_height_2
             bottom = axes_2.c2p(x_pos_2, bottom_y)
             top = axes_2.c2p(x_pos_2, top_y)
-            target_bar = Line(bottom, top, color=YELLOW, stroke_width=3)
+            target_bar = gx.Line(bottom, top, color=YELLOW, stroke_width=3)
             target_train_bars_2.add(target_bar)
         
         # Animate training error bars for degree 2
         self.play(
-            LaggedStart(*[ShowCreation(bar) for bar in train_error_bars_2], lag_ratio=0.1),
+            gx.LaggedStart(*[gx.Create(bar) for bar in train_error_bars_2], lag_ratio=0.1),
             run_time=1.5
         )
         self.bring_to_front(fit_line_1)  # Keep all fit lines in front of error bars
@@ -574,25 +555,25 @@ class P8_15V2(InteractiveScene):
         self.play(target_test_bars.animate.set_opacity(0.0), run_time=1.5)
         self.bring_to_front(fit_line_1)  # Keep fit lines in front
         self.bring_to_front(fit_line_2)
-        self.play(ReplacementTransform(train_error_bars_2, target_train_bars_2), run_time=3.0)
+        self.play(gx.ReplacementTransform(train_error_bars_2, target_train_bars_2), run_time=3.0)
         self.bring_to_front(fit_line_1)  # Keep fit lines in front after transform
         self.bring_to_front(fit_line_2)
-        self.play(ShowCreation(train_error_dots[1]))
+        self.play(gx.Create(train_error_dots[1]))
         self.wait()
         
         # Create Testing Error Bars for Degree 2
-        test_error_bars_2 = VGroup()
+        test_error_bars_2 = gx.VGroup()
         for i in range(len(x_test)):
             point_pos = axes_1.c2p(x_test[i], y_test[i])
             fit_pos_2 = axes_1.c2p(x_test[i], y_test_pred2[i])
             if point_pos[1] > fit_pos_2[1]:
-                error_bar = Line(fit_pos_2, point_pos, color=TEST_BLUE, stroke_width=3)
+                error_bar = gx.Line(fit_pos_2, point_pos, color=TEST_BLUE, stroke_width=3)
             else:
-                error_bar = Line(point_pos, fit_pos_2, color=TEST_BLUE, stroke_width=3)
+                error_bar = gx.Line(point_pos, fit_pos_2, color=TEST_BLUE, stroke_width=3)
             test_error_bars_2.add(error_bar)
         
         # Create target test bars for degree 2
-        target_test_bars_2 = VGroup()
+        target_test_bars_2 = gx.VGroup()
         bar_height_test_2 = test_errors[1] / len(test_error_bars_2)
         x_pos_test_2 = degrees[1]
         
@@ -601,12 +582,12 @@ class P8_15V2(InteractiveScene):
             top_y = (i + 1) * bar_height_test_2
             bottom = axes_2.c2p(x_pos_test_2, bottom_y)
             top = axes_2.c2p(x_pos_test_2, top_y)
-            target_bar = Line(bottom, top, color=TEST_BLUE, stroke_width=3)
+            target_bar = gx.Line(bottom, top, color=TEST_BLUE, stroke_width=3)
             target_test_bars_2.add(target_bar)
         
         # Animate testing error bars for degree 2
         self.play(
-            LaggedStart(*[ShowCreation(bar) for bar in test_error_bars_2], lag_ratio=0.1),
+            gx.LaggedStart(*[gx.Create(bar) for bar in test_error_bars_2], lag_ratio=0.1),
             run_time=1.5
         )
         self.bring_to_front(fit_line_1)  # Keep all fit lines in front of error bars
@@ -622,11 +603,11 @@ class P8_15V2(InteractiveScene):
         self.bring_to_front(train_error_dots[1])
         self.bring_to_front(fit_line_1)  # Keep fit lines on top
         self.bring_to_front(fit_line_2)
-        self.play(ReplacementTransform(test_error_bars_2_copy, target_test_bars_2), run_time=3.0)
+        self.play(gx.ReplacementTransform(test_error_bars_2_copy, target_test_bars_2), run_time=3.0)
         self.bring_to_front(train_error_dots[1])
         self.bring_to_front(fit_line_1)  # Keep fit lines on top after transform
         self.bring_to_front(fit_line_2)
-        self.play(ShowCreation(test_error_dots[1]))
+        self.play(gx.Create(test_error_dots[1]))
         
         self.wait()
         
@@ -634,45 +615,45 @@ class P8_15V2(InteractiveScene):
         
         # Remove all degree 2 error bars from the left plot
         self.play(
-            FadeOut(train_error_bars_2_copy),
-            FadeOut(test_error_bars_2),
+            gx.FadeOut(train_error_bars_2_copy),
+            gx.FadeOut(test_error_bars_2),
             run_time=1.0
         )
         
         # Create degree 3 fit line
         fit_points_3 = [axes_1.c2p(all_x[i], all_y_fit3[i]) for i in range(len(all_x))]
-        fit_line_3 = VMobject(color=ORANGE, stroke_width=3)
+        fit_line_3 = gx.VMobject(color=gx.ORANGE, stroke_width=3)
         fit_line_3.set_points_smoothly(fit_points_3)
         
         # Create equation for degree 3 - centered above left graph
-        eq_3 = Tex("y = ax^3 + bx^2 + cx + d", font_size=40).set_color(ORANGE)
+        eq_3 = math_tex("y = ax^3 + bx^2 + cx + d", font_size=40).set_color(gx.ORANGE)
         eq_3.move_to([-3, 3.2, 0])  # Centered at x=-3 (axes_1 position), above the graph
         
         self.play(
-            ShowCreation(fit_line_3),
+            gx.Create(fit_line_3),
             fit_line_2.animate.set_stroke(opacity=0.3),
-            FadeOut(eq_2),
+            gx.FadeOut(eq_2),
             run_time=2
         )
-        self.play(Write(eq_3))
+        self.play(gx.Write(eq_3))
         self.bring_to_front(fit_line_1)  # Keep all fit lines in front
         self.bring_to_front(fit_line_2)
         self.bring_to_front(fit_line_3)
         self.wait()
         
         # Create Training Error Bars for Degree 3
-        train_error_bars_3 = VGroup()
+        train_error_bars_3 = gx.VGroup()
         for i in range(len(x_train)):
             point_pos = axes_1.c2p(x_train[i], y_train[i])
             fit_pos_3 = axes_1.c2p(x_train[i], y_train_pred3[i])
             if point_pos[1] > fit_pos_3[1]:
-                error_bar = Line(fit_pos_3, point_pos, color=YELLOW, stroke_width=3)
+                error_bar = gx.Line(fit_pos_3, point_pos, color=YELLOW, stroke_width=3)
             else:
-                error_bar = Line(point_pos, fit_pos_3, color=YELLOW, stroke_width=3)
+                error_bar = gx.Line(point_pos, fit_pos_3, color=YELLOW, stroke_width=3)
             train_error_bars_3.add(error_bar)
         
         # Create target bars for degree 3 on error plot
-        target_train_bars_3 = VGroup()
+        target_train_bars_3 = gx.VGroup()
         bar_height_3 = train_errors[2] / len(train_error_bars_3)
         x_pos_3 = degrees[2]
         
@@ -681,12 +662,12 @@ class P8_15V2(InteractiveScene):
             top_y = (i + 1) * bar_height_3
             bottom = axes_2.c2p(x_pos_3, bottom_y)
             top = axes_2.c2p(x_pos_3, top_y)
-            target_bar = Line(bottom, top, color=YELLOW, stroke_width=3)
+            target_bar = gx.Line(bottom, top, color=YELLOW, stroke_width=3)
             target_train_bars_3.add(target_bar)
         
         # Animate training error bars for degree 3
         self.play(
-            LaggedStart(*[ShowCreation(bar) for bar in train_error_bars_3], lag_ratio=0.1),
+            gx.LaggedStart(*[gx.Create(bar) for bar in train_error_bars_3], lag_ratio=0.1),
             run_time=1.5
         )
         self.bring_to_front(fit_line_1)  # Keep all fit lines in front of error bars
@@ -706,26 +687,26 @@ class P8_15V2(InteractiveScene):
         self.bring_to_front(fit_line_1)  # Keep fit lines in front
         self.bring_to_front(fit_line_2)
         self.bring_to_front(fit_line_3)
-        self.play(ReplacementTransform(train_error_bars_3, target_train_bars_3), run_time=3.0)
+        self.play(gx.ReplacementTransform(train_error_bars_3, target_train_bars_3), run_time=3.0)
         self.bring_to_front(fit_line_1)  # Keep fit lines in front after transform
         self.bring_to_front(fit_line_2)
         self.bring_to_front(fit_line_3)
-        self.play(ShowCreation(train_error_dots[2]))
+        self.play(gx.Create(train_error_dots[2]))
         self.wait()
         
         # Create Testing Error Bars for Degree 3
-        test_error_bars_3 = VGroup()
+        test_error_bars_3 = gx.VGroup()
         for i in range(len(x_test)):
             point_pos = axes_1.c2p(x_test[i], y_test[i])
             fit_pos_3 = axes_1.c2p(x_test[i], y_test_pred3[i])
             if point_pos[1] > fit_pos_3[1]:
-                error_bar = Line(fit_pos_3, point_pos, color=TEST_BLUE, stroke_width=3)
+                error_bar = gx.Line(fit_pos_3, point_pos, color=TEST_BLUE, stroke_width=3)
             else:
-                error_bar = Line(point_pos, fit_pos_3, color=TEST_BLUE, stroke_width=3)
+                error_bar = gx.Line(point_pos, fit_pos_3, color=TEST_BLUE, stroke_width=3)
             test_error_bars_3.add(error_bar)
         
         # Create target test bars for degree 3
-        target_test_bars_3 = VGroup()
+        target_test_bars_3 = gx.VGroup()
         bar_height_test_3 = test_errors[2] / len(test_error_bars_3)
         x_pos_test_3 = degrees[2]
         
@@ -734,12 +715,12 @@ class P8_15V2(InteractiveScene):
             top_y = (i + 1) * bar_height_test_3
             bottom = axes_2.c2p(x_pos_test_3, bottom_y)
             top = axes_2.c2p(x_pos_test_3, top_y)
-            target_bar = Line(bottom, top, color=TEST_BLUE, stroke_width=3)
+            target_bar = gx.Line(bottom, top, color=TEST_BLUE, stroke_width=3)
             target_test_bars_3.add(target_bar)
         
         # Animate testing error bars for degree 3
         self.play(
-            LaggedStart(*[ShowCreation(bar) for bar in test_error_bars_3], lag_ratio=0.1),
+            gx.LaggedStart(*[gx.Create(bar) for bar in test_error_bars_3], lag_ratio=0.1),
             run_time=1.5
         )
         self.bring_to_front(fit_line_1)  # Keep all fit lines in front of error bars
@@ -758,9 +739,9 @@ class P8_15V2(InteractiveScene):
         self.bring_to_front(fit_line_1)  # Keep fit lines in front
         self.bring_to_front(fit_line_2)
         self.bring_to_front(fit_line_3)
-        self.play(ReplacementTransform(test_error_bars_3_copy, target_test_bars_3), run_time=3.0)
+        self.play(gx.ReplacementTransform(test_error_bars_3_copy, target_test_bars_3), run_time=3.0)
         self.bring_to_front(train_error_dots[2])
-        self.play(ShowCreation(test_error_dots[2]))
+        self.play(gx.Create(test_error_dots[2]))
         
         self.wait()
         
@@ -768,27 +749,27 @@ class P8_15V2(InteractiveScene):
         
         # Remove all degree 3 error bars from the left plot
         self.play(
-            FadeOut(train_error_bars_3_copy),
-            FadeOut(test_error_bars_3),
+            gx.FadeOut(train_error_bars_3_copy),
+            gx.FadeOut(test_error_bars_3),
             run_time=1.0
         )
         
         # Create degree 4 fit line
         fit_points_4 = [axes_1.c2p(all_x[i], all_y_fit4[i]) for i in range(len(all_x))]
-        fit_line_4 = VMobject(color=MAROON_B, stroke_width=3)
+        fit_line_4 = gx.VMobject(color=gx.MAROON_B, stroke_width=3)
         fit_line_4.set_points_smoothly(fit_points_4)
         
         # Create equation for degree 4 - centered above left graph
-        eq_4 = Tex("y = ax^4 + bx^3 + cx^2 + dx + e", font_size=40).set_color(MAROON_B)
+        eq_4 = math_tex("y = ax^4 + bx^3 + cx^2 + dx + e", font_size=40).set_color(gx.MAROON_B)
         eq_4.move_to([-3, 3.2, 0])  # Centered at x=-3 (axes_1 position), above the graph
         
         self.play(
-            ShowCreation(fit_line_4),
+            gx.Create(fit_line_4),
             fit_line_3.animate.set_stroke(opacity=0.3),
-            FadeOut(eq_3),
+            gx.FadeOut(eq_3),
             run_time=2
         )
-        self.play(Write(eq_4))
+        self.play(gx.Write(eq_4))
         self.bring_to_front(fit_line_1)  # Keep all fit lines in front
         self.bring_to_front(fit_line_2)
         self.bring_to_front(fit_line_3)
@@ -798,22 +779,22 @@ class P8_15V2(InteractiveScene):
         # Skip training error bars for degree 4 since training error is essentially zero
         # Just fade out degree 3 test bars and show training error dot at zero
         self.play(target_test_bars_3.animate.set_opacity(0.0), run_time=1.5)
-        self.play(ShowCreation(train_error_dots[3]))  # Draw yellow dot at zero before blue bars
+        self.play(gx.Create(train_error_dots[3]))  # Draw yellow dot at zero before blue bars
         self.wait()
         
         # Create Testing Error Bars for Degree 4
-        test_error_bars_4 = VGroup()
+        test_error_bars_4 = gx.VGroup()
         for i in range(len(x_test)):
             point_pos = axes_1.c2p(x_test[i], y_test[i])
             fit_pos_4 = axes_1.c2p(x_test[i], y_test_pred4[i])
             if point_pos[1] > fit_pos_4[1]:
-                error_bar = Line(fit_pos_4, point_pos, color=TEST_BLUE, stroke_width=3)
+                error_bar = gx.Line(fit_pos_4, point_pos, color=TEST_BLUE, stroke_width=3)
             else:
-                error_bar = Line(point_pos, fit_pos_4, color=TEST_BLUE, stroke_width=3)
+                error_bar = gx.Line(point_pos, fit_pos_4, color=TEST_BLUE, stroke_width=3)
             test_error_bars_4.add(error_bar)
         
         # Create target test bars for degree 4
-        target_test_bars_4 = VGroup()
+        target_test_bars_4 = gx.VGroup()
         bar_height_test_4 = test_errors[3] / len(test_error_bars_4)
         x_pos_test_4 = degrees[3]
         
@@ -822,12 +803,12 @@ class P8_15V2(InteractiveScene):
             top_y = (i + 1) * bar_height_test_4
             bottom = axes_2.c2p(x_pos_test_4, bottom_y)
             top = axes_2.c2p(x_pos_test_4, top_y)
-            target_bar = Line(bottom, top, color=TEST_BLUE, stroke_width=3)
+            target_bar = gx.Line(bottom, top, color=TEST_BLUE, stroke_width=3)
             target_test_bars_4.add(target_bar)
         
         # Animate testing error bars for degree 4
         self.play(
-            LaggedStart(*[ShowCreation(bar) for bar in test_error_bars_4], lag_ratio=0.1),
+            gx.LaggedStart(*[gx.Create(bar) for bar in test_error_bars_4], lag_ratio=0.1),
             run_time=1.5
         )
         self.bring_to_front(fit_line_1)  # Keep all fit lines in front of error bars
@@ -848,20 +829,20 @@ class P8_15V2(InteractiveScene):
         self.bring_to_front(fit_line_2)
         self.bring_to_front(fit_line_3)
         self.bring_to_front(fit_line_4)
-        self.play(ReplacementTransform(test_error_bars_4_copy, target_test_bars_4), run_time=3.0)
+        self.play(gx.ReplacementTransform(test_error_bars_4_copy, target_test_bars_4), run_time=3.0)
         self.bring_to_front(train_error_dots[3])  # Keep yellow dot in front
         self.bring_to_front(fit_line_1)  # Keep fit lines in front after transform
         self.bring_to_front(fit_line_2)
         self.bring_to_front(fit_line_3)
         self.bring_to_front(fit_line_4)
-        self.play(ShowCreation(test_error_dots[3]))
+        self.play(gx.Create(test_error_dots[3]))
         
         self.wait()
         
         # Fade out all error bars on the left plot at the end
         self.play(
-            FadeOut(test_error_bars_4),
-            FadeOut(target_test_bars_4),
+            gx.FadeOut(test_error_bars_4),
+            gx.FadeOut(target_test_bars_4),
             run_time=1.0
         )
         
@@ -871,33 +852,33 @@ class P8_15V2(InteractiveScene):
             fit_line_2.animate.set_stroke(opacity=0.15),
             fit_line_3.animate.set_stroke(opacity=0.15),
             fit_line_4.animate.set_stroke(opacity=0.15),
-            FadeOut(eq_4),  # Fade out the last equation
+            gx.FadeOut(eq_4),  # Fade out the last equation
             run_time=1.5
         )
         
         self.wait()
         
-        self.play(FadeIn(error_curves_svg[0]))
-        self.play(FadeIn(error_curves_svg[1]))
+        self.play(gx.FadeIn(error_curves_svg[0]))
+        self.play(gx.FadeIn(error_curves_svg[1]))
         self.wait()
 
         # self.remove(legend, parabola, fit_line_1, fit_line_2, fit_line_3, fit_line_4)
         # self.remove(curve_fit_axis_svg, train_dots, test_dots, train_error_dots, test_error_dots, error_curves_svg[1])
         
         self.wait()
-        self.play(FadeOut(legend),
-                  FadeOut(parabola),
-                  FadeOut(fit_line_1),
-                  FadeOut(fit_line_2),
-                  FadeOut(fit_line_3),
-                  FadeOut(fit_line_4),
-                  FadeOut(curve_fit_axis_svg),
-                  FadeOut(train_dots), 
-                  FadeOut(test_dots),
-                  FadeOut(train_error_dots),
-                  FadeOut(test_error_dots),
-                  FadeOut(error_curves_svg[1]),
-                  self.frame.animate.reorient(0, 0, 0, (4.53, 1.33, 0.0), 9.13),
+        self.play(gx.FadeOut(legend),
+                  gx.FadeOut(parabola),
+                  gx.FadeOut(fit_line_1),
+                  gx.FadeOut(fit_line_2),
+                  gx.FadeOut(fit_line_3),
+                  gx.FadeOut(fit_line_4),
+                  gx.FadeOut(curve_fit_axis_svg),
+                  gx.FadeOut(train_dots),
+                  gx.FadeOut(test_dots),
+                  gx.FadeOut(train_error_dots),
+                  gx.FadeOut(test_error_dots),
+                  gx.FadeOut(error_curves_svg[1]),
+                  self.animate_view(0, 0, 0, (4.53, 1.33, 0.0), 9.13),
                   run_time=4)
         self.wait()
 
@@ -910,7 +891,8 @@ class P8_15V2(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
+
         # Final Wait
 
 

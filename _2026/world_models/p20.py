@@ -1,3 +1,4 @@
+from welch_paths import welch_path
 import os
 import sys
 from pathlib import Path
@@ -6,11 +7,12 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageOps
 
 import manimgx as m
-from welch_style import *
+from welch_scene import frustum_wire
+from welch_style import BLUE, CHILL_BROWN, CHILL_GREEN, FRESH_TAN, THIN_STROKE, YELLOW
 
 IMG_DIR = Path(os.environ.get(
     'NERF_PICS',
-    '/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/world_models/hackin/nerf_pics',
+    welch_path('world_models/hackin/nerf_pics'),
 ))
 N_PLACEHOLDERS = 242
 THUMB_HEIGHT = 200
@@ -191,17 +193,6 @@ def write_camera_path(out_path, fps=60, seconds=4.0):
     print(f'{len(poses)} poses -> {out_path}')
 
 
-def frustum(apex, img_center, rot, w, h, **style):
-    right, up = rot[:, 0], rot[:, 1]
-    corners = [img_center + sx * right * w / 2 + sy * up * h / 2
-               for sx, sy in [(-1, -1), (1, -1), (1, 1), (-1, 1)]]
-    lines = m.VGroup(*[m.Line(apex, c) for c in corners])
-    lines.add(m.Polygon(*corners))
-    lines.set_stroke(**style)
-    lines.set_fill(opacity=0)
-    return lines
-
-
 def room_point_cloud(rng, n=6000):
     def box(n, lo, hi):
         return rng.uniform(lo, hi, size=(n, 3))
@@ -267,7 +258,7 @@ class P20a_PhotosTo3D(m.ThreeDScene):
             photo.target.scale_to_fit_height(pose_h)
             photo.target.apply_matrix(rot)
             photo.target.move_to(center)
-            frustums.add(frustum(apex, center, rot, pose_w, pose_h,
+            frustums.add(frustum_wire(apex, center, rot[:, 0], rot[:, 1], pose_w, pose_h,
                                  color=CHILL_BROWN, width=1.5, opacity=0.8))
 
         self.move_camera(
@@ -290,7 +281,7 @@ class P20a_PhotosTo3D(m.ThreeDScene):
         def new_view():
             pos, forward = new_view_pose(progress.get_value())
             rot = look_at_matrix(pos, pos + forward)
-            return frustum(pos, pos + NEW_VIEW_FOCAL * forward, rot,
+            return frustum_wire(pos, pos + NEW_VIEW_FOCAL * forward, rot[:, 0], rot[:, 1],
                            NEW_VIEW_HEIGHT * 16 / 9, NEW_VIEW_HEIGHT,
                            color=YELLOW, width=4, opacity=1)
 

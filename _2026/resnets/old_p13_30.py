@@ -1,20 +1,14 @@
-from manimlib import *
+import manimgx as gx
+from welch_style import BLUE, CHILL_BLUE, CHILL_BROWN, CHILL_GREEN, CYAN, FRESH_TAN, GREEN, MAGENTA, YELLOW, YELLOW_FADE
+from resnet_assets import ACTIVATION_ROOT
+from resnet_network import image_plane
+from welch_scene import WelchScene
+from resnet_geometry import VoxelBlock, activation_image_stack, axis_arrow, blend_views, cap_with_triangle, clear_scene, conv_data_block, kernel_weights_stack, make_channel_images, masked_conv1, orient, polyline, prism, reveal_mask, swap_out, swing_path, viridis
 import numpy as np
 import matplotlib.pyplot as plt
 
-CHILL_BROWN='#948979'
-YELLOW='#ffd35a'
-YELLOW_FADE='#7f6a2d'
-BLUE='#65c8d0'
-GREEN='#00a14b'
-CHILL_GREEN='#6c946f'
-CHILL_BLUE='#3d5c6f'
-FRESH_TAN='#dfd0b9'
-CYAN='#00FFFF'
-MAGENTA='#FF00FF'
 
-# data_dir='/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/resnet/hackin'
-data_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/'
+data_dir = str(ACTIVATION_ROOT) + '/'
 
 spacing_between_layers=5
 line_radius=0.18
@@ -25,7 +19,7 @@ pixel_dim=0.5
 image_opacity=0.936  
 still_hold=1.0
 steps_per_viz=11     
-fov=PI/3
+fov=gx.PI/3
 kernel_k=0
 block_cell=0.48
 
@@ -37,135 +31,10 @@ image_bounds=(-32.0, 32.0, -32.0, 32.0, 0.0, 3*pixel_dim)
 # p24d_end=(-139.5221, 31.6032, 134.9423, (0.0, 0.0, 0.0), 96.224)
 
 
-viridis_lut=plt.get_cmap('viridis')(np.linspace(0, 1, 256))
-
-
-def viridis(values):
-    x=np.clip(np.asarray(values, dtype=np.float64), 0.0, 1.0)
-    idx=np.clip((x*256).astype(np.int32), 0, 255) #matplotlib bins with int(x*N), not round(x*(N-1))
-    return viridis_lut[idx]
-
-# 6 faces x 4 corners of a unit cube, wound counter-clockwise seen from outside
-face_corners=np.array([
-    [[-.5, -.5,  .5], [.5, -.5,  .5], [.5,  .5,  .5], [-.5,  .5,  .5]],
-    [[ .5, -.5, -.5], [-.5, -.5, -.5], [-.5, .5, -.5], [ .5,  .5, -.5]],
-    [[ .5, -.5,  .5], [.5, -.5, -.5], [.5,  .5, -.5], [ .5,  .5,  .5]],
-    [[-.5, -.5, -.5], [-.5, -.5, .5], [-.5, .5,  .5], [-.5,  .5, -.5]],
-    [[-.5,  .5,  .5], [.5,  .5,  .5], [.5,  .5, -.5], [-.5,  .5, -.5]],
-    [[-.5, -.5, -.5], [.5, -.5, -.5], [.5, -.5,  .5], [-.5, -.5,  .5]],
-], dtype=np.float64)
-
-quad_tris=np.array([0, 1, 2, 0, 2, 3], dtype=int)
-box_edges=[(0,1), (1,2), (2,3), (3,0), (4,5), (5,6), (6,7), (7,4),
-           (0,4), (1,5), (2,6), (3,7)]
-
-
-class VoxelBlock(Surface):
-    """Every box in a layer batched into one mesh."""
-    shader_folder='surface'
-    render_primitive=moderngl.TRIANGLES
-
-    def __init__(self, centers, sizes, rgba, view_forward=None, depth_test=None, **kwargs):
-        centers=np.asarray(centers, dtype=np.float64).reshape(-1, 3)
-        rgba=np.asarray(rgba, dtype=np.float64).reshape(-1, 4)
-        sizes=np.asarray(sizes, dtype=np.float64)
-        if sizes.ndim==1:
-            sizes=np.tile(sizes.reshape(1, 3), (len(centers), 1))
-
-        # Painter's algorithm: with the depth test on, the nearest translucent cell writes
-        # depth and hides the rest, flattening a 64 layer block to one face
-        if view_forward is not None and len(centers):
-            f=np.asarray(view_forward, dtype=np.float64)
-            order=np.argsort(-(centers@(f/np.linalg.norm(f)))) #farthest first
-            centers, sizes, rgba=centers[order], sizes[order], rgba[order]
-        if depth_test is None:
-            depth_test=view_forward is None
-
-        self.centers=centers
-        self.sizes=sizes
-        self.rgba=rgba
-        super().__init__(shading=(0, 0, 0), depth_test=depth_test, **kwargs) #Faces read flat
-
-    @Surface.affects_data
-    def init_points(self):
-        n=len(self.centers)
-        if n==0:
-            self.set_points(np.zeros((0, 3)))
-            self.tri_indices=np.zeros(0, dtype=int)
-            return
-
-        corners=face_corners[None,:,:,:]*self.sizes[:,None,None,:]+self.centers[:,None,None,:]
-        verts=corners.reshape(-1, 3)
-        self.set_points(verts)
-
-        # The shader takes normals from (du_point - point) x (dv_point - point)
-        c0=corners[:,:,0,:]
-        du=np.repeat((corners[:,:,1,:]-c0)[:,:,None,:], 4, axis=2)
-        dv=np.repeat((corners[:,:,3,:]-c0)[:,:,None,:], 4, axis=2)
-        self.data['du_point'][:]=verts+du.reshape(-1, 3)
-        self.data['dv_point'][:]=verts+dv.reshape(-1, 3)
-
-        self.tri_indices=(np.arange(n*6)*4).repeat(6)+np.tile(quad_tris, n*6)
-
-    def compute_triangle_indices(self):
-        self.triangle_indices=self.tri_indices
-        return self.triangle_indices
-
-    def init_colors(self):
-        if len(self.centers):
-            self.data['rgba'][:]=np.repeat(self.rgba, 24, axis=0)
-
-
-def conv_data_block(a, start_depth, vmin=None, vmax=None, keep=None, cell_size=1.0,
-                    alpha=0.5, z_step=depth_step, view_forward=None):
-
-    a=np.asarray(a, dtype=np.float64)
-    n_c, n_i, n_j=a.shape
-    kk, ii, jj=np.meshgrid(np.arange(n_c), np.arange(n_i), np.arange(n_j), indexing='ij')
-
-    vmin=a.min() if vmin is None else vmin
-    vmax=a.max() if vmax is None else vmax
-    vals=(a-vmin)/(vmax-vmin)          #imshow's default min-max stretch
-    keep=np.ones(a.shape, dtype=bool) if keep is None else keep
-
-    half=np.floor(n_j/2)
-    centers=np.stack([(jj[keep]-half)*cell_size, (-ii[keep]+half)*cell_size,
-                      z_step*kk[keep]+start_depth], axis=-1)
-    rgba=viridis(vals[keep])
-    rgba[:,3]=alpha
-
-    # block=VoxelBlock(centers, np.array([cell_size, cell_size, cell_depth]), rgba)
-    block=VoxelBlock(centers, np.array([cell_size, cell_size, cell_depth]), rgba,
-                     view_forward=view_forward)
-    half_extent=(half+0.5)*cell_size
-    bounds=(-half_extent, half_extent, -half_extent, half_extent,
-            start_depth, n_c*z_step+start_depth)
-    return block, bounds
-
-
-def kernel_weights_stack(weights, extent, z0, z_step):
-    """One (C, 3, 3) filter painted through the depth of the source stack."""
-    w=np.asarray(weights, dtype=np.float64)
-    w=w-w.min()
-    min_x, max_x, min_y, max_y=extent
-    step=(max_x-min_x)/w.shape[-1]
-
-    kk, ii, jj=np.meshgrid(np.arange(w.shape[0]), np.arange(w.shape[1]),
-                           np.arange(w.shape[2]), indexing='ij')
-    vals=(w/w.max()).ravel()
-    centers=np.stack([(jj.ravel()+0.5)*step+min_x, -(ii.ravel()+0.5)*step+max_y,
-                      kk.ravel()*z_step+z0], axis=-1)
-    rgba=np.zeros((len(vals), 4))
-    rgba[:,0]=vals
-    rgba[:,2]=vals
-    rgba[:,3]=0.5
-    return VoxelBlock(centers, np.array([step, step, cell_depth]), rgba)
-
-
 def conv2_kernel(i, j, act_shape, n_src, src_cell, src_z0, src_z1, src_z_step, weights,
                  cell_size, dst_z, ksize=3):
     """A layer-2 kernel: activation (i, j) wired to its 3x3xC patch in the source stack."""
-    group=Group()
+    group=gx.Group()
     half_dst=np.floor(act_shape[-1]/2)
     hc=0.5*cell_size
     dst_x=(j-half_dst)*cell_size
@@ -196,37 +65,6 @@ def conv2_kernel(i, j, act_shape, n_src, src_cell, src_z0, src_z1, src_z_step, w
     return group
 
 
-def activation_image_stack(image_dir, n_c, z0, width, z_step, skip_channel=None):
-    group=Group()
-    for c in range(n_c):
-        if c==skip_channel:
-            continue
-        img=ImageMobject(f'{image_dir}/act_{c:02d}.png')
-        img.set_width(width, stretch=True)
-        img.set_height(width, stretch=True)
-        img.move_to([-0.5*width/56, 0.5*width/56, z0+c*z_step])  #match the voxel grid's half-cell offset
-        group.add(img)
-    return group
-
-
-def reveal_mask(shape, i, j, k):
-    """Raster-order reveal up to cell (i, j), channels <= k."""
-    n_c, n_i, n_j=shape
-    revealed=(np.arange(n_i)[:,None]*n_j+np.arange(n_j)[None,:])<=(i*n_j+j)
-    mask=np.zeros(shape, dtype=bool)
-    mask[:k+1]=revealed
-    return mask
-
-
-def image_plane(im_path, opacity):
-    img=ImageMobject(im_path)
-    img.set_width(image_bounds[1]-image_bounds[0], stretch=True)
-    img.set_height(image_bounds[3]-image_bounds[2], stretch=True)
-    img.set_opacity(opacity)
-    img.move_to([0, 0, 0.5*(image_bounds[4]+image_bounds[5])])
-    return img
-
-
 def kernel_weights_block(weights, extent):
     """A conv-1 filter painted into its patch, black through to magenta."""
     w=np.asarray(weights, dtype=np.float64)
@@ -246,39 +84,10 @@ def kernel_weights_block(weights, extent):
     return VoxelBlock(centers, np.array([1.0, 1.0, depth_step]), rgba)
 
 
-def polyline(points, color, radius):
-    """One independent segment per step, since manim miters the joins of a continuous path."""
-    pts=np.asarray(points, dtype=np.float64)
-    group=VGroup()
-    for start, end in zip(pts[:-1], pts[1:]):
-        if np.allclose(start, end):
-            continue
-        seg=Line(start, end)
-        seg.set_stroke(color, width=200*radius, opacity=1.0) #Width in world units
-        seg.set_fill(opacity=0.0)
-        seg.set_scale_stroke_with_zoom(True)
-        seg.apply_depth_test()
-        group.add(seg)
-    return group
-
-
-def prism(min_x, max_x, min_y, max_y, min_z, max_z, color, radius):
-    vertices=np.array([
-        [min_x, min_y, min_z], [max_x, min_y, min_z],
-        [max_x, max_y, min_z], [min_x, max_y, min_z],
-        [min_x, min_y, max_z], [max_x, min_y, max_z],
-        [max_x, max_y, max_z], [min_x, max_y, max_z],
-    ], dtype=np.float64)
-    group=VGroup()
-    for p, q in box_edges:
-        group.add(*polyline([vertices[p], vertices[q]], color, radius))
-    return group
-
-
 def conv1_kernel(i, j, k, act_shape, weights, cell_size=1.0, stride=1):
     """The conv-1 kernel wired to its activation, with the filter painted into the patch."""
     min_x, max_x, min_y, _, min_z, max_z=image_bounds
-    group=Group()
+    group=gx.Group()
 
     #Activation cell (i, j) -> its footprint on the image plane
     step=(max_x-min_x)/act_shape[-1]      #image units per activation cell
@@ -312,85 +121,20 @@ def conv1_kernel(i, j, k, act_shape, weights, cell_size=1.0, stride=1):
     return group
 
 
-def masked_conv1(a, i, j, k):
-    """Conv-1 revealed in raster order up to cell (i, j) of channel <= k."""
-    out=np.zeros_like(a)
-    n_j=a.shape[2]
-    revealed=(np.arange(a.shape[1])[:,None]*n_j+np.arange(n_j)[None,:])<=(i*n_j+j)
-    #The floor keeps near-zero revealed cells above the render threshold
-    out[:k+1]=np.where(revealed, np.maximum(a[:k+1], 0.01*a[0].max()), 0.0)
-    return out
-
-
-def swap_out(scene, mobject):
-    """Scene.remove leaves id_to_mobject_map, reference cycles and moderngl buffers behind,
-    so without this a per-frame shot leaks until the machine runs out of memory."""
-    if mobject is None:
-        return
-    scene.remove(mobject)
-    for sm in mobject.get_family():
-        scene.id_to_mobject_map.pop(id(sm), None)
-        if sm.shader_wrapper is not None:
-            sm.shader_wrapper.release() #Buffers only: the textures are shared, ctx-wide caches
-        sm.family=None
-        sm.parents.clear()
-        sm.submobjects.clear()
-        sm.data=None
-        sm.shader_wrapper=None
-        for attr in ('centers', 'sizes', 'rgba', 'tri_indices', 'triangle_indices'):
-            if hasattr(sm, attr):
-                setattr(sm, attr, None)
-
-
-def clear_scene(scene):
-    for mob in list(scene.mobjects):
-        if mob is not scene.camera.frame:
-            swap_out(scene, mob)
-    scene.clear()
-    scene.id_to_mobject_map.clear()
-    scene.add(scene.camera.frame)
-
-
-def blend_views(a, b, t):
-    return (a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t,
-            tuple(p+(q-p)*t for p, q in zip(a[3], b[3])), a[4]+(b[4]-a[4])*t)
-
-
-def orient(mob):
-    mob.rotate(90*DEGREES, [0, 1, 0], about_point=ORIGIN)
-    mob.rotate(90*DEGREES, [1, 0, 0], about_point=ORIGIN)
-    return mob
-
 def activation_image_grid(image_dir, n_c, start_depth, map_width, pitch,
                           skip_channel=None, n_cols=8):
-    group=Group()
+    group=gx.Group()
     for c in range(n_c):
         if c==skip_channel:
             continue
         r, col=divmod(c, n_cols)
-        img=ImageMobject(f'{image_dir}/act_{c:02d}.png')
-        img.set_width(map_width, stretch=True)
-        img.set_height(map_width, stretch=True)
+        img=gx.ImageMobject(f'{image_dir}/act_{c:02d}.png')
+        img.stretch_to_fit_width(map_width)
+        img.stretch_to_fit_height(map_width)
         img.move_to([col*pitch-0.5*block_cell, -r*pitch+0.5*block_cell, start_depth])
         group.add(img)
     return group
 
-def make_channel_images(im_path, out_dir):
-    """Split the input into R/G/B-only PNGs, once."""
-    from PIL import Image
-    import os
-    paths=[]
-    src=None
-    for ch, name in enumerate('rgb'):
-        p=f'{out_dir}/lemon_{name}.png'
-        paths.append(p)
-        if not os.path.exists(p):
-            if src is None:
-                src=np.array(Image.open(im_path).convert('RGB'))
-            solo=np.zeros_like(src)
-            solo[...,ch]=src[...,ch]
-            Image.fromarray(solo).save(p)
-    return paths
 
 def relu_viz_block(r, z0, z_step, cell, pct=97, alpha=0.7):
     """Per-channel normalized, per-channel percentile-thresholded, one merged block."""
@@ -402,48 +146,8 @@ def relu_viz_block(r, z0, z_step, cell, pct=97, alpha=0.7):
     return conv_data_block(rn, z0, vmin=0.0, vmax=1.0, keep=(rn>thresh),
                            cell_size=cell, alpha=alpha, z_step=z_step)
 
-def swing_path(pivot, angle, axis=OUT):
-    """Rigid rotation about pivot, plus a lerp of whatever the rotation doesn't explain."""
-    pivot=np.asarray(pivot, dtype=np.float64)
-    full=rotation_matrix(angle, axis)
-    def path(start_points, end_points, alpha):
-        part=rotation_matrix(alpha*angle, axis)
-        swung=pivot+np.dot(start_points-pivot, part.T)
-        landed=pivot+np.dot(start_points-pivot, full.T)
-        return swung+alpha*(end_points-landed)
-    return path
 
-def axis_arrow(start, end, color, radius, head_len=2.0, head_w=0.9, normal=UP):
-    """Straight axis with a chevron head at `end`, lying in the plane perpendicular to `normal`."""
-    start=np.asarray(start, dtype=np.float64)
-    end=np.asarray(end, dtype=np.float64)
-    d=end-start
-    d/=np.linalg.norm(d)
-    perp=np.cross(normal, d)
-    group=VGroup(*polyline([start, end], color, radius))
-    for s in (1, -1):
-        group.add(*polyline([end, end-head_len*d+s*head_w*perp], color, radius))
-    return group
-
-def cap_with_triangle(axis, at_start=False, length=2.5, width=2.0, normal=UP, color=CHILL_BROWN):
-    """Filled triangle on one end of a NumberLine, in the plane perpendicular to `normal`.
-    Shortens the line to the triangle's base so the two don't z-fight."""
-    p0, p1=axis.get_start(), axis.get_end()
-    tip, d=(p0, p0-p1) if at_start else (p1, p1-p0)
-    d=d/np.linalg.norm(d)
-    perp=np.cross(normal, d)
-    base=tip-length*d
-    tri=Polygon(tip, base+0.5*width*perp, base-0.5*width*perp)
-    tri.set_fill(color, 1.0)
-    tri.set_stroke(width=0)
-    tri.apply_depth_test()
-    if at_start:
-        axis.put_start_and_end_on(base, p1)
-    else:
-        axis.put_start_and_end_on(p0, base)
-    return tri
-
-class P13_22(InteractiveScene):
+class P13_22(WelchScene):
     def construct(self):
         quick_mode=False   #flip to False for the real render
 
@@ -478,15 +182,15 @@ class P13_22(InteractiveScene):
 
         conv_1_border=orient(prism(*bounds, CHILL_BROWN, line_radius))
 
-        # self.frame.reorient(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
+        # self.set_view(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
         self.add(img)
-        self.frame.reorient(90, 90, 0, (np.float32(11.27), np.float32(-0.41), np.float32(0.2)), 65.81)
+        self.set_view(90, 90, 0, (np.float32(11.27), np.float32(-0.41), np.float32(0.2)), 65.81)
 
 
         self.wait(1)
-        self.play(FadeIn(image_border),
-                  FadeIn(conv_1_border), 
-                  self.frame.animate.reorient(*start_position),
+        self.play(gx.FadeIn(image_border),
+                  gx.FadeIn(conv_1_border),
+                  self.animate_view(*start_position),
                   run_time=8)
 
 
@@ -498,7 +202,7 @@ class P13_22(InteractiveScene):
                                      cell_size=block_cell)
             orient(block)
             self.add(block)
-            self.frame.reorient(*end_position)
+            self.set_view(*end_position)
             self.wait(0.1)
         else:
             block=None
@@ -521,19 +225,19 @@ class P13_22(InteractiveScene):
                 orient(block)
                 self.add(block, kernel)
 
-                t=smooth(step/(n_steps-1))   #ease in/out over the whole sweep
-                self.frame.reorient(*blend_views(start_position, end_position, t))
+                t=gx.smooth(step/(n_steps-1))   #ease in/out over the whole sweep
+                self.set_view(*blend_views(start_position, end_position, t))
                 self.wait(1/30)
             swap_out(self, kernel)
         self.wait(still_hold)
 
 
         flat_view=(90, 90, 0, (np.float32(32.08), np.float32(202.27), np.float32(-200.76)), 456.79)
-        # self.frame.reorient(90, 90, 0, (np.float32(32.15), np.float32(192.87), np.float32(-191.94)), 479.34)
+        # self.set_view(90, 90, 0, (np.float32(32.15), np.float32(192.87), np.float32(-191.94)), 479.34)
         pitch=n_j*block_cell+4.0     #map width ~26.9 + gap
 
         #Fade everything but the map; bring the map to full opacity
-        self.play(FadeOut(img), FadeOut(image_border), FadeOut(conv_1_border),
+        self.play(gx.FadeOut(img), gx.FadeOut(image_border), gx.FadeOut(conv_1_border),
                   block.animate.set_opacity(1.0), run_time=2.0)
         # swap_out(self, img); 
         # swap_out(self, image_border); 
@@ -548,7 +252,7 @@ class P13_22(InteractiveScene):
         grid.set_opacity(0.0)
         self.add(grid)
         self.play(grid.animate.set_opacity(1.0),
-                  self.frame.animate.reorient(*flat_view), run_time=12.0)
+                  self.animate_view(*flat_view), run_time=12.0)
 
         self.wait()
 
@@ -573,11 +277,11 @@ class P13_22(InteractiveScene):
                 for m, c in zip(grid, channels)]
 
         self.wait()
-        self.play(LaggedStart(*gather, lag_ratio=0.01),
-                  FadeIn(wide_border),
-                  FadeIn(img), 
-                  FadeIn(image_border),
-                  self.frame.animate.reorient(*spread_view),
+        self.play(gx.LaggedStart(*gather, lag_ratio=0.01),
+                  gx.FadeIn(wide_border),
+                  gx.FadeIn(img),
+                  gx.FadeIn(image_border),
+                  self.animate_view(*spread_view),
                   run_time=8.0)
         self.wait(still_hold)
 
@@ -605,7 +309,7 @@ class P13_22(InteractiveScene):
 
 
         # self.play(FadeIn(img), FadeIn(image_border),
-        #           self.frame.animate.reorient(*interlude_view), run_time=3.0)
+        #           self.animate_view(*interlude_view), run_time=3.0)
         # self.wait(still_hold)
 
         ## ---- Flip through R, G, B, then back to color ----
@@ -643,8 +347,8 @@ class P13_22(InteractiveScene):
         self.wait(still_hold)
         for idx, m in enumerate(members):
             self.add(m)
-            t=smooth(idx/(n-1))
-            # self.frame.reorient(*blend_views(cascade_start, cascade_end, t))
+            t=gx.smooth(idx/(n-1))
+            # self.set_view(*blend_views(cascade_start, cascade_end, t))
             self.wait(click_hold)
         self.wait(still_hold)
 
@@ -681,10 +385,10 @@ class P13_22(InteractiveScene):
                                     cell_size=block_cell, alpha=0.7)
             orient(slab)
             slabs.append(slab)
-        relu_stack=Group(*slabs)
+        relu_stack=gx.Group(*slabs)
 
         ## ---- Crossfade conv1 maps -> thresholded relu slabs ----
-        self.play(FadeIn(relu_stack), FadeOut(grid), FadeOut(block),
+        self.play(gx.FadeIn(relu_stack), gx.FadeOut(grid), gx.FadeOut(block),
                   run_time=3.0)
         swap_out(self, grid); swap_out(self, block)
         grid=block=None
@@ -705,11 +409,10 @@ class P13_22(InteractiveScene):
         self.wait(1)
         self.play(*squeeze,
                   #LaggedStart(*squeeze, lag_ratio=0.005),
-                  Transform(wide_border, squish_border),
-                  self.frame.animate.reorient(*end_position_2),
+                  gx.Transform(wide_border, squish_border),
+                  self.animate_view(*end_position_2),
                   run_time=6.0)
         self.wait(still_hold)
-
 
 
         #P17, conv 2 let's go. 
@@ -746,7 +449,7 @@ class P13_22(InteractiveScene):
                                       cell_size=cell2, z_step=step2)
             orient(block2)
             self.add(block2)
-            self.frame.reorient(*l2_end)
+            self.set_view(*l2_end)
             self.wait(0.1)
         else:
             block2=None
@@ -771,8 +474,8 @@ class P13_22(InteractiveScene):
                 orient(block2)
                 self.add(block2, kernel2)
 
-                t=smooth(step/(n_steps-1))
-                self.frame.reorient(*blend_views(end_position_2, l2_end, t))
+                t=gx.smooth(step/(n_steps-1))
+                self.set_view(*blend_views(end_position_2, l2_end, t))
                 self.wait(1/30)
             swap_out(self, kernel2)
         self.wait(still_hold)
@@ -801,18 +504,17 @@ class P13_22(InteractiveScene):
                                     cell_size=cell2, alpha=0.7)
             orient(slab)
             slabs2.append(slab)
-        relu_stack2=Group(*slabs2)
+        relu_stack2=gx.Group(*slabs2)
 
-        self.play(FadeIn(relu_stack2), FadeOut(stack2), FadeOut(block2), run_time=3.0)
+        self.play(gx.FadeIn(relu_stack2), gx.FadeOut(stack2), gx.FadeOut(block2), run_time=3.0)
         swap_out(self, stack2); swap_out(self, block2)
         stack2=block2=None
         self.wait(still_hold)
 
 
-        self.play(self.frame.animate.reorient(31, 62, 0, (np.float32(17.28), np.float32(12.32), np.float32(-7.73)), 107.89), 
+        self.play(self.animate_view(31, 62, 0, (np.float32(17.28), np.float32(12.32), np.float32(-7.73)), 107.89),
                      run_time=6)
         self.wait()
-
 
 
         ## --- P18: layer1.0 through layer3.0, one camera move ---
@@ -837,19 +539,19 @@ class P13_22(InteractiveScene):
             deep_bounds.append(bnds)
             z_cursor=bnds[5]+spacing_between_layers
 
-        fades=[AnimationGroup(FadeIn(b), FadeIn(p))
+        fades=[gx.AnimationGroup(gx.FadeIn(b), gx.FadeIn(p))
                for b, p in zip(deep_blocks, deep_borders)]
         deep_view=(28, 64, 0, (np.float32(130.97), np.float32(-14.4), np.float32(7.38)), 133.84)
         
         self.wait(1)
-        self.play(LaggedStart(*fades, lag_ratio=0.25),
-                  self.frame.animate.reorient(*deep_view),
+        self.play(gx.LaggedStart(*fades, lag_ratio=0.25),
+                  self.animate_view(*deep_view),
                   run_time=10.0)
         self.wait(still_hold)
 
 
         #Zoom in on final block to show dimensions and pooling
-        self.play(self.frame.animate.reorient(54, 71, 0, (np.float32(196.61), np.float32(-12.14), np.float32(7.1)), 46.97), run_time=5.0)
+        self.play(self.animate_view(54, 71, 0, (np.float32(196.61), np.float32(-12.14), np.float32(7.1)), 46.97), run_time=5.0)
         self.wait()
 
         #Ok now I think we show the downsamplign process in place. 
@@ -883,8 +585,8 @@ class P13_22(InteractiveScene):
         pool_border=orient(prism(*pool_bounds, CHILL_BROWN, line_radius))
 
         self.wait(1)
-        self.play(Transform(deep_blocks[-1], pool_target),
-                  Transform(deep_borders[-1], pool_border),
+        self.play(gx.Transform(deep_blocks[-1], pool_target),
+                  gx.Transform(deep_borders[-1], pool_border),
                   run_time=3.0)
 
         #Swap the pile of coincident voxels for one clean voxel per channel
@@ -936,29 +638,27 @@ class P13_22(InteractiveScene):
 
         # fc_border=orient(prism(-hp, hp, -hh, hh, fc_z-hp, fc_z+hp, CHILL_BROWN, line_radius))
         fc_border=deep_borders[-1].copy()
-        fc_border.rotate(-90*DEGREES, UP, about_point=pivot)
+        fc_border.rotate(-90*gx.DEGREES, gx.UP, about_point=pivot)
         fc_border.stretch(fc_factor, 2)              #lengthen along world z, about its center
         fc_border.move_to([fc_z, 0, 0])              #fc column center in world coords
 
         
         # arc=swing_path(pivot, 90*DEGREES, axis=UP)   #flip sign if it dives instead of lifts
         # arc=swing_path(pivot, -90*DEGREES, axis=UP)
-        arc=swing_path(pivot, -90*DEGREES, axis=UP)
+        arc=swing_path(pivot, -90*gx.DEGREES, axis=gx.UP)
 
         self.wait(1.0)
-        self.play(Transform(pool_ghost, fc_seed, path_func=arc),
-                  Transform(border_ghost, fc_border, path_func=arc),
-                  self.frame.animate.reorient(*fc_view), run_time=3.0)
+        self.play(gx.Transform(pool_ghost, fc_seed, path_func=arc),
+                  gx.Transform(border_ghost, fc_border, path_func=arc),
+                  self.animate_view(*fc_view), run_time=3.0)
 
         #Densify: fade in the full 1000, retire the 256 seeds -> Sw, yeah that makes sense
         full_rgba=viridis(fcn); full_rgba[:,3]=0.7
         fc_block=orient(VoxelBlock(fc_slot_centers(np.arange(n_fc)), wafer, full_rgba))
-        self.play(FadeIn(fc_block), FadeOut(pool_ghost), run_time=1.5)
+        self.play(gx.FadeIn(fc_block), gx.FadeOut(pool_ghost), run_time=1.5)
         swap_out(self, pool_ghost)
         fc_border_ref=border_ghost   #this mobject IS the fc border now
         self.wait(still_hold)
-
-
 
 
         #Logits plot
@@ -971,15 +671,12 @@ class P13_22(InteractiveScene):
         x_neg=x_pos                                   #and to the left; shrink this if it runs into the fc column
         y_max=1.05*n_fc
 
-        axes=Axes(x_range=(-x_neg, x_pos, x_pos), y_range=(0, y_max, y_max),
-                  width=(x_neg+x_pos)*logit_unit, height=y_max*fc_step,
+        axes=gx.Axes(x_range=(-x_neg, x_pos, x_pos), y_range=(0, y_max, y_max),
+                  x_length=(x_neg+x_pos)*logit_unit, y_length=y_max*fc_step,
                   axis_config=dict(stroke_width=8, include_ticks=False, include_tip=False))
         axes.set_color(CHILL_BROWN)
-        for axis in axes.get_axes():
-            axis.set_scale_stroke_with_zoom(True)
-            axis.apply_depth_test()
 
-        axes.rotate(-90*DEGREES, RIGHT, about_point=ORIGIN)   #+y -> -z: index 0 at the top
+        axes.rotate(-90*gx.DEGREES, gx.RIGHT, about_point=gx.ORIGIN)   #+y -> -z: index 0 at the top
         axis_x=fc_z+fc_gap
         top_z=0.5*(n_fc-1)*fc_step
         axes.shift(np.array([axis_x, 0, top_z])-axes.c2p(0, 0))
@@ -992,52 +689,45 @@ class P13_22(InteractiveScene):
         axes.stretch(1.02, 2, about_point=o)   #dim 2 = world z after the rotate
 
 
-
-
         #Curve points and the origin, before the caps shorten the lines
         curve_pts=axes.c2p(fc, np.arange(n_fc))
         o=axes.c2p(0, 0)
 
-        tips=VGroup(cap_with_triangle(axes.x_axis, at_start=True, length=1.0, width=0.85),   #negative end
+        tips=gx.VGroup(cap_with_triangle(axes.x_axis, at_start=True, length=1.0, width=0.85),   #negative end
                     cap_with_triangle(axes.x_axis, length=1.0, width=0.85),                  #positive end
                     cap_with_triangle(axes.y_axis, length=1.0, width=0.85))                  #bottom of the index axis
 
 
-        curve=VMobject()
+        curve=gx.VMobject()
         curve.set_points_as_corners(axes.c2p(fc, np.arange(n_fc)))
         curve.set_stroke(width=6, opacity=1.0)
-        curve.set_scale_stroke_with_zoom(True)
-        curve.apply_depth_test()
-        curve.set_joint_type('bevel')
-
-        #Same min-max -> viridis map as fc_block, read back off the point positions
         o=axes.c2p(0, 0)
         pts=curve.get_points()
         v=((pts[:,0]-o[0])/logit_unit-fc.min())/np.ptp(fc)
         rgba=viridis(v)
         rgba[:,3]=1.0
-        curve.data['stroke_rgba'][:]=rgba
+        curve.paint = curve.paint.but(stroke=rgba)
 
 
         # self.add(axes, tips, curve)
         # self.remove(axes, tips, curve)
 
-        # self.frame.reorient(0, 90, 0, (np.float32(214.91), np.float32(8.72), np.float32(-0.68)), 60.67)
+        # self.set_view(0, 90, 0, (np.float32(214.91), np.float32(8.72), np.float32(-0.68)), 60.67)
         plot_view=(0, 90, 0, (np.float32(222.89), np.float32(8.72), np.float32(-0.51)), 60.67)
 
 
         self.wait()
-        self.play(ShowCreation(axes), FadeIn(tips), 
-            self.frame.animate.reorient(*plot_view), 
+        self.play(gx.Create(axes), gx.FadeIn(tips),
+            self.animate_view(*plot_view),
             run_time=2.0)
-        self.play(ShowCreation(curve), run_time=5.0)
+        self.play(gx.Create(curve), run_time=5.0)
         self.wait()
 
 
-        self.play(FadeOut(axes), 
-                  FadeOut(curve),
-                  FadeOut(tips),
-                  self.frame.animate.reorient(0, 59, 0, (np.float32(105.79), np.float32(12.11), np.float32(-34.57)), 186.07),
+        self.play(gx.FadeOut(axes),
+                  gx.FadeOut(curve),
+                  gx.FadeOut(tips),
+                  self.animate_view(0, 59, 0, (np.float32(105.79), np.float32(12.11), np.float32(-34.57)), 186.07),
                   run_time=8)
 
 
@@ -1069,7 +759,7 @@ class P13_22(InteractiveScene):
         # wide_view=(1, 60, 0, (np.float32(132.95), np.float32(-18.99), np.float32(-7.27)), 251.41)
 
         # self.wait()
-        # self.play(self.frame.animate.reorient(*wide_view), run_time=4.0)
+        # self.play(self.animate_view(*wide_view), run_time=4.0)
         # self.wait()
 
         #2. Slide open two slots after layer1.0, fade in layer1.1.relu and layer1.1
@@ -1078,7 +768,7 @@ class P13_22(InteractiveScene):
 
         self.wait()
         self.play(*[m.animate.shift([gap1, 0, 0]) for m in downstream], 
-                    self.frame.animate.reorient(0, 59, 0, (np.float32(136.24), np.float32(-16.45), np.float32(-2.75)), 230.32),
+                    self.animate_view(0, 59, 0, (np.float32(136.24), np.float32(-16.45), np.float32(-2.75)), 230.32),
                     run_time=3.0)   #orient: depth z -> world x
         z3_0+=gap1
         fc_z+=gap1
@@ -1089,7 +779,7 @@ class P13_22(InteractiveScene):
             blk, border, bnds=deep_layer(act14[key][0], z_cursor, base_depth)
             new1.append((blk, border))
             z_cursor=bnds[5]+spacing_between_layers
-        self.play(LaggedStart(*[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in new1], lag_ratio=0.3),
+        self.play(gx.LaggedStart(*[gx.AnimationGroup(gx.FadeIn(b), gx.FadeIn(p)) for b, p in new1], lag_ratio=0.3),
                   run_time=3.0)
 
         #3.
@@ -1106,11 +796,11 @@ class P13_22(InteractiveScene):
         swap_out(self, deep_blocks[-1])               #the clean one-voxel-per-channel column
         deep_blocks[-1]=collapsed
 
-        self.play(Transform(collapsed, blk3),
-                  Transform(deep_borders[-1], border3),
+        self.play(gx.Transform(collapsed, blk3),
+                  gx.Transform(deep_borders[-1], border3),
                   fc_block.animate.shift([gap4, 0, 0]),
                   fc_border_ref.animate.shift([gap4, 0, 0]),
-                  self.frame.animate.reorient(0, 60, 0, (np.float32(227.84), np.float32(-12.27), np.float32(1.5)), 293.88),
+                  self.animate_view(0, 60, 0, (np.float32(227.84), np.float32(-12.27), np.float32(1.5)), 293.88),
                   run_time=4.0)
         fc_z+=gap4
 
@@ -1129,23 +819,17 @@ class P13_22(InteractiveScene):
             blk, border, bnds=deep_layer(act14[key][0], z_cursor, depth4)
             new4.append((blk, border))
             z_cursor=bnds[5]+spacing_between_layers
-        self.play(LaggedStart(*[AnimationGroup(FadeIn(b), FadeIn(p)) for b, p in new4], lag_ratio=0.25),
+        self.play(gx.LaggedStart(*[gx.AnimationGroup(gx.FadeIn(b), gx.FadeIn(p)) for b, p in new4], lag_ratio=0.25),
                   run_time=5.0)
         self.wait(still_hold)
 
         #Ok fun little pan around, probably won't use it, but might be a fun b-roll. 
         self.wait()
-        self.play(self.frame.animate.reorient(47, 64, 0, (np.float32(321.23), np.float32(36.1), np.float32(-33.87)), 215.92), 
+        self.play(self.animate_view(47, 64, 0, (np.float32(321.23), np.float32(36.1), np.float32(-33.87)), 215.92),
                   run_time=10.0)
 
 
-
         self.wait(20)
-        self.embed()
-
-
-
-        # Plain8
         # conv1 (1, 64, 112, 112)                                                                               
         # bn1 (1, 64, 112, 112)
         # relu (1, 64, 112, 112)
@@ -1219,12 +903,7 @@ class P13_22(InteractiveScene):
         # image (224, 224, 3)
 
 
-
  
-
-
-
-
 
 
         # #Sweep
@@ -1249,7 +928,7 @@ class P13_22(InteractiveScene):
         #     self.add(block, kernel)
 
         #     t=smooth(step/(n_steps-1))   #ease in/out over the whole sweep
-        #     self.frame.reorient(*blend_views(start_position, end_position, t))
+        #     self.set_view(*blend_views(start_position, end_position, t))
         #     self.wait(1/30)
 
         # swap_out(self, kernel)       #drop the kernel at the end, leave the filled map
@@ -1257,8 +936,7 @@ class P13_22(InteractiveScene):
         
 
 
-
-# class P13(InteractiveScene):
+# class P13(WelchScene):
 #     def construct(self):
 
         
@@ -1291,22 +969,19 @@ class P13_22(InteractiveScene):
 
 #         # image_border.move_to([0, 10, 0])
 
-#         self.frame.reorient(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
+#         self.set_view(32, 66, 0, (np.float32(6.76), np.float32(11.09), np.float32(-0.32)), 106.23)
 
 
 #         self.wait()
 
 
-
-
-
-        # self.camera.background_rgba=[0, 0, 0, 1]
-        # self.frame.set_field_of_view(fov)
+        # self.camera.background_color = gx.BLACK
+        # self.view_fov = fov
         # a=load_activation('hot_dog', 'features_2')
         # weights=load_activation('weights', 'features0')[0]
         # vmax=float(a[0].max())
 
-        # self.frame.reorient(*p24_end)
+        # self.set_view(*p24_end)
         # forward=forward_from(p24_end)
         # self.add(prism(*image_bounds, WHITE, line_radius))
         # self.add(conv1_kernel(0, 10, kernel_k, a.shape, weights, forward))
@@ -1318,9 +993,5 @@ class P13_22(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
-
-
-
 
 

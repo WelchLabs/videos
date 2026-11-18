@@ -1,4 +1,18 @@
-from manimlib import *
+import manimgx as gx
+from welch_scene import WelchScene
+from _2026.rl.policy_storyboard import (
+    HACKIN_DIR,
+    PolicySurfaceTextScene,
+    SWEEP_T1_RANGE,
+    SWEEP_T1_RANGE_V2,
+    sigmoid,
+    arrow_polygon,
+    play_theta_sweep,
+    play_theta_sweep_v2,
+)
+from _2026.rl.policy_surface_gx import (
+    color_surface_vertices, height_field, surface_wireframe, texture_surface,
+)
 from tqdm import tqdm
 import json
 from pathlib import Path
@@ -26,7 +40,6 @@ ORANGE='#eb8423'
 LT_BLUE='#5badb6'
 
 
-HACKIN_DIR = Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/rl_1/hackin')
 ASSET_DIR = HACKIN_DIR / 'manim_assets'  # where the exported texture goes
 
 ANG_LIM = (-15, 15)     # pole angle, degrees -- same as the 2d version
@@ -46,24 +59,11 @@ T1 = 0.2
 T2 = 0.05
 
 
-def sigmoid(x):
-    return 1.0 / (1.0 + np.exp(-x))
 
 
-def arrow_polygon(direction=1, shaft_w=0.28, head_w=0.9, head_len=0.9, total_len=2.0, **kwargs):
-    """Same silhouette as the matplotlib arrow_path() in the notebook, but
-    built as a manim Polygon that lies flat in the local xy-plane (z=0)."""
-    hl, sw, hw, L = head_len, shaft_w / 2, head_w / 2, total_len / 2
-    pts = np.array([
-        (-L,  sw), (L - hl,  sw), (L - hl,  hw), (L, 0),
-        (L - hl, -hw), (L - hl, -sw), (-L, -sw),
-    ], dtype=float)
-    pts[:, 0] *= direction
-    verts = [np.array([x, y, 0.0]) for x, y in pts]
-    return Polygon(*verts, **kwargs)
 
 
-class policy_surfaces_3d_1(InteractiveScene):
+class policy_surfaces_3d_1(WelchScene):
     def construct(self):
         # ---- 1. load the same episode as the 2d version (ep 13) ----
         with open(HACKIN_DIR / "cartpole_human_play/cartpole_human_demos_sw_3.json") as f:
@@ -83,11 +83,11 @@ class policy_surfaces_3d_1(InteractiveScene):
         angvel = np.degrees(obs[:, 3])
 
         # ---- 2. axes: x = pole angle, y = pole angular velocity, z = P(right) ----
-        axes = ThreeDAxes(
+        axes = gx.ThreeDAxes(
             x_range=(*ANG_LIM, 5),
             y_range=(*VEL_LIM, ),
             z_range=(0, 1, 0.25),
-            width=10, height=10, depth=4,
+            x_length=10, y_length=10, z_length=4,
         )
         self.add(axes)
 
@@ -112,14 +112,14 @@ class policy_surfaces_3d_1(InteractiveScene):
         # direction is the one fiddly bit of the texture pattern.
 
         # ---- 4. the surface itself: height = P(right) ----
-        geom_surface = axes.get_graph(
+        geom_surface = height_field(axes,
             lambda u, v: sigmoid(T1 * u + T2 * v),
             u_range=ANG_LIM,
             v_range=VEL_LIM,
             resolution=(51, 51),
             opacity=1.0,
         )
-        surface = TexturedSurface(geom_surface, tex_path)
+        surface = texture_surface(geom_surface, tex_path)
         self.add(surface)
         surface.set_opacity(0.5)
 
@@ -141,7 +141,7 @@ class policy_surfaces_3d_1(InteractiveScene):
         # off geom_surface since that's what carries the real point/normal
         # data; nudged slightly off the surface along its normal to avoid
         # z-fighting
-        mesh = SurfaceMesh(
+        mesh = surface_wireframe(
             geom_surface,
             resolution=(23, 23),
             stroke_width=0.8,
@@ -153,7 +153,7 @@ class policy_surfaces_3d_1(InteractiveScene):
 
         # ---- 5. arrows: left actions flat on z=0, right actions flat on z=1 ----
         ARROW_WIDTH = 0.5
-        arrows = VGroup()
+        arrows = gx.VGroup()
         for a, v, action in zip(ang, angvel, act):
             went_right = (action == 1)
             arrow = arrow_polygon(
@@ -162,7 +162,7 @@ class policy_surfaces_3d_1(InteractiveScene):
                 fill_opacity=0.85,
                 stroke_width=0,
             )
-            arrow.set_width(ARROW_WIDTH)
+            arrow.scale_to_fit_width(ARROW_WIDTH)
             arrow.move_to(axes.c2p(a, v, 1 if went_right else 0))
             arrows.add(arrow)
         self.add(arrows)
@@ -170,11 +170,10 @@ class policy_surfaces_3d_1(InteractiveScene):
         self.remove(surface); self.add(surface)
 
         # ---- 6. camera + hand off for interactive tuning ----
-        # self.frame.reorient(44, 51, 0, (np.float32(1.17), np.float32(-0.47), np.float32(1.38)), 16.18)
-        # self.frame.reorient(46, 61, 0, (np.float32(1.13), np.float32(-0.66), np.float32(1.23)), 16.40)
-        self.frame.reorient(-42, 59, 0, (np.float32(-0.64), np.float32(0.43), np.float32(0.46)), 16.40)
+        # self.set_view(44, 51, 0, (np.float32(1.17), np.float32(-0.47), np.float32(1.38)), 16.18)
+        # self.set_view(46, 61, 0, (np.float32(1.13), np.float32(-0.66), np.float32(1.23)), 16.40)
+        self.set_view(-42, 59, 0, (np.float32(-0.64), np.float32(0.43), np.float32(0.46)), 16.40)
         self.wait(20)
-        self.embed()
 
 
 # ----------------------------------------------------------------------
@@ -191,79 +190,19 @@ class policy_surfaces_3d_1(InteractiveScene):
 # overlay than to fight with fixed_in_frame text inside the 3d scene.
 # ----------------------------------------------------------------------
 
-SWEEP_T1_RANGE = (-2.0, 2.0)
-SWEEP_T2_RANGE = (-1.0, 1.0)
-SWEEP_TIME = 4          # seconds, for each of the two straight sweeps
-TRANSITION_TIME = 1.5   # seconds, for the two "get into position" moves
-ELLIPSE_TIME = 6        # seconds, for the full loop around parameter space
 
 
-def play_theta_sweep(scene, t1_tracker, t2_tracker):
-    """Shared choreography, called identically from both the 3d scene and
-    the text-overlay scene so their timing lines up exactly:
-      1. sweep theta1 across its full range, theta2 held at 0
-      2. move into position for the theta2 sweep
-      3. sweep theta2 across its full range, theta1 held at 0
-      4. move into position for the ellipse
-      5. loop once around an ellipse covering the same theta1/theta2 extents
-
-    Assumes t1_tracker starts at SWEEP_T1_RANGE[0] and t2_tracker starts at 0.
-    """
-    t1_lo, t1_hi = SWEEP_T1_RANGE
-    t2_lo, t2_hi = SWEEP_T2_RANGE
-
-    # 1. sweep theta1, -2 -> 2, theta2 fixed at 0
-    scene.play(
-        t1_tracker.animate.set_value(t1_hi),
-        run_time=SWEEP_TIME, rate_func=linear,
-    )
-
-    # 2. transition to the theta2 sweep's start point, (0, -0.1)
-    scene.play(
-        t1_tracker.animate.set_value(0),
-        t2_tracker.animate.set_value(t2_lo),
-        run_time=TRANSITION_TIME, rate_func=smooth,
-    )
-
-    # 3. sweep theta2, -0.1 -> 0.1, theta1 fixed at 0
-    scene.play(
-        t2_tracker.animate.set_value(t2_hi),
-        run_time=SWEEP_TIME, rate_func=linear,
-    )
-
-    # 4. transition to the ellipse's start point, (2, 0)
-    scene.play(
-        t1_tracker.animate.set_value(t1_hi),
-        t2_tracker.animate.set_value(0),
-        run_time=TRANSITION_TIME, rate_func=smooth,
-    )
-
-    # 5. one full loop around an ellipse with semi-axes (t1_hi, t2_hi) --
-    # covers the same min/max range as the two straight sweeps above.
-    # animate.set_value only does linear interpolation of a single value,
-    # so the coupled (t1, t2) path is driven manually off an alpha-func.
-    a, b = t1_hi, t2_hi
-
-    def ellipse_step(mob, alpha):
-        theta = alpha * TAU
-        t1_tracker.set_value(a * np.cos(theta))
-        t2_tracker.set_value(b * np.sin(theta))
-
-    scene.play(
-        UpdateFromAlphaFunc(Mobject(), ellipse_step),
-        run_time=ELLIPSE_TIME, rate_func=linear,
-    )
 
 
-class policy_surfaces_3d_4(InteractiveScene):
+class policy_surfaces_3d_4(WelchScene):
     def construct(self):
 
         # self.wait()
-        axes = ThreeDAxes(
+        axes = gx.ThreeDAxes(
             x_range=(*ANG_LIM, 5),
             y_range=(*VEL_LIM, ),
             z_range=(0, 1, 0.25),
-            width=10, height=10, depth=4,
+            x_length=10, y_length=10, z_length=4,
         )
         self.add(axes)
 
@@ -272,8 +211,8 @@ class policy_surfaces_3d_4(InteractiveScene):
         MESH_RES = (23, 23)
         SURFACE_OPACITY = 0.5
 
-        t1_tracker = ValueTracker(SWEEP_T1_RANGE[0])
-        t2_tracker = ValueTracker(0)
+        t1_tracker = gx.ValueTracker(SWEEP_T1_RANGE[0])
+        t2_tracker = gx.ValueTracker(0)
 
         # Texture-free coloring (color_by_uv_function) on purpose here: it's
         # just per-vertex color data, so always_redraw can cheaply rebuild it
@@ -294,17 +233,17 @@ class policy_surfaces_3d_4(InteractiveScene):
 
         def build_surface():
             t1, t2 = t1_tracker.get_value(), t2_tracker.get_value()
-            surf = axes.get_graph(
+            surf = height_field(axes,
                 lambda u, v: sigmoid(t1 * u + t2 * v),
                 u_range=ANG_LIM, v_range=VEL_LIM,
                 resolution=SURFACE_RES, opacity=SURFACE_OPACITY,
             )
-            surf.set_rgba_array_by_color(vertex_colors(t1, t2, SURFACE_RES))
+            color_surface_vertices(surf, vertex_colors(t1, t2, SURFACE_RES))
             surf.set_opacity(SURFACE_OPACITY)
             return surf
 
-        surface = always_redraw(build_surface)
-        mesh = always_redraw(lambda: SurfaceMesh(
+        surface = gx.always_redraw(build_surface)
+        mesh = gx.always_redraw(lambda: surface_wireframe(
             build_surface(),
             resolution=MESH_RES,
             stroke_width=1,
@@ -317,21 +256,20 @@ class policy_surfaces_3d_4(InteractiveScene):
 
         self.add(surface, mesh)
 
-        self.frame.reorient(-42, 59, 0, (np.float32(-0.64), np.float32(0.43), np.float32(0.46)), 16.40)
+        self.set_view(-42, 59, 0, (np.float32(-0.64), np.float32(0.43), np.float32(0.46)), 16.40)
         self.wait()
 
         play_theta_sweep(self, t1_tracker, t2_tracker)
 
         self.wait()
-        self.embed()
 
 
 
 
-class policy_surfaces_3d_2_text_c(Scene):
+class policy_surfaces_3d_2_text_c(WelchScene):
     def construct(self):
-        t1_tracker = ValueTracker(SWEEP_T1_RANGE[0])
-        t2_tracker = ValueTracker(0)
+        t1_tracker = gx.ValueTracker(SWEEP_T1_RANGE[0])
+        t2_tracker = gx.ValueTracker(0)
  
         # Static Tex for the symbols/punctuation ("\theta_1 =", etc) plus a
         # DecimalNumber for each live value. DecimalNumber just swaps digit
@@ -344,16 +282,16 @@ class policy_surfaces_3d_2_text_c(Scene):
         # produce no ink), so you get an empty, zero-width mobject that
         # breaks the next_to() chain. Use a bigger buff between the two
         # theta groups instead of a spacer mobject.
-        theta1_sym = Tex(r"\theta_1 =")
-        theta1_val = DecimalNumber(t1_tracker.get_value(), num_decimal_places=2, include_sign=True)
-        theta2_sym = Tex(r"\theta_2 =")
-        theta2_val = DecimalNumber(t2_tracker.get_value(), num_decimal_places=3, include_sign=True) 
+        theta1_sym = gx.MathTex(r"\theta_1 =")
+        theta1_val = gx.DecimalNumber(t1_tracker.get_value(), num_decimal_places=2, include_sign=True)
+        theta2_sym = gx.MathTex(r"\theta_2 =")
+        theta2_val = gx.DecimalNumber(t2_tracker.get_value(), num_decimal_places=3, include_sign=True)
  
-        label = VGroup(theta1_sym, theta1_val, theta2_sym, theta2_val)
-        label.set_color(BLACK)
+        label = gx.VGroup(theta1_sym, theta1_val, theta2_sym, theta2_val)
+        label.set_color(gx.BLACK)
         label.scale(1.3)
-        label.arrange(RIGHT, buff=0.15)
-        label.to_edge(DOWN)
+        label.arrange(gx.RIGHT, buff=0.15)
+        label.to_edge(gx.DOWN)
  
         # arrange() only sets the initial layout -- fixed decimal places keep
         # each value's width ~constant, but chain next_to() updaters off of
@@ -362,10 +300,10 @@ class policy_surfaces_3d_2_text_c(Scene):
         # (theta1_val -> theta2_sym) is what reads as the gap between the
         # two theta groups.
         theta1_val.add_updater(lambda d: d.set_value(t1_tracker.get_value()))
-        theta1_val.add_updater(lambda d: d.next_to(theta1_sym, RIGHT, buff=0.15))
-        theta2_sym.add_updater(lambda d: d.next_to(theta1_val, RIGHT, buff=0.6))
+        theta1_val.add_updater(lambda d: d.next_to(theta1_sym, gx.RIGHT, buff=0.15))
+        theta2_sym.add_updater(lambda d: d.next_to(theta1_val, gx.RIGHT, buff=0.6))
         theta2_val.add_updater(lambda d: d.set_value(t2_tracker.get_value()))
-        theta2_val.add_updater(lambda d: d.next_to(theta2_sym, RIGHT, buff=0.15))
+        theta2_val.add_updater(lambda d: d.next_to(theta2_sym, gx.RIGHT, buff=0.15))
  
         self.add(label)
         # Simpler (but slower -- recompiles latex every frame) alternative,
@@ -384,7 +322,7 @@ class policy_surfaces_3d_2_text_c(Scene):
         self.wait()
 
 
-class policy_surfaces_3d_3(InteractiveScene):
+class policy_surfaces_3d_3(WelchScene):
     def construct(self):
         # ---- 1. load the same episode as scene 1 (ep 13) ----
         with open(HACKIN_DIR / "cartpole_human_play/cartpole_human_demos_sw_3.json") as f:
@@ -404,11 +342,11 @@ class policy_surfaces_3d_3(InteractiveScene):
         angvel = np.degrees(obs[:, 3])
  
         # ---- 2. axes: x = pole angle, y = pole angular velocity, z = P(right) ----
-        axes = ThreeDAxes(
+        axes = gx.ThreeDAxes(
             x_range=(*ANG_LIM, 5),
             y_range=(*VEL_LIM, 5),
             z_range=(0, 1, 0.25),
-            width=10, height=10, depth=4,
+            x_length=10, y_length=10, z_length=4,
         )
         self.add(axes)
  
@@ -419,8 +357,8 @@ class policy_surfaces_3d_3(InteractiveScene):
         MESH_RES = (23, 23)
         SURFACE_OPACITY = 0.5
  
-        t1_tracker = ValueTracker(SWEEP_T1_RANGE[0])
-        t2_tracker = ValueTracker(0)
+        t1_tracker = gx.ValueTracker(SWEEP_T1_RANGE[0])
+        t2_tracker = gx.ValueTracker(0)
  
         # ---- 3. the sweeping surface + mesh (identical to policy_surfaces_3d_2) ----
         def vertex_colors(t1, t2, resolution):
@@ -433,17 +371,17 @@ class policy_surfaces_3d_3(InteractiveScene):
  
         def build_surface():
             t1, t2 = t1_tracker.get_value(), t2_tracker.get_value()
-            surf = axes.get_graph(
+            surf = height_field(axes,
                 lambda u, v: sigmoid(t1 * u + t2 * v),
                 u_range=ANG_LIM, v_range=VEL_LIM,
                 resolution=SURFACE_RES, opacity=SURFACE_OPACITY,
             )
-            surf.set_rgba_array_by_color(vertex_colors(t1, t2, SURFACE_RES))
+            color_surface_vertices(surf, vertex_colors(t1, t2, SURFACE_RES))
             surf.set_opacity(SURFACE_OPACITY)
             return surf
  
-        surface = always_redraw(build_surface)
-        mesh = always_redraw(lambda: SurfaceMesh(
+        surface = gx.always_redraw(build_surface)
+        mesh = gx.always_redraw(lambda: surface_wireframe(
             build_surface(),
             resolution=MESH_RES,
             stroke_width=1,
@@ -455,7 +393,7 @@ class policy_surfaces_3d_3(InteractiveScene):
         # ---- 4. arrows: left actions flat on z=0, right actions flat on z=1 --
         # static throughout the sweep, same as policy_surfaces_3d_1
         ARROW_WIDTH = 0.5
-        arrows = VGroup()
+        arrows = gx.VGroup()
         for a, v, action in zip(ang, angvel, act):
             went_right = (action == 1)
             arrow = arrow_polygon(
@@ -464,24 +402,23 @@ class policy_surfaces_3d_3(InteractiveScene):
                 fill_opacity=0.85,
                 stroke_width=0,
             )
-            arrow.set_width(ARROW_WIDTH)
+            arrow.scale_to_fit_width(ARROW_WIDTH)
             arrow.move_to(axes.c2p(a, v, 1 if went_right else 0))
             arrows.add(arrow)
         self.add(arrows)
  
         # ---- 5. camera (same view as scenes 1 and 2) + sweep ----
-        # self.frame.reorient(-42, 59, 0, (np.float32(-0.64), np.float32(0.43), np.float32(0.46)), 16.40)
-        self.frame.reorient(-26, 64, 0, (np.float32(0.71), np.float32(-0.04), np.float32(0.87)), 16.40)
+        # self.set_view(-42, 59, 0, (np.float32(-0.64), np.float32(0.43), np.float32(0.46)), 16.40)
+        self.set_view(-26, 64, 0, (np.float32(0.71), np.float32(-0.04), np.float32(0.87)), 16.40)
         self.wait()
  
         play_theta_sweep(self, t1_tracker, t2_tracker)
  
         self.wait()
-        self.embed()
 
 
 
-class loss_to_surface_viz_1(InteractiveScene):
+class loss_to_surface_viz_1(WelchScene):
     def construct(self):
         # ---- 1. load the same episode as the 2d version (ep 13) ----
         with open(HACKIN_DIR / "cartpole_human_play/cartpole_human_demos_sw_3.json") as f:
@@ -501,11 +438,11 @@ class loss_to_surface_viz_1(InteractiveScene):
         angvel = np.degrees(obs[:, 3])
 
         # ---- 2. axes: x = pole angle, y = pole angular velocity, z = P(right) ----
-        axes = ThreeDAxes(
+        axes = gx.ThreeDAxes(
             x_range=(*ANG_LIM, 5),
             y_range=(*VEL_LIM, ),
             z_range=(0, 1, 0.25),
-            width=10, height=10, depth=4,
+            x_length=10, y_length=10, z_length=4,
         )
         self.add(axes)
 
@@ -526,23 +463,23 @@ class loss_to_surface_viz_1(InteractiveScene):
         plt.close(fig)
 
         # ---- 4. the surface itself: height = P(right) ----
-        geom_surface = axes.get_graph(
+        geom_surface = height_field(axes,
             lambda u, v: sigmoid(T1 * u + T2 * v),
             u_range=ANG_LIM,
             v_range=VEL_LIM,
             resolution=(51, 51),
             opacity=1.0,
         )
-        surface = TexturedSurface(geom_surface, tex_path)
+        surface = texture_surface(geom_surface, tex_path)
         self.add(surface)
         surface.set_opacity(0.5)
 
 
-        mesh = SurfaceMesh(
+        mesh = surface_wireframe(
             geom_surface,
             resolution=(23, 23),
             stroke_width=0.5,
-            stroke_color=WHITE,  # CHILL_BROWN,
+            stroke_color=gx.WHITE,  # CHILL_BROWN,
             stroke_opacity=0.4,
         )
         self.add(mesh)
@@ -550,7 +487,7 @@ class loss_to_surface_viz_1(InteractiveScene):
 
         # ---- 5. arrows: left actions flat on z=0, right actions flat on z=1 ----
         ARROW_WIDTH = 0.5
-        arrows = VGroup()
+        arrows = gx.VGroup()
         for a, v, action in zip(ang, angvel, act):
             went_right = (action == 1)
             arrow = arrow_polygon(
@@ -559,17 +496,16 @@ class loss_to_surface_viz_1(InteractiveScene):
                 fill_opacity=0.85,
                 stroke_width=0,
             )
-            arrow.set_width(ARROW_WIDTH)
+            arrow.scale_to_fit_width(ARROW_WIDTH)
             arrow.move_to(axes.c2p(a, v, 1 if went_right else 0))
             arrows.add(arrow)
         self.add(arrows)
 
         # ---- 6. camera + hand off for interactive tuning ----
-        # self.frame.reorient(44, 51, 0, (np.float32(1.17), np.float32(-0.47), np.float32(1.38)), 16.18)
-        # self.frame.reorient(46, 61, 0, (np.float32(1.13), np.float32(-0.66), np.float32(1.23)), 16.40)
-        self.frame.reorient(-42, 59, 0, (np.float32(-0.64), np.float32(0.43), np.float32(0.46)), 16.40)
+        # self.set_view(44, 51, 0, (np.float32(1.17), np.float32(-0.47), np.float32(1.38)), 16.18)
+        # self.set_view(46, 61, 0, (np.float32(1.13), np.float32(-0.66), np.float32(1.23)), 16.40)
+        self.set_view(-42, 59, 0, (np.float32(-0.64), np.float32(0.43), np.float32(0.46)), 16.40)
         self.wait(20)
-        self.embed()
 
 
 # ----------------------------------------------------------------------
@@ -580,7 +516,7 @@ class loss_to_surface_viz_1(InteractiveScene):
 # surface.
 # ----------------------------------------------------------------------
  
-class loss_to_surface_viz_1(InteractiveScene):
+class loss_to_surface_viz_1(WelchScene):
     def construct(self):
         # T1=1.0
         # T2=1.0
@@ -618,11 +554,11 @@ class loss_to_surface_viz_1(InteractiveScene):
         angvel = X[:, 1]
  
         # ---- 2. axes: x = pole angle, y = pole angular velocity, z = P(right) ----
-        axes = ThreeDAxes(
+        axes = gx.ThreeDAxes(
             x_range=(*ANG_LIM, 5),
             y_range=(*VEL_LIM, ),
             z_range=(0, 1, 0.25),
-            width=10, height=10, depth=4,
+            x_length=10, y_length=10, z_length=4,
         )
         self.add(axes)
  
@@ -644,18 +580,18 @@ class loss_to_surface_viz_1(InteractiveScene):
         plt.close(fig)
  
         # ---- 4. the surface itself: height = P(right) ----
-        geom_surface = axes.get_graph(
+        geom_surface = height_field(axes,
             lambda u, v: sigmoid(T1 * u + T2 * v),
             u_range=ANG_LIM,
             v_range=VEL_LIM,
             resolution=(51, 51),
             opacity=1.0,
         )
-        surface = TexturedSurface(geom_surface, tex_path)
+        surface = texture_surface(geom_surface, tex_path)
         self.add(surface)
         surface.set_opacity(0.5)
  
-        mesh = SurfaceMesh(
+        mesh = surface_wireframe(
             geom_surface,
             resolution=(23, 23),
             stroke_width=0.5,
@@ -667,7 +603,7 @@ class loss_to_surface_viz_1(InteractiveScene):
  
         # ---- 5. arrows: left actions flat on z=0, right actions flat on z=1 ----
         ARROW_WIDTH = 0.5
-        arrows = VGroup()
+        arrows = gx.VGroup()
         for a, v, action in zip(ang, angvel, act):
             went_right = (action == 1)
             arrow = arrow_polygon(
@@ -676,7 +612,7 @@ class loss_to_surface_viz_1(InteractiveScene):
                 fill_opacity=0.85,
                 stroke_width=0,
             )
-            arrow.set_width(ARROW_WIDTH)
+            arrow.scale_to_fit_width(ARROW_WIDTH)
             arrow.move_to(axes.c2p(a, v, 1 if went_right else 0))
             arrows.add(arrow)
         self.add(arrows)
@@ -687,8 +623,8 @@ class loss_to_surface_viz_1(InteractiveScene):
         # i.e. exactly the per-step L1 loss.
         LOSS_LINE_WIDTH = 0.04
         LOSS_SPHERE_RADIUS = 0.06
-        loss_lines = Group()
-        loss_spheres = Group()
+        loss_lines = gx.Group()
+        loss_spheres = gx.Group()
         for a, v, action in zip(ang, angvel, act):
             z_target = 1.0 if action == 1 else 0.0
             z_pred = sigmoid(T1 * a + T2 * v)
@@ -701,13 +637,13 @@ class loss_to_surface_viz_1(InteractiveScene):
             if np.allclose(surface_point, arrow_point):
                 continue
  
-            line = Line3D(
+            line = gx.Line3D(
                 surface_point, arrow_point,
-                width=LOSS_LINE_WIDTH, resolution=(9, 9), color=GREEN,
+                thickness=LOSS_LINE_WIDTH, resolution=(9, 9), color=GREEN,
             )
             loss_lines.add(line)
  
-            sphere = Sphere(radius=LOSS_SPHERE_RADIUS, resolution=(8, 8), color=GREEN)
+            sphere = gx.Sphere(radius=LOSS_SPHERE_RADIUS, resolution=(8, 8), color=GREEN)
             sphere.move_to(surface_point)
             loss_spheres.add(sphere)
  
@@ -723,14 +659,13 @@ class loss_to_surface_viz_1(InteractiveScene):
         # self.remove(mesh); self.add(mesh)
  
         # ---- 7. camera + hand off for interactive tuning ----
-        # self.frame.reorient(-56, 54, 0, (np.float32(-0.48), np.float32(0.26), np.float32(0.33)), 13.15)
-        # self.frame.reorient(-55, 57, 0, (np.float32(-0.52), np.float32(0.23), np.float32(0.26)), 13.15)
-        # self.frame.reorient(-26, 64, 0, (np.float32(0.71), np.float32(-0.04), np.float32(0.87)), 16.40)
-        self.frame.reorient(-28, 45, 0, (np.float32(0.2), np.float32(-0.31), np.float32(0.09)), 14.97)
+        # self.set_view(-56, 54, 0, (np.float32(-0.48), np.float32(0.26), np.float32(0.33)), 13.15)
+        # self.set_view(-55, 57, 0, (np.float32(-0.52), np.float32(0.23), np.float32(0.26)), 13.15)
+        # self.set_view(-26, 64, 0, (np.float32(0.71), np.float32(-0.04), np.float32(0.87)), 16.40)
+        self.set_view(-28, 45, 0, (np.float32(0.2), np.float32(-0.31), np.float32(0.09)), 14.97)
         self.wait(1.0)
-        self.frame.reorient(-40, 49, 0, (np.float32(0.09), np.float32(-0.12), np.float32(0.2)), 14.97)
+        self.set_view(-40, 49, 0, (np.float32(0.09), np.float32(-0.12), np.float32(0.2)), 14.97)
         self.wait(20)
-        self.embed()
 
 
 
@@ -749,73 +684,11 @@ class loss_to_surface_viz_1(InteractiveScene):
 # scenes stay frame-synced with their existing choreography.
 # ----------------------------------------------------------------------
 
-SWEEP_T1_RANGE_V2 = (-0.2, 0.6)
-SWEEP_T2_RANGE_V2 = (-0.15, 0.15)
 
 
-def play_theta_sweep_v2(scene, t1_tracker, t2_tracker,
-                        t1_range=SWEEP_T1_RANGE_V2,
-                        t2_range=SWEEP_T2_RANGE_V2):
-    """Same choreography as play_theta_sweep (and generate_theta_sweep in
-    the notebook), with the ellipse-center correction:
-      1. sweep theta1 across its full range, theta2 held at 0
-      2. transition to the theta2 sweep's start, (0, t2_lo)
-      3. sweep theta2 across its full range, theta1 held at 0
-      4. transition to the ellipse's start, (t1_hi, c2)
-      5. one loop around the ellipse *inscribed in the sweep ranges*:
-         center (c1, c2) = range midpoints, semi-axes = half-spans
-
-    Note segment 4's target is (t1_hi, c2), not (t1_hi, 0) -- they only
-    coincide while the t2 range is symmetric.
-
-    Assumes t1_tracker starts at t1_range[0] and t2_tracker starts at 0.
-    """
-    t1_lo, t1_hi = t1_range
-    t2_lo, t2_hi = t2_range
-    c1, r1 = (t1_lo + t1_hi) / 2, (t1_hi - t1_lo) / 2
-    c2, r2 = (t2_lo + t2_hi) / 2, (t2_hi - t2_lo) / 2
-
-    # 1. sweep theta1, t1_lo -> t1_hi, theta2 fixed at 0
-    scene.play(
-        t1_tracker.animate.set_value(t1_hi),
-        run_time=SWEEP_TIME, rate_func=linear,
-    )
-
-    # 2. transition to the theta2 sweep's start point, (0, t2_lo)
-    scene.play(
-        t1_tracker.animate.set_value(0),
-        t2_tracker.animate.set_value(t2_lo),
-        run_time=TRANSITION_TIME, rate_func=smooth,
-    )
-
-    # 3. sweep theta2, t2_lo -> t2_hi, theta1 fixed at 0
-    scene.play(
-        t2_tracker.animate.set_value(t2_hi),
-        run_time=SWEEP_TIME, rate_func=linear,
-    )
-
-    # 4. transition to the ellipse's start point, (t1_hi, c2)
-    scene.play(
-        t1_tracker.animate.set_value(t1_hi),
-        t2_tracker.animate.set_value(c2),
-        run_time=TRANSITION_TIME, rate_func=smooth,
-    )
-
-    # 5. one full loop around the inscribed ellipse. As in play_theta_sweep,
-    # the coupled (t1, t2) path is driven manually off an alpha-func since
-    # animate.set_value only interpolates single values linearly.
-    def ellipse_step(mob, alpha):
-        theta = alpha * TAU
-        t1_tracker.set_value(c1 + r1 * np.cos(theta))
-        t2_tracker.set_value(c2 + r2 * np.sin(theta))
-
-    scene.play(
-        UpdateFromAlphaFunc(Mobject(), ellipse_step),
-        run_time=ELLIPSE_TIME, rate_func=linear,
-    )
 
 
-class loss_to_surface_sweep_1(InteractiveScene):
+class loss_to_surface_sweep_1(WelchScene):
     def construct(self):
         # ---- 1. load the same episode as the other scenes (ep 13) ----
         with open(HACKIN_DIR / "cartpole_human_play/cartpole_human_demos_sw_3.json") as f:
@@ -838,11 +711,11 @@ class loss_to_surface_sweep_1(InteractiveScene):
         # Built for c2p() geometry but NOT added to the scene -- matches the
         # net end state of loss_to_surface_viz_1, which removes the axes
         # (and the touchdown spheres) during its add/remove shuffle.
-        axes = ThreeDAxes(
+        axes = gx.ThreeDAxes(
             x_range=(*ANG_LIM, 5),
             y_range=(*VEL_LIM, ),
             z_range=(0, 1, 0.25),
-            width=10, height=10, depth=4,
+            x_length=10, y_length=10, z_length=4,
         )
 
         cmap = mcolors.LinearSegmentedColormap.from_list("blue_gold", [BLUE, YELLOW], N=256)
@@ -850,8 +723,8 @@ class loss_to_surface_sweep_1(InteractiveScene):
         MESH_RES = (23, 23)
         SURFACE_OPACITY = 0.5
 
-        t1_tracker = ValueTracker(SWEEP_T1_RANGE_V2[0])
-        t2_tracker = ValueTracker(0)
+        t1_tracker = gx.ValueTracker(SWEEP_T1_RANGE_V2[0])
+        t2_tracker = gx.ValueTracker(0)
 
         # ---- 3. sweeping surface + mesh (same pattern as policy_surfaces_3d_2:
         # per-vertex colors instead of a texture, since TexturedSurface's image
@@ -866,17 +739,17 @@ class loss_to_surface_sweep_1(InteractiveScene):
 
         def build_surface():
             t1, t2 = t1_tracker.get_value(), t2_tracker.get_value()
-            surf = axes.get_graph(
+            surf = height_field(axes,
                 lambda u, v: sigmoid(t1 * u + t2 * v),
                 u_range=ANG_LIM, v_range=VEL_LIM,
                 resolution=SURFACE_RES, opacity=SURFACE_OPACITY,
             )
-            surf.set_rgba_array_by_color(vertex_colors(t1, t2, SURFACE_RES))
+            color_surface_vertices(surf, vertex_colors(t1, t2, SURFACE_RES))
             surf.set_opacity(SURFACE_OPACITY)
             return surf
 
-        surface = always_redraw(build_surface)
-        mesh = always_redraw(lambda: SurfaceMesh(
+        surface = gx.always_redraw(build_surface)
+        mesh = gx.always_redraw(lambda: surface_wireframe(
             build_surface(),
             resolution=MESH_RES,
             stroke_width=1,
@@ -900,7 +773,7 @@ class loss_to_surface_sweep_1(InteractiveScene):
 
         def build_loss_group():
             t1, t2 = t1_tracker.get_value(), t2_tracker.get_value()
-            group = Group()
+            group = gx.Group()
             for a, v, action in zip(ang, angvel, act):
                 z_target = 1.0 if action == 1 else 0.0
                 z_pred = sigmoid(t1 * a + t2 * v)
@@ -913,12 +786,12 @@ class loss_to_surface_sweep_1(InteractiveScene):
                 if np.allclose(surface_point, arrow_point):
                     continue
 
-                group.add(Line3D(
+                group.add(gx.Line3D(
                     surface_point, arrow_point,
-                    width=LOSS_LINE_WIDTH, resolution=LOSS_LINE_RES, color=GREEN,
+                    thickness=LOSS_LINE_WIDTH, resolution=LOSS_LINE_RES, color=GREEN,
                 ))
                 if SHOW_LOSS_SPHERES:
-                    sphere = Sphere(
+                    sphere = gx.Sphere(
                         radius=LOSS_SPHERE_RADIUS,
                         resolution=LOSS_SPHERE_RES, color=GREEN,
                     )
@@ -926,14 +799,14 @@ class loss_to_surface_sweep_1(InteractiveScene):
                     group.add(sphere)
             return group
 
-        loss_group = always_redraw(build_loss_group)
+        loss_group = gx.always_redraw(build_loss_group)
         self.add(loss_group)
 
         # ---- 5. arrows: static targets on z=0 / z=1, added last so they draw
         # on top of the loss lines (same order the static scene's add/remove
         # shuffle lands on) ----
         ARROW_WIDTH = 0.5
-        arrows = VGroup()
+        arrows = gx.VGroup()
         for a, v, action in zip(ang, angvel, act):
             went_right = (action == 1)
             arrow = arrow_polygon(
@@ -942,20 +815,19 @@ class loss_to_surface_sweep_1(InteractiveScene):
                 fill_opacity=0.85,
                 stroke_width=0,
             )
-            arrow.set_width(ARROW_WIDTH)
+            arrow.scale_to_fit_width(ARROW_WIDTH)
             arrow.move_to(axes.c2p(a, v, 1 if went_right else 0))
             arrows.add(arrow)
         self.add(arrows)
 
         # ---- 6. camera (same view as loss_to_surface_viz_1) + sweep ----
-        # self.frame.reorient(-55, 57, 0, (np.float32(-0.52), np.float32(0.23), np.float32(0.26)), 13.15)
-        self.frame.reorient(-45, 61, 0, (np.float32(-0.38), np.float32(0.17), np.float32(0.34)), 13.15)
+        # self.set_view(-55, 57, 0, (np.float32(-0.52), np.float32(0.23), np.float32(0.26)), 13.15)
+        self.set_view(-45, 61, 0, (np.float32(-0.38), np.float32(0.17), np.float32(0.34)), 13.15)
         self.wait()
 
         play_theta_sweep_v2(self, t1_tracker, t2_tracker)
 
         self.wait()
-        self.embed()
 
 
 # ----------------------------------------------------------------------
@@ -976,170 +848,11 @@ class loss_to_surface_sweep_1(InteractiveScene):
 # fixed y taken from the first number's placement.
 # ----------------------------------------------------------------------
 
-class policy_surfaces_3d_text_v6(Scene):
-    def construct(self):
-        # ---- 1. same episode as the 3d scenes (ep 13) -- needed here
-        # because the gradient is a data-dependent quantity ----
-        with open(HACKIN_DIR / "cartpole_human_play/cartpole_human_demos_sw_3.json") as f:
-            data = json.load(f)
-
-        all_obs, all_actions = [], []
-        for i in [13]:
-            ep = data["episodes"][i]
-            all_obs.append(ep["observations"])
-            all_actions.append(ep["actions"])
-            print(i, len(ep['observations']))
-
-        obs = np.concatenate(all_obs)
-        act = np.concatenate(all_actions)
-
-        ang = np.degrees(obs[:, 2])      # degree-valued features, matching
-        angvel = np.degrees(obs[:, 3])   # the surface's sigmoid(t1*A + t2*V)
-
-        def grad_deg(t1, t2):
-            """d(L1 loss)/d(theta) in the degree parametrization.
-            L = 2 * mean|p - y|, same loss as the notebook's l1_loss."""
-            logit = t1 * ang + t2 * angvel
-            p = sigmoid(logit)
-            diff = p - act
-            dp = p * (1.0 - p)
-            return np.array([
-                -2.0 * np.mean(np.sign(diff) * dp * ang),  #SW negative grad actually, a little easier setup for loss function
-                -2.0 * np.mean(np.sign(diff) * dp * angvel),
-            ])
-
-        t1_tracker = ValueTracker(SWEEP_T1_RANGE_V2[0])
-        t2_tracker = ValueTracker(0)
-
-        # ---- 2. build elements ----
-        SCALE = 1.3
-        BUFF = 0.15
-        N_DEC = 2
-        COMMA_DROP = 0.04   # commas hang a touch below the digit baseline;
-                            # eyeball in embed() and tune
-
-        def make_num(value):
-            return DecimalNumber(
-                value, num_decimal_places=N_DEC, include_sign=True
-            ).scale(SCALE)
-
-        theta_sym = Tex(r"\boldsymbol{\theta} = [").scale(SCALE)
-        theta_v1 = make_num(t1_tracker.get_value())
-        theta_comma = Tex(",").scale(SCALE)
-        theta_v2 = make_num(t2_tracker.get_value())
-        theta_rb = Tex("]").scale(SCALE)
-
-        g0 = grad_deg(t1_tracker.get_value(), t2_tracker.get_value())
-
-        # g0*=-1 # Ok i want to do negative gradient actually. 
-        grad_sym = Tex(r"-\nabla_{\boldsymbol{\theta}} \mathcal{L} = [").scale(SCALE)
-        grad_v1 = make_num(g0[0])
-        grad_comma = Tex(",").scale(SCALE)
-        grad_v2 = make_num(g0[1])
-        grad_rb = Tex("]").scale(SCALE)
-
-        everything = VGroup(theta_sym, theta_v1, theta_comma, theta_v2, theta_rb,
-                            grad_sym, grad_v1, grad_comma, grad_v2, grad_rb)
-        everything.set_color(FRESH_TAN)
-        grad_sym.set_color(MAGENTA)
-        grad_v1.set_color(MAGENTA)
-        grad_comma.set_color(MAGENTA)
-        grad_v2.set_color(MAGENTA)
-        grad_rb.set_color(MAGENTA)
-
-        # ---- 3. worst-case slot widths ----
-        # thetas: bounded by the sweep ranges. gradients: sample a grid over
-        # the sweep's bounding box (the whole path -- both straight sweeps,
-        # both transitions, and the inscribed ellipse -- lives inside it),
-        # so the slots are sized from the actual data, not a guess.
-        tg1 = np.linspace(*SWEEP_T1_RANGE_V2, 41)
-        tg2 = np.linspace(*SWEEP_T2_RANGE_V2, 41)
-        gmax = np.zeros(2)
-        for t1v in tg1:
-            for t2v in tg2:
-                gmax = np.maximum(gmax, np.abs(grad_deg(t1v, t2v)))
-
-        def slot_width(max_abs):
-            """Width of the widest rendering of a value in [-max_abs, max_abs]
-            at N_DEC places -- checks both signs since + and - render at
-            different widths (the source of the left/right jitter)."""
-            return max(make_num(s * max_abs).get_width() for s in (+1.0, -1.0))
-
-        w_theta_1 = slot_width(max(abs(v) for v in SWEEP_T1_RANGE_V2))
-        w_theta_2 = slot_width(max(abs(v) for v in SWEEP_T2_RANGE_V2))
-        w_grad_1 = slot_width(gmax[0])
-        w_grad_2 = slot_width(gmax[1])
-
-        # ---- 4. explicit layout: place the sym, then hand-place the back
-        # half of the row into fixed slots. Returns the two anchor points the
-        # numbers re-pin their LEFT edges to each frame. ----
-        def layout_row(sym, v1, comma, v2, rb, w1, w2, x_left, y_sym):
-            sym.move_to(np.array([x_left, y_sym, 0.0]), aligned_edge=LEFT)
-
-            # one next_to at construction only, to inherit the vertical
-            # placement that already read correctly for theta1 -- its y
-            # becomes the fixed y for BOTH value slots
-            v1.next_to(sym, RIGHT, buff=BUFF)
-            y_num = v1.get_center()[1]
-
-            x = sym.get_right()[0] + BUFF
-            anchor1 = np.array([x, y_num, 0.0])
-            x += w1 + BUFF
-
-            comma.move_to(np.array([x, y_num, 0.0]), aligned_edge=LEFT)
-            comma.align_to(v1, DOWN).shift(COMMA_DROP * DOWN)
-            x = comma.get_right()[0] + BUFF
-            anchor2 = np.array([x, y_num, 0.0])
-            x += w2 + BUFF
-
-            rb.move_to(np.array([x, y_num, 0.0]), aligned_edge=LEFT)
-            rb.align_to(sym, DOWN)   # bracket bottoms match: "[" is sym's
-                                     # lowest glyph
-            return anchor1, anchor2
-
-        def row_width(sym, w1, comma, w2, rb):
-            return (sym.get_width() + BUFF + w1 + BUFF + comma.get_width()
-                    + BUFF + w2 + BUFF + rb.get_width())
-
-        # left-align both rows, centered horizontally on the wider (grad) row
-        total_w = max(row_width(theta_sym, w_theta_1, theta_comma, w_theta_2, theta_rb),
-                      row_width(grad_sym, w_grad_1, grad_comma, w_grad_2, grad_rb))
-        x_left = -total_w / 2
-        Y_THETA = -2.55   # theta row  } bottom-edge placement; tune in embed
-        Y_GRAD = -3.5    # grad row   }
-
-        theta_a1, theta_a2 = layout_row(
-            theta_sym, theta_v1, theta_comma, theta_v2, theta_rb,
-            w_theta_1, w_theta_2, x_left, Y_THETA)
-        grad_a1, grad_a2 = layout_row(
-            grad_sym, grad_v1, grad_comma, grad_v2, grad_rb,
-            w_grad_1, w_grad_2, x_left, Y_GRAD)
-
-        # ---- 5. updaters: numbers only. set_value, then re-pin the left
-        # edge to the fixed slot anchor -- the static pieces never move. ----
-        def pin(num, getter, anchor):
-            def upd(d):
-                d.set_value(getter())
-                d.move_to(anchor, aligned_edge=LEFT)
-            num.add_updater(upd)
-
-        pin(theta_v1, t1_tracker.get_value, theta_a1)
-        pin(theta_v2, t2_tracker.get_value, theta_a2)
-        pin(grad_v1,
-            lambda: grad_deg(t1_tracker.get_value(), t2_tracker.get_value())[0],
-            grad_a1)
-        pin(grad_v2,
-            lambda: grad_deg(t1_tracker.get_value(), t2_tracker.get_value())[1],
-            grad_a2)
-
-        self.add(everything)
-
-        self.wait()
-
-        play_theta_sweep_v2(self, t1_tracker, t2_tracker)
-
-        self.wait()
 
 
 
 
+
+
+class policy_surfaces_3d_text_v6(PolicySurfaceTextScene):
+    text_color = FRESH_TAN

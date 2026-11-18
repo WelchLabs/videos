@@ -1,9 +1,23 @@
-from manimlib import *
+from welch_paths import welch_path
+from welch_surface import set_surface_shading
 from functools import partial
 import sys
 
 sys.path.append('_2025/backprop_3') #Point to folder where plane_folding_utils.py is
-from geometric_dl_utils import *
+import copy
+import manimgx as gx
+import numpy as np
+import torch
+from geometric_dl_utils import (
+    BaarleNet,
+    carve_plane_with_relu_joints,
+    find_polygon_intersections,
+    get_polygon_corners_layer_1,
+    split_polygons_with_relu,
+    surface_func_from_model,
+)
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, textured_surface
 
 
 CHILL_BROWN='#948979'
@@ -16,9 +30,9 @@ CHILL_BLUE='#3d5c6f'
 FRESH_TAN='#dfd0b9'
 
 
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/graphics/' #Point to folder where map images are
+graphics_dir=welch_path('backprop_3/graphics/') #Point to folder where map images are
 
-class refactor_sketch_1(InteractiveScene):
+class refactor_sketch_1(WelchScene):
     def construct(self):
         # Ok I generally don't think refactoring on these projects is a good use of time
         # buuut this stuff is gettring pretty unwieldy, and I think Claude can write me a clean API quickly.
@@ -44,13 +58,13 @@ class refactor_sketch_1(InteractiveScene):
         surfaces=[]
         surface_funcs=[]
         for layer_idx in range(len(model.model)):
-            s=Group()
+            s=gx.Group()
             surface_funcs.append([])
             for neuron_idx in range(num_neurons[layer_idx]):
                 surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=viz_scales[layer_idx])
-                bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                ts=TexturedSurface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-                ts.set_shading(0,0,0).set_opacity(0.75)
+                bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                ts=textured_surface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+                set_surface_shading(ts, 0,0,0).set_opacity(0.75)
                 s.add(ts)
                 surface_funcs[-1].append(surface_func)
             surfaces.append(s)
@@ -64,13 +78,13 @@ class refactor_sketch_1(InteractiveScene):
         # Hmm ok yeah so i think the dashed fold line is nice early on in animtation
         # But here I guess at the very first relu (and you could even do before that),
         # I just want ot start figuing out zero crossing polygons.
-        self.frame.reorient(0, 38, 0, (-0.16, 0.17, 0.1), 9.70)
+        self.set_view(0, 38, 0, (-0.16, 0.17, 0.1), 9.70)
 
         #Optional but kinda nice RuLu intersection planes
-        relu_intersections_planes_1=VGroup()
+        relu_intersections_planes_1=gx.VGroup()
         layer_idx=0
         for neuron_idx in range(num_neurons[layer_idx]):
-            plane = Rectangle( width=2,  height=2, fill_color=GREY, fill_opacity=0.3, stroke_color=WHITE, stroke_width=1)
+            plane = gx.Rectangle( width=2,  height=2, fill_color=gx.GREY, fill_opacity=0.3, stroke_color=gx.WHITE, stroke_width=1)
             plane.shift([3*layer_idx-6, 0, 1.5*neuron_idx])
             relu_intersections_planes_1.add(plane)
         self.add(relu_intersections_planes_1)
@@ -90,11 +104,11 @@ class refactor_sketch_1(InteractiveScene):
                 layer_1_polygons_3d[-1].append(a)
 
         #Now move to rigth locations and visualize polygons. 
-        layer_1_polygons_vgroup=VGroup()
-        layer_1_colors=[TEAL, GREY]
+        layer_1_polygons_vgroup=gx.VGroup()
+        layer_1_colors=[gx.TEAL, gx.GREY]
         for neuron_idx, polygons in enumerate(layer_1_polygons_3d):
             for j, p in enumerate(polygons):
-                poly_3d = Polygon(*p,
+                poly_3d = gx.Polygon(*p,
                                  fill_color=layer_1_colors[j],
                                  fill_opacity=0.7,
                                  stroke_color=layer_1_colors[j],
@@ -122,11 +136,11 @@ class refactor_sketch_1(InteractiveScene):
                 a=np.array(a)
                 layer_2_polygons_3d[-1].append(a)
 
-        layer_2_polygons_vgroup=VGroup()
-        layer_2_colors = [RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+        layer_2_polygons_vgroup=gx.VGroup()
+        layer_2_colors = [gx.RED, BLUE, GREEN, YELLOW, gx.PURPLE, gx.ORANGE, gx.PINK, gx.TEAL]
         for neuron_idx, polygons in enumerate(layer_2_polygons_3d):
             for j, p in enumerate(polygons):
-                poly_3d = Polygon(*p,
+                poly_3d = gx.Polygon(*p,
                                  fill_color=layer_2_colors[j%len(layer_2_colors)],
                                  fill_opacity=0.7,
                                  stroke_color=layer_2_colors[j%len(layer_2_colors)],
@@ -139,10 +153,10 @@ class refactor_sketch_1(InteractiveScene):
         self.wait()
 
         #Optional but kinda nice RuLu intersection planes
-        relu_intersections_planes_2=VGroup()
+        relu_intersections_planes_2=gx.VGroup()
         layer_idx=2
         for neuron_idx in range(num_neurons[layer_idx]):
-            plane = Rectangle( width=2,  height=2, fill_color=GREY, fill_opacity=0.3, stroke_color=WHITE, stroke_width=1)
+            plane = gx.Rectangle( width=2,  height=2, fill_color=gx.GREY, fill_opacity=0.3, stroke_color=gx.WHITE, stroke_width=1)
             plane.shift([3*layer_idx-6, 0, 1.5*neuron_idx])
             relu_intersections_planes_2.add(plane)
         self.add(relu_intersections_planes_2)
@@ -206,11 +220,11 @@ class refactor_sketch_1(InteractiveScene):
         for i, o in enumerate(unmerged_polygons):
             all_polygons_after_merging[i].extend(o)
 
-        layer_2_polygons_split_vgroup=VGroup()
-        layer_2_colors = [GREY, RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+        layer_2_polygons_split_vgroup=gx.VGroup()
+        layer_2_colors = [gx.GREY, gx.RED, BLUE, GREEN, YELLOW, gx.PURPLE, gx.ORANGE, gx.PINK, gx.TEAL]
         for neuron_idx, polygons in enumerate(all_polygons_after_merging):
             for j, p in enumerate(polygons):
-                poly_3d = Polygon(*p,
+                poly_3d = gx.Polygon(*p,
                                  fill_color=layer_2_colors[j%len(layer_2_colors)],
                                  fill_opacity=0.7,
                                  stroke_color=layer_2_colors[j%len(layer_2_colors)],
@@ -240,12 +254,12 @@ class refactor_sketch_1(InteractiveScene):
         layer3_regions_2d = find_polygon_intersections(all_polygons_after_merging_2d)
 
         #Let's do a quick 2d viz to see how things are looking here
-        output_poygons_2d=VGroup()
+        output_poygons_2d=gx.VGroup()
         layer_idx=4
         neuron_idx=-1
-        layer_3_colors = [RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+        layer_3_colors = [gx.RED, BLUE, GREEN, YELLOW, gx.PURPLE, gx.ORANGE, gx.PINK, gx.TEAL]
         for j, polygon in enumerate(layer3_regions_2d):
-                polygon = Polygon(*np.hstack((polygon, np.zeros((polygon.shape[0],1)))),
+                polygon = gx.Polygon(*np.hstack((polygon, np.zeros((polygon.shape[0],1)))),
                                  fill_color=layer_3_colors[j%len(layer_3_colors)],
                                  fill_opacity=0.7,
                                  stroke_color=layer_3_colors[j%len(layer_3_colors)],
@@ -269,10 +283,10 @@ class refactor_sketch_1(InteractiveScene):
                 layer_3_polygons_3d[-1].append(a)           
 
 
-        layer_3_polygons_vgroup=VGroup()
+        layer_3_polygons_vgroup=gx.VGroup()
         for neuron_idx, polygons in enumerate(layer_3_polygons_3d):
             for j, p in enumerate(polygons):
-                poly_3d = Polygon(*p,
+                poly_3d = gx.Polygon(*p,
                                  fill_color=layer_3_colors[j%len(layer_3_colors)],
                                  fill_opacity=0.7,
                                  stroke_color=layer_3_colors[j%len(layer_3_colors)],
@@ -298,7 +312,7 @@ class refactor_sketch_1(InteractiveScene):
 
 
         self.wait()
-        self.embed()
+        pass
 
 
 

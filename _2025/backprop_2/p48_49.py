@@ -1,6 +1,9 @@
-from manimlib import *
-sys.path.append('/Users/stephen/manim/videos/welch_assets')
-from welch_axes import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_geometry import diagram_axes_3d
+from welch_surface import SampledSurface
+from welch_scene import WelchScene, image_at_height
+from welch_text import math_tex
 from functools import partial
 import numpy as np
 import torch
@@ -10,9 +13,9 @@ YELLOW='#ffd35a'
 BLUE='#65c8d0'
 GREEN='#00a14b'
 
-svg_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/graphics/to_manim'
-data_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/hackin'
-heatmap_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/graphics/to_manim/jun_6_2'
+svg_path=welch_path('backprop2/graphics/to_manim')
+data_path=welch_path('backprop2/hackin')
+heatmap_path=welch_path('backprop2/graphics/to_manim/jun_6_2')
 
 
 def format_number(num, total_chars=6, align='right'):
@@ -109,124 +112,124 @@ def get_dem_numbers_3d(i, xs, weights, logits, yhats):
     x1 = xs[i, 0]  # First input feature
     x2 = xs[i, 1]  # Second input feature
     
-    nums = VGroup()
+    nums = m.VGroup()
     
     # First input value
-    tx1 = Tex(str(x1) + r'^\circ')
-    tx1.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    tx1 = math_tex(str(x1) + r'^\circ')
+    tx1.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     tx1.move_to([-1.53, 0, 0.155])  
     nums.add(tx1)
     
     # Second input value
-    tx2 = Tex(str(x2) + r'^\circ')
-    tx2.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    tx2 = math_tex(str(x2) + r'^\circ')
+    tx2.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     tx2.move_to([-1.52, 0, -0.19])  
     nums.add(tx2)
 
     #   Neuron 1 weights (cyan)
     w = weights[i, :]
-    tm1_1 = Tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
+    tm1_1 = math_tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
     tm1_1.scale(0.12)
-    tm1_1.rotate(90*DEGREES, [1, 0, 0])
+    tm1_1.rotate(90*m.DEGREES, [1, 0, 0])
     tm1_1.move_to([-1.04, 0, 0.85])
     nums.add(tm1_1)
     
-    tm1_2 = Tex(format_number(w[1], total_chars=6)).set_color('#00FFFF')
+    tm1_2 = math_tex(format_number(w[1], total_chars=6)).set_color('#00FFFF')
     tm1_2.scale(0.12)
-    tm1_2.rotate(90*DEGREES, [1, 0, 0])
+    tm1_2.rotate(90*m.DEGREES, [1, 0, 0])
     tm1_2.move_to([-1.04, 0, 0.72])
     nums.add(tm1_2)       
 
-    tb1 = Tex(format_number(w[8], total_chars=6)).set_color('#00FFFF')
-    tb1.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    tb1 = math_tex(format_number(w[8], total_chars=6)).set_color('#00FFFF')
+    tb1.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     tb1.move_to([-1.04,0,  0.59])
     nums.add(tb1)
 
-    tm2_1 = Tex(format_number(w[2], total_chars=6)).set_color(YELLOW)
-    tm2_1.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    tm2_1 = math_tex(format_number(w[2], total_chars=6)).set_color(YELLOW)
+    tm2_1.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     tm2_1.move_to([-1.04,0,  0.38])
     nums.add(tm2_1)
     
-    tm2_2 = Tex(format_number(w[3], total_chars=6)).set_color(YELLOW)
-    tm2_2.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    tm2_2 = math_tex(format_number(w[3], total_chars=6)).set_color(YELLOW)
+    tm2_2.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     tm2_2.move_to([-1.04,0,  0.25])
     nums.add(tm2_2)       
 
-    tb2 = Tex(format_number(w[9], total_chars=6)).set_color(YELLOW)
-    tb2.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    tb2 = math_tex(format_number(w[9], total_chars=6)).set_color(YELLOW)
+    tb2.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     tb2.move_to([-1.04,0,  0.12])
     nums.add(tb2)
 
-    tm3_1 = Tex(format_number(w[4], total_chars=6)).set_color(GREEN)
-    tm3_1.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    tm3_1 = math_tex(format_number(w[4], total_chars=6)).set_color(GREEN)
+    tm3_1.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     tm3_1.move_to([-1.04, 0, -0.08])
     nums.add(tm3_1)
     
-    t3_2 = Tex(format_number(w[5], total_chars=6)).set_color(GREEN)
-    t3_2.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    t3_2 = math_tex(format_number(w[5], total_chars=6)).set_color(GREEN)
+    t3_2.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     t3_2.move_to([-1.04, 0, -0.21])
     nums.add(t3_2)       
 
-    tb3 = Tex(format_number(w[10], total_chars=6)).set_color(GREEN)
-    tb3.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    tb3 = math_tex(format_number(w[10], total_chars=6)).set_color(GREEN)
+    tb3.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     tb3.move_to([-1.04, 0, -0.34])
     nums.add(tb3)
 
-    tm4_1 = Tex(format_number(w[6], total_chars=6)).set_color('#FF00FF')
-    tm4_1.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    tm4_1 = math_tex(format_number(w[6], total_chars=6)).set_color('#FF00FF')
+    tm4_1.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     tm4_1.move_to([-1.04, 0, -0.54])
     nums.add(tm4_1)
     
-    t4_2 = Tex(format_number(w[7], total_chars=6)).set_color('#FF00FF')
-    t4_2.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    t4_2 = math_tex(format_number(w[7], total_chars=6)).set_color('#FF00FF')
+    t4_2.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     t4_2.move_to([-1.04, 0, -0.68])
     nums.add(t4_2)       
 
-    tb4 = Tex(format_number(w[11], total_chars=6)).set_color('#FF00FF')
-    tb4.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+    tb4 = math_tex(format_number(w[11], total_chars=6)).set_color('#FF00FF')
+    tb4.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
     tb4.move_to([-1.04, 0, -0.82])
     nums.add(tb4)
 
 
     # Logits
-    tl1 = Tex(format_number(logits[i, 0], total_chars=6)).set_color('#00FFFF')
-    tl1.scale(0.14).rotate(90*DEGREES, [1, 0, 0])
+    tl1 = math_tex(format_number(logits[i, 0], total_chars=6)).set_color('#00FFFF')
+    tl1.scale(0.14).rotate(90*m.DEGREES, [1, 0, 0])
     tl1.move_to([-0.49, 0, 0.54])
     nums.add(tl1)
     
-    tl2 = Tex(format_number(logits[i, 1], total_chars=6)).set_color(YELLOW)
-    tl2.scale(0.14).rotate(90*DEGREES, [1, 0, 0])
+    tl2 = math_tex(format_number(logits[i, 1], total_chars=6)).set_color(YELLOW)
+    tl2.scale(0.14).rotate(90*m.DEGREES, [1, 0, 0])
     tl2.move_to([-0.48, 0, 0.18])
     nums.add(tl2)
     
-    tl3 = Tex(format_number(logits[i, 2], total_chars=6)).set_color(GREEN)
-    tl3.scale(0.14).rotate(90*DEGREES, [1, 0, 0])  
+    tl3 = math_tex(format_number(logits[i, 2], total_chars=6)).set_color(GREEN)
+    tl3.scale(0.14).rotate(90*m.DEGREES, [1, 0, 0])
     tl3.move_to([-0.49, -0, -0.17]) #tl3.move_to([-0.49, -0.17, 0])
     nums.add(tl3)
 
-    tl4 = Tex(format_number(logits[i, 3], total_chars=6)).set_color("#FF00FF")
-    tl4.scale(0.14).rotate(90*DEGREES, [1, 0, 0])  
+    tl4 = math_tex(format_number(logits[i, 3], total_chars=6)).set_color("#FF00FF")
+    tl4.scale(0.14).rotate(90*m.DEGREES, [1, 0, 0])
     tl4.move_to([-0.48, 0, -0.5])
     nums.add(tl4)
 
     #Predictions
-    yhat1 = Tex(format_number(yhats[i, 0], total_chars=6)).set_color('#00FFFF')
-    yhat1.scale(0.18).rotate(90*DEGREES, [1, 0, 0])
+    yhat1 = math_tex(format_number(yhats[i, 0], total_chars=6)).set_color('#00FFFF')
+    yhat1.scale(0.18).rotate(90*m.DEGREES, [1, 0, 0])
     yhat1.move_to([0.18, 0, 0.36])
     nums.add(yhat1)
     
-    yhat2 = Tex(format_number(yhats[i, 1], total_chars=6)).set_color(YELLOW)
-    yhat2.scale(0.18).rotate(90*DEGREES, [1, 0, 0])
+    yhat2 = math_tex(format_number(yhats[i, 1], total_chars=6)).set_color(YELLOW)
+    yhat2.scale(0.18).rotate(90*m.DEGREES, [1, 0, 0])
     yhat2.move_to([0.18, 0, 0.12])
     nums.add(yhat2)
     
-    yhat3 = Tex(format_number(yhats[i, 2], total_chars=6)).set_color(GREEN)
-    yhat3.scale(0.18).rotate(90*DEGREES, [1, 0, 0])
+    yhat3 = math_tex(format_number(yhats[i, 2], total_chars=6)).set_color(GREEN)
+    yhat3.scale(0.18).rotate(90*m.DEGREES, [1, 0, 0])
     yhat3.move_to([0.18, 0, -0.12])
     nums.add(yhat3)
 
-    yhat4 = Tex(format_number(yhats[i, 3], total_chars=6)).set_color('#FF00FF')
-    yhat4.scale(0.18).rotate(90*DEGREES, [1, 0, 0])
+    yhat4 = math_tex(format_number(yhats[i, 3], total_chars=6)).set_color('#FF00FF')
+    yhat4.scale(0.18).rotate(90*m.DEGREES, [1, 0, 0])
     yhat4.move_to([0.18, 0, -0.35])
     nums.add(yhat4)
 
@@ -236,128 +239,128 @@ def get_dem_numbers(i, xs, weights, logits, yhats):
     x1 = xs[i, 0]  # First input feature
     x2 = xs[i, 1]  # Second input feature
     
-    nums = VGroup()
+    nums = m.VGroup()
     
     # First input value
-    tx1 = Tex(str(x1) + r'^\circ')
+    tx1 = math_tex(str(x1) + r'^\circ')
     tx1.scale(0.12)
     tx1.move_to([-1.53, 0.155, 0])  
     nums.add(tx1)
     
     # Second input value
-    tx2 = Tex(str(x2) + r'^\circ')
+    tx2 = math_tex(str(x2) + r'^\circ')
     tx2.scale(0.12)
     tx2.move_to([-1.52, -0.19, 0])  
     nums.add(tx2)
 
     #   Neuron 1 weights (cyan)
     w = weights[i, :]
-    tm1_1 = Tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
+    tm1_1 = math_tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
     tm1_1.scale(0.12)
     tm1_1.move_to([-1.04, 0.85, 0])
     nums.add(tm1_1)
     
-    tm1_2 = Tex(format_number(w[1], total_chars=6)).set_color('#00FFFF')
+    tm1_2 = math_tex(format_number(w[1], total_chars=6)).set_color('#00FFFF')
     tm1_2.scale(0.12)
     tm1_2.move_to([-1.04, 0.72, 0])
     nums.add(tm1_2)       
 
-    tb1 = Tex(format_number(w[8], total_chars=6)).set_color('#00FFFF')
+    tb1 = math_tex(format_number(w[8], total_chars=6)).set_color('#00FFFF')
     tb1.scale(0.12)
     tb1.move_to([-1.04, 0.59, 0])
     nums.add(tb1)
 
-    tm2_1 = Tex(format_number(w[2], total_chars=6)).set_color(YELLOW)
+    tm2_1 = math_tex(format_number(w[2], total_chars=6)).set_color(YELLOW)
     tm2_1.scale(0.12)
     tm2_1.move_to([-1.04, 0.38, 0])
     nums.add(tm2_1)
     
-    tm2_2 = Tex(format_number(w[3], total_chars=6)).set_color(YELLOW)
+    tm2_2 = math_tex(format_number(w[3], total_chars=6)).set_color(YELLOW)
     tm2_2.scale(0.12)
     tm2_2.move_to([-1.04, 0.25, 0])
     nums.add(tm2_2)       
 
-    tb2 = Tex(format_number(w[9], total_chars=6)).set_color(YELLOW)
+    tb2 = math_tex(format_number(w[9], total_chars=6)).set_color(YELLOW)
     tb2.scale(0.12)
     tb2.move_to([-1.04, 0.12, 0])
     nums.add(tb2)
 
-    tm3_1 = Tex(format_number(w[4], total_chars=6)).set_color(GREEN)
+    tm3_1 = math_tex(format_number(w[4], total_chars=6)).set_color(GREEN)
     tm3_1.scale(0.12)
     tm3_1.move_to([-1.04, -0.08, 0])
     nums.add(tm3_1)
     
-    t3_2 = Tex(format_number(w[5], total_chars=6)).set_color(GREEN)
+    t3_2 = math_tex(format_number(w[5], total_chars=6)).set_color(GREEN)
     t3_2.scale(0.12)
     t3_2.move_to([-1.04, -0.21, 0])
     nums.add(t3_2)       
 
-    tb3 = Tex(format_number(w[10], total_chars=6)).set_color(GREEN)
+    tb3 = math_tex(format_number(w[10], total_chars=6)).set_color(GREEN)
     tb3.scale(0.12)
     tb3.move_to([-1.04, -0.34, 0])
     nums.add(tb3)
 
-    tm4_1 = Tex(format_number(w[6], total_chars=6)).set_color('#FF00FF')
+    tm4_1 = math_tex(format_number(w[6], total_chars=6)).set_color('#FF00FF')
     tm4_1.scale(0.12)
     tm4_1.move_to([-1.04, -0.54, 0])
     nums.add(tm4_1)
     
-    t4_2 = Tex(format_number(w[7], total_chars=6)).set_color('#FF00FF')
+    t4_2 = math_tex(format_number(w[7], total_chars=6)).set_color('#FF00FF')
     t4_2.scale(0.12)
     t4_2.move_to([-1.04, -0.68, 0])
     nums.add(t4_2)       
 
-    tb4 = Tex(format_number(w[11], total_chars=6)).set_color('#FF00FF')
+    tb4 = math_tex(format_number(w[11], total_chars=6)).set_color('#FF00FF')
     tb4.scale(0.12)
     tb4.move_to([-1.04, -0.82, 0])
     nums.add(tb4)
 
 
     # Logits
-    tl1 = Tex(format_number(logits[i, 0], total_chars=6)).set_color('#00FFFF')
+    tl1 = math_tex(format_number(logits[i, 0], total_chars=6)).set_color('#00FFFF')
     tl1.scale(0.14)
     tl1.move_to([-0.49, 0.54, 0])
     nums.add(tl1)
     
-    tl2 = Tex(format_number(logits[i, 1], total_chars=6)).set_color(YELLOW)
+    tl2 = math_tex(format_number(logits[i, 1], total_chars=6)).set_color(YELLOW)
     tl2.scale(0.14)
     tl2.move_to([-0.48, 0.18, 0])
     nums.add(tl2)
     
-    tl3 = Tex(format_number(logits[i, 2], total_chars=6)).set_color(GREEN)
+    tl3 = math_tex(format_number(logits[i, 2], total_chars=6)).set_color(GREEN)
     tl3.scale(0.14)  
     tl3.move_to([-0.49, -0.17, 0])
     nums.add(tl3)
 
-    tl4 = Tex(format_number(logits[i, 3], total_chars=6)).set_color("#FF00FF")
+    tl4 = math_tex(format_number(logits[i, 3], total_chars=6)).set_color("#FF00FF")
     tl4.scale(0.14)  
     tl4.move_to([-0.48, -0.5, 0])
     nums.add(tl4)
 
     #Predictions
-    yhat1 = Tex(format_number(yhats[i, 0], total_chars=6)).set_color('#00FFFF')
+    yhat1 = math_tex(format_number(yhats[i, 0], total_chars=6)).set_color('#00FFFF')
     yhat1.scale(0.18)
     yhat1.move_to([0.18, 0.36, 0])
     nums.add(yhat1)
     
-    yhat2 = Tex(format_number(yhats[i, 1], total_chars=6)).set_color(YELLOW)
+    yhat2 = math_tex(format_number(yhats[i, 1], total_chars=6)).set_color(YELLOW)
     yhat2.scale(0.18)
     yhat2.move_to([0.18, 0.12, 0])
     nums.add(yhat2)
     
-    yhat3 = Tex(format_number(yhats[i, 2], total_chars=6)).set_color(GREEN)
+    yhat3 = math_tex(format_number(yhats[i, 2], total_chars=6)).set_color(GREEN)
     yhat3.scale(0.18)
     yhat3.move_to([0.18, -0.12, 0])
     nums.add(yhat3)
 
-    yhat4 = Tex(format_number(yhats[i, 3], total_chars=6)).set_color('#FF00FF')
+    yhat4 = math_tex(format_number(yhats[i, 3], total_chars=6)).set_color('#FF00FF')
     yhat4.scale(0.18)
     yhat4.move_to([0.18, -0.35, 0])
     nums.add(yhat4)
 
     return nums
 
-class LinearPlane(Surface):
+class LinearPlane(SampledSurface):
     """A plane defined by z = m1*x1 + m2*x2 + b"""
     def __init__(self, axes, m1=0.5, m2=0.3, b=1.0, vertical_viz_scale=0.5, **kwargs):
         self.axes = axes
@@ -385,7 +388,7 @@ class LinearPlane(Surface):
 
 
 
-class p48_49_v2(InteractiveScene):
+class p48_49_v2(WelchScene):
     def construct(self):
         '''
         Ok now let's try to everything is Psuedo3d, so I can do the "bring everything together in 3D and pan around" deal 
@@ -399,15 +402,15 @@ class p48_49_v2(InteractiveScene):
         yhats=data[:, 31:]
 
 
-        net_background=SVGMobject(svg_path+'/p_48_background_1.svg')[1:]
+        net_background=m.SVGMobject(svg_path+'/p_48_background_1.svg')[1:]
         
         # europe_map=ImageMobject(svg_path +'/map_exports.00_00_34_10.Still002.png')
-        europe_map=ImageMobject(svg_path +'/map_exports.00_00_54_12.Still004.png')
+        europe_map=image_at_height(svg_path +'/map_exports.00_00_54_12.Still004.png')
         
         europe_map.scale(0.28)
         europe_map.move_to([0.96,0,0])
 
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             # x_range=[-15, 15, 1],
             # y_range=[-15, 15, 1],
             x_range=[-6, 11, 1],
@@ -426,7 +429,7 @@ class p48_49_v2(InteractiveScene):
                 }
         )
 
-        axes_2 = ThreeDAxes(
+        axes_2 = diagram_axes_3d(
             # x_range=[-15, 15, 1],
             # y_range=[-15, 15, 1],
             x_range=[-6, 11, 1],
@@ -445,7 +448,7 @@ class p48_49_v2(InteractiveScene):
                 }
         )
 
-        axes_3 = ThreeDAxes(
+        axes_3 = diagram_axes_3d(
             # x_range=[-15, 15, 1],
             # y_range=[-15, 15, 1],
             x_range=[-6, 11, 1],
@@ -464,7 +467,7 @@ class p48_49_v2(InteractiveScene):
                 }
         )
 
-        axes_4 = ThreeDAxes(
+        axes_4 = diagram_axes_3d(
             # x_range=[-15, 15, 1],
             # y_range=[-15, 15, 1],
             x_range=[-6, 11, 1],
@@ -484,8 +487,8 @@ class p48_49_v2(InteractiveScene):
         )
 
 
-        net_background.rotate(90*DEGREES, [1, 0, 0])
-        europe_map.rotate(90*DEGREES, [1, 0, 0])
+        net_background.rotate(90*m.DEGREES, [1, 0, 0])
+        europe_map.rotate(90*m.DEGREES, [1, 0, 0])
 
         axes_1.move_to([-0.80, 0, 0.7])
         # axes_1.rotate(-90*DEGREES, [1,0,0]) #Flip up #Going to need ot noodle with rotation to match map
@@ -506,24 +509,24 @@ class p48_49_v2(InteractiveScene):
 
 
         self.wait()
-        # self.frame.reorient(0, 90, 0, (-0.02, 0.01, -0.0), 1.98)
-        # self.frame.reorient(0, 89, 0, (0.95, 0.01, 0.0), 1.18)
-        # self.frame.reorient(0, 89, 0, (0.94, 0.01, 0.01), 1.27)
-        self.frame.reorient(0, 89, 0, (0.95, 0.01, -0.01), 1.28)
+        # self.set_view(0, 90, 0, (-0.02, 0.01, -0.0), 1.98)
+        # self.set_view(0, 89, 0, (0.95, 0.01, 0.0), 1.18)
+        # self.set_view(0, 89, 0, (0.94, 0.01, 0.01), 1.27)
+        self.set_view(0, 89, 0, (0.95, 0.01, -0.01), 1.28)
         self.add(europe_map)
         self.wait()
 
-        box=Rectangle(0.18, 0.05).set_color('$FF00FF')
-        box.rotate(90*DEGREES, [1, 0, 0])
+        box=m.Rectangle(0.18, 0.05).set_color('$FF00FF')
+        box.rotate(90*m.DEGREES, [1, 0, 0])
         box.move_to([0.875, 0, -0.361])
-        self.play(ShowCreation(box))
+        self.play(m.Create(box))
         self.wait()
 
 
-        box2=Rectangle(0.11, 0.05).set_color(YELLOW)
-        box2.rotate(90*DEGREES, [1, 0, 0])
+        box2=m.Rectangle(0.11, 0.05).set_color(YELLOW)
+        box2.rotate(90*m.DEGREES, [1, 0, 0])
         box2.move_to([0.848, 0, 0.187])
-        self.play(ShowCreation(box2))
+        self.play(m.Create(box2))
         self.wait()
 
 
@@ -562,12 +565,12 @@ class p48_49_v2(InteractiveScene):
 
         ## -- end test / alignment
 
-        map_tick_overlays_2=SVGMobject(svg_path+'/map_tick_overlays_2.svg')[1:]
-        map_tick_overlays_2.rotate(90*DEGREES, [1, 0, 0])
+        map_tick_overlays_2=m.SVGMobject(svg_path+'/map_tick_overlays_2.svg')[1:]
+        map_tick_overlays_2.rotate(90*m.DEGREES, [1, 0, 0])
         map_tick_overlays_2.scale([0.63, 0.63, 0.63])
         map_tick_overlays_2.move_to([1.009, 0, -0.01])
 
-        self.play(FadeIn(map_tick_overlays_2), FadeOut(box2), FadeOut(box))
+        self.play(m.FadeIn(map_tick_overlays_2), m.FadeOut(box2), m.FadeOut(box))
         self.wait()
 
         ## maybe like a ShowCreation vibes when in introduce this thing?
@@ -591,18 +594,18 @@ class p48_49_v2(InteractiveScene):
         plane_4.set_color('#FF00FF')
 
         self.wait()
-        self.play(FadeIn(net_background), FadeIn(nums), self.frame.animate.reorient(0, 89, 0, (-0.0, 0.01, -0.01), 1.99),
+        self.play(m.FadeIn(net_background), m.FadeIn(nums), self.animate_view(0, 89, 0, (-0.0, 0.01, -0.01), 1.99),
                  run_time=2.5)
 
         self.wait()
-        self.play(ShowCreation(axes_1), ShowCreation(axes_2), ShowCreation(axes_3), ShowCreation(axes_4))
+        self.play(m.Create(axes_1), m.Create(axes_2), m.Create(axes_3), m.Create(axes_4))
         self.wait()
-        self.play(FadeIn(plane_1), FadeIn(plane_2), FadeIn(plane_3), FadeIn(plane_4))
+        self.play(m.FadeIn(plane_1), m.FadeIn(plane_2), m.FadeIn(plane_3), m.FadeIn(plane_4))
         self.wait()
 
         #Quick show of backprop equations
-        backprop_eqs=SVGMobject(svg_path+'/2d_backprop_eqs.svg')
-        backprop_eqs.rotate(DEGREES*90, [1,0,0])
+        backprop_eqs=m.SVGMobject(svg_path+'/2d_backprop_eqs.svg')
+        backprop_eqs.rotate(m.DEGREES*90, [1,0,0])
         backprop_eqs.scale(0.52)
         backprop_eqs.move_to([1.0, 0, 0])
 
@@ -610,7 +613,7 @@ class p48_49_v2(InteractiveScene):
         self.add(backprop_eqs)
         self.wait()
 
-        self.play(FadeOut(backprop_eqs), europe_map.animate.set_opacity(1.0), map_tick_overlays_2.animate.set_opacity(1.0))
+        self.play(m.FadeOut(backprop_eqs), europe_map.animate.set_opacity(1.0), map_tick_overlays_2.animate.set_opacity(1.0))
         # europe_map.set_opacity(1.0)
         # map_tick_overlays_2.set_opacity(1.0)
         self.wait()
@@ -618,7 +621,7 @@ class p48_49_v2(InteractiveScene):
 
         #Training loop time?
         # i=450
-        step_label=None
+        step_label = step_count = None
         heatmaps=None
         training_point=None
         for i in range(1, 240): #len(xs)): #Runs out of RAM! #len(xs)): #TO DO -> change starting time to 1, 495 to go fast - ok i think i fixed
@@ -629,14 +632,14 @@ class p48_49_v2(InteractiveScene):
                 if heatmaps is not None:
                     self.remove(heatmaps)
                     # in terminal: ulimit -n 8192
-                    heatmap_yhat1.image.close()
-                    heatmap_yhat2.image.close()
-                    heatmap_yhat3.image.close()
-                    heatmap_yhat4.image.close()
-                    del heatmap_yhat1
-                    del heatmap_yhat2
-                    del heatmap_yhat3
-                    del heatmap_yhat4
+
+
+
+
+
+
+
+
                 if training_point is not None:
                     self.remove(training_point) 
                 if step_label is not None:
@@ -663,32 +666,32 @@ class p48_49_v2(InteractiveScene):
             plane_4.set_opacity(0.6)
             plane_4.set_color('#FF00FF')
 
-            heatmaps=Group()
-            heatmap_yhat3=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_3.png')
+            heatmaps=m.Group()
+            heatmap_yhat3=image_at_height(heatmap_path +'/'+str(i)+'_yhat_3.png')
             heatmap_yhat3.scale([0.28, 0.283, 0.28])
             heatmap_yhat3.move_to([0.958,0,0])
             heatmap_yhat3.set_opacity(0.5)
             heatmaps.add(heatmap_yhat3)
 
-            heatmap_yhat1=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_1.png')
+            heatmap_yhat1=image_at_height(heatmap_path +'/'+str(i)+'_yhat_1.png')
             heatmap_yhat1.scale([0.28, 0.283, 0.28])
             heatmap_yhat1.move_to([0.958,0,0])
             heatmap_yhat1.set_opacity(0.5)
             heatmaps.add(heatmap_yhat1)
 
-            heatmap_yhat2=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_2.png')
+            heatmap_yhat2=image_at_height(heatmap_path +'/'+str(i)+'_yhat_2.png')
             heatmap_yhat2.scale([0.28, 0.283, 0.28])
             heatmap_yhat2.move_to([0.958,0,0])
             heatmap_yhat2.set_opacity(0.5)
             heatmaps.add(heatmap_yhat2)
 
-            heatmap_yhat4=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_4.png')
+            heatmap_yhat4=image_at_height(heatmap_path +'/'+str(i)+'_yhat_4.png')
             heatmap_yhat4.scale([0.28, 0.283, 0.28])
             heatmap_yhat4.move_to([0.958,0,0])
             heatmap_yhat4.set_opacity(0.5)
             heatmaps.add(heatmap_yhat4)
 
-            heatmaps.rotate(90*DEGREES, [1, 0, 0])
+            heatmaps.rotate(90*m.DEGREES, [1, 0, 0])
 
             # canvas_x, canvas_y=latlong_to_canvas(xs[i][0], xs[i][1])
             canvas_x, canvas_y=latlong_to_canvas(xs[i][0], 
@@ -701,21 +704,21 @@ class p48_49_v2(InteractiveScene):
                                                 paris_adjust=[0,-0.015, 0],
                                                 berlin_adjust=[0,0,0])
 
-            training_point=Dot([canvas_x, 0, canvas_y], radius=0.012)
+            training_point=m.Dot([canvas_x, 0, canvas_y], radius=0.012)
             if ys[i]==0.0: training_point.set_color('#00FFFF')
             elif ys[i]==1.0: training_point.set_color(YELLOW)
             elif ys[i]==2.0: training_point.set_color(GREEN)   
             elif ys[i]==3.0: training_point.set_color('#FF00FF')   
-            training_point.rotate(90*DEGREES, [1, 0, 0])
+            training_point.rotate(90*m.DEGREES, [1, 0, 0])
 
-            step_label=Text("Step=")  
+            step_label=m.Text("Step=")
             step_label.set_color(CHILL_BROWN)
-            step_label.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+            step_label.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
             step_label.move_to([1.3, 0, -0.85])
 
-            step_count=Text(str(i).zfill(3))
+            step_count=m.Text(str(i).zfill(3))
             step_count.set_color(CHILL_BROWN)
-            step_count.scale(0.12).rotate(90*DEGREES, [1, 0, 0])
+            step_count.scale(0.12).rotate(90*m.DEGREES, [1, 0, 0])
             step_count.move_to([1.43, 0, -0.85])
 
             self.add(plane_1, plane_2, plane_3, plane_4)
@@ -731,32 +734,32 @@ class p48_49_v2(InteractiveScene):
         self.wait()
 
         #Fancy 3d bring togeteher time!
-        ap1=Group(axes_1, plane_1)
-        ap2=Group(axes_2, plane_2)
-        ap3=Group(axes_3, plane_3)
-        ap4=Group(axes_4, plane_4)
+        ap1=m.Group(axes_1, plane_1)
+        ap2=m.Group(axes_2, plane_2)
+        ap3=m.Group(axes_3, plane_3)
+        ap4=m.Group(axes_4, plane_4)
 
-        self.play(FadeOut(nums), FadeOut(net_background), FadeOut(heatmaps), 
-            FadeOut(training_point), FadeOut(step_label), FadeOut(step_count),
-            FadeOut(map_tick_overlays_2))
+        self.play(m.FadeOut(nums), m.FadeOut(net_background), m.FadeOut(heatmaps),
+            m.FadeOut(training_point), m.FadeOut(step_label), m.FadeOut(step_count),
+            m.FadeOut(map_tick_overlays_2))
 
         # self.wait()
         self.play(ap1.animate.scale(4.5).move_to([0,0,0]).set_opacity(0.4),
                     ap2.animate.scale(4.5).move_to([0,0,0]).set_opacity(0.4),
                     ap3.animate.scale(4.5).move_to([0,0,0]).set_opacity(0.4),
                     ap4.animate.scale(4.5).move_to([0,0,0]).set_opacity(0.4),
-                    europe_map.animate.rotate(-90*DEGREES, [1,0,0]).move_to([-0.05,-0.05,0.00]),
-                    # self.frame.animate.reorient(22, 35, 0, (0.04, -0.02, -0.04), 1.98),
-                    # self.frame.animate.reorient(-56, 53, 0, (-0.15, -0.1, -0.16), 1.41),
-                    self.frame.animate.reorient(-35, 47, 0, (-0.14, -0.14, -0.18), 1.44),
+                    europe_map.animate.rotate(-90*m.DEGREES, [1,0,0]).move_to([-0.05,-0.05,0.00]),
+                    # self.animate_view(22, 35, 0, (0.04, -0.02, -0.04), 1.98),
+                    # self.animate_view(-56, 53, 0, (-0.15, -0.1, -0.16), 1.41),
+                    self.animate_view(-35, 47, 0, (-0.14, -0.14, -0.18), 1.44),
                     run_time=7.0
             )
         self.remove(axes_1, axes_2, axes_3, axes_4)
         self.wait() #Hold on Paris view
 
         #Now move to madrid view
-        # self.play(self.frame.animate.reorient(-1, 30, 0, (-0.08, -0.02, -0.11), 1.56), run_time=4)
-        self.play(self.frame.animate.reorient(12, 47, 0, (-0.1, -0.11, -0.15), 1.42), run_time=4)
+        # self.play(self.animate_view(-1, 30, 0, (-0.08, -0.02, -0.11), 1.56), run_time=4)
+        self.play(self.animate_view(12, 47, 0, (-0.1, -0.11, -0.15), 1.42), run_time=4)
         
         self.wait()
 
@@ -766,7 +769,7 @@ class p48_49_v2(InteractiveScene):
                   plane_2.animate.set_opacity(0.0),
                   plane_3.animate.set_opacity(0.0),
                   plane_4.animate.set_opacity(0.0),
-                  self.frame.animate.reorient(0, 0, 0, (-0.08, -0.05, -0.15), 1.37),
+                  self.animate_view(0, 0, 0, (-0.08, -0.05, -0.15), 1.37),
                   run_time=5.0)
         self.wait()
 
@@ -776,7 +779,7 @@ class p48_49_v2(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 

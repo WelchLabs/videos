@@ -1,9 +1,30 @@
-from manimlib import *
+from welch_paths import welch_path
+from welch_surface import set_surface_shading
 from functools import partial
 import sys
 
 sys.path.append('_2025/backprop_3') #Point to folder where plane_folding_utils.py is
-from geometric_dl_utils import *
+import copy
+import manimgx as gx
+import numpy as np
+import torch
+from geometric_dl_utils import (
+    BaarleNet,
+    apply_viz_scale_to_3d_polygons,
+    carve_plane_with_relu_joints,
+    compute_adaptive_viz_scales,
+    find_polygon_intersections,
+    get_3d_polygons,
+    get_3d_polygons_layer_1,
+    get_polygon_corners_layer_1,
+    get_relu_intersection_planes,
+    split_polygons_with_relu,
+    surface_func_from_model,
+    viz_3d_polygons,
+    viz_carved_regions_flat,
+)
+from welch_scene import WelchScene, image_at_height
+from welch_surface import parametric_surface, textured_surface
 from polytope_intersection_utils import intersect_polytopes
 
 CHILL_BROWN='#948979'
@@ -16,10 +37,10 @@ CHILL_BLUE='#3d5c6f'
 FRESH_TAN='#dfd0b9'
 
 
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/graphics/' #Point to folder where map images are
-heatmaps_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/hackin/heatmaps'
+graphics_dir=welch_path('backprop_3/graphics/') #Point to folder where map images are
+heatmaps_dir=welch_path('backprop_3/hackin/heatmaps')
 
-class refactor_sketch_1(InteractiveScene):
+class refactor_sketch_1(WelchScene):
     def construct(self):
         
         #2x2
@@ -58,7 +79,7 @@ class refactor_sketch_1(InteractiveScene):
 
         vertical_spacing=1.5
         horizontal_spacing=3
-        colors = [BLUE, RED, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+        colors = [BLUE, gx.RED, GREEN, YELLOW, gx.PURPLE, gx.ORANGE, gx.PINK, gx.TEAL]
 
         # Hmm ok I think I need to compute a different viz scale for each surface probably 
         # I don't want to totally normalize the heights though, ya know?
@@ -73,15 +94,15 @@ class refactor_sketch_1(InteractiveScene):
         surface_funcs=[]
         surface_funcs_no_viz_scale=[]
         for layer_idx in range(len(model.model)):
-            s=Group()
+            s=gx.Group()
             surface_funcs.append([])
             surface_funcs_no_viz_scale.append([])
             for neuron_idx in range(num_neurons[layer_idx]):
                 surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=adaptive_viz_scales[layer_idx][neuron_idx])
                 surface_func_no_scaling=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=1.0) #adaptive_viz_scales[layer_idx][neuron_idx])
-                bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                ts=TexturedSurface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-                ts.set_shading(0,0,0).set_opacity(0.75)
+                bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                ts=textured_surface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+                set_surface_shading(ts, 0,0,0).set_opacity(0.75)
                 s.add(ts)
                 surface_funcs[-1].append(surface_func)
                 surface_funcs_no_viz_scale[-1].append(surface_func_no_scaling)
@@ -93,8 +114,8 @@ class refactor_sketch_1(InteractiveScene):
                 self.add(s)
 
 
-        # self.frame.reorient(0, 54, 0, (1.41, 1.82, 4.15), 15.71)
-        self.frame.reorient(0, 62, 0, (4.08, 5.37, 9.7), 32.21)
+        # self.set_view(0, 54, 0, (1.41, 1.82, 4.15), 15.71)
+        self.set_view(0, 62, 0, (4.08, 5.37, 9.7), 32.21)
 
 
         #Optional but kinda nice RuLu intersection planes
@@ -239,15 +260,15 @@ class refactor_sketch_1(InteractiveScene):
 
 
         #Final map regions
-        map_img=ImageMobject(graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png').set_width(2).set_height(2)  
+        map_img=image_at_height(graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png').scale_to_fit_width(2).scale_to_fit_height(2)
         map_img.shift([horizontal_spacing*(layer_idx+1)-6, 0, -1.5])
         self.add(map_img)
 
-        map_region_1=ImageMobject(heatmaps_dir+'/8_8_0.png').set_width(2).set_height(2).set_opacity(0.3)  
+        map_region_1=image_at_height(heatmaps_dir+'/8_8_0.png').scale_to_fit_width(2).scale_to_fit_height(2).set_opacity(0.3)
         map_region_1.shift([horizontal_spacing*(layer_idx+1)-6, 0, -1.5])
         self.add(map_region_1)
 
-        map_region_2=ImageMobject(heatmaps_dir+'/8_8_1.png').set_width(2).set_height(2).set_opacity(0.5)  
+        map_region_2=image_at_height(heatmaps_dir+'/8_8_1.png').scale_to_fit_width(2).scale_to_fit_height(2).set_opacity(0.5)
         map_region_2.shift([horizontal_spacing*(layer_idx+1)-6, 0, -1.5])
         self.add(map_region_2)
 
@@ -283,11 +304,11 @@ class refactor_sketch_1(InteractiveScene):
                 l[2]=l[2]*adaptive_viz_scales[layer_idx][0]
 
 
-        decision_boundary_lines = Group()
+        decision_boundary_lines = gx.Group()
         for line_segment in intersection_line_coords_scaled:
             if len(line_segment) == 2:
                 start_point, end_point = line_segment
-                line = Line3D(
+                line = gx.Line3D(
                     start=start_point,
                     end=end_point,
                     color="#FF00FF",
@@ -301,13 +322,13 @@ class refactor_sketch_1(InteractiveScene):
         self.add(decision_boundary_lines)
 
 
-        decision_boundary_lines_flat = Group()
+        decision_boundary_lines_flat = gx.Group()
         for line_segment in intersection_line_coords_scaled:
             if len(line_segment) == 2:
                 start_point, end_point = line_segment
                 start_point[2]=-1.5 #Flatten that shit!
                 end_point[2]=-1.5
-                line = Line3D(
+                line = gx.Line3D(
                     start=start_point,
                     end=end_point,
                     color="#FF00FF",
@@ -353,13 +374,13 @@ class refactor_sketch_1(InteractiveScene):
         self.add(output_poygons_2d_final)
 
         #Lol gotta wrap up this sucka
-        decision_boundary_lines_flat = Group()
+        decision_boundary_lines_flat = gx.Group()
         for line_segment in intersection_line_coords_scaled:
             if len(line_segment) == 2:
                 start_point, end_point = line_segment
                 start_point[2]=-1.5 #Flatten that shit!
                 end_point[2]=-1.5
-                line = Line3D(
+                line = gx.Line3D(
                     start=start_point,
                     end=end_point,
                     color="#FF00FF",
@@ -404,7 +425,7 @@ class refactor_sketch_1(InteractiveScene):
                 my_indicator.append(1)
 
 
-        polygons_vgroup=VGroup()
+        polygons_vgroup=gx.VGroup()
         for j, p in enumerate(my_top_polygons):
             if len(p)<3: continue
             if my_indicator[j]: color=YELLOW
@@ -412,7 +433,7 @@ class refactor_sketch_1(InteractiveScene):
             
             p_scaled=copy.deepcopy(p) #Scaling for viz
             p_scaled[:,2]=p_scaled[:,2]*adaptive_viz_scales[layer_idx][0]
-            poly_3d = Polygon(*p_scaled,
+            poly_3d = gx.Polygon(*p_scaled,
                              fill_color=color,
                              fill_opacity=0.4,
                              stroke_color=color,
@@ -534,7 +555,7 @@ class refactor_sketch_1(InteractiveScene):
 
 
         self.wait()
-        self.embed()
+        pass
 
 
 

@@ -1,4 +1,5 @@
-from manimlib import *
+import manimgx as m
+import numpy as np
 from functools import partial
 from itertools import combinations
 import math
@@ -149,7 +150,7 @@ def merge_connected_segments(segments, tol=1e-6):
     return merged
 
 
-def create_decision_boundary_lines(w1, b1, w2, b2, polygons, extent=1, z_offset=0, color=WHITE, stroke_width=4):
+def create_decision_boundary_lines(w1, b1, w2, b2, polygons, extent=1, z_offset=0, color=m.WHITE, stroke_width=4):
     """
     Create Manim line objects for the decision boundary.
     
@@ -175,12 +176,12 @@ def create_decision_boundary_lines(w1, b1, w2, b2, polygons, extent=1, z_offset=
             
             if len(points_3d) == 2:
                 # Simple line segment
-                line = Line(points_3d[0], points_3d[1], 
+                line = m.Line(points_3d[0], points_3d[1],
                            color=color, 
                            stroke_width=stroke_width)
             else:
                 # Polyline
-                line = VMobject()
+                line = m.VMobject()
                 line.set_points_as_corners(points_3d)
                 line.set_stroke(color=color, width=stroke_width)
             

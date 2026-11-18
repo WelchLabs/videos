@@ -1,4 +1,7 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+import numpy as np
+from welch_scene import WelchScene, image_at_height
 from tqdm import tqdm
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -17,24 +20,24 @@ MAGENTA='#FF00FF'
 #ulimit -n 4096
 
 NUM_FRAME_TO_RENDER=450 #CRANK UP FOR FINAL VIZ
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/p75_80_manim/')
-img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/hacking/overhead_ball_3'
+svg_dir=Path(welch_path('jepa/graphics/p75_80_manim/'))
+img_dir=welch_path('jepa/hacking/overhead_ball_3')
 
 
-class P75_80B(InteractiveScene):
+class P75_80B(WelchScene):
     def construct(self):
 
 
         svgs_to_skip=[0, 1, 2, 3, 4, 5]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(4.0)
             all_svgs.add(svg_image[1:])
 
-        self.frame.reorient(0, 0, 0, (-0.08, 0.21, 0.0), 7.11)
+        self.set_view(0, 0, 0, (-0.08, 0.21, 0.0), 7.11)
         all_svgs[0].shift([0, -0.2, 0]) #Scrooch down title a smidge
 
         # self.add(all_svgs[3][4:6]) #Action arrow
@@ -54,86 +57,86 @@ class P75_80B(InteractiveScene):
 
         #Paragraph 75
         self.wait()
-        self.play(Write(all_svgs[0]), run_time=4)
+        self.play(gx.Write(all_svgs[0]), run_time=4)
 
         self.wait()
-        self.play(Write(all_svgs[5][::-1]), 
-                  Write(all_svgs[4][:11]), 
-                  Write(all_svgs[4][11:22]), 
+        self.play(gx.Write(all_svgs[5][::-1]),
+                  gx.Write(all_svgs[4][:11]),
+                  gx.Write(all_svgs[4][11:22]),
                   run_time=4)
         self.wait()
 
-        self.play(Write(all_svgs[1]),
-                  Write(all_svgs[18]),
-                  Write(all_svgs[4][22:29]),
-                  Write(all_svgs[4][29:36]),
+        self.play(gx.Write(all_svgs[1]),
+                  gx.Write(all_svgs[18]),
+                  gx.Write(all_svgs[4][22:29]),
+                  gx.Write(all_svgs[4][29:36]),
                   run_time=4)
         self.add(all_svgs[3][:4])
 
 
         self.wait()
-        self.play(Write(all_svgs[17]),
-                  Write(all_svgs[3][6:]),
-                  Write(all_svgs[19]),
-                  Write(all_svgs[4][36:45]),
+        self.play(gx.Write(all_svgs[17]),
+                  gx.Write(all_svgs[3][6:]),
+                  gx.Write(all_svgs[19]),
+                  gx.Write(all_svgs[4][36:45]),
                   run_time=5)
 
         self.wait()
-        self.play(Write(all_svgs[4][45:]),
-                  Write(all_svgs[3][4:6]),
+        self.play(gx.Write(all_svgs[4][45:]),
+                  gx.Write(all_svgs[3][4:6]),
                   run_time=3)
 
         # Paragraph 76
         # Let me get everything on the canvas here and then
         # figure out how I want to bring it in/transition
 
-        imgs=Group()
+        imgs=gx.Group()
         for i in range(NUM_FRAME_TO_RENDER):
-            imgs.add(ImageMobject(str(img_dir+'/overhead_ball_3'+str(i).zfill(3)+'.jpg')))
+            imgs.add(image_at_height(str(img_dir+'/overhead_ball_3'+str(i).zfill(3)+'.jpg')))
 
 
         # self.add(all_svgs[7])
-        embedding_1=Tex(r'\begin{bmatrix} 0.21, \ -0.11, \ \dots, \ 0.32 \end{bmatrix}')
+        embedding_1=gx.MathTex(r'\begin{bmatrix} 0.21, \ -0.11, \ \dots, \ 0.32 \end{bmatrix}')
         embedding_1.set_color(BLUE)
         embedding_1.scale(0.65)
         embedding_1.move_to([-2.68, 1.35, 0])
 
-        embedding_2=Tex(r'\begin{bmatrix} 0.22, \ -0.13, \ \dots, \ 0.31 \end{bmatrix}')
+        embedding_2=gx.MathTex(r'\begin{bmatrix} 0.22, \ -0.13, \ \dots, \ 0.31 \end{bmatrix}')
         embedding_2.set_color(BLUE)
         embedding_2.scale(0.65)
         embedding_2.move_to([2.6, 1.6, 0])
 
-        embedding_3=Tex(r'\begin{bmatrix} 0.21, \ -0.10, \ \dots, \ 0.35 \end{bmatrix}')
+        embedding_3=gx.MathTex(r'\begin{bmatrix} 0.21, \ -0.10, \ \dots, \ 0.35 \end{bmatrix}')
         embedding_3.set_color(YELLOW)
         embedding_3.scale(0.65)
         embedding_3.move_to([2.6, 1.0, 0])
 
-        input_video=Group()
-        input_borders = Group()
+        input_video=gx.Group()
+        input_borders = gx.Group()
         spacing=0.6
         indices_to_show=[0, 1, 2, 3, 4]
         for count, i in enumerate(indices_to_show):
             imgs[i].move_to([0, 0, -spacing*(len(indices_to_show)-1)+spacing*count])
             imgs[i].set_opacity(0.5)
-            border = SurroundingRectangle(imgs[i], color=CHILL_BROWN, buff=0)
+            border = gx.SurroundingRectangle(imgs[i], color=CHILL_BROWN, buff=0)
             border.set_stroke(width=2, opacity=0.5)
             input_video.add(imgs[i])
             input_borders.add(border)
         
-        input_video_and_borders=Group(input_video, input_borders)
+        input_video_and_borders=gx.Group(input_video, input_borders)
 
         input_video_and_borders.scale(0.38)
         input_video_and_borders.move_to([-2.5, -2.1, 0])
-        input_video_and_borders.rotate(70*DEGREES, [0, 1, 0])
+        input_video_and_borders.rotate(70*gx.DEGREES, [0, 1, 0])
 
         
         imgs[5].scale(0.45)
         imgs[5].move_to([2.72, -2.15, 0])
-        border_next_frame = SurroundingRectangle(imgs[5], color=CHILL_BROWN, buff=0)
+        border_next_frame = gx.SurroundingRectangle(imgs[5], color=CHILL_BROWN, buff=0)
         border_next_frame.set_stroke(width=2, opacity=0.5)
 
 
-        group_to_remove=Group(all_svgs[5],
+        group_to_remove=gx.Group(all_svgs[5],
                               all_svgs[4][:22],
                               all_svgs[4][45:],
                               # all_svgs[4][:22],#Do all labels and bring back selectively
@@ -146,8 +149,8 @@ class P75_80B(InteractiveScene):
         
 
         self.wait()
-        self.play(FadeOut(group_to_remove), 
-                 self.frame.animate.reorient(0, 0, 0, (0.0, -0.17, 0.0), 7.17),
+        self.play(gx.FadeOut(group_to_remove),
+                 self.animate_view(0, 0, 0, (0.0, -0.17, 0.0), 7.17),
                  all_svgs[0].animate.move_to([0, 2.85, 0]), #Move down title a little
                  all_svgs[1].animate.scale(0.8).move_to([-2.68, -0.2, 0]), #Encoder 1
                  all_svgs[17].animate.scale(0.8).move_to([-0.14, 1.35, 0]), #Predictor
@@ -176,28 +179,28 @@ class P75_80B(InteractiveScene):
 
 
         self.wait()
-        self.play(FadeIn(input_video_and_borders),
-                  FadeIn(border_next_frame),
-                  FadeIn(imgs[5]),
-                  FadeIn(all_svgs[3][:2]), 
-                  FadeIn(all_svgs[3][2:4]),
+        self.play(gx.FadeIn(input_video_and_borders),
+                  gx.FadeIn(border_next_frame),
+                  gx.FadeIn(imgs[5]),
+                  gx.FadeIn(all_svgs[3][:2]),
+                  gx.FadeIn(all_svgs[3][2:4]),
                   run_time=3)
         self.add(all_svgs[8][:5], #Video label
                   all_svgs[8][5:14]) #Next frame label
 
 
         self.wait()
-        self.play(Write(embedding_1),
-                  Write(embedding_3),
-                  Write(all_svgs[3][10:12]),
-                  Write(all_svgs[6][1]),
-                  FadeIn(all_svgs[8][14:]),
+        self.play(gx.Write(embedding_1),
+                  gx.Write(embedding_3),
+                  gx.Write(all_svgs[3][10:12]),
+                  gx.Write(all_svgs[6][1]),
+                  gx.FadeIn(all_svgs[8][14:]),
                   run_time=3)
 
         self.wait()
-        self.play(Write(embedding_2),
-                  Write(all_svgs[6][0]),
-                  Write(all_svgs[6][3]),
+        self.play(gx.Write(embedding_2),
+                  gx.Write(all_svgs[6][0]),
+                  gx.Write(all_svgs[6][3]),
                   # Write(all_svgs[9]),
                   # Write(all_svgs[8][14:]),
                   run_time=4
@@ -252,7 +255,7 @@ class P75_80B(InteractiveScene):
                  + f'{vals[1]:.2f}' + r', \ \dots, \ '
                  + f'{vals[2]:.2f}'
                  + r' \end{bmatrix}')
-            e = Tex(s)
+            e = gx.MathTex(s)
             e.set_color(color)
             e.scale(scale)
             e.move_to(position)
@@ -273,7 +276,7 @@ class P75_80B(InteractiveScene):
             #    Delta from (0.45, no rot, opacity 1) to (0.38, 70deg y-rot, opacity 0.5)
             promoted = current_next
             promoted.scale(0.38 / 0.45)
-            promoted.rotate(70 * DEGREES, axis=[0, 1, 0])
+            promoted.rotate(70 * gx.DEGREES, axis=[0, 1, 0])
             promoted.set_opacity(0.5)
             promoted.move_to(stack_world_positions[4])
 
@@ -370,7 +373,6 @@ class P75_80B(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
 
 
 

@@ -1,20 +1,22 @@
+from welch_paths import welch_path
 from pathlib import Path
 import pickle
 import os
 
 import matplotlib.cm as cm
 import matplotlib.colors as colors
-from manimlib import *
-
+import manimgx as gx
+import numpy as np
+from welch_geometry import diagram_axes
+from welch_scene import WelchScene
 
 CHILL_BROWN = "#948979"
 DATA_DIR = Path(
-    "/Volumes/PG Work/Stephencwelch Dropbox/welch_labs/grokking/"
-    "from_linux/grok_1764706121"
+    welch_path('grokking/from_linux/grok_1764706121')
 )
 NEURON_INDICES = [0, 3, 4, 5, 9]
 SCATTER_DOT_RADIUS = float(os.environ.get("GROKKING_DOT_RADIUS", "0.055"))
-BACKGROUND_COLOR = os.environ.get("GROKKING_BACKGROUND_COLOR", WHITE)
+BACKGROUND_COLOR = os.environ.get("GROKKING_BACKGROUND_COLOR", gx.WHITE)
 
 
 def viridis_hex(value, vmin, vmax):
@@ -22,7 +24,7 @@ def viridis_hex(value, vmin, vmax):
     return colors.to_hex(cm.viridis(norm(value)))
 
 
-class GrokkingScatterGrid5x5(InteractiveScene):
+class GrokkingScatterGrid5x5(WelchScene):
     default_camera_config = {"background_color": BACKGROUND_COLOR}
 
     def construct(self):
@@ -33,10 +35,10 @@ class GrokkingScatterGrid5x5(InteractiveScene):
 
         values = activations["blocks.0.mlp.hook_pre"][:p, 2]
 
-        axes = VGroup()
+        axes = gx.VGroup()
         for _ in range(25):
             axes.add(
-                Axes(
+                diagram_axes(
                     x_range=[-1.0, 1.0, 1],
                     y_range=[-1.0, 1.0, 1],
                     width=1.15,
@@ -52,12 +54,12 @@ class GrokkingScatterGrid5x5(InteractiveScene):
                 )
             )
 
-        axes.arrange_in_grid(n_rows=5, n_cols=5, buff=0.25)
+        axes.arrange_in_grid(rows=5, cols=5, buff=0.25)
 
-        dots = VGroup()
+        dots = gx.VGroup()
         for row, neuron_y in enumerate(NEURON_INDICES):
             for column, neuron_x in enumerate(NEURON_INDICES):
-                plot_dots = VGroup()
+                plot_dots = gx.VGroup()
                 x_values = values[:, neuron_x]
                 y_values = values[:, neuron_y]
                 x_center = x_values.mean()
@@ -68,7 +70,7 @@ class GrokkingScatterGrid5x5(InteractiveScene):
                 for index in range(p):
                     x = (x_values[index] - x_center) / x_scale
                     y = (y_values[index] - y_center) / y_scale
-                    dot = Dot(
+                    dot = gx.Dot(
                         axes[5 * row + column].c2p(x, y),
                         radius=SCATTER_DOT_RADIUS,
                         stroke_width=0,

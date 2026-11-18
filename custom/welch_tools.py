@@ -1,17 +1,7 @@
-# SHIFT+D | SHIFT D
-# Copying code to recreate state
-def copy_frame_positioning_precise(frame):
-    center = frame.get_center()
-    height = frame.get_height()
-    angles = frame.get_euler_angles()
+"""Camera position helpers for older project entry points."""
 
-    call = f"reorient("
-    theta, phi, gamma = (angles / DEG)
-    call += f"{theta}, {phi}, {gamma}"
-    if any(center != 0):
-        call += f", {tuple(center)}"
-    if height != FRAME_HEIGHT:
-        call += ", {:.2f}".format(height)
-    call += ")"
-    print(call)
-    pyperclip.copy(call)
+from welch_scene import copy_view_positioning
+
+copy_frame_positioning_precise = copy_view_positioning
+
+__all__ = ["copy_frame_positioning_precise"]

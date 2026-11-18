@@ -1,4 +1,7 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+import numpy as np
+from welch_scene import WelchScene, image_at_height
 from tqdm import tqdm
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -16,35 +19,35 @@ CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
 #ulimit -n 4096
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics/p8_to_manim')
-img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/graphics'
-hackin_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa_2/hackin'
+svg_dir=Path(welch_path('jepa_2/graphics/p8_to_manim'))
+img_dir=welch_path('jepa_2/graphics')
+hackin_dir=welch_path('jepa_2/hackin')
 
 
 
-class P8(InteractiveScene):
+class P8(WelchScene):
     def construct(self):
 
 
         svgs_to_skip=[]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(4.0)
             all_svgs.add(svg_image[1:])
 
-        v_jepa_cats=ImageMobject(str(img_dir+'/P19_22_3db.mp4.00_00_10_29.Still001 copy.jpg'))
-        v_jepa_cats_2=ImageMobject(str(img_dir+'/P19_22_3db.mp4.00_00_13_27.Still002 copy.jpg'))
-        mushroom=ImageMobject(str(img_dir+'/AdobeStock_93352397.jpeg'))
-        pusht_1=ImageMobject(str(img_dir+'/sample_rollout/frame_0000.png'))
-        pusht_2=ImageMobject(str(img_dir+'/sample_rollout/frame_0015.png'))
-        pusht_3=ImageMobject(str(img_dir+'/sample_rollout/frame_0030.png'))
-        pusht_4=ImageMobject(str(img_dir+'/sample_rollout/frame_0045.png'))
-        pusht_5=ImageMobject(str(img_dir+'/sample_rollout/frame_0065.png'))
-        pusht_6=ImageMobject(str(img_dir+'/sample_rollout/frame_0080.png'))
-        pusht_group=Group(pusht_1, pusht_2, pusht_3, pusht_4, pusht_5, pusht_6)
+        v_jepa_cats=image_at_height(str(img_dir+'/P19_22_3db.mp4.00_00_10_29.Still001 copy.jpg'))
+        v_jepa_cats_2=image_at_height(str(img_dir+'/P19_22_3db.mp4.00_00_13_27.Still002 copy.jpg'))
+        mushroom=image_at_height(str(img_dir+'/AdobeStock_93352397.jpeg'))
+        pusht_1=image_at_height(str(img_dir+'/sample_rollout/frame_0000.png'))
+        pusht_2=image_at_height(str(img_dir+'/sample_rollout/frame_0015.png'))
+        pusht_3=image_at_height(str(img_dir+'/sample_rollout/frame_0030.png'))
+        pusht_4=image_at_height(str(img_dir+'/sample_rollout/frame_0045.png'))
+        pusht_5=image_at_height(str(img_dir+'/sample_rollout/frame_0065.png'))
+        pusht_6=image_at_height(str(img_dir+'/sample_rollout/frame_0080.png'))
+        pusht_group=gx.Group(pusht_1, pusht_2, pusht_3, pusht_4, pusht_5, pusht_6)
 
         # self.wait()
 
@@ -97,24 +100,24 @@ class P8(InteractiveScene):
         # self.add(all_svgs)
 
         self.wait()
-        self.frame.reorient(0, 0, 0, (-0.01, 1.13, 0.0), 4.85)
-        self.play(Write(all_svgs[0]), run_time=3)
+        self.set_view(0, 0, 0, (-0.01, 1.13, 0.0), 4.85)
+        self.play(gx.Write(all_svgs[0]), run_time=3)
 
         self.wait()
-        self.play(Write(all_svgs[1]), run_time=5)
+        self.play(gx.Write(all_svgs[1]), run_time=5)
 
         self.wait()
-        self.play(Write(all_svgs[2]), Write(all_svgs[3]), run_time=5)
+        self.play(gx.Write(all_svgs[2]), gx.Write(all_svgs[3]), run_time=5)
 
         #Alot going on here quickly, maybe just a zoom out and FadeIn?
         # self.wait()
-        group_1=Group(v_jepa_cats, v_jepa_cats_2, all_svgs[4])
-        group_2=Group(all_svgs[5], mushroom)
-        group_3=Group(pusht_group, all_svgs[6:8])
+        group_1=gx.Group(v_jepa_cats, v_jepa_cats_2, all_svgs[4])
+        group_2=gx.Group(all_svgs[5], mushroom)
+        group_3=gx.Group(pusht_group, all_svgs[6:8])
 
         self.wait()
-        self.play(LaggedStart([FadeIn(group_1), FadeIn(group_2), FadeIn(group_3)], lag_ratio=0.5), 
-        		  self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8.00),
+        self.play(gx.LaggedStart([gx.FadeIn(group_1), gx.FadeIn(group_2), gx.FadeIn(group_3)], lag_ratio=0.5),
+                          self.animate_view(0, 0, 0, (0, 0, 0), 8.00),
         	      run_time=6)
 
 
@@ -123,7 +126,7 @@ class P8(InteractiveScene):
         # 		  # FadeIn(mushroom),
         # 		  # FadeIn(pusht_group),
         # 		  FadeIn(all_svgs[4]), 
-        # 		  self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8.00),
+        # 		  self.animate_view(0, 0, 0, (0, 0, 0), 8.00),
         # 	      run_time=6)
 
 
@@ -135,7 +138,6 @@ class P8(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
 
 
 

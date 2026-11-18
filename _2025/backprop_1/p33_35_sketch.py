@@ -1,16 +1,22 @@
-from manimlib import *
-sys.path.append('/Users/stephen/manim/videos/welch_assets')
-from welch_axes import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_geometry import diagram_arrow
+from landscape_geometry import get_pivot_and_scale
+import numpy as np
+from welch_axes import WelchXAxis, WelchYAxis
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, set_surface_shading, textured_surface
+from welch_text import math_tex
 
 CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
 BLUE='#65c8d0'
 
-surf=np.load('/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/animation/p_24_28_losses_4.npy')
-xy=np.load('/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/animation/p_24_28_losses_4xy.npy')
-grads_1=np.load('/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/animation/p_33_35_grads_1_2.npy') 
-grads_2=np.load('/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/animation/p_33_35_grads_2_2.npy') 
-xy_grads=np.load('/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/animation/p_33_35_xy_2.npy') 
+surf=np.load(welch_path('backpropagation/animation/p_24_28_losses_4.npy'))
+xy=np.load(welch_path('backpropagation/animation/p_24_28_losses_4xy.npy'))
+grads_1=np.load(welch_path('backpropagation/animation/p_33_35_grads_1_2.npy'))
+grads_2=np.load(welch_path('backpropagation/animation/p_33_35_grads_2_2.npy'))
+xy_grads=np.load(welch_path('backpropagation/animation/p_33_35_xy_2.npy'))
 
 
 def param_surface(u, v):
@@ -50,17 +56,13 @@ def map_to_canvas(value, axis_min, axis_max, axis_end, axis_start=0):
     value_scaled=(value-axis_min)/(axis_max-axis_min)
     return (value_scaled+axis_start)*axis_end
 
-def get_pivot_and_scale(axis_min, axis_max, axis_end):
-    '''Above collapses into scaling around a single pivot when axis_start=0'''
-    scale = axis_end / (axis_max - axis_min)
-    return axis_min, scale
 
-class Dot3D(Sphere):
-    def __init__(self, center=ORIGIN, radius=0.05, **kwargs):
+class Dot3D(m.Sphere):
+    def __init__(self, center=m.ORIGIN, radius=0.05, **kwargs):
         super().__init__(radius=radius, **kwargs)
         self.move_to(center)
 
-class P33v1(InteractiveScene):
+class P33v1(WelchScene):
     def construct(self):
 
         # Ok ok ok ok I need ot decide how automated vs manual I'm going to make this scene
@@ -82,7 +84,7 @@ class P33v1(InteractiveScene):
                             x_label_font_size=24, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=4)
         y_axis_1=WelchYAxis(y_min=0.3, y_max=2.2, y_ticks=[0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0], y_tick_width=0.15,        
                           y_label_font_size=20, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=3)
-        axes_1=VGroup(x_axis_1, y_axis_1)
+        axes_1=m.VGroup(x_axis_1, y_axis_1)
 
         points_1 = [param_surface(u, 0) for u in np.linspace(-1, 4, 128)]
         points_mapped=np.array(points_1)[:, (0,2,1)]
@@ -90,14 +92,14 @@ class P33v1(InteractiveScene):
                                          axis_max=x_axis_1.x_max, axis_end=x_axis_1.axis_length_on_canvas)
         points_mapped[:,1]=map_to_canvas(points_mapped[:,1], axis_min=y_axis_1.y_min, 
                                          axis_max=y_axis_1.y_max, axis_end=y_axis_1.axis_length_on_canvas)
-        curve_1 = VMobject()
+        curve_1 = m.VMobject()
         curve_1.set_points_smoothly(points_mapped)
         curve_1.set_stroke(width=4, color=YELLOW, opacity=0.8)
 
-        x_label_1 = Tex(r'\theta_{1}', font_size=30).set_color(CHILL_BROWN)
-        y_label_1 = Tex('Loss', font_size=25).set_color(CHILL_BROWN)
-        x_label_1.next_to(x_axis_1, RIGHT, buff=0.05)
-        y_label_1.next_to(y_axis_1, UP, buff=0.05)
+        x_label_1 = math_tex(r'\theta_{1}', font_size=30).set_color(CHILL_BROWN)
+        y_label_1 = math_tex('Loss', font_size=25).set_color(CHILL_BROWN)
+        x_label_1.next_to(x_axis_1, m.RIGHT, buff=0.05)
+        y_label_1.next_to(y_axis_1, m.UP, buff=0.05)
 
         # self.add(axes_1, curve_1)
         # self.add(x_label_1, y_label_1)
@@ -119,7 +121,7 @@ class P33v1(InteractiveScene):
                                          axis_max=y_axis_1.y_max, axis_end=y_axis_1.axis_length_on_canvas)
         p1_values[2]=0
 
-        p1=Dot(p1_values, radius=0.06, fill_color=YELLOW)
+        p1=m.Dot(p1_values, radius=0.06, fill_color=YELLOW)
         # self.add(p1)
 
         g=get_grads(0,0)
@@ -132,11 +134,11 @@ class P33v1(InteractiveScene):
         g_values[:,1]=map_to_canvas(g_values[:,1], axis_min=y_axis_1.y_min, 
                                          axis_max=y_axis_1.y_max, axis_end=y_axis_1.axis_length_on_canvas)
 
-        a1=Arrow(start=g_values[0], end=g_values[1], fill_color=YELLOW, thickness=3.0, tip_width_ratio=5, buff=0)
+        a1=diagram_arrow(start=g_values[0], end=g_values[1], fill_color=YELLOW, thickness=3.0, tip_width_ratio=5, buff=0)
         # self.add(a1)
 
         # panel_1_shift=[-5, 0.4, 0]
-        panel_1=VGroup(axes_1, curve_1, x_label_1, y_label_1, p1, a1)
+        panel_1=m.VGroup(axes_1, curve_1, x_label_1, y_label_1, p1, a1)
         # panel_1.shift(panel_1_shift)
 
         # curve_1.set_stroke(opacity=0.25) #Yeah so I a fade out/fade in will bascially be the optning animation for this scene?
@@ -152,7 +154,7 @@ class P33v1(InteractiveScene):
                             x_label_font_size=24, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=4)
         y_axis_2=WelchYAxis(y_min=0.3, y_max=2.2, y_ticks=[0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0], y_tick_width=0.15,        
                           y_label_font_size=20, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=3)
-        axes_2=VGroup(x_axis_2, y_axis_2)
+        axes_2=m.VGroup(x_axis_2, y_axis_2)
 
 
         points_2 = [param_surface(0, v) for v in np.linspace(-1, 4, 128)]
@@ -161,15 +163,15 @@ class P33v1(InteractiveScene):
                                          axis_max=x_axis_2.x_max, axis_end=x_axis_2.axis_length_on_canvas)
         points_mapped_2[:,1]=map_to_canvas(points_mapped_2[:,1], axis_min=y_axis_2.y_min, 
                                          axis_max=y_axis_2.y_max, axis_end=y_axis_2.axis_length_on_canvas)
-        curve_2 = VMobject()
+        curve_2 = m.VMobject()
         curve_2.set_points_smoothly(points_mapped_2)
         curve_2.set_stroke(width=4, color=BLUE, opacity=0.8)
 
 
-        x_label_2 = Tex(r'\theta_{2}', font_size=30).set_color(CHILL_BROWN)
-        y_label_2 = Tex('Loss', font_size=25).set_color(CHILL_BROWN)
-        x_label_2.next_to(x_axis_2, RIGHT, buff=0.05)
-        y_label_2.next_to(y_axis_2, UP, buff=0.05) #not sure I need this. 
+        x_label_2 = math_tex(r'\theta_{2}', font_size=30).set_color(CHILL_BROWN)
+        y_label_2 = math_tex('Loss', font_size=25).set_color(CHILL_BROWN)
+        x_label_2.next_to(x_axis_2, m.RIGHT, buff=0.05)
+        y_label_2.next_to(y_axis_2, m.UP, buff=0.05) #not sure I need this.
 
         p2_values=param_surface(0, 0)
         p2_values[0]=map_to_canvas(p2_values[0], axis_min=x_axis_2.x_min, 
@@ -177,7 +179,7 @@ class P33v1(InteractiveScene):
         p2_values[1]=map_to_canvas(p2_values[2], axis_min=y_axis_2.y_min, 
                                          axis_max=y_axis_2.y_max, axis_end=y_axis_2.axis_length_on_canvas)
         p2_values[2]=0
-        p2=Dot(p2_values, radius=0.06, fill_color=BLUE)
+        p2=m.Dot(p2_values, radius=0.06, fill_color=BLUE)
 
         g=get_grads(0,0)
         grad_viz_scale=1.25*abs(g[3]) #Maybe make arrow length proportional to gradient?
@@ -189,10 +191,10 @@ class P33v1(InteractiveScene):
         g_values_2[:,1]=map_to_canvas(g_values_2[:,1], axis_min=y_axis_2.y_min, 
                                          axis_max=y_axis_2.y_max, axis_end=y_axis_2.axis_length_on_canvas)
 
-        a2=Arrow(start=g_values_2[0], end=g_values_2[1], fill_color=BLUE, thickness=3.0, tip_width_ratio=5, buff=0)
+        a2=diagram_arrow(start=g_values_2[0], end=g_values_2[1], fill_color=BLUE, thickness=3.0, tip_width_ratio=5, buff=0)
 
         # panel_2_shift=[-5, -3.2, 0]
-        panel_2=VGroup(axes_2, curve_2, x_label_2, p2, a2) #y_label_2
+        panel_2=m.VGroup(axes_2, curve_2, x_label_2, p2, a2) #y_label_2
         # panel_2.shift(panel_2_shift)
 
         # curve_2.set_stroke(opacity=0.25) 
@@ -245,11 +247,11 @@ class P33v1(InteractiveScene):
         curve_1.set_stroke(opacity=0.5)
         curve_2.set_stroke(opacity=0.5)
 
-        panel_2.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN) #Get into 3d space so I can do the bring together animation...
-        panel_1.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
+        panel_2.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN) #Get into 3d space so I can do the bring together animation...
+        panel_1.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
         self.add(panel_1, panel_2)
 
-        self.frame.reorient(0, 89, 0, (-0.46, 0.0, 1.36), 8.97)
+        self.set_view(0, 89, 0, (-0.46, 0.0, 1.36), 8.97)
 
         panel_1_shift=[-5, 0, 2.0]
         panel_2_shift=[-5, 0, -2.0]
@@ -261,7 +263,7 @@ class P33v1(InteractiveScene):
         
         # self.remove(y_axis_2) #Probably fade this out during the animation. 
         
-        r=panel_2.get_corner(LEFT+BOTTOM) 
+        r=panel_2.get_corner(m.LEFT+(m.config.frame_height / 2 * m.DOWN))
         r[0]=-4.15    
         self.wait()
 
@@ -286,8 +288,8 @@ class P33v1(InteractiveScene):
 
 
         self.play(panel_1.animate.shift([0, 0, -2.0]),
-                  panel_2.animate.rotate(90*DEGREES, [0,0,1], about_point=r).shift([0, 0, 2.0]),
-                  self.frame.animate.reorient(13, 85, 0, (-1.88, -0.77, 1.56), 5.01),
+                  panel_2.animate.rotate(90*m.DEGREES, [0,0,1], about_point=r).shift([0, 0, 2.0]),
+                  self.animate_view(13, 85, 0, (-1.88, -0.77, 1.56), 5.01),
                   run_time=4)
 
         
@@ -306,15 +308,15 @@ class P33v1(InteractiveScene):
         ## ---
 
         # Create main surface
-        surface = ParametricSurface(
+        surface = parametric_surface(
             param_surface,  
             u_range=[-1, 4],
             v_range=[-1, 4],
             resolution=(256, 256),
         )
 
-        ts = TexturedSurface(surface, '/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/animation/p_24_28_losses_4.png')
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, welch_path('backpropagation/animation/p_24_28_losses_4.png'))
+        set_surface_shading(ts, 0.0, 0.1, 0)
         
 
         pivot_x,scale_x=get_pivot_and_scale(axis_min=x_axis_1.x_min, axis_max=x_axis_1.x_max, 
@@ -328,22 +330,22 @@ class P33v1(InteractiveScene):
         ##Ok let's figure out if we want gridlines
         num_lines = 21  # Number of gridlines in each direction
         num_points = 256  # Number of points per line
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = m.VGroup()
+        v_gridlines = m.VGroup()
         u_values = np.linspace(-1, 4, num_lines)
         v_points = np.linspace(-1, 4, num_points)
         for u in u_values:
             points = [param_surface(u, v) for v in v_points]
-            line = VMobject()
+            line = m.VMobject()
             line.set_points_smoothly(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.0)
+            line.set_stroke(width=1, color=m.WHITE, opacity=0.0)
             u_gridlines.add(line)
         u_points = np.linspace(-1, 4, num_points)
         for v in u_values:  # Using same number of lines for both directions
             points = [param_surface(u, v) for u in u_points]
-            line = VMobject()
+            line = m.VMobject()
             line.set_points_smoothly(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.0)
+            line.set_stroke(width=1, color=m.WHITE, opacity=0.0)
             v_gridlines.add(line)
 
         u_gridlines.scale([scale_x, scale_x, scale_y], about_point=[pivot_x, pivot_x, pivot_y])
@@ -361,13 +363,13 @@ class P33v1(InteractiveScene):
         self.play(ts.animate.set_opacity(0.5), 
                   p1.animate.set_opacity(0.0),
                   p2.animate.set_opacity(0.0),
-                  a1.animate.rotate(-DEGREES*135, axis=a1.get_end()-a1.get_start()),
-                  a2.animate.rotate(-DEGREES*80, axis=a2.get_end()-a2.get_start()),
+                  a1.animate.rotate(-m.DEGREES*135, axis=a1.get_end()-a1.get_start()),
+                  a2.animate.rotate(-m.DEGREES*80, axis=a2.get_end()-a2.get_start()),
                   u_gridlines.animate.set_stroke(opacity=0.14), 
                   v_gridlines.animate.set_stroke(opacity=0.14),
-                  # self.frame.animate.reorient(125, 57, 0, (-2.45, 1.36, 2.08), 1.21),
-                  # self.frame.animate.reorient(106, 41, 0, (-2.43, 0.92, 2.55), 3.11), 
-                  self.frame.animate.reorient(124, 40, 0, (-2.57, 0.86, 2.7), 1.81),
+                  # self.animate_view(125, 57, 0, (-2.45, 1.36, 2.08), 1.21),
+                  # self.animate_view(106, 41, 0, (-2.43, 0.92, 2.55), 3.11),
+                  self.animate_view(124, 40, 0, (-2.57, 0.86, 2.7), 1.81),
                   run_time=4.0)
 
         self.wait()
@@ -380,8 +382,8 @@ class P33v1(InteractiveScene):
         # each of my existing arrows into this one. 
 
 
-        a3 =Arrow(start=[a1.get_corner(LEFT)[0]+0.03, a1.get_corner(LEFT)[1]+0.01, a1.get_corner(OUT)[2]],
-                  end=[a1.get_corner(RIGHT)[0], a2.get_corner(UP)[1], a2.get_corner(IN)[2]], 
+        a3 =diagram_arrow(start=[a1.get_corner(m.LEFT)[0]+0.03, a1.get_corner(m.LEFT)[1]+0.01, a1.get_corner(m.OUT)[2]],
+                  end=[a1.get_corner(m.RIGHT)[0], a2.get_corner(m.UP)[1], a2.get_corner(m.IN)[2]],
                   fill_color='#FF00FF', thickness=3.0, tip_width_ratio=5, buff=0)
         # a3 =Arrow(start=a1.start, end=a2.end, fill_color='#FF00FF', thickness=3.0, tip_width_ratio=5, buff=0)
         #going to need to do some interestign rotation stuff I think...
@@ -391,8 +393,8 @@ class P33v1(InteractiveScene):
         # a2.rotate(-DEGREES*80, axis=a2.get_end()-a2.get_start())
         self.wait()
 
-        self.play(TransformFromCopy(a1, a3), #Ah that's fucking dope - how many more cool tricks does Grant have up his sleeve that I know nothing about lol. 
-                  TransformFromCopy(a2, a3),
+        self.play(m.TransformFromCopy(a1, a3), #Ah that's fucking dope - how many more cool tricks does Grant have up his sleeve that I know nothing about lol.
+                  m.TransformFromCopy(a2, a3),
                   run_time=3.0)
         self.wait()
 
@@ -412,7 +414,7 @@ class P33v1(InteractiveScene):
         ## to get the descent animation working first, then come back and add in my camera moves
         ## Or kidna add them as I go. 
 
-        # self.play(self.frame.animate.reorient(169, 43, 0, (-3.56, 1.21, 1.79), 3.95), run_time=3.0)
+        # self.play(self.animate_view(169, 43, 0, (-3.56, 1.21, 1.79), 3.95), run_time=3.0)
         
 
 
@@ -429,9 +431,9 @@ class P33v1(InteractiveScene):
                   a2.animate.set_opacity(0.0),
                   curve_1.animate.set_opacity(0.0),
                   curve_2.animate.set_opacity(0.0),
-                  FadeIn(s1),
-                  FadeIn(s2),
-                  self.frame.animate.reorient(175, 47, 0, (-3.89, 1.49, 1.6), 3.75),
+                  m.FadeIn(s1),
+                  m.FadeIn(s2),
+                  self.animate_view(175, 47, 0, (-3.89, 1.49, 1.6), 3.75),
                   run_time=2.0)
 
 
@@ -456,12 +458,12 @@ class P33v1(InteractiveScene):
 
 
 
-        self.embed()
+        pass
         self.wait(20)
 
 
 
-class P34_2d_deprecated(InteractiveScene):
+class P34_2d_deprecated(WelchScene):
     def construct(self):
         '''
         Figure out 2d full gradient descent panels here, then combine with full method above to get
@@ -472,7 +474,7 @@ class P34_2d_deprecated(InteractiveScene):
                             x_label_font_size=24, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=4)
         y_axis_1=WelchYAxis(y_min=0.3, y_max=2.2, y_ticks=[0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0], y_tick_width=0.15,        
                           y_label_font_size=20, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=3)
-        axes_1=VGroup(x_axis_1, y_axis_1)
+        axes_1=m.VGroup(x_axis_1, y_axis_1)
 
         points_1 = [param_surface(u, 0) for u in np.linspace(-1, 4, 128)]
         points_mapped=np.array(points_1)[:, (0,2,1)]
@@ -480,14 +482,14 @@ class P34_2d_deprecated(InteractiveScene):
                                          axis_max=x_axis_1.x_max, axis_end=x_axis_1.axis_length_on_canvas)
         points_mapped[:,1]=map_to_canvas(points_mapped[:,1], axis_min=y_axis_1.y_min, 
                                          axis_max=y_axis_1.y_max, axis_end=y_axis_1.axis_length_on_canvas)
-        curve_1 = VMobject()
+        curve_1 = m.VMobject()
         curve_1.set_points_smoothly(points_mapped)
         curve_1.set_stroke(width=4, color=YELLOW, opacity=0.8)
 
-        x_label_1 = Tex(r'\theta_{1}', font_size=30).set_color(CHILL_BROWN)
-        y_label_1 = Tex('Loss', font_size=25).set_color(CHILL_BROWN)
-        x_label_1.next_to(x_axis_1, RIGHT, buff=0.05)
-        y_label_1.next_to(y_axis_1, UP, buff=0.05)
+        x_label_1 = math_tex(r'\theta_{1}', font_size=30).set_color(CHILL_BROWN)
+        y_label_1 = math_tex('Loss', font_size=25).set_color(CHILL_BROWN)
+        x_label_1.next_to(x_axis_1, m.RIGHT, buff=0.05)
+        y_label_1.next_to(y_axis_1, m.UP, buff=0.05)
 
         p1_values=param_surface(0, 0)
         p1_values[0]=map_to_canvas(p1_values[0], axis_min=x_axis_1.x_min, 
@@ -495,7 +497,7 @@ class P34_2d_deprecated(InteractiveScene):
         p1_values[1]=map_to_canvas(p1_values[2], axis_min=y_axis_1.y_min, 
                                          axis_max=y_axis_1.y_max, axis_end=y_axis_1.axis_length_on_canvas)
         p1_values[2]=0
-        p1=Dot(p1_values, radius=0.06, fill_color=YELLOW)
+        p1=m.Dot(p1_values, radius=0.06, fill_color=YELLOW)
 
         g=get_grads(0,0)
         grad_viz_scale=1.25*abs(g[2]) #Maybe make arrow length proportional to gradient?
@@ -507,15 +509,15 @@ class P34_2d_deprecated(InteractiveScene):
         g_values[:,1]=map_to_canvas(g_values[:,1], axis_min=y_axis_1.y_min, 
                                          axis_max=y_axis_1.y_max, axis_end=y_axis_1.axis_length_on_canvas)
 
-        a1=Arrow(start=g_values[0], end=g_values[1], fill_color=YELLOW, thickness=3.0, tip_width_ratio=5, buff=0)
-        panel_1=VGroup(axes_1, curve_1, x_label_1, y_label_1, p1, a1)
+        a1=diagram_arrow(start=g_values[0], end=g_values[1], fill_color=YELLOW, thickness=3.0, tip_width_ratio=5, buff=0)
+        panel_1=m.VGroup(axes_1, curve_1, x_label_1, y_label_1, p1, a1)
 
 
         x_axis_2=WelchXAxis(x_min=-1.2, x_max=4.5, x_ticks=[-1,0,1,2,3,4], x_tick_height=0.15,        
                             x_label_font_size=24, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=4)
         y_axis_2=WelchYAxis(y_min=0.3, y_max=2.2, y_ticks=[0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0], y_tick_width=0.15,        
                           y_label_font_size=20, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=3)
-        axes_2=VGroup(x_axis_2, y_axis_2)
+        axes_2=m.VGroup(x_axis_2, y_axis_2)
 
 
         points_2 = [param_surface(0, v) for v in np.linspace(-1, 4, 128)]
@@ -524,15 +526,15 @@ class P34_2d_deprecated(InteractiveScene):
                                          axis_max=x_axis_2.x_max, axis_end=x_axis_2.axis_length_on_canvas)
         points_mapped_2[:,1]=map_to_canvas(points_mapped_2[:,1], axis_min=y_axis_2.y_min, 
                                          axis_max=y_axis_2.y_max, axis_end=y_axis_2.axis_length_on_canvas)
-        curve_2 = VMobject()
+        curve_2 = m.VMobject()
         curve_2.set_points_smoothly(points_mapped_2)
         curve_2.set_stroke(width=4, color=BLUE, opacity=0.8)
 
 
-        x_label_2 = Tex(r'\theta_{2}', font_size=30).set_color(CHILL_BROWN)
-        y_label_2 = Tex('Loss', font_size=25).set_color(CHILL_BROWN)
-        x_label_2.next_to(x_axis_2, RIGHT, buff=0.05)
-        y_label_2.next_to(y_axis_2, UP, buff=0.05) #not sure I need this. 
+        x_label_2 = math_tex(r'\theta_{2}', font_size=30).set_color(CHILL_BROWN)
+        y_label_2 = math_tex('Loss', font_size=25).set_color(CHILL_BROWN)
+        x_label_2.next_to(x_axis_2, m.RIGHT, buff=0.05)
+        y_label_2.next_to(y_axis_2, m.UP, buff=0.05) #not sure I need this.
 
         p2_values=param_surface(0, 0)
         p2_values[0]=map_to_canvas(p2_values[0], axis_min=x_axis_2.x_min, 
@@ -540,7 +542,7 @@ class P34_2d_deprecated(InteractiveScene):
         p2_values[1]=map_to_canvas(p2_values[2], axis_min=y_axis_2.y_min, 
                                          axis_max=y_axis_2.y_max, axis_end=y_axis_2.axis_length_on_canvas)
         p2_values[2]=0
-        p2=Dot(p2_values, radius=0.06, fill_color=BLUE)
+        p2=m.Dot(p2_values, radius=0.06, fill_color=BLUE)
 
         g=get_grads(0,0)
         grad_viz_scale=1.25*abs(g[3]) #Maybe make arrow length proportional to gradient?
@@ -552,18 +554,18 @@ class P34_2d_deprecated(InteractiveScene):
         g_values_2[:,1]=map_to_canvas(g_values_2[:,1], axis_min=y_axis_2.y_min, 
                                          axis_max=y_axis_2.y_max, axis_end=y_axis_2.axis_length_on_canvas)
 
-        a2=Arrow(start=g_values_2[0], end=g_values_2[1], fill_color=BLUE, thickness=3.0, tip_width_ratio=5, buff=0)
+        a2=diagram_arrow(start=g_values_2[0], end=g_values_2[1], fill_color=BLUE, thickness=3.0, tip_width_ratio=5, buff=0)
 
-        panel_2=VGroup(axes_2, curve_2, x_label_2, p2, a2) 
+        panel_2=m.VGroup(axes_2, curve_2, x_label_2, p2, a2)
 
         curve_1.set_stroke(opacity=0.5)
         curve_2.set_stroke(opacity=0.5)
 
-        panel_2.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN) #Get into 3d space so I can do the bring together animation...
-        panel_1.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
+        panel_2.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN) #Get into 3d space so I can do the bring together animation...
+        panel_1.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
         self.add(panel_1, panel_2)
 
-        self.frame.reorient(0, 89, 0, (-0.46, 0.0, 1.36), 8.97)
+        self.set_view(0, 89, 0, (-0.46, 0.0, 1.36), 8.97)
 
         panel_1_shift=[-5, 0, 2.0]
         panel_2_shift=[-5, 0, -2.0]
@@ -609,17 +611,17 @@ class P34_2d_deprecated(InteractiveScene):
                                          axis_max=y_axis_1.y_max, axis_end=y_axis_1.axis_length_on_canvas)
 
         # self.wait()
-        arrows_1=VGroup()
-        points_1=VGroup()
+        arrows_1=m.VGroup()
+        points_1=m.VGroup()
         for i in range(num_steps-1):
-            arrows_1.add(Arrow(start=descent_points_1_mapped[i], end=arrow_end_points_1_mapped[i], fill_color=YELLOW, 
+            arrows_1.add(diagram_arrow(start=descent_points_1_mapped[i], end=arrow_end_points_1_mapped[i], fill_color=YELLOW,
                                  thickness=3.0, 
                                  tip_width_ratio=5, buff=0))
-            points_1.add(Dot(descent_points_1_mapped[i], radius=0.06, fill_color=YELLOW))
+            points_1.add(m.Dot(descent_points_1_mapped[i], radius=0.06, fill_color=YELLOW))
 
-        arrows_1.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
+        arrows_1.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
         arrows_1.shift(panel_1_shift)
-        points_1.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
+        points_1.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
         points_1.shift(panel_1_shift)
         # self.add(arrows_1, points_1) #Ok this gets noisy visually, but I think if I add one arrow at a time, and keep all the 
         #                              #points basically it will be fine. 
@@ -661,17 +663,17 @@ class P34_2d_deprecated(InteractiveScene):
                                          axis_max=y_axis_1.y_max, axis_end=y_axis_1.axis_length_on_canvas)
 
         # self.wait()
-        arrows_2=VGroup()
-        points_2=VGroup()
+        arrows_2=m.VGroup()
+        points_2=m.VGroup()
         for i in range(num_steps-1):
-            arrows_2.add(Arrow(start=descent_points_2_mapped[i], end=arrow_end_points_2_mapped[i], fill_color=BLUE, 
+            arrows_2.add(diagram_arrow(start=descent_points_2_mapped[i], end=arrow_end_points_2_mapped[i], fill_color=BLUE,
                                  thickness=3.0, 
                                  tip_width_ratio=5, buff=0))
-            points_2.add(Dot(descent_points_2_mapped[i], radius=0.06, fill_color=BLUE))
+            points_2.add(m.Dot(descent_points_2_mapped[i], radius=0.06, fill_color=BLUE))
 
-        arrows_2.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
+        arrows_2.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
         arrows_2.shift(panel_2_shift)
-        points_2.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
+        points_2.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
         points_2.shift(panel_2_shift)
 
         self.add(arrows_2, points_2)
@@ -705,7 +707,7 @@ class P34_2d_deprecated(InteractiveScene):
 
 
         self.wait()
-        self.embed()
+        pass
 
 
 
@@ -716,7 +718,7 @@ class P34_2d_deprecated(InteractiveScene):
         # panel_1.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
         # self.add(panel_1, panel_2)
 
-        # self.frame.reorient(0, 89, 0, (-0.46, 0.0, 1.36), 8.97)
+        # self.set_view(0, 89, 0, (-0.46, 0.0, 1.36), 8.97)
 
         # panel_1_shift=[-5, 0, 2.0]
         # panel_2_shift=[-5, 0, -2.0]
@@ -1181,7 +1183,7 @@ class P34_2d_deprecated(InteractiveScene):
 #         self.add(ts)
 
 
-#         self.frame.reorient(32, 59, 0, (1.88, 1.0, 1.52), 7.78)
+#         self.set_view(32, 59, 0, (1.88, 1.0, 1.52), 7.78)
 
         
 #         self.embed()

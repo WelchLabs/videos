@@ -1,6 +1,8 @@
-from manimlib import *
-sys.path.append('/Users/stephen/manim/videos/welch_assets')
-from welch_axes import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_geometry import diagram_axes_3d
+from welch_surface import SampledSurface
+from welch_scene import WelchScene, image_at_height
 from functools import partial
 import numpy as np
 import torch
@@ -10,7 +12,7 @@ YELLOW='#ffd35a'
 BLUE='#65c8d0'
 GREEN='#00a14b'
 
-svg_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/graphics/to_manim'
+svg_path=welch_path('backprop2/graphics/to_manim')
 
 def manual_camera_interpolation(start_orientation, end_orientation, num_steps):
     """
@@ -55,7 +57,7 @@ def manual_camera_interpolation(start_orientation, end_orientation, num_steps):
     
     return result
 
-class LinearPlane(Surface):
+class LinearPlane(SampledSurface):
     """A plane defined by z = m1*x1 + m2*x2 + b"""
     def __init__(self, axes, m1=0.5, m2=0.3, b=1.0, vertical_viz_scale=0.5, **kwargs):
         self.axes = axes
@@ -83,17 +85,17 @@ class LinearPlane(Surface):
 
 
 
-class p50(InteractiveScene):
+class p50(WelchScene):
     def construct(self):
 
-        baarle_map=ImageMobject(svg_path +'/map_exports.00_01_07_25.Still005.png')
+        baarle_map=image_at_height(svg_path +'/map_exports.00_01_07_25.Still005.png')
         # baarle_map.rotate(90*DEGREES, [1,0,0])
 
         baarle_map.scale(0.25)
         # baarle_map.move_to([0.96,0,0])
 
 
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             # x_range=[-15, 15, 1],
             # y_range=[-15, 15, 1],
             x_range=[-5, 5, 1],
@@ -121,17 +123,17 @@ class p50(InteractiveScene):
         plane_2.set_color(YELLOW)
 
 
-        # self.frame.reorient(0, 0, 0, (0.02, -0.01, 0.0), 1.23)
-        # self.frame.reorient(0, 0, 0, (-0.08, -0.05, -0.15), 1.37)
-        self.frame.reorient(0, 0, 0, (-0.06, -0.0, -0.15), 1.23)
+        # self.set_view(0, 0, 0, (0.02, -0.01, 0.0), 1.23)
+        # self.set_view(0, 0, 0, (-0.08, -0.05, -0.15), 1.37)
+        self.set_view(0, 0, 0, (-0.06, -0.0, -0.15), 1.23)
         self.add(baarle_map)
         self.wait()
 
-        self.play(self.frame.animate.reorient(-34, 52, 0, (-0.04, -0.01, -0.05), 1.58), 
-                 FadeIn(axes_1), FadeIn(plane_1), FadeIn(plane_2), run_time=5)
+        self.play(self.animate_view(-34, 52, 0, (-0.04, -0.01, -0.05), 1.58),
+                 m.FadeIn(axes_1), m.FadeIn(plane_1), m.FadeIn(plane_2), run_time=5)
 
         # self.add(axes_1, plane_1, plane_2)
-        # self.frame.reorient(-29, 53, 0, (0.04, 0.06, 0.09), 2.05)
+        # self.set_view(-29, 53, 0, (0.04, 0.06, 0.09), 2.05)
         self.wait()
 
         #ok static looks good, now I want to pan around while smootly changing the LinearPlane's parameters. 
@@ -159,7 +161,7 @@ class p50(InteractiveScene):
             plane_2.set_color(YELLOW)
 
             self.add(plane_1, plane_2)
-            self.frame.reorient(*interp_orientations[i])
+            self.set_view(*interp_orientations[i])
 
             self.wait(0.1)
 
@@ -192,7 +194,7 @@ class p50(InteractiveScene):
         #         surface_update_counter+=1
 
         #     # print(i, len(interp_orientations))
-        #     self.frame.reorient(*interp_orientations[i])
+        #     self.set_view(*interp_orientations[i])
         #     self.wait(0.1)
 
         # self.wait()
@@ -200,7 +202,7 @@ class p50(InteractiveScene):
 
 
         self.wait()
-        self.embed()
+        pass
 
 
 

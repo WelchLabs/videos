@@ -1,6 +1,7 @@
-from manimlib import *
-sys.path.append('/Users/stephen/manim/videos/welch_assets')
-from welch_axes import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_scene import WelchScene
+from welch_text import math_tex
 from functools import partial
 import numpy as np
 import torch
@@ -11,8 +12,8 @@ YELLOW='#ffd35a'
 BLUE='#65c8d0'
 GREEN='#00a14b'
 
-svg_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/graphics/to_manim'
-data_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/hackin'
+svg_path=welch_path('backprop2/graphics/to_manim')
+data_path=welch_path('backprop2/hackin')
 
 
 def format_number(num, total_chars=6, align='right'):
@@ -58,73 +59,73 @@ def format_number_fixed_decimal(num, decimal_places=2, total_chars=6):
 
 def get_numbers_2(x, w, logits, yhats):
 
-    numbers = VGroup()
+    numbers = m.VGroup()
 
-    tx = Tex(str(x) + r'^\circ')
+    tx = math_tex(str(x) + r'^\circ')
     tx.scale(0.13)
     tx.move_to([-1.49, 0.02, 0])
     numbers.add(tx)
     
     # Weights - using consistent formatting
-    tm1 = Tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
+    tm1 = math_tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
     tm1.scale(0.16)
     tm1.move_to([-1.195, 0.205, 0])
     numbers.add(tm1)
     
-    tm2 = Tex(format_number(w[1], total_chars=6)).set_color(YELLOW)
+    tm2 = math_tex(format_number(w[1], total_chars=6)).set_color(YELLOW)
     tm2.scale(0.15)
     tm2.move_to([-1.155, 0.015, 0])
     numbers.add(tm2)
     
-    tm3 = Tex(format_number(w[2], total_chars=6)).set_color(GREEN)
+    tm3 = math_tex(format_number(w[2], total_chars=6)).set_color(GREEN)
     tm3.scale(0.16)
     tm3.move_to([-1.19, -0.17, 0])
     numbers.add(tm3)
     
     # Biases
-    tb1 = Tex(format_number(w[3], total_chars=6)).set_color('#00FFFF')
+    tb1 = math_tex(format_number(w[3], total_chars=6)).set_color('#00FFFF')
     tb1.scale(0.16)
     tb1.move_to([-0.875, 0.365, 0])
     numbers.add(tb1)
     
-    tb2 = Tex(format_number(w[4], total_chars=6)).set_color(YELLOW)
+    tb2 = math_tex(format_number(w[4], total_chars=6)).set_color(YELLOW)
     tb2.scale(0.16)
     tb2.move_to([-0.875, 0.015, 0])
     numbers.add(tb2)
     
-    tb3 = Tex(format_number(w[5], total_chars=6)).set_color(GREEN)
+    tb3 = math_tex(format_number(w[5], total_chars=6)).set_color(GREEN)
     tb3.scale(0.16)
     tb3.move_to([-0.88, -0.335, 0])
     numbers.add(tb3)
     
     # Logits
-    tl1 = Tex(format_number(logits[0], total_chars=6)).set_color('#00FFFF')
+    tl1 = math_tex(format_number(logits[0], total_chars=6)).set_color('#00FFFF')
     tl1.scale(0.16)
     tl1.move_to([-0.52, 0.37, 0])
     numbers.add(tl1)
     
-    tl2 = Tex(format_number(logits[1], total_chars=6)).set_color(YELLOW)
+    tl2 = math_tex(format_number(logits[1], total_chars=6)).set_color(YELLOW)
     tl2.scale(0.16)
     tl2.move_to([-0.52, 0.015, 0])
     numbers.add(tl2)
     
-    tl3 = Tex(format_number(logits[2], total_chars=6)).set_color(GREEN)
+    tl3 = math_tex(format_number(logits[2], total_chars=6)).set_color(GREEN)
     tl3.scale(0.16)  
     tl3.move_to([-0.52, -0.335, 0])
     numbers.add(tl3)
     
     # Predictions
-    yhat1 = Tex(f"{yhats[0]:.3f}").set_color('#00FFFF')
+    yhat1 = math_tex(f"{yhats[0]:.3f}").set_color('#00FFFF')
     yhat1.scale(0.16)
     yhat1.move_to([0.22, 0.37, 0])
     numbers.add(yhat1)
     
-    yhat2 = Tex(f"{yhats[1]:.3f}").set_color(YELLOW)
+    yhat2 = math_tex(f"{yhats[1]:.3f}").set_color(YELLOW)
     yhat2.scale(0.16)
     yhat2.move_to([0.22, 0.015, 0])
     numbers.add(yhat2)
     
-    yhat3 = Tex(f"{yhats[2]:.3f}").set_color(GREEN)
+    yhat3 = math_tex(f"{yhats[2]:.3f}").set_color(GREEN)
     yhat3.scale(0.16)
     yhat3.move_to([0.22, -0.335, 0])
     numbers.add(yhat3)
@@ -133,19 +134,19 @@ def get_numbers_2(x, w, logits, yhats):
 
 
 
-class p22_24v4(InteractiveScene):
+class p22_24v4(WelchScene):
     def construct(self):
         '''
         
         '''
-        transition_background=SVGMobject(svg_path+'/p20_transition_to_manim_1.svg')[1:]
-        net_background=SVGMobject(svg_path+'/p44_background_1.svg')[1:]
+        transition_background=m.SVGMobject(svg_path+'/p20_transition_to_manim_1.svg')[1:]
+        net_background=m.SVGMobject(svg_path+'/p44_background_1.svg')[1:]
 
         # self.add(net_background)
-        # self.frame.reorient(0, 0, 0, (-0.07, -0.02, 0.0), 1.91)
-        # self.frame.reorient(0, 0, 0, (-0.22, -0.03, 0.0), 1.74)
-        # self.frame.reorient(0, 0, 0, (-0.31, -0.02, 0.0), 1.62)
-        # self.frame.reorient(0, 0, 0, (-0.56, 0.23, 0.0), 1.56)
+        # self.set_view(0, 0, 0, (-0.07, -0.02, 0.0), 1.91)
+        # self.set_view(0, 0, 0, (-0.22, -0.03, 0.0), 1.74)
+        # self.set_view(0, 0, 0, (-0.31, -0.02, 0.0), 1.62)
+        # self.set_view(0, 0, 0, (-0.56, 0.23, 0.0), 1.56)
 
         data=np.load(data_path+'/cities_1d_2.npy')
         xs=data[:,:2]
@@ -167,23 +168,23 @@ class p22_24v4(InteractiveScene):
 
         # self.wait()
 
-        layers=VGroup()
+        layers=m.VGroup()
         for p in sorted(glob.glob(svg_path+'/p22_24/*.svg')):
-            layers.add(SVGMobject(p)[1:])  
+            layers.add(m.SVGMobject(p)[1:])
          
-        yhat2 = Tex("0.086").set_color(YELLOW)
+        yhat2 = math_tex("0.086").set_color(YELLOW)
         yhat2.scale(0.14)
         yhat2.move_to([1.205, 0.18, 0])
-        loss = Tex(format_number(2.45, total_chars=6)).set_color(YELLOW)
+        loss = math_tex(format_number(2.45, total_chars=6)).set_color(YELLOW)
         loss.scale(0.16)
         loss.move_to([1.5, 0.18, 0])
 
         
-        # self.play(self.frame.animate.reorient(0, 0, 0, (0.0, 0.07, 0.0), 1.97), 
+        # self.play(self.animate_view(0, 0, 0, (0.0, 0.07, 0.0), 1.97),
         #           FadeIn(layers[:2]), FadeIn(yhat2), FadeIn(loss), run_time=3)
 
 
-        self.frame.reorient(0, 0, 0, (0.0, 0.07, 0.0), 1.97)
+        self.set_view(0, 0, 0, (0.0, 0.07, 0.0), 1.97)
         nums_before=nums.copy()
         loss_before=loss.copy()
         yhat2_before=yhat2.copy()
@@ -198,28 +199,28 @@ class p22_24v4(InteractiveScene):
         centers_before=[n.get_center().copy() for n in nums_before]
         nums_before[0].move_to(centers_before[0]+np.array([0.08, -0.35, 0])).set_color(BLUE)
         nums_before[1].move_to(centers_before[1]+np.array([0.13, -0.37, 0])).set_color(BLUE)
-        nums_before[2].move_to(centers_before[2]+np.array([0.14, -0.35, 0])).set_color(RED)
+        nums_before[2].move_to(centers_before[2]+np.array([0.14, -0.35, 0])).set_color(m.RED)
         nums_before[3].move_to(centers_before[3]+np.array([0.14, -0.30, 0])).set_color(GREEN)
         nums_before[4].move_to(centers_before[4]+np.array([0.095, -0.395, 0])).set_color(BLUE)
-        nums_before[5].move_to(centers_before[5]+np.array([0.095, -0.34, 0])).set_color(RED)
+        nums_before[5].move_to(centers_before[5]+np.array([0.095, -0.34, 0])).set_color(m.RED)
         nums_before[6].move_to(centers_before[6]+np.array([0.1, -0.28, 0])).set_color(GREEN)
         nums_before[7].move_to(centers_before[7]+np.array([0.21, -0.38, 0])).set_color(BLUE).scale(1.2)
-        nums_before[8].move_to(centers_before[8]+np.array([0.22, -0.34, 0])).set_color(RED).scale(1.2)
+        nums_before[8].move_to(centers_before[8]+np.array([0.22, -0.34, 0])).set_color(m.RED).scale(1.2)
         nums_before[9].move_to(centers_before[9]+np.array([0.23, -0.27, 0])).set_color(GREEN).scale(1.2)
         nums_before[10].move_to(centers_before[10]+np.array([0.55, -0.38, 0])).set_color(BLUE).scale(1.2)
-        nums_before[11].move_to(centers_before[11]+np.array([0.55, -0.31, 0])).set_color(RED).scale(1.2)
+        nums_before[11].move_to(centers_before[11]+np.array([0.55, -0.31, 0])).set_color(m.RED).scale(1.2)
         nums_before[12].move_to(centers_before[12]+np.array([0.55, -0.23, 0])).set_color(GREEN).scale(1.2)
 
-        loss_before.move_to([1.35 , -0.09, 0. ]).set_color(RED)
-        yhat2_before.move_to([1.5, 0.01, 0]).set_color(RED)
+        loss_before.move_to([1.35 , -0.09, 0. ]).set_color(m.RED)
+        yhat2_before.move_to([1.5, 0.01, 0]).set_color(m.RED)
         self.wait()
 
-        self.play(ReplacementTransform(transition_background[:39], net_background[:39]),
-                ReplacementTransform(transition_background[39:45], net_background[47:53]),
-                ReplacementTransform(nums_before, nums),
-                ReplacementTransform(transition_background[45:], layers[1]),
-                ReplacementTransform(loss_before, loss),
-                ReplacementTransform(yhat2_before, yhat2), 
+        self.play(m.ReplacementTransform(transition_background[:39], net_background[:39]),
+                m.ReplacementTransform(transition_background[39:45], net_background[47:53]),
+                m.ReplacementTransform(nums_before, nums),
+                m.ReplacementTransform(transition_background[45:], layers[1]),
+                m.ReplacementTransform(loss_before, loss),
+                m.ReplacementTransform(yhat2_before, yhat2),
                 run_time=5.0)
         self.add(net_background); self.add(layers[0])
         self.wait()
@@ -245,7 +246,7 @@ class p22_24v4(InteractiveScene):
 
         self.wait()
 
-        self.play(ShowCreation(layers[3]))
+        self.play(m.Create(layers[3]))
 
         # self.remove(net_background[41])
 
@@ -255,8 +256,8 @@ class p22_24v4(InteractiveScene):
 
         self.play(loss_label.animate.scale(0.75).move_to([0.7, 0.05, 0]), run_time=1.0)
 
-        box = SurroundingRectangle(nums[2], color=YELLOW, buff=0.025)
-        self.play(ShowCreation(box))
+        box = m.SurroundingRectangle(nums[2], color=YELLOW, buff=0.025)
+        self.play(m.Create(box))
         
         self.play(m2_label.animate.scale(1.5).move_to([1.48, -0.67, 0]), run_time=4.0)
 
@@ -272,10 +273,10 @@ class p22_24v4(InteractiveScene):
 
         # box = SurroundingRectangle(nums[2], color=YELLOW, buff=0.025)
         # self.play(ShowCreation(box))
-        tm2 = Tex(format_number(0.1, total_chars=6)).set_color(YELLOW)
+        tm2 = math_tex(format_number(0.1, total_chars=6)).set_color(YELLOW)
         tm2.scale(0.15)
         tm2.move_to([-1.155, 0.015+0.23, 0])
-        self.play(Transform(nums[2], tm2))
+        self.play(m.Transform(nums[2], tm2))
         self.wait()
 
         #Ok, now update all yhs and yhats at once!
@@ -285,16 +286,16 @@ class p22_24v4(InteractiveScene):
         nums_2=get_numbers_2(x, w, logits, yhats)
         nums_2.shift([0,.23,0])
 
-        self.play(*[Transform(nums[i], nums_2[i]) for i in [-6, -5, -4, -3, -2, -1]])
+        self.play(*[m.Transform(nums[i], nums_2[i]) for i in [-6, -5, -4, -3, -2, -1]])
         self.wait()
 
         yhat2_new = nums_2[-2].copy()
-        loss_new = Tex(format_number(2.24, total_chars=6)).set_color(YELLOW)
+        loss_new = math_tex(format_number(2.24, total_chars=6)).set_color(YELLOW)
         loss_new.scale(0.16)
         loss_new.move_to([1.5, 0.18, 0])
         self.play(yhat2_new.animate.scale(0.9).move_to([1.205, 0.18, 0]), 
-                  FadeOut(yhat2), run_time=2.0)
-        self.play(Transform(loss, loss_new))
+                  m.FadeOut(yhat2), run_time=2.0)
+        self.play(m.Transform(loss, loss_new))
         self.wait()
 
         m1=nums_2[2].copy()
@@ -304,39 +305,39 @@ class p22_24v4(InteractiveScene):
         self.add(layers[4])
         self.wait()
 
-        self.play(FadeIn(layers[5]))
+        self.play(m.FadeIn(layers[5]))
         self.wait()
-        self.play(FadeIn(layers[6]))
+        self.play(m.FadeIn(layers[6]))
         self.wait()
 
-        net=VGroup(net_background, nums)
-        plot_to_move=VGroup(layers[2:5], m2_label, loss_label)
+        net=m.VGroup(net_background, nums)
+        plot_to_move=m.VGroup(layers[2:5], m2_label, loss_label)
 
         # net.move_to([-0.14,0.018,0])
         self.wait()
         self.remove(box); nums[-6:].set_color(CHILL_BROWN); nums[0].set_color(CHILL_BROWN)
-        self.play(FadeOut(layers[0:2]), FadeOut(layers[5:7]),
-                  FadeOut(loss_copy_2), FadeOut(m1), FadeOut(m0), FadeOut(loss_copy), 
-                  FadeOut(loss_new), FadeOut(loss), FadeOut(yhat2_new), 
+        self.play(m.FadeOut(layers[0:2]), m.FadeOut(layers[5:7]),
+                  m.FadeOut(loss_copy_2), m.FadeOut(m1), m.FadeOut(m0), m.FadeOut(loss_copy),
+                  m.FadeOut(loss_new), m.FadeOut(loss), m.FadeOut(yhat2_new),
                   net.animate.scale(0.78).move_to([-0.14,0.018,0]),
                   plot_to_move.animate.scale(0.58).move_to([-0.68, 0.645, 0]),
-                  self.frame.animate.reorient(0, 0, 0, (-0.05, -0.02, 0.0), 2.00),
+                  self.animate_view(0, 0, 0, (-0.05, -0.02, 0.0), 2.00),
                   run_time=3.0)
         self.add(layers[7])
         self.add(layers[8])
         self.remove(plot_to_move)
         self.wait()
 
-        self.play(ShowCreation(layers[9]))
+        self.play(m.Create(layers[9]))
         self.wait()
 
         m2_plot=layers[8][-21:]
         # self.add(m2_plot_copy)
         # to_fade=VGroup(layers[8][:-21], layers[7], layers[9], net)
 
-        self.play(FadeOut(layers[8][:-21]), FadeOut(layers[7]), FadeOut(layers[9]), FadeOut(net), 
+        self.play(m.FadeOut(layers[8][:-21]), m.FadeOut(layers[7]), m.FadeOut(layers[9]), m.FadeOut(net),
                   m2_plot.animate.scale(2.2).move_to([-0.19,-0.015,0]), run_time=8)
-        self.play(Write(layers[10]))
+        self.play(m.Write(layers[10]))
 
 
         # self.play(FadeOut(layers[8][:-21]), FadeOut(layers[7]), FadeOut(layers[9]), FadeOut(net))
@@ -354,7 +355,7 @@ class p22_24v4(InteractiveScene):
         # plot_to_move.scale(0.58)
         # plot_to_move.move_to([-0.68, 0.645, 0])
 
-        # self.frame.reorient(0, 0, 0, (-0.05, -0.02, 0.0), 2.00)
+        # self.set_view(0, 0, 0, (-0.05, -0.02, 0.0), 2.00)
 
         # # nums_2[-6:].set_color(CHILL_BROWN)
         # nums[-6:].set_color(CHILL_BROWN)
@@ -413,4 +414,4 @@ class p22_24v4(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass

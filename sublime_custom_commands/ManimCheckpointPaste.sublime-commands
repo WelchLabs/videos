@@ -1,6 +1,0 @@
-[
-    {
-        "caption": "ManimCheckpointPaste: Copy selection, run `checkpoint_paste` in terminal",
-        "command": "manim_checkpoint_paste"
-    }
-]
