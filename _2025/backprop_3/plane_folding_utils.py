@@ -1,4 +1,5 @@
-from manimlib import *
+import manimgx as m
+import numpy as np
 from functools import partial
 from itertools import combinations
 import math
@@ -188,7 +189,7 @@ def create_3d_polygon_regions_multi_wth_relu(polygons, w1, b1, w2, b2, neuron_id
         return second_layer_output * viz_scale
     
     polygon_objects = []
-    colors = [RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+    colors = [m.RED, BLUE, GREEN, YELLOW, m.PURPLE, m.ORANGE, m.PINK, m.TEAL]
     
     for i, polygon in enumerate(polygons):
         if len(polygon) < 3:
@@ -203,7 +204,7 @@ def create_3d_polygon_regions_multi_wth_relu(polygons, w1, b1, w2, b2, neuron_id
         
         # Create the 3D polygon
         color = colors[i % len(colors)]
-        poly_3d = Polygon(*points_3d,
+        poly_3d = m.Polygon(*points_3d,
                          fill_color=color,
                          fill_opacity=0.7,
                          stroke_color=color,
@@ -249,7 +250,7 @@ def create_3d_polygon_regions_multi(polygons, w1, b1, w2, b2, neuron_idx=0, viz_
         return second_layer_output * viz_scale
     
     polygon_objects = []
-    colors = [RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+    colors = [m.RED, BLUE, GREEN, YELLOW, m.PURPLE, m.ORANGE, m.PINK, m.TEAL]
     
     for i, polygon in enumerate(polygons):
         if len(polygon) < 3:
@@ -264,7 +265,7 @@ def create_3d_polygon_regions_multi(polygons, w1, b1, w2, b2, neuron_idx=0, viz_
         
         # Create the 3D polygon
         color = colors[i % len(colors)]
-        poly_3d = Polygon(*points_3d,
+        poly_3d = m.Polygon(*points_3d,
                          fill_color=color,
                          fill_opacity=0.7,
                          stroke_color=color,
@@ -307,7 +308,7 @@ def create_3d_polygon_regions(polygons, w1, b1, w2, b2, neuron_idx=0, viz_scale=
         return second_layer_output * viz_scale
     
     polygon_objects = []
-    colors = [RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE]
+    colors = [m.RED, BLUE, GREEN, YELLOW, m.PURPLE, m.ORANGE]
     
     for i, polygon in enumerate(polygons):
         if len(polygon) < 3:
@@ -322,7 +323,7 @@ def create_3d_polygon_regions(polygons, w1, b1, w2, b2, neuron_idx=0, viz_scale=
         
         # Create the 3D polygon
         color = colors[i % len(colors)]
-        poly_3d = Polygon(*points_3d,
+        poly_3d = m.Polygon(*points_3d,
                          fill_color=color,
                          fill_opacity=0.7,
                          stroke_color=color,
@@ -428,7 +429,7 @@ def create_3d_polygon_regions_with_relu(polygons, w1, b1, w2, b2, neuron_idx=0, 
             return result_above, result_on_plane
     
     polygon_objects = []
-    colors = [RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE]
+    colors = [m.RED, BLUE, GREEN, YELLOW, m.PURPLE, m.ORANGE]
     
     color_count=0
     for i, polygon in enumerate(polygons):
@@ -444,7 +445,7 @@ def create_3d_polygon_regions_with_relu(polygons, w1, b1, w2, b2, neuron_idx=0, 
         for poly_points in above_polygons:
             if len(poly_points) >= 3:
                 color = colors[color_count % len(colors)]
-                poly_3d = Polygon(*poly_points,
+                poly_3d = m.Polygon(*poly_points,
                                  fill_color=color,
                                  fill_opacity=0.7,
                                  stroke_color=color,
@@ -456,7 +457,7 @@ def create_3d_polygon_regions_with_relu(polygons, w1, b1, w2, b2, neuron_idx=0, 
         for poly_points in on_plane_polygons:
             if len(poly_points) >= 3:
                 color = colors[color_count % len(colors)]
-                poly_flat = Polygon(*poly_points,
+                poly_flat = m.Polygon(*poly_points,
                                    fill_color=color,
                                    fill_opacity=0.4,  # More transparent for clipped parts
                                    stroke_color=color,
@@ -763,7 +764,7 @@ def get_relu_joint(weight_1, weight_2, bias, extent=1):
                 unique_points.append(p)
         return unique_points
 
-def line_from_joint_points_1(joint_points, stroke_width=3, color=WHITE):
+def line_from_joint_points_1(joint_points, stroke_width=3, color=m.WHITE):
     if joint_points:
         # Create 3D points for the joint line
         joint_3d_points = []
@@ -773,7 +774,7 @@ def line_from_joint_points_1(joint_points, stroke_width=3, color=WHITE):
             joint_3d_points.append([x, y, z])
         
         if len(joint_3d_points) >= 2:
-            joint_line = DashedLine(
+            joint_line = m.DashedLine(
                 start=[joint_points[0][0], joint_points[0][1], 0],
                 end=[joint_points[1][0], joint_points[1][1], 0],
                 color=color,
@@ -1089,12 +1090,12 @@ def create_second_layer_joint_lines(w1, b1, w2, b2, neuron_idx=0, extent=1):
     joint_lines = get_second_layer_joints(w1, b1, w2, b2, neuron_idx, extent)
     
     manim_lines = []
-    colors = [RED, BLUE, GREEN, YELLOW, PURPLE]  # Different colors for different joints
+    colors = [m.RED, BLUE, GREEN, YELLOW, m.PURPLE]  # Different colors for different joints
     
     for i, joint_points in enumerate(joint_lines):
         if len(joint_points) >= 2:
             color = colors[i % len(colors)]
-            joint_line = DashedLine(
+            joint_line = m.DashedLine(
                 start=[joint_points[0][0], joint_points[0][1], 0],
                 end=[joint_points[1][0], joint_points[1][1], 0],
                 color=color,

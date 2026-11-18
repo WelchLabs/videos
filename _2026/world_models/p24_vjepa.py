@@ -1,8 +1,8 @@
 """
 P24 - V-JEPA: 1x3 grid -> zoom to V-JEPA -> labels -> cats out -> action-conditioned layout -> robot clip.
-One continuous take (ManimGL):
+One continuous take (ManimGX):
 
-    manimgl <path to this file> P24VJEPA
+    uv run manimgx render p24_vjepa.py P24VJEPA
 
   beat 1  storyboard -01: SORA | V-JEPA | GENIE grid, small flowchart with the two cat images in the middle column
   beat 2  zoom in on the flowchart (-02 framing); SORA / GENIE / dividers fade, the V-JEPA title settles lower
@@ -19,143 +19,62 @@ The camera never moves: the "zoom" scales the flowchart about the point that map
 
 Timings and toggles are class attributes on P24VJEPA.
 """
-import os
-import re
-from pathlib import Path
 
 import numpy as np
-from manimlib import *
+import manimgx as m
+
+from assets import GRAPHICS
+from welch_storyboard import (
+    FRESH_TAN, PX, STROKE_PER_PX, STORYBOARD_BACKGROUND, TEXT_FONT, load_image, place_px,
+    px_arrow, px_arrowhead, px_line as storyboard_line, px_text, storyboard_point as P, svg_path,
+)
 
 # ----------------------------------------------------------------------------- config
-GRAPHICS = Path(os.environ.get(
-    "WM_GRAPHICS", "/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/world_models/graphics"))
 ROBOT_DIR = GRAPHICS / "v_jepa_ac_1"                     # VJEPA_AC_CLIPS000.jpg ... 123.jpg
 ROBOT_PATTERN = "VJEPA_AC_CLIPS{:03d}.jpg"
 CAT_GLOB = "Screenshot 2026-11-11 at 9.59.17*AM.png"     # (macOS puts a narrow no-break space before "AM")
 
 LINE_COLOR = "#948678"      # strokes, dates, citations
 LABEL_COLOR = "#948979"     # ENCODER / PREDICTOR / Minimize ... (CHILL_BROWN)
-TITLE_COLOR = "#f4ebd9"     # SORA / V-JEPA / GENIE
-BG_FALLBACK = "#031e1e"     # node fill = scene background (read from the camera at runtime when possible)
-FONT = "Open Sans"
-
-# ----------------------------------------------------------------------------- storyboard coordinates
-PX = FRAME_HEIGHT / 1080            # manim units per storyboard pixel
-STROKE_PER_PX = 1 / 2.03            # manim stroke_width that renders 1 storyboard pixel wide (measured at 1080p)
-
-
-def P(x, y):
-    """Storyboard pixel (1920x1080, y down) -> manim point."""
-    return np.array([(x - 960) * PX, (540 - y) * PX, 0.0])
-
-
-def svg_path(d, stroke_px=2.0, color=LINE_COLOR):
-    """Tiny SVG path reader (M L H V C, absolute or relative) -> VMobject in manim coordinates."""
-    tokens = re.findall(r"[MmLlHhVvCc]|-?(?:\d+\.?\d*|\.\d+)", d)
-    mob = VMobject()
-    pos, cmd, i = np.zeros(2), None, 0
-
-    def nums(n):
-        nonlocal i
-        vals = [float(t) for t in tokens[i:i + n]]
-        i += n
-        return vals
-
-    while i < len(tokens):
-        if re.match(r"[A-Za-z]", tokens[i]):
-            cmd = tokens[i]; i += 1
-        rel = cmd.islower()
-        c = cmd.upper()
-        if c == "M":
-            x, y = nums(2); pos = pos + [x, y] if rel else np.array([x, y])
-            mob.start_new_path(P(*pos)); cmd = "l" if rel else "L"
-        elif c == "L":
-            x, y = nums(2); pos = pos + [x, y] if rel else np.array([x, y]); mob.add_line_to(P(*pos))
-        elif c == "H":
-            x, = nums(1); pos = np.array([pos[0] + x if rel else x, pos[1]]); mob.add_line_to(P(*pos))
-        elif c == "V":
-            y, = nums(1); pos = np.array([pos[0], pos[1] + y if rel else y]); mob.add_line_to(P(*pos))
-        elif c == "C":
-            v = np.array(nums(6)).reshape(3, 2)
-            pts = v + pos if rel else v
-            mob.add_cubic_bezier_curve_to(P(*pts[0]), P(*pts[1]), P(*pts[2])); pos = pts[2]
-    mob.set_stroke(color, stroke_px * STROKE_PER_PX).set_fill(opacity=0)
-    return mob
+TITLE_COLOR = FRESH_TAN     # SORA / V-JEPA / GENIE
 
 
 def px_line(a, b, stroke_px, color=LINE_COLOR, opacity=1.0):
-    return Line(P(*a), P(*b)).set_stroke(color, stroke_px * STROKE_PER_PX, opacity)
+    return storyboard_line(a, b, stroke_px, color, opacity)
 
 
-def arrow(tail, tip, stroke_px, head=(16.69, 6.82, 12.73), color=LINE_COLOR):
-    """Storyboard-style arrow: shaft + notched head. head = (length, half width, notch depth) in pixels."""
-    tail, tip = np.array(tail, float), np.array(tip, float)
-    u = (tip - tail) / np.linalg.norm(tip - tail)
-    n = np.array([-u[1], u[0]])
-    length, half, notch = head
-    shaft = px_line(tail, tip - notch * u, stroke_px, color)
-    barb = Polygon(P(*tip), P(*(tip - length * u + half * n)), P(*(tip - notch * u)), P(*(tip - length * u - half * n)))
-    barb.set_fill(color, 1).set_stroke(color, 0)
-    return VGroup(shaft, barb)
+def arrow(tail, tip, stroke_px, head, color=LINE_COLOR):
+    return px_arrow(tail, tip, stroke_px, head, color)
 
 
 def elbow_arrow(d, tip, stroke_px, head, color=LINE_COLOR):
     """Rounded-corner path that ends in a rightward arrowhead at `tip`."""
-    length, half, notch = head
-    x, y = tip
-    barb = Polygon(P(x, y), P(x - length, y + half), P(x - notch, y), P(x - length, y - half))
-    barb.set_fill(color, 1).set_stroke(color, 0)
-    return VGroup(svg_path(d, stroke_px, color), barb)
+    barb = px_arrowhead(np.asarray(tip), np.array([1.0, 0.0]), head, color)
+    shaft = svg_path(d, P).set_stroke(color, stroke_px * STROKE_PER_PX).set_fill(opacity=0)
+    return m.VGroup(shaft, barb)
 
 
 # --- text -------------------------------------------------------------------------------------------------
-_CAP_REF = {}
-
-
 def svg_text(string, size_px, bold=True, color=LINE_COLOR):
-    """Text set so its cap height matches Open Sans at `size_px` in the storyboard (cap height = 0.714 em)."""
-    weight = BOLD if bold else NORMAL
-    if weight not in _CAP_REF:
-        _CAP_REF[weight] = Text("H", font=FONT, weight=weight, font_size=48).get_height()
-    t = Text(string, font=FONT, weight=weight, font_size=48, alignment="LEFT")
-    t.scale(0.714 * size_px * PX / _CAP_REF[weight])
-    return t.set_color(color)
+    return px_text(string, size_px, 960, 540, bold=bold, color=color)
 
 
 def at_baseline(mob, x, y, descent_px=0.0):
     """Put a text's left edge at x and its baseline at y (pixels). descent_px: how far its glyphs dip below it."""
-    return mob.move_to(P(x, y + descent_px), aligned_edge=DL)
+    return mob.move_to(P(x, y + descent_px), aligned_edge=m.DL)
 
 
 def text_lines(lines, size_px, x, y, leading_px, bold=True, color=LINE_COLOR, top_aligned=False):
     """Left-aligned lines with exact storyboard leading; (x, y) is the first baseline."""
-    g = VGroup()
+    g = m.VGroup()
     for k, s in enumerate(lines):
         t = svg_text(s, size_px, bold, color)
         if top_aligned:   # mixed-case small print: hang each line from its ascender line instead (0.76 em above)
-            t.move_to(P(x, y + k * leading_px - 0.76 * size_px), aligned_edge=UL)
+            t.move_to(P(x, y + k * leading_px - 0.76 * size_px), aligned_edge=m.UL)
         else:
             at_baseline(t, x, y + k * leading_px)
         g.add(t)
     return g
-
-
-# --- images -----------------------------------------------------------------------------------------------
-def load_image(path):
-    """ImageMobject that doesn't keep its file handle open (matters with a hundred-odd frames)."""
-    im = ImageMobject(str(path))
-    try:
-        im.image.load()
-    except Exception:
-        pass
-    return im
-
-
-def place_px(im, x, y, h):
-    """Top-left corner at pixel (x, y), height h pixels. Idempotent, so frames can be re-placed freely."""
-    im.set_height(h * PX)
-    im.move_to(P(x, y), aligned_edge=UL)
-    return im
 
 
 # ----------------------------------------------------------------------------- the network template
@@ -174,7 +93,7 @@ NET_NODES = [(674.34, 511.40), (725.46, 511.40), (750.95, 442.93), (725.46, 376.
              (672.70, 376.83), (644.67, 442.93), (698.59, 442.93), (777.52, 510.95)]
 
 
-def network(center, scale=1.0, quarter_turn=False, bg=BG_FALLBACK):
+def network(center, scale=1.0, quarter_turn=False, bg=STORYBOARD_BACKGROUND):
     """The 2-3-4 network glyph. `center` = pixel position of its middle node. quarter_turn: the predictor's orientation."""
     center = np.array(center, float)
 
@@ -184,21 +103,21 @@ def network(center, scale=1.0, quarter_turn=False, bg=BG_FALLBACK):
             d = np.array([-d[1], d[0]])
         return center + d
 
-    lines = VGroup(*[px_line(place(x1, y1), place(x2, y2), NET_LINE_PX * scale, opacity=op)
+    lines = m.VGroup(*[px_line(place(x1, y1), place(x2, y2), NET_LINE_PX * scale, opacity=op)
                      for x1, y1, x2, y2, op in NET_LINES])
-    nodes = VGroup()
+    nodes = m.VGroup()
     for x, y in NET_NODES:
-        c = Circle(radius=NET_R * scale * PX).move_to(P(*place(x, y)))
+        c = m.Circle(radius=NET_R * scale * PX).move_to(P(*place(x, y)))
         c.set_stroke(LINE_COLOR, NET_NODE_PX * scale * STROKE_PER_PX).set_fill(bg, 1)
         nodes.add(c)
-    return VGroup(lines, nodes)
+    return m.VGroup(lines, nodes)
 
 
-def minus_node(center, bg=BG_FALLBACK):
+def minus_node(center, bg=STORYBOARD_BACKGROUND):
     cx, cy = center
-    c = Circle(radius=26.9 * PX).move_to(P(cx, cy)).set_stroke(LINE_COLOR, 5.69 * STROKE_PER_PX).set_fill(bg, 1)
+    c = m.Circle(radius=26.9 * PX).move_to(P(cx, cy)).set_stroke(LINE_COLOR, 5.69 * STROKE_PER_PX).set_fill(bg, 1)
     bar = px_line((cx - 13.05, cy + 0.88), (cx + 13.05, cy + 0.88), 5.93)
-    return VGroup(c, bar)
+    return m.VGroup(c, bar)
 
 
 # ----------------------------------------------------------------------------- layouts
@@ -259,14 +178,8 @@ def labels_action():
 
 
 def zoomed(mob, factor, about):
-    """Copy of a VMobject scaled about a point, stroke widths scaled with it (what a camera zoom would show)."""
-    m = mob.copy()
-    parts = m.family_members_with_points()
-    widths = [float(np.max(p.get_stroke_width())) for p in parts]
-    m.scale(factor, about_point=about)
-    for p, w in zip(parts, widths):
-        p.set_stroke(width=w * factor)
-    return m
+    """Scale a copy and its strokes together, like a camera zoom."""
+    return mob.copy().scale(factor, scale_stroke=True, about_point=about)
 
 
 # -01 -> -02 is a pure zoom: middle node of the left encoder goes (819.28, 522.41) r 13.16 -> (698.59, 442.93) r 20.39
@@ -275,9 +188,9 @@ ZOOM_FIXED = (np.array([698.59, 442.93]) - ZOOM * np.array([819.28, 522.41])) / 
 
 
 # ----------------------------------------------------------------------------- the scene
-class P24VJEPA(InteractiveScene):
+class P24VJEPA(m.Scene):
     # --- toggles / timings (seconds) -----------------------------------------------------------------------
-    show_text = True          # titles, labels, citations as manim Text (Open Sans). False: add them in post
+    show_text = True          # titles, labels, citations in Open Sans. False: add them in post
     grid_hold = 2.0           # on the 1x3 grid before the zoom
     zoom_time = 3.0
     label_time = 2.0
@@ -291,11 +204,9 @@ class P24VJEPA(InteractiveScene):
     frame_dt = 0.1            # per robot frame
     end_hold = 5.0
 
-    def construct(self):
-        try:
-            self.bg = rgb_to_hex(self.camera.background_rgba[:3])
-        except Exception:
-            self.bg = BG_FALLBACK
+    def construct(self) -> None:
+        self.camera.background_color = STORYBOARD_BACKGROUND
+        self.bg = self.camera.background_color
         self.build()
         self.beat_grid()
         self.beat_zoom()
@@ -318,17 +229,17 @@ class P24VJEPA(InteractiveScene):
             cat_l, cat_r = load_image(cat_files[0]), load_image(cat_files[0])
         else:   # keep the scene runnable without the screenshot
             print(f"[P24] cat image not found: {GRAPHICS / CAT_GLOB}")
-            cat_l, cat_r = [Rectangle(3526, 1972).set_fill(LABEL_COLOR, 0.35).set_stroke(LINE_COLOR, 1) for _ in range(2)]
+            cat_l, cat_r = [m.Rectangle(width=3526 / 1972, height=1.0).set_fill(LABEL_COLOR, 0.35).set_stroke(LINE_COLOR, 1) for _ in range(2)]
         CAT_H = 225.0     # pixels at the -02 framing, measured off the exported PNG (the placed link is ~4% over its .11 scale)
         place_px(cat_l, 501.63, 622.0, CAT_H)
         place_px(cat_r, 966.84, 622.0, CAT_H)
-        mask = Rectangle(228.88 * PX, 190.12 * PX).set_fill(self.bg, 1).set_stroke(self.bg, 0)
-        mask.move_to(P(986.64, 639.18), aligned_edge=UL)
-        self.cats = Group(cat_l, cat_r, mask)
+        mask = m.Rectangle(width=228.88 * PX, height=190.12 * PX).set_fill(self.bg, 1).set_stroke(self.bg, 0)
+        mask.move_to(P(986.64, 639.18), aligned_edge=m.UL)
+        self.cats = m.Group(cat_l, cat_r, mask)
         self.cats.scale(1 / ZOOM, about_point=fixed)
 
         # grid furniture (-01)
-        self.dividers = VGroup(px_line((629.78, 113.05), (629.78, 946.71), 1.0),
+        self.dividers = m.VGroup(px_line((629.78, 113.05), (629.78, 946.71), 1.0),
                                px_line((1310.32, 113.05), (1310.32, 946.71), 1.0))
         self.t = {}
         if self.show_text:
@@ -338,7 +249,7 @@ class P24VJEPA(InteractiveScene):
             t["sora_date"] = at_baseline(svg_text("February 15, 2024", 22, bold=False), 216.86, 986.78, 5.3)
             t["genie_date"] = at_baseline(svg_text("February 23, 2024", 22, bold=False), 1512.46, 981.62, 5.3)
             # "J" hangs ~7 px below the baseline in Open Sans Bold
-            t["title"] = VGroup(at_baseline(svg_text("V-JEPA", 38, color=TITLE_COLOR), 899.37, 948.46, 7.0),
+            t["title"] = m.VGroup(at_baseline(svg_text("V-JEPA", 38, color=TITLE_COLOR), 899.37, 948.46, 7.0),
                                 at_baseline(svg_text("February 15, 2024", 22, bold=False), 861.92, 987.56, 5.3))
             self.labels = labels_closeup()
             self.labels_act = labels_action()
@@ -357,13 +268,13 @@ class P24VJEPA(InteractiveScene):
         self.axis_h = arrow((817.66, 408.80), (1100.14, 408.80), 2.13, HEAD_AX)
         self.act_label = None
         if self.show_text:
-            a = Tex(r"\textbf{\textit{Actuators}}").set_color(LABEL_COLOR)
-            a.set_width(152 * PX).rotate(PI / 2)
-            a.move_to(P(801.5, 478.8), aligned_edge=DR)     # reads bottom-to-top, just left of the vertical axis
+            a = m.Text("Actuators", font=TEXT_FONT, weight=m.BOLD, slant=m.ITALIC, color=LABEL_COLOR)
+            a.scale_to_fit_width(152 * PX).rotate(m.PI / 2)
+            a.move_to(P(801.5, 478.8), aligned_edge=m.DR)     # reads bottom-to-top, just left of the vertical axis
             self.act_label = a
 
     def flow_group(self):
-        return VGroup(*self.flow.values())
+        return m.VGroup(*self.flow.values())
 
     # ------------------------------------------------------------------------------------------- beat 1
     def beat_grid(self):
@@ -376,12 +287,12 @@ class P24VJEPA(InteractiveScene):
     # ------------------------------------------------------------------------------------------- beat 2
     def beat_zoom(self):
         fixed = P(*ZOOM_FIXED)
-        anims = [Transform(self.flow[k], self.big[k]) for k in self.flow]
+        anims = [m.Transform(self.flow[k], self.big[k]) for k in self.flow]
         anims.append(self.cats.animate.scale(ZOOM, about_point=fixed))
-        anims.append(FadeOut(self.dividers))
-        anims += [FadeOut(self.t[k]) for k in ("sora", "genie", "sora_date", "genie_date") if k in self.t]
+        anims.append(m.FadeOut(self.dividers))
+        anims += [m.FadeOut(self.t[k]) for k in ("sora", "genie", "sora_date", "genie_date") if k in self.t]
         if "title" in self.t:   # -01 (899.37, 948.46) -> -02 (886.74, 975.77)
-            anims.append(self.t["title"].animate.shift((886.74 - 899.37) * PX * RIGHT + (975.77 - 948.46) * PX * DOWN))
+            anims.append(self.t["title"].animate.shift((886.74 - 899.37) * PX * m.RIGHT + (975.77 - 948.46) * PX * m.DOWN))
         self.play(*anims, run_time=self.zoom_time)
         self.wait()
 
@@ -389,26 +300,26 @@ class P24VJEPA(InteractiveScene):
     def beat_labels(self):
         if not self.show_text:
             return
-        self.play(*[Write(m) for m in self.labels.values()], FadeIn(self.t["cite_1"]), run_time=self.label_time)
+        self.play(*[m.Write(label) for label in self.labels.values()], m.FadeIn(self.t["cite_1"]), run_time=self.label_time)
         self.wait()
 
     # ------------------------------------------------------------------------------------------- beat 4
     def beat_cats_out(self):
-        self.play(FadeOut(self.cats), run_time=self.cat_fade_time)
+        self.play(m.FadeOut(self.cats), run_time=self.cat_fade_time)
         self.wait(self.premiere_hold)       # <- storyboard -03: clean plate for the Premiere section
 
     # ------------------------------------------------------------------------------------------- beat 5
     def beat_rearrange(self):
-        anims = [Transform(self.flow[k], self.act[k]) for k in self.flow]
+        anims = [m.Transform(self.flow[k], self.act[k]) for k in self.flow]
         if self.show_text:
-            anims += [Transform(self.labels[k], self.labels_act[k]) for k in self.labels]
-            anims += [FadeOut(self.t["cite_1"]), FadeIn(self.t["cite_2"])]
+            anims += [m.Transform(self.labels[k], self.labels_act[k]) for k in self.labels]
+            anims += [m.FadeOut(self.t["cite_1"]), m.FadeIn(self.t["cite_2"])]
         self.play(*anims, run_time=self.rearrange_time)
 
-        draw = [ShowCreation(self.axis_v[0]), ShowCreation(self.axis_h[0]), ShowCreation(self.act_arrow[0]),
-                FadeIn(self.axis_v[1]), FadeIn(self.axis_h[1]), FadeIn(self.act_arrow[1])]
+        draw = [m.Create(self.axis_v[0]), m.Create(self.axis_h[0]), m.Create(self.act_arrow[0]),
+                m.FadeIn(self.axis_v[1]), m.FadeIn(self.axis_h[1]), m.FadeIn(self.act_arrow[1])]
         if self.act_label is not None:
-            draw.append(Write(self.act_label))
+            draw.append(m.Write(self.act_label))
         self.play(*draw, run_time=self.axes_time)
         self.wait(self.axes_hold)           # <- actuator time series go on top of these axes in Premiere
 
@@ -439,9 +350,9 @@ class P24VJEPA(InteractiveScene):
             self.add(imgs[k])
             self.wait(self.stack_dt)
         if "video" in self.t:
-            self.play(FadeIn(imgs[3]), Write(self.t["video"]), Write(self.t["next_frame"]), run_time=1.0)
+            self.play(m.FadeIn(imgs[3]), m.Write(self.t["video"]), m.Write(self.t["next_frame"]), run_time=1.0)
         else:
-            self.play(FadeIn(imgs[3]), run_time=1.0)
+            self.play(m.FadeIn(imgs[3]), run_time=1.0)
         self.wait()
 
         # each frame plays on the right, then one step later becomes the front of the stack on the left

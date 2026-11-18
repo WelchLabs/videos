@@ -1,4 +1,7 @@
-from manimlib import *
+import manimgx as gx
+from welch_scene import WelchScene, image_at_height
+from welch_text import math_tex
+
 import numpy as np
 import pandas as pd
 import ast
@@ -28,54 +31,54 @@ def line_intersection(p1, p2, p3, p4):
     except np.linalg.LinAlgError:
         return None
 
-class P24(InteractiveScene):
+class P24(WelchScene):
     def construct(self):
         image_path='/Users/stephen/manim/videos/_2025/sora/'
-        svg = SVGMobject(image_path+"p17_25_10.svg")[1:].scale(4)
+        svg = gx.SVGMobject(image_path+"p17_25_10.svg")[1:].scale(4)
         # svg_arrow_fix = SVGMobject(image_path+"p24_background_2.svg")[1:].scale(4)
         
 
-        top_left_arrow = VGroup(svg[0], svg[1])
-        top_right_arrow = VGroup(svg[2], svg[3])
-        bottom_left_arrow = VGroup(svg[4], svg[5])
-        bottom_right_arrow = VGroup(svg[6], svg[7])
+        top_left_arrow = gx.VGroup(svg[0], svg[1])
+        top_right_arrow = gx.VGroup(svg[2], svg[3])
+        bottom_left_arrow = gx.VGroup(svg[4], svg[5])
+        bottom_right_arrow = gx.VGroup(svg[6], svg[7])
 
-        arrows = VGroup(
+        arrows = gx.VGroup(
             top_left_arrow,
             top_right_arrow,
             bottom_left_arrow,
             bottom_right_arrow
         )
 
-        top_curve_arrow = VGroup(svg[13], svg[14])
-        bottom_curve_arrow = VGroup(svg[9], svg[10])
+        top_curve_arrow = gx.VGroup(svg[13], svg[14])
+        bottom_curve_arrow = gx.VGroup(svg[9], svg[10])
 
         # self.wait()
         # top_curve_arrow=svg_arrow_fix[4]
         # self.add(top_curve_arrow)
 
 
-        curve_arrows = VGroup(
+        curve_arrows = gx.VGroup(
             top_curve_arrow,
             bottom_curve_arrow
         )
 
-        top_matches = VGroup(*svg[32:42])
+        top_matches = gx.VGroup(*svg[32:42])
         top_matches_line = svg[31]
         top_matches.move_to([top_matches_line.get_x(), top_matches.get_y(), 0])
-        top_matches_group = VGroup(top_matches, top_matches_line)
+        top_matches_group = gx.VGroup(top_matches, top_matches_line)
         top_matches_group.move_to([0, top_matches_group.get_y(), 0])
 
-        cosine_similarity = VGroup(*svg[15:31]).scale(0.9)
+        cosine_similarity = gx.VGroup(*svg[15:31]).scale(0.9)
 
         border_box = svg[11]
 
-        VGroup(arrows, curve_arrows, cosine_similarity, border_box).shift(RIGHT)
+        gx.VGroup(arrows, curve_arrows, cosine_similarity, border_box).shift(gx.RIGHT)
 
-        cat = ImageMobject(image_path+"n02123045_1955.jpg").scale(0.5).next_to(top_left_arrow, LEFT, buff=0.25).shift(LEFT * 0.5)
+        cat = image_at_height(image_path+"n02123045_1955.jpg").scale(0.5).next_to(top_left_arrow, gx.LEFT, buff=0.25).shift(gx.LEFT * 0.5)
 
         buff = 0.25
-        cat_list = Tex(r"[0.21,\ -0.12,\ \ldots\ 0.71]").set_width(((top_right_arrow.get_right()[0] - top_curve_arrow.get_left()[0]) * -1) - buff * 2).set_color(CHILL_GREEN)
+        cat_list = math_tex(r"[0.21,\ -0.12,\ \ldots\ 0.71]").scale_to_fit_width(((top_right_arrow.get_right()[0] - top_curve_arrow.get_left()[0]) * -1) - buff * 2).set_color(CHILL_GREEN)
         midpoint_x = (top_right_arrow.get_right()[0] + top_curve_arrow.get_left()[0]) / 2
         cat_list.move_to([midpoint_x, top_right_arrow.get_y(), 0])
 
@@ -86,26 +89,26 @@ class P24(InteractiveScene):
         np.random.seed(2)
         np.random.shuffle(cosine_similarity)
 
-        left_align = Line(top_matches_line.get_center(), top_matches_line.get_center() + UP * 50000).shift(DOWN * 2).shift(LEFT * 0.9)
-        right_align = Line(top_matches_line.get_center(), top_matches_line.get_center() + UP * 50000).shift(DOWN * 2).shift(RIGHT * 0.9)
+        left_align = gx.Line(top_matches_line.get_center(), top_matches_line.get_center() + gx.UP * 50000).shift(gx.DOWN * 2).shift(gx.LEFT * 0.9)
+        right_align = gx.Line(top_matches_line.get_center(), top_matches_line.get_center() + gx.UP * 50000).shift(gx.DOWN * 2).shift(gx.RIGHT * 0.9)
 
         gap = 0.48
         text_points = []
         similarity_points = []
 
         for i in range(300):
-            text_point = Point().move_to(line_intersection(top_matches_line.get_left(), top_matches_line.get_right(), left_align.get_top(), left_align.get_bottom())).shift(DOWN * (gap * (i + 1)))
-            similarity_point = Point().move_to(line_intersection(top_matches_line.get_left(), top_matches_line.get_right(), right_align.get_top(), right_align.get_bottom())).shift(DOWN * (gap * (i + 1)))
+            text_point = gx.Point().move_to(line_intersection(top_matches_line.get_left(), top_matches_line.get_right(), left_align.get_top(), left_align.get_bottom())).shift(gx.DOWN * (gap * (i + 1)))
+            similarity_point = gx.Point().move_to(line_intersection(top_matches_line.get_left(), top_matches_line.get_right(), right_align.get_top(), right_align.get_bottom())).shift(gx.DOWN * (gap * (i + 1)))
             text_points.append(text_point)
             similarity_points.append(similarity_point)
 
-        labels = VGroup(
-            Text("1.", font='Myriad Pro', font_size=36).set_color(CHILL_BROWN).move_to([top_matches_line.get_x(), text_points[0].get_y(), 0]).scale(0.8),
-            Text("2.", font='Myriad Pro', font_size=36).set_color(CHILL_BROWN).move_to([top_matches_line.get_x(), text_points[1].get_y(), 0]).scale(0.8),
-            Text("3.", font='Myriad Pro', font_size=36).set_color(CHILL_BROWN).move_to([top_matches_line.get_x(), text_points[2].get_y(), 0]).scale(0.8)
-        ).shift(LEFT * 2)
+        labels = gx.VGroup(
+            gx.Text("1.", font='Myriad Pro', font_size=36).set_color(CHILL_BROWN).move_to([top_matches_line.get_x(), text_points[0].get_y(), 0]).scale(0.8),
+            gx.Text("2.", font='Myriad Pro', font_size=36).set_color(CHILL_BROWN).move_to([top_matches_line.get_x(), text_points[1].get_y(), 0]).scale(0.8),
+            gx.Text("3.", font='Myriad Pro', font_size=36).set_color(CHILL_BROWN).move_to([top_matches_line.get_x(), text_points[2].get_y(), 0]).scale(0.8)
+        ).shift(gx.LEFT * 2)
 
-        self.frame.reorient(0, 0, 0, (-0.13, -0.06, 0.0), 8.30)
+        self.set_view(0, 0, 0, (-0.13, -0.06, 0.0), 8.30)
         self.add(svg, cat, cat_list) #, labels)
 
 
@@ -125,14 +128,14 @@ class P24(InteractiveScene):
             main_word = str(text).strip()
             full_sentence = prefix + main_word + '"'
 
-            full_text = Text(full_sentence, font='Myriad Pro', font_size=40).set_color(CHILL_BROWN).set_width(3)
-            main_word_mobject = Text(main_word, font='Myriad Pro').set_color(CHILL_BROWN).scale(0.8)
+            full_text = gx.Text(full_sentence, font='Myriad Pro', font_size=40).set_color(CHILL_BROWN).scale_to_fit_width(3)
+            main_word_mobject = gx.Text(main_word, font='Myriad Pro').set_color(CHILL_BROWN).scale(0.8)
             full_text.move_to([cat.get_x(), bottom_left_arrow.get_y(), 0])
-            main_word_mobject.move_to([full_text.get_right()[0], bottom_left_arrow.get_y(), 0], aligned_edge=RIGHT)
+            main_word_mobject.move_to([full_text.get_right()[0], bottom_left_arrow.get_y(), 0], aligned_edge=gx.RIGHT)
 
-            similarity_mobject = Tex(f"{similarity:.3f}", font_size=38).set_color(FRESH_TAN).move_to(border_box.get_center()).set_width(0.88)
+            similarity_mobject = math_tex(f"{similarity:.3f}", font_size=38).set_color(FRESH_TAN).move_to(border_box.get_center()).scale_to_fit_width(0.88)
             rand_vals = [round(random.uniform(-1, 1), 2) for _ in range(3)]
-            embedding_mobject = Tex(rf"[{rand_vals[0]},\ {rand_vals[1]},\ \ldots\ {rand_vals[2]}]", font_size=32).set_color(CHILL_PURPLE).move_to([cat_list.get_x(), bottom_right_arrow.get_y(), 0])
+            embedding_mobject = math_tex(rf"[{rand_vals[0]},\ {rand_vals[1]},\ \ldots\ {rand_vals[2]}]", font_size=32).set_color(CHILL_PURPLE).move_to([cat_list.get_x(), bottom_right_arrow.get_y(), 0])
 
             # Remove the previous similarity mobject if it exists
             if current_similarity_mobject is not None:
@@ -172,8 +175,8 @@ class P24(InteractiveScene):
             # Move top 3 to their new spots
             if current_will_stay_in_top3:
                 self.play(
-                    *[MoveToTarget(w) for w, s, _ in ordered[:3]],  # Unpack properly
-                    *[MoveToTarget(s) for w, s, _ in ordered[:3]]
+                    *[gx.MoveToTarget(w) for w, s, _ in ordered[:3]],  # Unpack properly
+                    *[gx.MoveToTarget(s) for w, s, _ in ordered[:3]]
                 )
                 
             # Remove temporary elements
@@ -191,9 +194,7 @@ class P24(InteractiveScene):
 
 
         self.wait(5)
-        self.embed()
-
-
+        # Scene authoring stops here in the interactive editor.
 
         # for pair in cosine_similarity:
         #     text, similarity, embedding = pair
@@ -203,14 +204,14 @@ class P24(InteractiveScene):
         #     main_word = str(text).strip()
         #     full_sentence = prefix + main_word + '"'
 
-        #     full_text = Text(full_sentence, font='Myriad Pro').set_color(CHILL_BROWN).set_width(3)
+        #     full_text = Text(full_sentence, font='Myriad Pro').set_color(CHILL_BROWN).scale_to_fit_width(3)
         #     main_word_mobject = Text(main_word, font='Myriad Pro').set_color(CHILL_BROWN).scale(0.8)
         #     full_text.move_to([cat.get_x(), bottom_left_arrow.get_y(), 0])
         #     main_word_mobject.move_to([cat.get_x(), bottom_left_arrow.get_y(), 0])
 
-        #     similarity_mobject = Tex(str(round(similarity, 3))).set_color(FRESH_TAN).move_to(border_box.get_center()).set_width(1)
+        #     similarity_mobject = Tex(str(round(similarity, 3))).set_color(FRESH_TAN).move_to(border_box.get_center()).scale_to_fit_width(1)
         #     rand_vals = [round(random.uniform(-1, 1), 2) for _ in range(3)]
-        #     embedding_mobject = Tex(rf"[{rand_vals[0]},\ {rand_vals[1]},\ \ldots\ {rand_vals[2]}]").set_color(CHILL_PURPLE).move_to([cat_list.get_x(), bottom_right_arrow.get_y(), 0]).set_width(cat_list.get_width())
+        #     embedding_mobject = Tex(rf"[{rand_vals[0]},\ {rand_vals[1]},\ \ldots\ {rand_vals[2]}]").set_color(CHILL_PURPLE).move_to([cat_list.get_x(), bottom_right_arrow.get_y(), 0]).scale_to_fit_width(cat_list.width)
             
         #     if remove:
         #         self.remove(last_pair)

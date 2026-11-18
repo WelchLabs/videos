@@ -1,5 +1,10 @@
-from manimlib import *
-from MF_Tools import *
+import manimgx as gx
+import numpy as np
+from subliminal_assets import scene_asset
+from welch_geometry import diagram_arrow
+from welch_scene import WelchScene, image_at_height
+from welch_text import markup_text, math_tex
+
 
 CHILL_BROWN = "#958a7a"
 YELLOW = "#ffd35a"
@@ -11,26 +16,6 @@ CHILL_BLUE = "#3d5c6f"
 FRESH_TAN = "#dfd0b9"
 COOL_GREEN = "#00a14b"
 CYAN = "#00FFFF"
-
-asset_dir_1='/Users/stephen/Stephencwelch Dropbox/welch_labs/subliminal_learning/graphics/to_manim'
-full_path_to_working_dir='/Users/stephen/manim/videos/_2025/subliminal_learning'
-
-def copy_frame_positioning_precise(frame):
-    center = frame.get_center()
-    height = frame.get_height()
-    angles = frame.get_euler_angles()
-
-    call = f"reorient("
-    theta, phi, gamma = (angles / DEG)
-    call += f"{theta}, {phi}, {gamma}"
-    if any(center != 0):
-        call += f", {tuple(center)}"
-    if height != FRAME_HEIGHT:
-        call += ", {:.2f}".format(height)
-    call += ")"
-    print(call)
-    pyperclip.copy(call)
-
 
 def create_right_angle_symbol(vertex, side1_end, side2_end, size=0.15):
     """
@@ -52,24 +37,24 @@ def create_right_angle_symbol(vertex, side1_end, side2_end, size=0.15):
     corner3 = vertex + size * unit_vec2
     
     # Create lines for the right angle symbol
-    line1 = Line(corner1, corner2, stroke_width=2, color=CYAN)
-    line2 = Line(corner2, corner3, stroke_width=2, color=CYAN)
+    line1 = gx.Line(corner1, corner2, stroke_width=2, color=CYAN)
+    line2 = gx.Line(corner2, corner3, stroke_width=2, color=CYAN)
     
-    return VGroup(line1, line2)
+    return gx.VGroup(line1, line2)
 
-class P27_47c(Scene):
+class P27_47c(WelchScene):
     def construct(self):
         # p27_to_manim_1 = SVGMobject("p27_to_manim-01.svg")[1:].scale(4)
-        p27_to_manim_2 = SVGMobject(asset_dir_1+"/p27_to_manim-02.svg")[1:].scale(4)
-        p27_to_manim_3 = SVGMobject(asset_dir_1+"/p27_to_manim-03.svg")[1:].scale(4)
+        p27_to_manim_2 = gx.SVGMobject(scene_asset('p27_to_manim-02.svg'))[1:].scale(4)
+        p27_to_manim_3 = gx.SVGMobject(scene_asset('p27_to_manim-03.svg'))[1:].scale(4)
         # p27_to_manim_4 = SVGMobject("p27_to_manim-04.svg")[1:].scale(4)
         # p27_to_manim_5 = SVGMobject("p27_to_manim-05.svg")[1:].scale(4)
-        p27_to_manim_6 = SVGMobject(asset_dir_1+"/p27_to_manim-06.svg")[1:].scale(4)
+        p27_to_manim_6 = gx.SVGMobject(scene_asset('p27_to_manim-06.svg'))[1:].scale(4)
         # p27_to_manim_7 = SVGMobject("p27_to_manim-07.svg")[1:].scale(4)
-        p28_to_manim_4 = SVGMobject(asset_dir_1+"/p28_to_manim-04.svg")[1:].scale(4)
-        p29_to_32_to_manim_1 = SVGMobject(asset_dir_1+"/p29_to_32_to_manim-01.svg")[1:].scale(4)
+        p28_to_manim_4 = gx.SVGMobject(scene_asset('p28_to_manim-04.svg'))[1:].scale(4)
+        p29_to_32_to_manim_1 = gx.SVGMobject(scene_asset('p29_to_32_to_manim-01.svg'))[1:].scale(4)
 
-        mnist_network = ImageMobject(full_path_to_working_dir+"/mnist_network.png")
+        mnist_network = image_at_height(scene_asset('mnist_network.png'))
 
         n2_1 = p27_to_manim_2.submobjects[10]
         n3_2 = p27_to_manim_2.submobjects[9]
@@ -84,54 +69,54 @@ class P27_47c(Scene):
         n2_1_graph = p27_to_manim_2.submobjects[16]
         n2_2_graph = p27_to_manim_2.submobjects[21]
 
-        n2_1_text = VGroup(
+        n2_1_text = gx.VGroup(
             p27_to_manim_2.submobjects[17],
             p27_to_manim_2.submobjects[18],
             p27_to_manim_2.submobjects[19],
             p27_to_manim_2.submobjects[20],
         )
-        n2_2_text = VGroup(
+        n2_2_text = gx.VGroup(
             p27_to_manim_2.submobjects[22],
             p27_to_manim_2.submobjects[23],
             p27_to_manim_2.submobjects[24],
             p27_to_manim_2.submobjects[25],
         )
 
-        left_dimension = VGroup(
+        left_dimension = gx.VGroup(
             p27_to_manim_3[0], p27_to_manim_3[1], p27_to_manim_3[2]
-        ).next_to(VGroup(n1_1, n1_2), LEFT)
-        top_dimension = VGroup(
+        ).next_to(gx.VGroup(n1_1, n1_2), gx.LEFT)
+        top_dimension = gx.VGroup(
             p27_to_manim_3[3], p27_to_manim_3[4], p27_to_manim_3[5]
-        ).next_to(VGroup(n2_1, n3_1), UP)
+        ).next_to(gx.VGroup(n2_1, n3_1), gx.UP)
 
-        x1 = Tex(r"x_1").set_color(FRESH_TAN).move_to(n1_1.get_center())
-        x2 = Tex(r"x_2").set_color(FRESH_TAN).move_to(n1_2.get_center())
+        x1 = math_tex(r"x_1").set_color(FRESH_TAN).move_to(n1_1.get_center())
+        x2 = math_tex(r"x_2").set_color(FRESH_TAN).move_to(n1_2.get_center())
 
         model_parameters = (
-            Tex(
+            math_tex(
                 r"\theta = [\theta_1, \theta_2, \theta_3, \theta_4, \theta_5, \theta_6, \theta_7, \theta_8]"
             )
             .set_color(FRESH_TAN)
             .scale(0.75)
-            .next_to(n2_2, DOWN, buff=0.4)
+            .next_to(n2_2, gx.DOWN, buff=0.4)
         )
 
         model_parameters_text = (
-            Text("Model Parameters*", font="Myriad Pro", font_size=24, weight=BOLD)
-            .next_to(model_parameters, DOWN)
+            gx.Text("Model Parameters*", font="Myriad Pro", font_size=24, weight=gx.BOLD)
+            .next_to(model_parameters, gx.DOWN)
             .set_color(CHILL_BROWN)
         )
 
         def edge_point(c1, c2):
             c1_center = c1.get_center()
             c2_center = c2.get_center()
-            direction = normalize(c2_center - c1_center)
+            direction = gx.normalize(c2_center - c1_center)
 
             # ManimGL compatible approach - use get_corner instead of get_critical_point
-            ul = c1.get_corner(UP + LEFT)
-            ur = c1.get_corner(UP + RIGHT)
-            dl = c1.get_corner(DOWN + LEFT)
-            dr = c1.get_corner(DOWN + RIGHT)
+            ul = c1.get_corner(gx.UP + gx.LEFT)
+            ur = c1.get_corner(gx.UP + gx.RIGHT)
+            dl = c1.get_corner(gx.DOWN + gx.LEFT)
+            dr = c1.get_corner(gx.DOWN + gx.RIGHT)
 
             width = np.linalg.norm(ur - ul)
             height = np.linalg.norm(ul - dl)
@@ -148,8 +133,8 @@ class P27_47c(Scene):
 
             half_gap = direction * (break_width / 2)
 
-            line1 = Line(start, split_point - half_gap)
-            line2 = Line(split_point + half_gap, end)
+            line1 = gx.Line(start, split_point - half_gap)
+            line2 = gx.Line(split_point + half_gap, end)
 
             return line1, line2, split_point
 
@@ -158,20 +143,20 @@ class P27_47c(Scene):
             line_part_1.set_color(split_line_1.get_color())
             line_part_2.set_color(split_line_2.get_color())
             self.remove(line)
-            return AnimationGroup(
-                ReplacementTransform(line_part_1, split_line_1),
-                ReplacementTransform(line_part_2, split_line_2),
+            return gx.AnimationGroup(
+                gx.ReplacementTransform(line_part_1, split_line_1),
+                gx.ReplacementTransform(line_part_2, split_line_2),
             )
 
-        connections = VGroup(
-            Line(edge_point(n1_1, n2_1), edge_point(n2_1, n1_1), color=FRESH_TAN),
-            Line(edge_point(n1_1, n2_2), edge_point(n2_2, n1_1), color=FRESH_TAN),
-            Line(edge_point(n1_2, n2_1), edge_point(n2_1, n1_2), color=FRESH_TAN),
-            Line(edge_point(n1_2, n2_2), edge_point(n2_2, n1_2), color=FRESH_TAN),
-            Line(edge_point(n2_1, n3_1), edge_point(n3_1, n2_1), color=FRESH_TAN),
-            Line(edge_point(n2_1, n3_2), edge_point(n3_2, n2_1), color=CHILL_BROWN),
-            Line(edge_point(n2_2, n3_1), edge_point(n3_1, n2_2), color=FRESH_TAN),
-            Line(edge_point(n2_2, n3_2), edge_point(n3_2, n2_2), color=CHILL_BROWN),
+        connections = gx.VGroup(
+            gx.Line(edge_point(n1_1, n2_1), edge_point(n2_1, n1_1), color=FRESH_TAN),
+            gx.Line(edge_point(n1_1, n2_2), edge_point(n2_2, n1_1), color=FRESH_TAN),
+            gx.Line(edge_point(n1_2, n2_1), edge_point(n2_1, n1_2), color=FRESH_TAN),
+            gx.Line(edge_point(n1_2, n2_2), edge_point(n2_2, n1_2), color=FRESH_TAN),
+            gx.Line(edge_point(n2_1, n3_1), edge_point(n3_1, n2_1), color=FRESH_TAN),
+            gx.Line(edge_point(n2_1, n3_2), edge_point(n3_2, n2_1), color=CHILL_BROWN),
+            gx.Line(edge_point(n2_2, n3_1), edge_point(n3_1, n2_2), color=FRESH_TAN),
+            gx.Line(edge_point(n2_2, n3_2), edge_point(n3_2, n2_2), color=CHILL_BROWN),
         )
 
         ln1_1_n2_1 = connections[0]
@@ -183,104 +168,104 @@ class P27_47c(Scene):
         ln2_2_n3_1 = connections[6]
         ln2_2_n3_2 = connections[7]
 
-        theta_1 = Tex(r"\theta_1").scale(0.6).set_color(FRESH_TAN)
-        theta_2 = Tex(r"\theta_2").scale(0.6).set_color(FRESH_TAN)
-        theta_3 = Tex(r"\theta_3").scale(0.6).set_color(FRESH_TAN)
-        theta_4 = Tex(r"\theta_4").scale(0.6).set_color(FRESH_TAN)
-        theta_5 = Tex(r"\theta_5").scale(0.6).set_color(FRESH_TAN)
-        theta_6 = Tex(r"\theta_6").scale(0.6).set_color(FRESH_TAN)
-        theta_7 = Tex(r"\theta_7").scale(0.6).set_color(CHILL_BROWN)
-        theta_8 = Tex(r"\theta_8").scale(0.6).set_color(CHILL_BROWN)
+        theta_1 = math_tex(r"\theta_1").scale(0.6).set_color(FRESH_TAN)
+        theta_2 = math_tex(r"\theta_2").scale(0.6).set_color(FRESH_TAN)
+        theta_3 = math_tex(r"\theta_3").scale(0.6).set_color(FRESH_TAN)
+        theta_4 = math_tex(r"\theta_4").scale(0.6).set_color(FRESH_TAN)
+        theta_5 = math_tex(r"\theta_5").scale(0.6).set_color(FRESH_TAN)
+        theta_6 = math_tex(r"\theta_6").scale(0.6).set_color(FRESH_TAN)
+        theta_7 = math_tex(r"\theta_7").scale(0.6).set_color(CHILL_BROWN)
+        theta_8 = math_tex(r"\theta_8").scale(0.6).set_color(CHILL_BROWN)
 
         ln1_1_n2_1_left, ln1_1_n2_1_right, theta_1_position = split_line(
-            ln1_1_n2_1, theta_1.get_width() + 0.2, 0.5
+            ln1_1_n2_1, theta_1.width + 0.2, 0.5
         )
         theta_1.move_to(theta_1_position)
         ln1_1_n2_1_left.set_color(FRESH_TAN)
         ln1_1_n2_1_right.set_color(FRESH_TAN)
 
         ln1_2_n2_1_left, ln1_2_n2_1_right, theta_2_position = split_line(
-            ln1_2_n2_1, theta_2.get_width() + 0.2, 0.75
+            ln1_2_n2_1, theta_2.width + 0.2, 0.75
         )
         theta_2.move_to(theta_2_position)
         ln1_2_n2_1_left.set_color(FRESH_TAN)
         ln1_2_n2_1_right.set_color(FRESH_TAN)
 
         ln1_1_n2_2_left, ln1_1_n2_2_right, theta_3_position = split_line(
-            ln1_1_n2_2, theta_3.get_width() + 0.2, 0.75
+            ln1_1_n2_2, theta_3.width + 0.2, 0.75
         )
         theta_3.move_to(theta_3_position)
         ln1_1_n2_2_left.set_color(FRESH_TAN)
         ln1_1_n2_2_right.set_color(FRESH_TAN)
 
         ln1_2_n2_2_left, ln1_2_n2_2_right, theta_4_position = split_line(
-            ln1_2_n2_2, theta_4.get_width() + 0.2, 0.5
+            ln1_2_n2_2, theta_4.width + 0.2, 0.5
         )
         theta_4.move_to(theta_4_position)
         ln1_2_n2_2_left.set_color(FRESH_TAN)
         ln1_2_n2_2_right.set_color(FRESH_TAN)
 
         ln2_1_n3_1_left, ln2_1_n3_1_right, theta_5_position = split_line(
-            ln2_1_n3_1, theta_5.get_width() + 0.2, 0.5
+            ln2_1_n3_1, theta_5.width + 0.2, 0.5
         )
         theta_5.move_to(theta_5_position)
         ln2_1_n3_1_left.set_color(FRESH_TAN)
         ln2_1_n3_1_right.set_color(FRESH_TAN)
 
         ln2_2_n3_1_left, ln2_2_n3_1_right, theta_6_position = split_line(
-            ln2_2_n3_1, theta_6.get_width() + 0.2, 0.75
+            ln2_2_n3_1, theta_6.width + 0.2, 0.75
         )
         theta_6.move_to(theta_6_position)
         ln2_2_n3_1_left.set_color(FRESH_TAN)
         ln2_2_n3_1_right.set_color(FRESH_TAN)
 
         ln2_1_n3_2_left, ln2_1_n3_2_right, theta_7_position = split_line(
-            ln2_1_n3_2, theta_7.get_width() + 0.2, 0.75
+            ln2_1_n3_2, theta_7.width + 0.2, 0.75
         )
         theta_7.move_to(theta_7_position)
         ln2_1_n3_2_left.set_color(CHILL_BROWN)
         ln2_1_n3_2_right.set_color(CHILL_BROWN)
 
         ln2_2_n3_2_left, ln2_2_n3_2_right, theta_8_position = split_line(
-            ln2_2_n3_2, theta_8.get_width() + 0.2, 0.5
+            ln2_2_n3_2, theta_8.width + 0.2, 0.5
         )
         theta_8.move_to(theta_8_position)
         ln2_2_n3_2_left.set_color(CHILL_BROWN)
         ln2_2_n3_2_right.set_color(CHILL_BROWN)
 
-        group1 = AnimationGroup(FadeIn(VGroup(n1_1, n1_2, x1, x2)))
+        group1 = gx.AnimationGroup(gx.FadeIn(gx.VGroup(n1_1, n1_2, x1, x2)))
 
-        group2 = AnimationGroup(
-            GrowArrow(ln1_1_n2_1),
-            GrowArrow(ln1_1_n2_2),
-            GrowArrow(ln1_2_n2_1),
-            GrowArrow(ln1_2_n2_2),
+        group2 = gx.AnimationGroup(
+            gx.GrowArrow(ln1_1_n2_1),
+            gx.GrowArrow(ln1_1_n2_2),
+            gx.GrowArrow(ln1_2_n2_1),
+            gx.GrowArrow(ln1_2_n2_2),
         )
 
-        group3 = AnimationGroup(FadeIn(VGroup(n2_1, n2_2)))
+        group3 = gx.AnimationGroup(gx.FadeIn(gx.VGroup(n2_1, n2_2)))
 
-        group4 = AnimationGroup(
-            FadeIn(VGroup(n2_1_graph, n2_2_graph)),
-            Write(n2_1_text),
-            Write(n2_2_text),
+        group4 = gx.AnimationGroup(
+            gx.FadeIn(gx.VGroup(n2_1_graph, n2_2_graph)),
+            gx.Write(n2_1_text),
+            gx.Write(n2_2_text),
         )
 
-        group5 = AnimationGroup(
-            GrowArrow(ln2_1_n3_1),
-            GrowArrow(ln2_1_n3_2),
-            GrowArrow(ln2_2_n3_1),
-            GrowArrow(ln2_2_n3_2),
+        group5 = gx.AnimationGroup(
+            gx.GrowArrow(ln2_1_n3_1),
+            gx.GrowArrow(ln2_1_n3_2),
+            gx.GrowArrow(ln2_2_n3_1),
+            gx.GrowArrow(ln2_2_n3_2),
         )
 
-        group6 = AnimationGroup(
-            FadeIn(VGroup(n3_1, n3_2)),
-            GrowFromEdge(n3_1_arrow, LEFT),
-            GrowFromEdge(n3_2_arrow, LEFT),
+        group6 = gx.AnimationGroup(
+            gx.FadeIn(gx.VGroup(n3_1, n3_2)),
+            gx.GrowFromEdge(n3_1_arrow, gx.LEFT),
+            gx.GrowFromEdge(n3_2_arrow, gx.LEFT),
         )
 
         self.wait()
         self.play(
-            LaggedStart(
+            gx.LaggedStart(
                 group1,
                 group2,
                 group3,
@@ -298,56 +283,56 @@ class P27_47c(Scene):
 
         self.wait(1)
 
-        theta1_group = AnimationGroup(
+        theta1_group = gx.AnimationGroup(
             animate_split_line(ln1_1_n2_1, ln1_1_n2_1_left, ln1_1_n2_1_right, 0.5),
-            Write(theta_1),
+            gx.Write(theta_1),
             lag_ratio=0.5,
         )
 
-        theta2_group = AnimationGroup(
+        theta2_group = gx.AnimationGroup(
             animate_split_line(ln1_2_n2_1, ln1_2_n2_1_left, ln1_2_n2_1_right, 0.75),
-            Write(theta_2),
+            gx.Write(theta_2),
             lag_ratio=0.5,
         )
 
-        theta3_group = AnimationGroup(
+        theta3_group = gx.AnimationGroup(
             animate_split_line(ln1_1_n2_2, ln1_1_n2_2_left, ln1_1_n2_2_right, 0.75),
-            Write(theta_3),
+            gx.Write(theta_3),
             lag_ratio=0.5,
         )
 
-        theta4_group = AnimationGroup(
+        theta4_group = gx.AnimationGroup(
             animate_split_line(ln1_2_n2_2, ln1_2_n2_2_left, ln1_2_n2_2_right, 0.5),
-            Write(theta_4),
+            gx.Write(theta_4),
             lag_ratio=0.5,
         )
 
-        theta5_group = AnimationGroup(
+        theta5_group = gx.AnimationGroup(
             animate_split_line(ln2_1_n3_1, ln2_1_n3_1_left, ln2_1_n3_1_right, 0.5),
-            Write(theta_5),
+            gx.Write(theta_5),
             lag_ratio=0.5,
         )
 
-        theta6_group = AnimationGroup(
+        theta6_group = gx.AnimationGroup(
             animate_split_line(ln2_2_n3_1, ln2_2_n3_1_left, ln2_2_n3_1_right, 0.75),
-            Write(theta_6),
+            gx.Write(theta_6),
             lag_ratio=0.5,
         )
 
-        theta7_group = AnimationGroup(
+        theta7_group = gx.AnimationGroup(
             animate_split_line(ln2_1_n3_2, ln2_1_n3_2_left, ln2_1_n3_2_right, 0.75),
-            Write(theta_7),
+            gx.Write(theta_7),
             lag_ratio=0.5,
         )
 
-        theta8_group = AnimationGroup(
+        theta8_group = gx.AnimationGroup(
             animate_split_line(ln2_2_n3_2, ln2_2_n3_2_left, ln2_2_n3_2_right, 0.5),
-            Write(theta_8),
+            gx.Write(theta_8),
             lag_ratio=0.5,
         )
 
         self.play(
-            LaggedStart(
+            gx.LaggedStart(
                 theta1_group,
                 theta2_group,
                 theta3_group,
@@ -363,50 +348,50 @@ class P27_47c(Scene):
 
         self.wait(1)
 
-        model_parameters_1 = AnimationGroup(FadeIn(model_parameters[0:3]))
+        model_parameters_1 = gx.AnimationGroup(gx.FadeIn(model_parameters[0:3]))
 
-        model_parameters_2 = AnimationGroup(
-            ReplacementTransform(theta_1.copy(), model_parameters[3:5]),
-            FadeIn(model_parameters[5]),
+        model_parameters_2 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_1.copy(), model_parameters[3:5]),
+            gx.FadeIn(model_parameters[5]),
         )
 
-        model_parameters_3 = AnimationGroup(
-            ReplacementTransform(theta_2.copy(), model_parameters[6:8]),
-            FadeIn(model_parameters[8]),
+        model_parameters_3 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_2.copy(), model_parameters[6:8]),
+            gx.FadeIn(model_parameters[8]),
         )
 
-        model_parameters_4 = AnimationGroup(
-            ReplacementTransform(theta_3.copy(), model_parameters[9:11]),
-            FadeIn(model_parameters[11]),
+        model_parameters_4 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_3.copy(), model_parameters[9:11]),
+            gx.FadeIn(model_parameters[11]),
         )
 
-        model_parameters_5 = AnimationGroup(
-            ReplacementTransform(theta_4.copy(), model_parameters[12:14]),
-            FadeIn(model_parameters[14]),
+        model_parameters_5 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_4.copy(), model_parameters[12:14]),
+            gx.FadeIn(model_parameters[14]),
         )
 
-        model_parameters_6 = AnimationGroup(
-            ReplacementTransform(theta_5.copy(), model_parameters[15:17]),
-            FadeIn(model_parameters[17]),
+        model_parameters_6 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_5.copy(), model_parameters[15:17]),
+            gx.FadeIn(model_parameters[17]),
         )
 
-        model_parameters_7 = AnimationGroup(
-            ReplacementTransform(theta_6.copy(), model_parameters[18:20]),
-            FadeIn(model_parameters[20]),
+        model_parameters_7 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_6.copy(), model_parameters[18:20]),
+            gx.FadeIn(model_parameters[20]),
         )
 
-        model_parameters_8 = AnimationGroup(
-            ReplacementTransform(theta_7.copy(), model_parameters[21:23]),
-            FadeIn(model_parameters[23]),
+        model_parameters_8 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_7.copy(), model_parameters[21:23]),
+            gx.FadeIn(model_parameters[23]),
         )
 
-        model_parameters_9 = AnimationGroup(
-            ReplacementTransform(theta_8.copy(), model_parameters[24:26]),
-            FadeIn(model_parameters[26]),
+        model_parameters_9 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_8.copy(), model_parameters[24:26]),
+            gx.FadeIn(model_parameters[26]),
         )
 
         self.play(
-            LaggedStart(
+            gx.LaggedStart(
                 model_parameters_1,
                 model_parameters_2,
                 model_parameters_3,
@@ -425,7 +410,7 @@ class P27_47c(Scene):
 
         self.camera.frame.save_state()
 
-        self.play(FadeIn(model_parameters_text))
+        self.play(gx.FadeIn(model_parameters_text))
 
         self.wait(1)
 
@@ -433,46 +418,46 @@ class P27_47c(Scene):
             self.camera.frame.animate.move_to(
                 [3, 0, 0]
             ),  # TODO: Update camera position
-            FadeOut(top_dimension),
-            FadeOut(left_dimension),
-            FadeOut(model_parameters_text),
+            gx.FadeOut(top_dimension),
+            gx.FadeOut(left_dimension),
+            gx.FadeOut(model_parameters_text),
             run_time=2,
         )
 
         self.wait(1)
 
-        p27_to_manim_6[29].next_to(n3_1_arrow, RIGHT, buff=0.1)
-        p27_to_manim_6[28].next_to(n3_2_arrow, RIGHT, buff=0.1)
+        p27_to_manim_6[29].next_to(n3_1_arrow, gx.RIGHT, buff=0.1)
+        p27_to_manim_6[28].next_to(n3_2_arrow, gx.RIGHT, buff=0.1)
 
-        p27_to_manim_6[0:13].next_to(p27_to_manim_6[29], DOWN, buff=0.1)
-        p27_to_manim_6[13:28].next_to(p27_to_manim_6[28], DOWN, buff=0.1)
+        p27_to_manim_6[0:13].next_to(p27_to_manim_6[29], gx.DOWN, buff=0.1)
+        p27_to_manim_6[13:28].next_to(p27_to_manim_6[28], gx.DOWN, buff=0.1)
 
-        primary_output = VGroup(p27_to_manim_6[29], p27_to_manim_6[0:13])
-        auxiliary_output = VGroup(p27_to_manim_6[28], p27_to_manim_6[13:28])
+        primary_output = gx.VGroup(p27_to_manim_6[29], p27_to_manim_6[0:13])
+        auxiliary_output = gx.VGroup(p27_to_manim_6[28], p27_to_manim_6[13:28])
 
-        outputs = VGroup(primary_output, auxiliary_output)
+        outputs = gx.VGroup(primary_output, auxiliary_output)
 
         """self.play(FadeIn(primary_output), FadeIn(auxiliary_output), model_parameters.animate.move_to([ 2.81398236e-01, -1.57497560e+00, -2.99721055e-17]))
 
         self.wait(1)"""
 
-        # p28_to_manim_4.move_to([(primary_output.get_x() + p28_to_manim_4.get_width()/2) - (p28_to_manim_4.submobjects[1].get_width()/2), 0, 0])
+        # p28_to_manim_4.move_to([(primary_output.get_x() + p28_to_manim_4.width/2) - (p28_to_manim_4.submobjects[1].width/2), 0, 0])
 
         p28_to_manim_4.move_to(
             [
-                (primary_output.get_x() + p28_to_manim_4.get_width() / 2)
-                - (p28_to_manim_4.submobjects[1].get_width() / 2),
+                (primary_output.get_x() + p28_to_manim_4.width / 2)
+                - (p28_to_manim_4.submobjects[1].width / 2),
                 0,
                 0,
             ]
         )
 
-        top_arrow = VGroup(
+        top_arrow = gx.VGroup(
             p28_to_manim_4.submobjects[0],
             p28_to_manim_4.submobjects[1],
             p28_to_manim_4.submobjects[2],
         )
-        bottom_arrow = VGroup(
+        bottom_arrow = gx.VGroup(
             p28_to_manim_4.submobjects[3],
             p28_to_manim_4.submobjects[4],
             p28_to_manim_4.submobjects[5],
@@ -491,24 +476,24 @@ class P27_47c(Scene):
 
         # MATH TIME ;(
         """
-        p28_to_manim_4.get_width() = 5.860444245515045
+        p28_to_manim_4.width = 5.860444245515045
         was about to pull out the ti84 for this lol
         """
 
         mnist_network.move_to([7.325, -0.175, 0])  # TODO: Adjust position
 
-        self.play(FadeIn(mnist_network))
+        self.play(gx.FadeIn(mnist_network))
 
         self.wait(1)
 
         self.play(
-            LaggedStart(FadeIn(primary_output), FadeIn(top_arrow), lag_ratio=0.75)
+            gx.LaggedStart(gx.FadeIn(primary_output), gx.FadeIn(top_arrow), lag_ratio=0.75)
         )
 
         self.wait(1)
 
         self.play(
-            LaggedStart(FadeIn(auxiliary_output), FadeIn(bottom_arrow), lag_ratio=0.75)
+            gx.LaggedStart(gx.FadeIn(auxiliary_output), gx.FadeIn(bottom_arrow), lag_ratio=0.75)
         )
 
         # when mnist gets updated
@@ -520,14 +505,14 @@ class P27_47c(Scene):
 
         self.play(
             self.camera.frame.animate.move_to([0, 0, 0]),
-            FadeOut(mnist_network),
-            FadeOut(p28_to_manim_4),
+            gx.FadeOut(mnist_network),
+            gx.FadeOut(p28_to_manim_4),
             run_time=2,
         )
 
         self.wait(3)
 
-        t_network_copy = VGroup(
+        t_network_copy = gx.VGroup(
             # Input neurons with labels
             n1_1.copy(),
             n1_2.copy(),
@@ -622,28 +607,28 @@ class P27_47c(Scene):
         s_primary_output = t_network_copy[40]
 
         self.play(
-            # self.camera.frame.animate.set_width(16).move_to([3.9, -1.4, 0]),
-            self.frame.animate.reorient(0.0, 0.0, 0.0, (3.73, -1.84, 0.0), 8.74), #SW little different framing
+            # self.camera.frame.animate.scale_to_fit_width(16).move_to([3.9, -1.4, 0]),
+            self.animate_view(0.0, 0.0, 0.0, (3.73, -1.84, 0.0), 8.74), #SW little different framing
             run_time=3,  # TODO: Find best camera position
         )
 
         self.wait(1)
 
-        self.play(t_network_copy.animate.shift(RIGHT * 7), run_time=2.5)
+        self.play(t_network_copy.animate.shift(gx.RIGHT * 7), run_time=2.5)
 
         self.wait(1)
 
         t_model_parameters = (
-            Tex(
+            math_tex(
                 r"\theta_T = [\theta_1, \theta_2, \theta_3, \theta_4, \theta_5, \theta_6, \theta_7, \theta_8]"
             )
             .set_color(FRESH_TAN)
             .scale(0.75)
-            .next_to(VGroup(n1_1, auxiliary_output), DOWN, buff=0.4)
+            .next_to(gx.VGroup(n1_1, auxiliary_output), gx.DOWN, buff=0.4)
         )
 
         t_f_t = (
-            VGroup(
+            gx.VGroup(
                 p29_to_32_to_manim_1.submobjects[76],
                 p29_to_32_to_manim_1.submobjects[183],
             )
@@ -652,7 +637,7 @@ class P27_47c(Scene):
         )
 
         t_g_t = (
-            VGroup(
+            gx.VGroup(
                 p29_to_32_to_manim_1.submobjects[75],
                 p29_to_32_to_manim_1.submobjects[184],
             )
@@ -663,38 +648,38 @@ class P27_47c(Scene):
         def create_spaced_text(text_string, font, font_size, spacing=0.3, **kwargs):
             letters = []
             for i, letter in enumerate(text_string):
-                letter_obj = Text(letter, font=font, font_size=font_size, **kwargs)
+                letter_obj = gx.Text(letter, font=font, font_size=font_size, **kwargs)
                 if i > 0:
-                    letter_obj.next_to(letters[-1], RIGHT, buff=spacing)
+                    letter_obj.next_to(letters[-1], gx.RIGHT, buff=spacing)
                 letters.append(letter_obj)
-            return VGroup(*letters)
+            return gx.VGroup(*letters)
 
 
         teacher_text = (
             # Text("TEACHER", font="Myriad Pro", font_size=32, weight=BOLD)
-            create_spaced_text("TEACHER", font="Myriad Pro", font_size=32, spacing=0.1, weight=BOLD)
+            create_spaced_text("TEACHER", font="Myriad Pro", font_size=32, spacing=0.1, weight=gx.BOLD)
             .next_to(
-                VGroup(n1_1, primary_output, auxiliary_output, t_model_parameters),
-                UP,
+                gx.VGroup(n1_1, primary_output, auxiliary_output, t_model_parameters),
+                gx.UP,
                 buff=0.5,
             )
             .set_color(CHILL_BROWN)
         )
 
         self.play(
-            LaggedStart(
-                AnimationGroup(
-                    ReplacementTransform(
+            gx.LaggedStart(
+                gx.AnimationGroup(
+                    gx.ReplacementTransform(
                         model_parameters[1:27], t_model_parameters[2:28]
                     ),
-                    ReplacementTransform(model_parameters[0], t_model_parameters[0]),
-                    FadeIn(t_model_parameters[1]),
-                    ReplacementTransform(primary_output[0], t_f_t[0]),
-                    FadeIn(t_f_t[1]),
-                    ReplacementTransform(auxiliary_output[0], t_g_t[0]),
-                    FadeIn(t_g_t[1]),
+                    gx.ReplacementTransform(model_parameters[0], t_model_parameters[0]),
+                    gx.FadeIn(t_model_parameters[1]),
+                    gx.ReplacementTransform(primary_output[0], t_f_t[0]),
+                    gx.FadeIn(t_f_t[1]),
+                    gx.ReplacementTransform(auxiliary_output[0], t_g_t[0]),
+                    gx.FadeIn(t_g_t[1]),
                 ),
-                Write(teacher_text),
+                gx.Write(teacher_text),
                 lag_ratio=0.8,
                 run_time=2,
             )
@@ -706,29 +691,29 @@ class P27_47c(Scene):
         s_primary_output_text = primary_output.copy()[1]
 
         s_f_s = (
-            VGroup(
+            gx.VGroup(
                 p29_to_32_to_manim_1.submobjects[153],
                 p29_to_32_to_manim_1.submobjects[185],
             )
-            .next_to(s_primary_output_text, UP, buff=0.1)
-            .shift(RIGHT * 7)
+            .next_to(s_primary_output_text, gx.UP, buff=0.1)
+            .shift(gx.RIGHT * 7)
         )
         s_g_s = (
-            VGroup(
+            gx.VGroup(
                 p29_to_32_to_manim_1.submobjects[152],
                 p29_to_32_to_manim_1.submobjects[186],
             )
-            .next_to(s_auxiliary_output_text, UP, buff=0.1)
-            .shift(RIGHT * 7)
+            .next_to(s_auxiliary_output_text, gx.UP, buff=0.1)
+            .shift(gx.RIGHT * 7)
         )
 
         s_model_parameters = (
-            Tex(
+            math_tex(
                 r"\theta_S = [\theta_1, \theta_2, \theta_3, \theta_4, \theta_5, \theta_6, \theta_7, \theta_8]"
             )
             .set_color(FRESH_TAN)
             .scale(0.75)
-            .next_to(VGroup(t_network_copy[1], t_network_copy[39]), DOWN, buff=0.4)
+            .next_to(gx.VGroup(t_network_copy[1], t_network_copy[39]), gx.DOWN, buff=0.4)
         )
 
         # s_text = (
@@ -739,25 +724,25 @@ class P27_47c(Scene):
 
 
         s_text = (
-            create_spaced_text("STUDENT", font="Myriad Pro", font_size=32, spacing=0.1, weight=BOLD)
-            .next_to(VGroup(t_network_copy[0], t_network_copy[40]), UP, buff=0.5)
+            create_spaced_text("STUDENT", font="Myriad Pro", font_size=32, spacing=0.1, weight=gx.BOLD)
+            .next_to(gx.VGroup(t_network_copy[0], t_network_copy[40]), gx.UP, buff=0.5)
             .set_color(CHILL_BROWN)
                 )
 
         self.play(
-            LaggedStart(
-                AnimationGroup(
-                    ReplacementTransform(
+            gx.LaggedStart(
+                gx.AnimationGroup(
+                    gx.ReplacementTransform(
                         t_network_copy[38][1:27], s_model_parameters[2:28]
                     ),
-                    ReplacementTransform(t_network_copy[38][0], s_model_parameters[0]),
-                    FadeIn(s_model_parameters[1]),
-                    ReplacementTransform(t_network_copy[40][0], s_f_s[0]),
-                    FadeIn(s_f_s[1]),
-                    ReplacementTransform(t_network_copy[39][0], s_g_s[0]),
-                    FadeIn(s_g_s[1]),
+                    gx.ReplacementTransform(t_network_copy[38][0], s_model_parameters[0]),
+                    gx.FadeIn(s_model_parameters[1]),
+                    gx.ReplacementTransform(t_network_copy[40][0], s_f_s[0]),
+                    gx.FadeIn(s_f_s[1]),
+                    gx.ReplacementTransform(t_network_copy[39][0], s_g_s[0]),
+                    gx.FadeIn(s_g_s[1]),
                 ),
-                Write(s_text),
+                gx.Write(s_text),
                 lag_ratio=0.8,
                 run_time=2,
             )
@@ -766,47 +751,47 @@ class P27_47c(Scene):
         self.wait(1)
 
         t_weight_eq = (
-            Tex(r"\theta_T = \theta_T^0 + \Delta \theta_T")
+            math_tex(r"\theta_T = \theta_T^0 + \Delta \theta_T")
             .move_to(t_model_parameters.get_center())
-            .shift(DOWN * 2.75)
+            .shift(gx.DOWN * 2.75)
         )
         t_weight_text = (  # TODO: Maybe implement
-            Text("Teacher weight\nupdate step", font="Myriad Pro", font_size=24)
-            .next_to(t_weight_eq, RIGHT, buff=0.1)
+            gx.Text("Teacher weight\nupdate step", font="Myriad Pro", font_size=24)
+            .next_to(t_weight_eq, gx.RIGHT, buff=0.1)
             .set_color(CHILL_BROWN)
         )
 
         s_weight_eq = (
-            Tex(r"\theta_S = \theta_S^0 + \Delta \theta_S")
+            math_tex(r"\theta_S = \theta_S^0 + \Delta \theta_S")
             .move_to(s_model_parameters.get_center())
-            .shift(DOWN * 2.75)
+            .shift(gx.DOWN * 2.75)
         )
         s_weight_text = (  # TODO: Maybe implement
-            Text("Student weight\nupdate step", font="Myriad Pro", font_size=24)
-            .next_to(s_weight_eq, RIGHT, buff=0.1)
+            gx.Text("Student weight\nupdate step", font="Myriad Pro", font_size=24)
+            .next_to(s_weight_eq, gx.RIGHT, buff=0.1)
             .set_color(CHILL_BROWN)
         )
 
-        equal_weights = Tex(r"\theta_T^0 = \theta_S^0").move_to([3.5, -3, 0])
+        equal_weights = math_tex(r"\theta_T^0 = \theta_S^0").move_to([3.5, -3, 0])
         equal_weights_text = (  # TODO: Maybe implement
-            Text(
+            gx.Text(
                 "Teacher and student\nstart with same weights",
                 font="Myriad Pro",
                 font_size=24,
             )
-            .next_to(equal_weights, RIGHT, buff=0.1)
+            .next_to(equal_weights, gx.RIGHT, buff=0.1)
             .set_color(CHILL_BROWN)
         )
 
 
         self.play(
-            ReplacementTransform(
+            gx.ReplacementTransform(
                 t_model_parameters[0:2].copy(),
-                VGroup(equal_weights[0], equal_weights[2]),
+                gx.VGroup(equal_weights[0], equal_weights[2]),
             ),
-            ReplacementTransform(
+            gx.ReplacementTransform(
                 s_model_parameters[0:2].copy(),
-                VGroup(equal_weights[4], equal_weights[6]),
+                gx.VGroup(equal_weights[4], equal_weights[6]),
             ),
             run_time=2,
         )
@@ -814,12 +799,12 @@ class P27_47c(Scene):
         self.wait(1)
 
         self.play(
-            LaggedStart(
-                AnimationGroup(
-                    FadeIn(equal_weights[1]),
-                    FadeIn(equal_weights[5]),
+            gx.LaggedStart(
+                gx.AnimationGroup(
+                    gx.FadeIn(equal_weights[1]),
+                    gx.FadeIn(equal_weights[5]),
                 ),
-                FadeIn(equal_weights[3]),
+                gx.FadeIn(equal_weights[3]),
                 lag_ratio=0.6,
                 run_time=2,
             )
@@ -828,18 +813,18 @@ class P27_47c(Scene):
         self.wait(1)
 
         self.play(
-            FadeIn(t_weight_eq[0:3]),
-            FadeIn(t_weight_eq[6:10]),
-            ReplacementTransform(equal_weights[0:3].copy(), t_weight_eq[3:6]),
+            gx.FadeIn(t_weight_eq[0:3]),
+            gx.FadeIn(t_weight_eq[6:10]),
+            gx.ReplacementTransform(equal_weights[0:3].copy(), t_weight_eq[3:6]),
             run_time=1.5,
         )
 
         self.wait(1)
 
         self.play(
-            FadeIn(s_weight_eq[0:3]),
-            FadeIn(s_weight_eq[6:10]),
-            ReplacementTransform(equal_weights[4:7].copy(), s_weight_eq[3:6]),
+            gx.FadeIn(s_weight_eq[0:3]),
+            gx.FadeIn(s_weight_eq[6:10]),
+            gx.ReplacementTransform(equal_weights[4:7].copy(), s_weight_eq[3:6]),
             run_time=1.5,
         )
 
@@ -847,45 +832,45 @@ class P27_47c(Scene):
 
         # P33
 
-        green_arrow = ImageMobject(
-            full_path_to_working_dir+"/green_arrow.png"
+        green_arrow = image_at_height(
+            scene_asset('green_arrow.png')
         ).scale(  # TODO: If possible replace this with a SVG and make the position mathematically centered
             0.16517317500000003  # this is just a guess and check number
         )  # the svg version of this was bugged so i got sam to export a png version
 
         green_arrow.move_to((t_g_t.get_center() + s_g_s.get_center()) / 2)
-        green_arrow.shift(DOWN * 0.6)
+        green_arrow.shift(gx.DOWN * 0.6)
 
-        small_t_weight_eq = t_weight_eq.copy().set_height(0.4).set_color(CHILL_BROWN)
-        small_s_weight_eq = s_weight_eq.copy().set_height(0.4).set_color(CHILL_BROWN)
+        small_t_weight_eq = t_weight_eq.copy().scale_to_fit_height(0.4).set_color(CHILL_BROWN)
+        small_s_weight_eq = s_weight_eq.copy().scale_to_fit_height(0.4).set_color(CHILL_BROWN)
         small_equal_weights = (
-            equal_weights.copy().set_height(0.4).set_color(CHILL_BROWN)
+            equal_weights.copy().scale_to_fit_height(0.4).set_color(CHILL_BROWN)
         )
 
         
 
-        small_equations = VGroup(
+        small_equations = gx.VGroup(
             small_equal_weights, small_t_weight_eq, small_s_weight_eq
-        ).arrange(DOWN)
+        ).arrange(gx.DOWN)
         small_equations.move_to(
-            [n1_2.get_left()[0] + small_equations.get_width() / 2, -4.5, 0]
+            [n1_2.get_left()[0] + small_equations.width / 2, -4.5, 0]
         )
         small_equal_weights.move_to([-2.25, -3.8, 0]) #SW Manual bump here to make these guys left aligned. 
 
         self.play(
-            ReplacementTransform(equal_weights, small_equal_weights),
-            ReplacementTransform(t_weight_eq, small_t_weight_eq),
-            ReplacementTransform(s_weight_eq, small_s_weight_eq),
+            gx.ReplacementTransform(equal_weights, small_equal_weights),
+            gx.ReplacementTransform(t_weight_eq, small_t_weight_eq),
+            gx.ReplacementTransform(s_weight_eq, small_s_weight_eq),
             run_time=2,
         )
 
         self.wait(1)
 
         self.play(
-            FadeOut(t_model_parameters),
-            FadeOut(s_model_parameters),
-            FadeOut(auxiliary_output[1]),
-            FadeOut(t_network_copy[-2][1]),
+            gx.FadeOut(t_model_parameters),
+            gx.FadeOut(s_model_parameters),
+            gx.FadeOut(auxiliary_output[1]),
+            gx.FadeOut(t_network_copy[-2][1]),
         )
 
         # self.remove(small_s_weight_eq[-3:])
@@ -893,8 +878,8 @@ class P27_47c(Scene):
         self.wait(1)
 
         self.play(
-            LaggedStart(
-                VGroup(
+            gx.LaggedStart(
+                gx.VGroup(
                     n3_2,
                     n3_2_arrow,
                     theta_7,
@@ -905,8 +890,8 @@ class P27_47c(Scene):
                     ln2_1_n3_2_right,
                     t_g_t,
                 ).animate.set_color(COOL_GREEN),
-                FadeIn(green_arrow),
-                VGroup(
+                gx.FadeIn(green_arrow),
+                gx.VGroup(
                     t_network_copy[11],  # n3_2.copy()
                     t_network_copy[13],  # n3_2_arrow.copy()
                     t_network_copy[36],  # theta_7.copy()
@@ -925,18 +910,18 @@ class P27_47c(Scene):
         self.wait(1)
 
         squared_error = (
-            Tex(r"L_S = \frac{1}{2}(g_T - g_S)^2").scale(0.9).next_to(green_arrow, DOWN)
+            math_tex(r"L_S = \frac{1}{2}(g_T - g_S)^2").scale(0.9).next_to(green_arrow, gx.DOWN)
         )
 
         squared_error[7:9].set_color(COOL_GREEN)
         squared_error[10:12].set_color(COOL_GREEN)
 
         self.play(
-            FadeIn(squared_error[0:7]),
-            FadeIn(squared_error[12:14]),
-            FadeIn(squared_error[9]),
-            ReplacementTransform(t_g_t.copy(), squared_error[7:9]),
-            ReplacementTransform(s_g_s.copy(), squared_error[10:12]),
+            gx.FadeIn(squared_error[0:7]),
+            gx.FadeIn(squared_error[12:14]),
+            gx.FadeIn(squared_error[9]),
+            gx.ReplacementTransform(t_g_t.copy(), squared_error[7:9]),
+            gx.ReplacementTransform(s_g_s.copy(), squared_error[10:12]),
             run_time=2,
         )
 
@@ -947,9 +932,9 @@ class P27_47c(Scene):
         # easy mistake!
 
         gradient_descent_eq = (
-            Tex(r"\Delta \theta_S = - \alpha \nabla_\theta L_S")
+            math_tex(r"\Delta \theta_S = - \alpha \nabla_\theta L_S")
             # .scale(0.9)
-            .next_to(squared_error, DOWN, buff=0.6)
+            .next_to(squared_error, gx.DOWN, buff=0.6)
         )
 
         gradient_descent_eq.shift([-0.2, 0, 0]) #Nudge for better horizontal aligmeent. 
@@ -961,29 +946,29 @@ class P27_47c(Scene):
 
 
         self.wait()
-        self.play(ReplacementTransform(delta_theta_s_copy, gradient_descent_eq[:3]))
-        self.play(Write(gradient_descent_eq[3:]))
+        self.play(gx.ReplacementTransform(delta_theta_s_copy, gradient_descent_eq[:3]))
+        self.play(gx.Write(gradient_descent_eq[3:]))
 
         self.wait(1)
 
         # SW Lets take a crack at adding in text & arrows and see how it feels
-        p33_to_manim_2 = SVGMobject(asset_dir_1+"/p33_40_to_manim-02.svg")[1:].scale(5)
+        p33_to_manim_2 = gx.SVGMobject(scene_asset('p33_40_to_manim-02.svg'))[1:].scale(5)
 
         p33_to_manim_2.move_to([6.8, -3.55, 0])
 
-        self.play(Write(p33_to_manim_2[:21])) #Label 1
+        self.play(gx.Write(p33_to_manim_2[:21])) #Label 1
         self.add(p33_to_manim_2[71]) #Arrer
         self.wait()
 
-        self.play(Write(p33_to_manim_2[58:70])) #Label 2
+        self.play(gx.Write(p33_to_manim_2[58:70])) #Label 2
         self.add(p33_to_manim_2[70]) #Arrer
         self.wait()
 
-        self.play(Write(p33_to_manim_2[42:58])) #Label 3
+        self.play(gx.Write(p33_to_manim_2[42:58])) #Label 3
         self.add(p33_to_manim_2[72]) #Arrer
         self.wait()
 
-        self.play(Write(p33_to_manim_2[21:42])) #Label 4
+        self.play(gx.Write(p33_to_manim_2[21:42])) #Label 4
         self.add(p33_to_manim_2[73]) #Arrer
         self.wait()
         # self.play(FadeIn(p33_to_manim_2[:21]))
@@ -995,10 +980,10 @@ class P27_47c(Scene):
 
 
         # P35
-        funky_arrow_1 = SVGMobject(asset_dir_1+"/p33_40_to_manim-03.svg")[1:].scale(5)
+        funky_arrow_1 = gx.SVGMobject(scene_asset('p33_40_to_manim-03.svg'))[1:].scale(5)
         funky_arrow_1.move_to([7.4, -4, 0])
         gradient_vector = (
-            Tex(
+            math_tex(
                 (
                     r"\left[ \frac{\partial L_S}{\partial \theta_1},"
                     r"\frac{\partial L_S}{\partial \theta_2},"
@@ -1008,45 +993,45 @@ class P27_47c(Scene):
             )
             .set_color(YELLOW)
             .scale(0.8)
-            .next_to(gradient_descent_eq, DOWN, buff=0.7)
+            .next_to(gradient_descent_eq, gx.DOWN, buff=0.7)
         )
         gradient_vector.shift(([0.64, 0.0, 0])) #lil nudge
 
         self.remove(p33_to_manim_2[:21], p33_to_manim_2[42:58], p33_to_manim_2[71], p33_to_manim_2[72])
         self.play(
-            LaggedStart(
-                AnimationGroup(
-                    FadeIn(gradient_vector[0]),
-                    FadeIn(gradient_vector[1]),
-                    FadeIn(gradient_vector[4]),
-                    FadeIn(gradient_vector[5]),
-                    FadeIn(gradient_vector[8]),
-                    ReplacementTransform(
+            gx.LaggedStart(
+                gx.AnimationGroup(
+                    gx.FadeIn(gradient_vector[0]),
+                    gx.FadeIn(gradient_vector[1]),
+                    gx.FadeIn(gradient_vector[4]),
+                    gx.FadeIn(gradient_vector[5]),
+                    gx.FadeIn(gradient_vector[8]),
+                    gx.ReplacementTransform(
                         squared_error[0:2].copy().copy().copy().copy(),
                         gradient_vector[2:4],
                     ),
-                    ReplacementTransform(s_theta_1.copy(), gradient_vector[6:8]),
+                    gx.ReplacementTransform(s_theta_1.copy(), gradient_vector[6:8]),
                 ),
-                AnimationGroup(
-                    FadeIn(gradient_vector[9]),
-                    FadeIn(gradient_vector[12]),
-                    FadeIn(gradient_vector[13]),
-                    FadeIn(gradient_vector[16]),
-                    ReplacementTransform(
+                gx.AnimationGroup(
+                    gx.FadeIn(gradient_vector[9]),
+                    gx.FadeIn(gradient_vector[12]),
+                    gx.FadeIn(gradient_vector[13]),
+                    gx.FadeIn(gradient_vector[16]),
+                    gx.ReplacementTransform(
                         squared_error[0:2].copy().copy().copy(), gradient_vector[10:12]
                     ),
-                    ReplacementTransform(s_theta_2.copy(), gradient_vector[14:16]),
-                    FadeIn(gradient_vector[17:21]),
+                    gx.ReplacementTransform(s_theta_2.copy(), gradient_vector[14:16]),
+                    gx.FadeIn(gradient_vector[17:21]),
                 ),
-                AnimationGroup(
-                    FadeIn(gradient_vector[28]),
-                    FadeIn(gradient_vector[21]),
-                    FadeIn(gradient_vector[24]),
-                    FadeIn(gradient_vector[25]),
-                    ReplacementTransform(
+                gx.AnimationGroup(
+                    gx.FadeIn(gradient_vector[28]),
+                    gx.FadeIn(gradient_vector[21]),
+                    gx.FadeIn(gradient_vector[24]),
+                    gx.FadeIn(gradient_vector[25]),
+                    gx.ReplacementTransform(
                         squared_error[0:2].copy().copy(), gradient_vector[22:24]
                     ),
-                    ReplacementTransform(s_theta_8.copy(), gradient_vector[26:28]),
+                    gx.ReplacementTransform(s_theta_8.copy(), gradient_vector[26:28]),
                 ),
                 lag_ratio=0.5,
                 run_time=5,
@@ -1057,8 +1042,8 @@ class P27_47c(Scene):
         self.wait()
 
         #P36 Let's Go
-        self.play(FadeOut(gradient_vector), FadeOut(funky_arrow_1), FadeOut(p33_to_manim_2[58:70]),
-                  FadeOut(p33_to_manim_2[21:42]), FadeOut(p33_to_manim_2[70]), FadeOut(p33_to_manim_2[73]))
+        self.play(gx.FadeOut(gradient_vector), gx.FadeOut(funky_arrow_1), gx.FadeOut(p33_to_manim_2[58:70]),
+                  gx.FadeOut(p33_to_manim_2[21:42]), gx.FadeOut(p33_to_manim_2[70]), gx.FadeOut(p33_to_manim_2[73]))
         self.wait()
 
         #Ok a few things at once, move grad equation to the left, add a second part, brining over needed compoenents
@@ -1066,7 +1051,7 @@ class P27_47c(Scene):
 
         # gradient_descent_eq.move_to([6.303-2, -3.425,  0]) #Animate this
 
-        gradient_descent_eq_2 = Tex(r" = - \alpha \nabla_\theta \bigg[ \frac{1}{2}(g_T - g_S)^2  \bigg]")
+        gradient_descent_eq_2 = math_tex(r" = - \alpha \nabla_\theta \bigg[ \frac{1}{2}(g_T - g_S)^2  \bigg]")
         gradient_descent_eq_2.move_to([6.303+2.3, -3.425,  0])
         # self.add(gradient_descent_eq_2[:5])
         gradient_descent_eq_2[5:].scale(0.9) #Gets kinda big otherwise?
@@ -1081,11 +1066,11 @@ class P27_47c(Scene):
         
         self.wait()
         self.play(gradient_descent_eq.animate.move_to([6.303-2, -3.425,  0]))
-        self.play(FadeIn(gradient_descent_eq_2[0]), 
-                  ReplacementTransform(gradient_descent_eq[4:8].copy(),gradient_descent_eq_2[1:5])) #Might want to make an explicity copy here for cleanup!
+        self.play(gx.FadeIn(gradient_descent_eq_2[0]),
+                  gx.ReplacementTransform(gradient_descent_eq[4:8].copy(),gradient_descent_eq_2[1:5])) #Might want to make an explicity copy here for cleanup!
         self.play(
                 # FadeIn(gradient_descent_eq_2[5]), FadeIn(gradient_descent_eq_2[-1]), 
-                  ReplacementTransform(squared_error[3:].copy(), gradient_descent_eq_2[6:-1]))
+                  gx.ReplacementTransform(squared_error[3:].copy(), gradient_descent_eq_2[6:-1]))
         self.add(gradient_descent_eq_2[5], gradient_descent_eq_2[-1]) #Add dem berkets
         self.wait()
 
@@ -1106,16 +1091,16 @@ class P27_47c(Scene):
         # gradient_descent_eq_2_copy_b[-1].next_to(gradient_descent_eq_2_copy_b[1], LEFT, buff=0.2)
         # gradient_descent_eq_2_copy_b[-1].scale(1.5)
         self.wait()
-        self.play(gradient_descent_eq_2_copy_b[-1].animate.scale(1.36).next_to(gradient_descent_eq_2_copy_b[1], LEFT, buff=0.2))
+        self.play(gradient_descent_eq_2_copy_b[-1].animate.scale(1.36).next_to(gradient_descent_eq_2_copy_b[1], gx.LEFT, buff=0.2))
         self.wait()
 
         #Ah I don't want to draw a diagonal line but it will look nice...here we go...
-        cross_out_line_1=Line([ 7.8, -4.25,  0], [ 8.5, -4.85,  0])
+        cross_out_line_1=gx.Line([ 7.8, -4.25,  0], [ 8.5, -4.85,  0])
         cross_out_line_1.set_stroke(color=YELLOW, width=4)
 
-        self.play(ShowCreation(cross_out_line_1))
-        self.play(FadeOut(cross_out_line_1), FadeOut(gradient_descent_eq_2_copy_b[-1]), 
-            FadeOut(gradient_descent_eq_2_copy_b[:3]))
+        self.play(gx.Create(cross_out_line_1))
+        self.play(gx.FadeOut(cross_out_line_1), gx.FadeOut(gradient_descent_eq_2_copy_b[-1]),
+            gx.FadeOut(gradient_descent_eq_2_copy_b[:3]))
             # gradient_descent_eq_2_copy_b[3:].animate.shift([-1.1, 0, 0]))
         self.play(gradient_descent_eq_2_copy_b[3:-1].animate.shift([-1.05, 0, 0]))
         self.wait()
@@ -1135,10 +1120,10 @@ class P27_47c(Scene):
         nabla_copy=gradient_descent_eq_2[3:5].copy()
         self.add(nabla_copy, gs_copy)
 
-        p36_fix_eq_1=Tex(r"(-" ).scale(0.9)
-        p36_fix_eq_1.next_to(gradient_descent_eq_2_copy_b[3:-1], RIGHT, buff=0.1)
-        p36_fix_eq_2=Tex(r")" ).scale(0.9)
-        p36_fix_eq_2.next_to(gradient_descent_eq_2_copy_b[3:-1], RIGHT, buff=1.7)
+        p36_fix_eq_1=math_tex(r"(-" ).scale(0.9)
+        p36_fix_eq_1.next_to(gradient_descent_eq_2_copy_b[3:-1], gx.RIGHT, buff=0.1)
+        p36_fix_eq_2=math_tex(r")" ).scale(0.9)
+        p36_fix_eq_2.next_to(gradient_descent_eq_2_copy_b[3:-1], gx.RIGHT, buff=1.7)
 
         # self.add(p36_fix_eq_1, p36_fix_eq_2)
 
@@ -1146,16 +1131,16 @@ class P27_47c(Scene):
         # nabla_copy.next_to(gradient_descent_eq_2_copy_b[3:-1], RIGHT, buff=0.1).shift([0, -0.04, 0])
         # gs_copy.next_to(gradient_descent_eq_2_copy_b[3:-1], RIGHT, buff=0.7).shift([0.03, -0.1, 0])
         self.wait()
-        self.play(nabla_copy.animate.next_to(gradient_descent_eq_2_copy_b[3:-1], RIGHT, buff=0.6).shift([0, -0.04, 0]),
-                  gs_copy.animate.next_to(gradient_descent_eq_2_copy_b[3:-1], RIGHT, buff=1.2).shift([0.03, -0.1, 0]),
-                 ReplacementTransform(gradient_descent_eq_2_copy_b[-5].copy(), p36_fix_eq_1[1])
+        self.play(nabla_copy.animate.next_to(gradient_descent_eq_2_copy_b[3:-1], gx.RIGHT, buff=0.6).shift([0, -0.04, 0]),
+                  gs_copy.animate.next_to(gradient_descent_eq_2_copy_b[3:-1], gx.RIGHT, buff=1.2).shift([0.03, -0.1, 0]),
+                 gx.ReplacementTransform(gradient_descent_eq_2_copy_b[-5].copy(), p36_fix_eq_1[1])
                  )
         self.add(p36_fix_eq_1, p36_fix_eq_2)
         self.wait()
 
 
         gradient_vector_2 = (
-            Tex(
+            math_tex(
                 (
                     r"\left[ \frac{\partial g_S}{\partial \theta_1},"
                     r"\frac{\partial g_S}{\partial \theta_2},"
@@ -1165,7 +1150,7 @@ class P27_47c(Scene):
             )
             .set_color(YELLOW)
             .scale(0.8)
-            .next_to(gradient_descent_eq_2_copy_b, DOWN, buff=0.3)
+            .next_to(gradient_descent_eq_2_copy_b, gx.DOWN, buff=0.3)
             .shift([0.6, 0, 0])
         )
 
@@ -1176,44 +1161,44 @@ class P27_47c(Scene):
 
         # Ok, now how did pranav to the cool animation last time?
         # Also, let me go ahead and add the random arrow
-        funky_arrow_2 = SVGMobject(asset_dir_1+"/p33_40_to_manim-04.svg")[1:].scale(5)
+        funky_arrow_2 = gx.SVGMobject(scene_asset('p33_40_to_manim-04.svg'))[1:].scale(5)
         funky_arrow_2.move_to([10.3, -4.95, 0])       
 
         self.wait()
         self.play(
-            LaggedStart(
-                AnimationGroup(
-                    FadeIn(gradient_vector_2[0]),
-                    FadeIn(gradient_vector_2[1]),
-                    FadeIn(gradient_vector_2[4]),
-                    FadeIn(gradient_vector_2[5]),
-                    FadeIn(gradient_vector_2[8]),
-                    ReplacementTransform(
+            gx.LaggedStart(
+                gx.AnimationGroup(
+                    gx.FadeIn(gradient_vector_2[0]),
+                    gx.FadeIn(gradient_vector_2[1]),
+                    gx.FadeIn(gradient_vector_2[4]),
+                    gx.FadeIn(gradient_vector_2[5]),
+                    gx.FadeIn(gradient_vector_2[8]),
+                    gx.ReplacementTransform(
                         gs_copy.copy().copy().copy().copy(),
                         gradient_vector_2[2:4],
                     ),
-                    ReplacementTransform(s_theta_1.copy(), gradient_vector_2[6:8]),
+                    gx.ReplacementTransform(s_theta_1.copy(), gradient_vector_2[6:8]),
                 ),
-                AnimationGroup(
-                    FadeIn(gradient_vector_2[9]),
-                    FadeIn(gradient_vector_2[12]),
-                    FadeIn(gradient_vector_2[13]),
-                    FadeIn(gradient_vector_2[16]),
-                    ReplacementTransform(
+                gx.AnimationGroup(
+                    gx.FadeIn(gradient_vector_2[9]),
+                    gx.FadeIn(gradient_vector_2[12]),
+                    gx.FadeIn(gradient_vector_2[13]),
+                    gx.FadeIn(gradient_vector_2[16]),
+                    gx.ReplacementTransform(
                         gs_copy.copy().copy().copy(), gradient_vector_2[10:12]
                     ),
-                    ReplacementTransform(s_theta_2.copy(), gradient_vector_2[14:16]),
-                    FadeIn(gradient_vector_2[17:21]),
+                    gx.ReplacementTransform(s_theta_2.copy(), gradient_vector_2[14:16]),
+                    gx.FadeIn(gradient_vector_2[17:21]),
                 ),
-                AnimationGroup(
-                    FadeIn(gradient_vector_2[28]),
-                    FadeIn(gradient_vector_2[21]),
-                    FadeIn(gradient_vector_2[24]),
-                    FadeIn(gradient_vector_2[25]),
-                    ReplacementTransform(
+                gx.AnimationGroup(
+                    gx.FadeIn(gradient_vector_2[28]),
+                    gx.FadeIn(gradient_vector_2[21]),
+                    gx.FadeIn(gradient_vector_2[24]),
+                    gx.FadeIn(gradient_vector_2[25]),
+                    gx.ReplacementTransform(
                         gs_copy.copy().copy(), gradient_vector_2[22:24]
                     ),
-                    ReplacementTransform(s_theta_8.copy(), gradient_vector_2[26:28]),
+                    gx.ReplacementTransform(s_theta_8.copy(), gradient_vector_2[26:28]),
                 ),
                 lag_ratio=0.5,
                 run_time=5,
@@ -1224,12 +1209,12 @@ class P27_47c(Scene):
 
         #Ok now a smidge of cleanup that I had to add for the negative from the chain rule correction. 
         #Fade out minus signs, then adjust and fade out parenthesis I think, move over funky arrow. 
-        self.play(FadeOut(p36_fix_eq_1[1]), 
-                  FadeOut(gradient_descent_eq_2_copy_a[1]))
+        self.play(gx.FadeOut(p36_fix_eq_1[1]),
+                  gx.FadeOut(gradient_descent_eq_2_copy_a[1]))
 
         # self.remove(gradient_descent_eq_2_copy_a[0])
-        self.play(FadeOut(p36_fix_eq_1[0]),
-                  FadeOut(p36_fix_eq_2), 
+        self.play(gx.FadeOut(p36_fix_eq_1[0]),
+                  gx.FadeOut(p36_fix_eq_2),
                   nabla_copy.animate.shift([-0.5, 0, 0]),
                   gs_copy.animate.shift([-0.5, 0, 0]),
                   funky_arrow_2.animate.shift([-0.5, 0, 0]), 
@@ -1242,7 +1227,7 @@ class P27_47c(Scene):
         # I don't want to end up with a frankenstien equation going foward, 
         # So let me see if I can do some decent clean up here...
 
-        gradient_descent_eq_3 = Tex(r" = \alpha  (g_T - g_S) \nabla_\theta g_S")
+        gradient_descent_eq_3 = math_tex(r" = \alpha  (g_T - g_S) \nabla_\theta g_S")
         gradient_descent_eq_3.move_to([6.303+1.9, -3.425,  0])
         gradient_descent_eq_3[-4:-2].set_color(YELLOW)
         gradient_descent_eq_3[-2:].set_color(COOL_GREEN)
@@ -1252,12 +1237,12 @@ class P27_47c(Scene):
 
 
         self.wait()
-        self.play(FadeOut(funky_arrow_2), FadeOut(gradient_vector_2), FadeOut(gradient_descent_eq_2))
-        self.play(ReplacementTransform(gradient_descent_eq_2_copy_a[0], gradient_descent_eq_3[0]), 
-                  ReplacementTransform(gradient_descent_eq_2_copy_a[2], gradient_descent_eq_3[1]),
-                  ReplacementTransform(gradient_descent_eq_2_copy_b[3:-1], gradient_descent_eq_3[2:9]), 
-                  ReplacementTransform(nabla_copy, gradient_descent_eq_3[9:11]),
-                  ReplacementTransform(gs_copy, gradient_descent_eq_3[11:]))
+        self.play(gx.FadeOut(funky_arrow_2), gx.FadeOut(gradient_vector_2), gx.FadeOut(gradient_descent_eq_2))
+        self.play(gx.ReplacementTransform(gradient_descent_eq_2_copy_a[0], gradient_descent_eq_3[0]),
+                  gx.ReplacementTransform(gradient_descent_eq_2_copy_a[2], gradient_descent_eq_3[1]),
+                  gx.ReplacementTransform(gradient_descent_eq_2_copy_b[3:-1], gradient_descent_eq_3[2:9]),
+                  gx.ReplacementTransform(nabla_copy, gradient_descent_eq_3[9:11]),
+                  gx.ReplacementTransform(gs_copy, gradient_descent_eq_3[11:]))
         self.wait()
 
 
@@ -1268,22 +1253,22 @@ class P27_47c(Scene):
         # Hmm replaceing entire equation seems a bit problematic?
 
         squared_error_b = (
-            Tex(r"L_S = \frac{1}{2}(g_T - g_0)^2").scale(0.9).move_to(squared_error, aligned_edge=LEFT)
+            math_tex(r"L_S = \frac{1}{2}(g_T - g_0)^2").scale(0.9).move_to(squared_error, aligned_edge=gx.LEFT)
         )
 
         squared_error_b[7:9].set_color(COOL_GREEN)
         squared_error_b[10:12].set_color(COOL_GREEN)
 
-        gradient_descent_eq_3b = Tex(r" = \alpha  (g_T - g_0) \nabla_\theta g_0")
-        gradient_descent_eq_3b.move_to(gradient_descent_eq_3, aligned_edge=LEFT)
+        gradient_descent_eq_3b = math_tex(r" = \alpha  (g_T - g_0) \nabla_\theta g_0")
+        gradient_descent_eq_3b.move_to(gradient_descent_eq_3, aligned_edge=gx.LEFT)
         gradient_descent_eq_3b[-4:-2].set_color(YELLOW)
         gradient_descent_eq_3b[-2:].set_color(COOL_GREEN)
         gradient_descent_eq_3b[3:5].set_color(COOL_GREEN)
         gradient_descent_eq_3b[6:8].set_color(COOL_GREEN)
 
         self.wait()
-        self.play(ReplacementTransform(squared_error, squared_error_b), 
-                  ReplacementTransform(gradient_descent_eq_3, gradient_descent_eq_3b), lag_ratio=0.5, run_time=3)
+        self.play(gx.ReplacementTransform(squared_error, squared_error_b),
+                  gx.ReplacementTransform(gradient_descent_eq_3, gradient_descent_eq_3b), lag_ratio=0.5, run_time=3)
         self.wait()
 
         #Ok I think that will work for changing the g0s to gS. 
@@ -1309,10 +1294,10 @@ class P27_47c(Scene):
 
 
         #Ok, make new equations or push them around? Maybe new ones?
-        t_weight_eq_2 = Tex(r"\theta_T = \theta_T^0 + \Delta \theta_T", font_size=30).set_color(CHILL_BROWN)
-        s_weight_eq_2 = Tex(r"\theta_S = \theta_S^0 + \Delta \theta_S", font_size=30).set_color(CHILL_BROWN)
-        equal_weights_eq_2 = Tex(r"\theta_T^0 = \theta_S^0 = \theta^0", font_size=30).set_color(CHILL_BROWN)
-        g_0_eq = Tex(r"g_0=g(X, \theta^0)", font_size=30).set_color(CHILL_BROWN)
+        t_weight_eq_2 = math_tex(r"\theta_T = \theta_T^0 + \Delta \theta_T", font_size=30).set_color(CHILL_BROWN)
+        s_weight_eq_2 = math_tex(r"\theta_S = \theta_S^0 + \Delta \theta_S", font_size=30).set_color(CHILL_BROWN)
+        equal_weights_eq_2 = math_tex(r"\theta_T^0 = \theta_S^0 = \theta^0", font_size=30).set_color(CHILL_BROWN)
+        g_0_eq = math_tex(r"g_0=g(X, \theta^0)", font_size=30).set_color(CHILL_BROWN)
 
         spacing=3.7; start=-2.5
         equal_weights_eq_2.move_to([start, -5.85, 0])
@@ -1321,31 +1306,31 @@ class P27_47c(Scene):
         g_0_eq.move_to([start+spacing*3, -5.85, 0])
 
         equal_weights_text_2 = (  # TODO: Maybe implement
-            MarkupText(
+            markup_text(
                 "Teacher and student\nstart with same weights",
                 alignment="left",
                 font="Myriad Pro",
                 font_size=13,
             )
-            .next_to(equal_weights_eq_2, RIGHT, buff=0.15)
+            .next_to(equal_weights_eq_2, gx.RIGHT, buff=0.15)
             .set_color(CHILL_BROWN)
         )
 
         t_weight_text_2 = (  # TODO: Maybe implement
-            MarkupText("Teacher weight\nupdate step", alignment="left", font="Myriad Pro", font_size=13)
-            .next_to(t_weight_eq_2, RIGHT, buff=0.15)
+            markup_text("Teacher weight\nupdate step", alignment="left", font="Myriad Pro", font_size=13)
+            .next_to(t_weight_eq_2, gx.RIGHT, buff=0.15)
             .set_color(CHILL_BROWN)
         )
 
         s_weight_text_2 = (  # TODO: Maybe implement
-            MarkupText("Student weight\nupdate step", alignment="left", font="Myriad Pro", font_size=13)
-            .next_to(s_weight_eq_2, RIGHT, buff=0.15)
+            markup_text("Student weight\nupdate step", alignment="left", font="Myriad Pro", font_size=13)
+            .next_to(s_weight_eq_2, gx.RIGHT, buff=0.15)
             .set_color(CHILL_BROWN)
         )
 
         g_0_eq_text = (  # TODO: Maybe implement
-            MarkupText("Initial auxiliary output \nbefore training", alignment="left", font="Myriad Pro", font_size=13)
-            .next_to(g_0_eq, RIGHT, buff=0.15)
+            markup_text("Initial auxiliary output \nbefore training", alignment="left", font="Myriad Pro", font_size=13)
+            .next_to(g_0_eq, gx.RIGHT, buff=0.15)
             .set_color(CHILL_BROWN)
         )
 
@@ -1354,11 +1339,11 @@ class P27_47c(Scene):
         # self.add(equal_weights_text_2, t_weight_text_2, s_weight_text_2, g_0_eq_text)
 
         #Ok pretty good, now I need a horizontal line and the big animation!
-        legend_line=Line([-3.7, -5.5, 0], [11.2, -5.5, 0], buff=0)
+        legend_line=gx.Line([-3.7, -5.5, 0], [11.2, -5.5, 0], buff=0)
         legend_line.set_stroke(color=CHILL_BROWN, width=1)
         # self.add(legend_line)
 
-        legend_footer_group=Group(t_weight_eq_2, s_weight_eq_2, equal_weights_eq_2, g_0_eq, 
+        legend_footer_group=gx.Group(t_weight_eq_2, s_weight_eq_2, equal_weights_eq_2, g_0_eq,
                                   equal_weights_text_2, t_weight_text_2, s_weight_text_2, g_0_eq_text, legend_line)
         # self.add(legend_footer_group)
 
@@ -1368,7 +1353,7 @@ class P27_47c(Scene):
         # squared_error_b.scale(0.8) 
         # squared_error_b.move_to([6.9, -1.8, 0])
 
-        student_line_2_eq_p38=VGroup(gradient_descent_eq, gradient_descent_eq_3b)
+        student_line_2_eq_p38=gx.VGroup(gradient_descent_eq, gradient_descent_eq_3b)
         # student_line_2_eq_p38.scale(0.8)
         # student_line_2_eq_p38.move_to([7.2, -2.6, 0])
 
@@ -1379,46 +1364,46 @@ class P27_47c(Scene):
         #Now do all moves together
         self.wait()
         # self.remove(small_t_weight_eq, small_s_weight_eq, small_equal_weights)
-        self.play(FadeOut(green_arrow), 
+        self.play(gx.FadeOut(green_arrow),
             squared_error_b.animate.scale(0.8).move_to([6.9, -1.8, 0]), 
             student_line_2_eq_p38.animate.scale(0.8).move_to([7.2, -2.6, 0]),
-            ReplacementTransform(small_equal_weights, equal_weights_eq_2[:-3]), 
-            ReplacementTransform(small_t_weight_eq, t_weight_eq_2),
-            ReplacementTransform(small_s_weight_eq, s_weight_eq_2),
+            gx.ReplacementTransform(small_equal_weights, equal_weights_eq_2[:-3]),
+            gx.ReplacementTransform(small_t_weight_eq, t_weight_eq_2),
+            gx.ReplacementTransform(small_s_weight_eq, s_weight_eq_2),
             )
-        self.play(ShowCreation(legend_line), FadeIn(equal_weights_eq_2[-3:]), FadeIn(g_0_eq), 
-                 FadeIn(equal_weights_text_2), FadeIn(t_weight_text_2), FadeIn(s_weight_text_2), FadeIn(g_0_eq_text), 
-                 FadeIn(auxiliary_output[1]), FadeIn(t_network_copy[-2][1]))
+        self.play(gx.Create(legend_line), gx.FadeIn(equal_weights_eq_2[-3:]), gx.FadeIn(g_0_eq),
+                 gx.FadeIn(equal_weights_text_2), gx.FadeIn(t_weight_text_2), gx.FadeIn(s_weight_text_2), gx.FadeIn(g_0_eq_text),
+                 gx.FadeIn(auxiliary_output[1]), gx.FadeIn(t_network_copy[-2][1]))
         self.wait()
 
         # self.add(equal_weights_eq_2, t_weight_eq_2, s_weight_eq_2, g_0_eq)
         # self.add(equal_weights_text_2, t_weight_text_2, s_weight_text_2, g_0_eq_text)
 
-        gt_question_eq=Tex("g_T= \: ?", font_size=56).set_color(COOL_GREEN)
+        gt_question_eq=math_tex("g_T= \: ?", font_size=56).set_color(COOL_GREEN)
         gt_question_eq.move_to([0, -2.3, 0])
 
-        self.play(ReplacementTransform(t_g_t.copy(), gt_question_eq[:2]))
-        self.play(Write(gt_question_eq[2:]))
+        self.play(gx.ReplacementTransform(t_g_t.copy(), gt_question_eq[:2]))
+        self.play(gx.Write(gt_question_eq[2:]))
         self.wait()
 
 
-        p33_40_to_manim_05 = SVGMobject(asset_dir_1+"/p33_40_to_manim-05.svg")[1:].scale(4)
+        p33_40_to_manim_05 = gx.SVGMobject(scene_asset('p33_40_to_manim-05.svg'))[1:].scale(4)
         
         p33_40_to_manim_05.move_to([0.2, -2.25, 0])
-        g_0_eq_2=Tex("g_0", font_size=56).set_color(COOL_GREEN)
+        g_0_eq_2=math_tex("g_0", font_size=56).set_color(COOL_GREEN)
         g_0_eq_2.move_to([-0.8, -2.4, 0])
 
 
         self.remove(gt_question_eq[2:])
         self.play(gt_question_eq[:2].animate.shift([1.7, 0, 0]))
-        self.play(ShowCreation(p33_40_to_manim_05[:-3]), Write(g_0_eq_2))
+        self.play(gx.Create(p33_40_to_manim_05[:-3]), gx.Write(g_0_eq_2))
         self.wait()
-        self.play(ReplacementTransform(t_weight_eq_2[-3:].copy(), p33_40_to_manim_05[-3:]))
+        self.play(gx.ReplacementTransform(t_weight_eq_2[-3:].copy(), p33_40_to_manim_05[-3:]))
         self.wait()
 
 
         #Ok let me kinda start with the end in midn here and get finalish equation setup first. 
-        taylor_expansion_1=Tex(r"g_T \approx g_0 + \frac{\partial g_0}{\partial \theta_1} \Delta \theta_1 + ... ", font_size=50)
+        taylor_expansion_1=math_tex(r"g_T \approx g_0 + \frac{\partial g_0}{\partial \theta_1} \Delta \theta_1 + ... ", font_size=50)
         taylor_expansion_1.move_to([0.1, -2.3, 0])
         taylor_expansion_1[:2].set_color(COOL_GREEN)
         taylor_expansion_1[3:5].set_color(COOL_GREEN)
@@ -1429,45 +1414,45 @@ class P27_47c(Scene):
         # self.remove(taylor_expansion_1)
 
         self.wait()
-        self.play(FadeOut(p33_40_to_manim_05[:-3]))
-        self.play(ReplacementTransform(g_0_eq_2, taylor_expansion_1[3:5]), 
-                  ReplacementTransform(gt_question_eq[:2], taylor_expansion_1[:2]), 
-                  ReplacementTransform(p33_40_to_manim_05[-3:], taylor_expansion_1[-7:-4]))
-        self.play(FadeIn(taylor_expansion_1[2]), FadeIn(taylor_expansion_1[5]), 
-                  FadeIn(taylor_expansion_1[6:13]), FadeIn(taylor_expansion_1[-4:]))
+        self.play(gx.FadeOut(p33_40_to_manim_05[:-3]))
+        self.play(gx.ReplacementTransform(g_0_eq_2, taylor_expansion_1[3:5]),
+                  gx.ReplacementTransform(gt_question_eq[:2], taylor_expansion_1[:2]),
+                  gx.ReplacementTransform(p33_40_to_manim_05[-3:], taylor_expansion_1[-7:-4]))
+        self.play(gx.FadeIn(taylor_expansion_1[2]), gx.FadeIn(taylor_expansion_1[5]),
+                  gx.FadeIn(taylor_expansion_1[6:13]), gx.FadeIn(taylor_expansion_1[-4:]))
 
         self.wait()
 
         # I think especially when we get to the drawin here, it will be cool to 
         # possibly bring things down from the teacher model!
 
-        p33_40_to_manim_06 = SVGMobject(asset_dir_1+"/p33_40_to_manim-06.svg")[1:].scale(4)
-        p33_40_to_manim_07 = SVGMobject(asset_dir_1+"/p33_40_to_manim-07.svg")[1:].scale(4)
-        p33_40_to_manim_08 = SVGMobject(asset_dir_1+"/p33_40_to_manim-08.svg")[1:].scale(4)
-        p33_40_to_manim_09 = SVGMobject(asset_dir_1+"/p33_40_to_manim-09.svg")[1:].scale(4)
+        p33_40_to_manim_06 = gx.SVGMobject(scene_asset('p33_40_to_manim-06.svg'))[1:].scale(4)
+        p33_40_to_manim_07 = gx.SVGMobject(scene_asset('p33_40_to_manim-07.svg'))[1:].scale(4)
+        p33_40_to_manim_08 = gx.SVGMobject(scene_asset('p33_40_to_manim-08.svg'))[1:].scale(4)
+        p33_40_to_manim_09 = gx.SVGMobject(scene_asset('p33_40_to_manim-09.svg'))[1:].scale(4)
         p33_40_to_manim_06.move_to([0.9, -4.2, 0])
         p33_40_to_manim_07.move_to([1.15, -4.1, 0])
         p33_40_to_manim_08.move_to([0.88, -4.9, 0])
         p33_40_to_manim_09.move_to([0.65, -3.6, 0])
-        taylor_expansion_plot_1 = Group(p33_40_to_manim_06, p33_40_to_manim_07, p33_40_to_manim_08, p33_40_to_manim_09)
+        taylor_expansion_plot_1 = gx.Group(p33_40_to_manim_06, p33_40_to_manim_07, p33_40_to_manim_08, p33_40_to_manim_09)
 
 
         self.wait()
-        self.play(FadeIn(p33_40_to_manim_06))
-        self.play(Write(p33_40_to_manim_07[-1]), 
-            ReplacementTransform(taylor_expansion_1[6:13].copy(), p33_40_to_manim_07[:-1]))
+        self.play(gx.FadeIn(p33_40_to_manim_06))
+        self.play(gx.Write(p33_40_to_manim_07[-1]),
+            gx.ReplacementTransform(taylor_expansion_1[6:13].copy(), p33_40_to_manim_07[:-1]))
         self.wait()
 
-        self.play(FadeIn(p33_40_to_manim_08[-2:]), ReplacementTransform(taylor_expansion_1[13:16].copy(), p33_40_to_manim_08[:-2]))
+        self.play(gx.FadeIn(p33_40_to_manim_08[-2:]), gx.ReplacementTransform(taylor_expansion_1[13:16].copy(), p33_40_to_manim_08[:-2]))
         self.wait()
-        self.play(Write(p33_40_to_manim_09))
+        self.play(gx.Write(p33_40_to_manim_09))
         self.wait()
 
 
         # Ok final bit of this big ole paragraph. 
         # Alright lets see here, let me start with the end again for this last move of p38. 
-        p33_40_to_manim_10 = SVGMobject(asset_dir_1+"/p33_40_to_manim-10.svg")[1:].scale(4)
-        taylor_expansion_2=Tex(r"g_T \approx g_0 + \frac{\partial g_0}{\partial \theta_1} \Delta \theta_1 + \frac{\partial g_0}{\partial \theta_2} \Delta \theta_2 + \frac{\partial g_0}{\partial \theta_3} \Delta \theta_3 +... ", font_size=36)
+        p33_40_to_manim_10 = gx.SVGMobject(scene_asset('p33_40_to_manim-10.svg'))[1:].scale(4)
+        taylor_expansion_2=math_tex(r"g_T \approx g_0 + \frac{\partial g_0}{\partial \theta_1} \Delta \theta_1 + \frac{\partial g_0}{\partial \theta_2} \Delta \theta_2 + \frac{\partial g_0}{\partial \theta_3} \Delta \theta_3 +... ", font_size=36)
         taylor_expansion_2.move_to([0.1, -2.3, 0])
         taylor_expansion_2[:2].set_color(COOL_GREEN)
         taylor_expansion_2[3:5].set_color(COOL_GREEN)
@@ -1486,15 +1471,15 @@ class P27_47c(Scene):
         #Animate then tweak positions and colorz. 
         self.wait()
         self.remove(taylor_expansion_1[-3:]) #Drop elipses
-        self.play(ReplacementTransform(taylor_expansion_1[:-3], taylor_expansion_2[:len(taylor_expansion_1)-3]), 
+        self.play(gx.ReplacementTransform(taylor_expansion_1[:-3], taylor_expansion_2[:len(taylor_expansion_1)-3]),
                   taylor_expansion_plot_1.animate.scale(0.7).move_to([-1.2, -3.5, 0]))
-        self.play(FadeIn(taylor_expansion_2[len(taylor_expansion_1)-3:]), FadeIn(p33_40_to_manim_10))
+        self.play(gx.FadeIn(taylor_expansion_2[len(taylor_expansion_1)-3:]), gx.FadeIn(p33_40_to_manim_10))
 
         self.wait()
 
 
         ## --- P39 let's go --- ## 
-        taylor_expansion_3=Tex(r"g_T \approx g_0 + \nabla_{\theta} g_0 \cdot \Delta \theta_T", font_size=42)
+        taylor_expansion_3=math_tex(r"g_T \approx g_0 + \nabla_{\theta} g_0 \cdot \Delta \theta_T", font_size=42)
         taylor_expansion_3.move_to([0.1, -2.3, 0])
         taylor_expansion_3[:2].set_color(COOL_GREEN)
         taylor_expansion_3[3:5].set_color(COOL_GREEN)
@@ -1507,16 +1492,16 @@ class P27_47c(Scene):
 
 
         self.wait()
-        self.play(FadeOut(p33_40_to_manim_10), FadeOut(taylor_expansion_plot_1))
+        self.play(gx.FadeOut(p33_40_to_manim_10), gx.FadeOut(taylor_expansion_plot_1))
         self.remove(taylor_expansion_2[16], taylor_expansion_2[27], taylor_expansion_2[38:])
-        self.play(ReplacementTransform(taylor_expansion_2[:6], taylor_expansion_3[:6]), 
-                  ReplacementTransform(taylor_expansion_2[6:13], taylor_expansion_3[6:8]), 
-                  ReplacementTransform(taylor_expansion_2[17:24], taylor_expansion_3[6:8]),
-                  ReplacementTransform(taylor_expansion_2[28:35], taylor_expansion_3[6:8]),
-                  ReplacementTransform(taylor_expansion_2[13:16], taylor_expansion_3[11:]), 
-                  ReplacementTransform(taylor_expansion_2[24:27], taylor_expansion_3[11:]),
-                  ReplacementTransform(taylor_expansion_2[35:38], taylor_expansion_3[11:]),
-                  ReplacementTransform(taylor_expansion_2[3:5].copy(), taylor_expansion_3[8:10]), 
+        self.play(gx.ReplacementTransform(taylor_expansion_2[:6], taylor_expansion_3[:6]),
+                  gx.ReplacementTransform(taylor_expansion_2[6:13], taylor_expansion_3[6:8]),
+                  gx.ReplacementTransform(taylor_expansion_2[17:24], taylor_expansion_3[6:8]),
+                  gx.ReplacementTransform(taylor_expansion_2[28:35], taylor_expansion_3[6:8]),
+                  gx.ReplacementTransform(taylor_expansion_2[13:16], taylor_expansion_3[11:]),
+                  gx.ReplacementTransform(taylor_expansion_2[24:27], taylor_expansion_3[11:]),
+                  gx.ReplacementTransform(taylor_expansion_2[35:38], taylor_expansion_3[11:]),
+                  gx.ReplacementTransform(taylor_expansion_2[3:5].copy(), taylor_expansion_3[8:10]),
                   run_time=2.5)
         self.add(taylor_expansion_3[10])
         self.wait()
@@ -1524,10 +1509,10 @@ class P27_47c(Scene):
         # self.remove(taylor_expansion_2)
         # self.add(taylor_expansion_3)
         # self.add(taylor_expansion_3[8:10])
-        p33_40_to_manim_11 = SVGMobject(asset_dir_1+"/p33_40_to_manim-11.svg")[1:].scale(4.2)
+        p33_40_to_manim_11 = gx.SVGMobject(scene_asset('p33_40_to_manim-11.svg'))[1:].scale(4.2)
         p33_40_to_manim_11.move_to([1.1, -2.7, 0])
 
-        self.play(FadeIn(p33_40_to_manim_11))
+        self.play(gx.FadeIn(p33_40_to_manim_11))
         self.wait()
 
 
@@ -1535,7 +1520,7 @@ class P27_47c(Scene):
 
         ### -- P40 -- ###
         #Make where we want to go here and then replacement transforms
-        delta_theta_s_eq_3=Tex(r'= \alpha (g_0 + \nabla_{\theta} g_0 \cdot \Delta \theta_T - g_0) \nabla_{\theta} g_0', font_size=37)
+        delta_theta_s_eq_3=math_tex(r'= \alpha (g_0 + \nabla_{\theta} g_0 \cdot \Delta \theta_T - g_0) \nabla_{\theta} g_0', font_size=37)
         delta_theta_s_eq_3.move_to([7.65, -3.4, 0])
         delta_theta_s_eq_3[3:5].set_color(COOL_GREEN)
         delta_theta_s_eq_3[6:8].set_color(YELLOW)
@@ -1547,29 +1532,29 @@ class P27_47c(Scene):
 
 
         self.wait()
-        self.play(ReplacementTransform(gradient_descent_eq_3b[:3].copy(), delta_theta_s_eq_3[:3]), 
-                  ReplacementTransform(gradient_descent_eq_3b[-8:].copy(), delta_theta_s_eq_3[-8:]), run_time=2)
+        self.play(gx.ReplacementTransform(gradient_descent_eq_3b[:3].copy(), delta_theta_s_eq_3[:3]),
+                  gx.ReplacementTransform(gradient_descent_eq_3b[-8:].copy(), delta_theta_s_eq_3[-8:]), run_time=2)
         self.remove(p33_40_to_manim_11)
-        self.play(ReplacementTransform(taylor_expansion_3[3:].copy(), delta_theta_s_eq_3[3:-8]), run_time=2)
+        self.play(gx.ReplacementTransform(taylor_expansion_3[3:].copy(), delta_theta_s_eq_3[3:-8]), run_time=2)
         self.wait()
 
         #Ok let's cancel some shit.
         line_len=0.35
         line_center=delta_theta_s_eq_3[3:5].get_center()
-        cross_out_line_2=Line(line_center+np.array([-line_len/2, line_len/2, 0]), line_center+np.array([line_len/2, -line_len/2, 0]))
+        cross_out_line_2=gx.Line(line_center+np.array([-line_len/2, line_len/2, 0]), line_center+np.array([line_len/2, -line_len/2, 0]))
         cross_out_line_2.set_stroke(color=YELLOW, width=4)
 
         line_len=0.35
         line_center=delta_theta_s_eq_3[15:17].get_center()
-        cross_out_line_3=Line(line_center+np.array([-line_len/2, line_len/2, 0]), line_center+np.array([line_len/2, -line_len/2, 0]))
+        cross_out_line_3=gx.Line(line_center+np.array([-line_len/2, line_len/2, 0]), line_center+np.array([line_len/2, -line_len/2, 0]))
         cross_out_line_3.set_stroke(color=YELLOW, width=4)
 
 
-        self.play(ShowCreation(cross_out_line_2), ShowCreation(cross_out_line_3))
+        self.play(gx.Create(cross_out_line_2), gx.Create(cross_out_line_3))
         self.wait()
 
 
-        delta_theta_s_eq_4=Tex(r'= \alpha (\nabla_{\theta} g_0 \cdot \Delta \theta_T) \nabla_{\theta} g_0', font_size=37)
+        delta_theta_s_eq_4=math_tex(r'= \alpha (\nabla_{\theta} g_0 \cdot \Delta \theta_T) \nabla_{\theta} g_0', font_size=37)
         delta_theta_s_eq_4.move_to([6.85, -4.22, 0])        
         delta_theta_s_eq_4[3:5].set_color(YELLOW)
         delta_theta_s_eq_4[5:7].set_color(COOL_GREEN)
@@ -1579,15 +1564,15 @@ class P27_47c(Scene):
 
 
         self.wait()
-        self.play(ReplacementTransform(delta_theta_s_eq_3[:3].copy(), delta_theta_s_eq_4[:3]), 
-                  ReplacementTransform(delta_theta_s_eq_3[6:14].copy(), delta_theta_s_eq_4[3:11]), 
-                  ReplacementTransform(delta_theta_s_eq_3[17:].copy(), delta_theta_s_eq_4[11:]), run_time=2.5)
+        self.play(gx.ReplacementTransform(delta_theta_s_eq_3[:3].copy(), delta_theta_s_eq_4[:3]),
+                  gx.ReplacementTransform(delta_theta_s_eq_3[6:14].copy(), delta_theta_s_eq_4[3:11]),
+                  gx.ReplacementTransform(delta_theta_s_eq_3[17:].copy(), delta_theta_s_eq_4[11:]), run_time=2.5)
         self.wait()
 
         # To support the final line, i think we bring down the Delta Theta S
         # Then I think it does away showrlty. 
         delta_theta_s_term_copy=gradient_descent_eq[:3].copy()
-        self.play(delta_theta_s_term_copy.animate.next_to(delta_theta_s_eq_4, LEFT, buff=0.15), run_time=2)
+        self.play(delta_theta_s_term_copy.animate.next_to(delta_theta_s_eq_4, gx.LEFT, buff=0.15), run_time=2)
         self.wait()
         
 
@@ -1600,41 +1585,41 @@ class P27_47c(Scene):
         ## Then fade a bunch of stuff the fuck out, and bring most of it back in p43. 
 
 
-        central_dot_product_eq=Tex(r"\Delta \theta_T \cdot \Delta \theta_S", font_size=42)
+        central_dot_product_eq=math_tex(r"\Delta \theta_T \cdot \Delta \theta_S", font_size=42)
         central_dot_product_eq.move_to([3.8, -1.8, 0])
         central_dot_product_eq[:3].set_color(CYAN)
 
 
         self.wait()
-        self.play(ReplacementTransform(gradient_descent_eq[:3].copy(), central_dot_product_eq[4:]), 
-                  ReplacementTransform(taylor_expansion_3[-3:].copy(), central_dot_product_eq[:3]), 
-                  FadeOut(taylor_expansion_3), 
-                  FadeOut(legend_footer_group), 
-                  FadeOut(delta_theta_s_term_copy), #Dont' bring this one back
-                  FadeOut(delta_theta_s_eq_4), 
-                  FadeOut(delta_theta_s_eq_3), 
-                  FadeOut(cross_out_line_3),
-                  FadeOut(squared_error_b),
-                  FadeOut(cross_out_line_2),
-                  FadeOut(gradient_descent_eq_3b), 
-                  FadeOut(gradient_descent_eq), run_time=2.5)
+        self.play(gx.ReplacementTransform(gradient_descent_eq[:3].copy(), central_dot_product_eq[4:]),
+                  gx.ReplacementTransform(taylor_expansion_3[-3:].copy(), central_dot_product_eq[:3]),
+                  gx.FadeOut(taylor_expansion_3),
+                  gx.FadeOut(legend_footer_group),
+                  gx.FadeOut(delta_theta_s_term_copy), #Dont' bring this one back
+                  gx.FadeOut(delta_theta_s_eq_4),
+                  gx.FadeOut(delta_theta_s_eq_3),
+                  gx.FadeOut(cross_out_line_3),
+                  gx.FadeOut(squared_error_b),
+                  gx.FadeOut(cross_out_line_2),
+                  gx.FadeOut(gradient_descent_eq_3b),
+                  gx.FadeOut(gradient_descent_eq), run_time=2.5)
         self.add(central_dot_product_eq[3]) #Add the dot lol. 
         self.wait()
 
 
         #Ok now we need some paramter space!
-        p30_48_to_manim_1 = SVGMobject(asset_dir_1+"/p40_48_to_manim-01.svg")[1:].scale(4.2)
-        p30_48_to_manim_2 = SVGMobject(asset_dir_1+"/p40_48_to_manim-02.svg")[1:].scale(4.2)
+        p30_48_to_manim_1 = gx.SVGMobject(scene_asset('p40_48_to_manim-01.svg'))[1:].scale(4.2)
+        p30_48_to_manim_2 = gx.SVGMobject(scene_asset('p40_48_to_manim-02.svg'))[1:].scale(4.2)
 
         p30_48_to_manim_1.move_to([4, -4, 0])
         p30_48_to_manim_2.move_to([4.3, -3.75, 0])
 
 
-        paramter_space_text = MarkupText("Parameter space", alignment="left", font="Myriad Pro", font_size=18).set_color(CHILL_BROWN)
+        paramter_space_text = markup_text("Parameter space", alignment="left", font="Myriad Pro", font_size=18).set_color(CHILL_BROWN)
         paramter_space_text.move_to([4, -5.8, 0])
 
 
-        theta_0_dot=Dot(radius=0.07).set_color(CHILL_BROWN)
+        theta_0_dot=gx.Dot(radius=0.07).set_color(CHILL_BROWN)
         theta_0_dot.move_to([3.9, -4, 0])
 
 
@@ -1643,7 +1628,7 @@ class P27_47c(Scene):
         teacher_arrow_start=theta_0_dot.get_center()
         teacher_arrow_end=theta_0_dot.get_center()+np.array([teacher_arrow_len*np.cos(np.pi*teacher_arrow_angle/180), 
                                                             teacher_arrow_len*np.sin(np.pi*teacher_arrow_angle/180),0])
-        teacher_arrow_1 = Arrow(teacher_arrow_start, teacher_arrow_end, thickness=2.5, buff=0)
+        teacher_arrow_1 = diagram_arrow(teacher_arrow_start, teacher_arrow_end, thickness=2.5, buff=0)
         teacher_arrow_1.set_color(CYAN)
 
         student_arrow_angle=10 #Degrees
@@ -1651,107 +1636,107 @@ class P27_47c(Scene):
         student_arrow_start=theta_0_dot.get_center()
         student_arrow_end=theta_0_dot.get_center()+np.array([student_arrow_len*np.cos(np.pi*student_arrow_angle/180), 
                                                             student_arrow_len*np.sin(np.pi*student_arrow_angle/180),0])
-        student_arrow_1 = Arrow(student_arrow_start, student_arrow_end, thickness=2.5, buff=0)
-        student_arrow_1.set_color(WHITE)
+        student_arrow_1 = diagram_arrow(student_arrow_start, student_arrow_end, thickness=2.5, buff=0)
+        student_arrow_1.set_color(gx.WHITE)
 
         #Lerbels move down after we add those suckers
-        teacher_label_1=Tex(r"\Delta \theta_T", font_size=38)
+        teacher_label_1=math_tex(r"\Delta \theta_T", font_size=38)
         teacher_label_1.set_color(CYAN)
         teacher_label_1.move_to(teacher_arrow_1).shift([-0.5, 0.1, 0]) #This might get tricky as we rotate!
 
-        student_label_1=Tex(r"\Delta \theta_S", font_size=38)
-        student_label_1.set_color(WHITE)
+        student_label_1=math_tex(r"\Delta \theta_S", font_size=38)
+        student_label_1.set_color(gx.WHITE)
         student_label_1.move_to(student_arrow_1).shift([0.1, -0.3, 0]) #This might get tricky as we rotate!    
 
-        theta_0_label_1=Tex(r"\theta^0", font_size=38)
+        theta_0_label_1=math_tex(r"\theta^0", font_size=38)
         theta_0_label_1.set_color(CHILL_BROWN)
         theta_0_label_1.move_to(theta_0_dot).shift([-0.3, 0, 0]) #This might get tricky as we rotate!       
 
 
-        geq_eq_1=Tex(r"\geq 0", font_size=42)
+        geq_eq_1=math_tex(r"\geq 0", font_size=42)
         geq_eq_1.set_color(YELLOW)
-        geq_eq_1.next_to(central_dot_product_eq, RIGHT, buff=0.2)
+        geq_eq_1.next_to(central_dot_product_eq, gx.RIGHT, buff=0.2)
 
-        eq_0_eq_1=Tex(r"= 0", font_size=42)
+        eq_0_eq_1=math_tex(r"= 0", font_size=42)
         eq_0_eq_1.set_color(YELLOW)
-        eq_0_eq_1.next_to(central_dot_product_eq, RIGHT, buff=0.2)
+        eq_0_eq_1.next_to(central_dot_product_eq, gx.RIGHT, buff=0.2)
 
-        leq_eq_1=Tex(r"\leq 0", font_size=42)
+        leq_eq_1=math_tex(r"\leq 0", font_size=42)
         leq_eq_1.set_color(YELLOW)
-        leq_eq_1.next_to(central_dot_product_eq, RIGHT, buff=0.2)
+        leq_eq_1.next_to(central_dot_product_eq, gx.RIGHT, buff=0.2)
 
 
         self.wait()
-        self.play(ShowCreation(p30_48_to_manim_1), Write(paramter_space_text))
-        self.play(ShowCreation(theta_0_dot), Write(theta_0_label_1))
+        self.play(gx.Create(p30_48_to_manim_1), gx.Write(paramter_space_text))
+        self.play(gx.Create(theta_0_dot), gx.Write(theta_0_label_1))
         self.wait()
 
-        self.play(ReplacementTransform(central_dot_product_eq[:3].copy(), teacher_label_1),
-                  ReplacementTransform(central_dot_product_eq[4:].copy(), student_label_1), 
-                  GrowArrow(teacher_arrow_1), 
-                  GrowArrow(student_arrow_1),run_time=2.5)
+        self.play(gx.ReplacementTransform(central_dot_product_eq[:3].copy(), teacher_label_1),
+                  gx.ReplacementTransform(central_dot_product_eq[4:].copy(), student_label_1),
+                  gx.GrowArrow(teacher_arrow_1),
+                  gx.GrowArrow(student_arrow_1),run_time=2.5)
         self.wait()
 
         self.add(p30_48_to_manim_2)
         self.wait()
-        self.play(Write(geq_eq_1))
+        self.play(gx.Write(geq_eq_1))
         self.wait()
 
 
         #Ok now make vectors orthogonal. 
         self.wait()
         self.remove(p30_48_to_manim_2)
-        self.play(teacher_arrow_1.animate.rotate(DEGREES*40, [0, 0, 1], theta_0_dot.get_center()), 
+        self.play(teacher_arrow_1.animate.rotate(gx.DEGREES*40, [0, 0, 1], theta_0_dot.get_center()),
                   teacher_label_1.animate.shift([-0.45, 0, 0]), run_time=2.5)
         self.add(theta_0_dot)
         self.wait()
 
-        self.play(ReplacementTransform(geq_eq_1, eq_0_eq_1))
+        self.play(gx.ReplacementTransform(geq_eq_1, eq_0_eq_1))
         self.wait()
 
         #Now they move in different directions
         self.wait()
-        self.play(teacher_arrow_1.animate.rotate(DEGREES*40, [0, 0, 1], theta_0_dot.get_center()), 
+        self.play(teacher_arrow_1.animate.rotate(gx.DEGREES*40, [0, 0, 1], theta_0_dot.get_center()),
                   teacher_label_1.animate.shift([-0.45, -0.3, 0]), 
                   theta_0_label_1.animate.shift([0, -0.1, 0]), run_time=2.5)
         self.add(theta_0_dot)
         self.wait()
 
-        self.play(ReplacementTransform(eq_0_eq_1, leq_eq_1))
+        self.play(gx.ReplacementTransform(eq_0_eq_1, leq_eq_1))
         self.wait()        
 
 
         ## ---- P43 ----- ##
         # litte resent, bring dot product over to left side, and = ?, bring back in everything else!
-        left_dot_product_eq=Tex(r"\Delta \theta_T \cdot \Delta \theta_S = \: ?", font_size=37)
+        left_dot_product_eq=math_tex(r"\Delta \theta_T \cdot \Delta \theta_S = \: ?", font_size=37)
         left_dot_product_eq.move_to([-2.25, -2, 0])
         left_dot_product_eq[:3].set_color(CYAN)
 
         self.wait()
-        self.play(ReplacementTransform(central_dot_product_eq[4:7], left_dot_product_eq[4:7]), 
-                  ReplacementTransform(central_dot_product_eq[:3], left_dot_product_eq[:3]), 
-                  FadeOut(central_dot_product_eq[3]), 
-                  FadeOut(leq_eq_1),
-                  FadeOut(p30_48_to_manim_1), 
-                  FadeOut(paramter_space_text),
-                  FadeOut(theta_0_label_1),
-                  FadeOut(teacher_label_1),
-                  FadeOut(student_label_1),
-                  FadeOut(teacher_arrow_1),
-                  FadeOut(student_arrow_1),
-                  FadeOut(theta_0_dot),
-                  FadeIn(legend_footer_group), 
-                  FadeIn(delta_theta_s_eq_4), 
-                  FadeIn(delta_theta_s_eq_3), 
-                  FadeIn(cross_out_line_3),
-                  FadeIn(squared_error_b),
-                  FadeIn(cross_out_line_2),
-                  FadeIn(gradient_descent_eq_3b), 
-                  FadeIn(gradient_descent_eq), run_time=2.5)
+        self.play(gx.ReplacementTransform(central_dot_product_eq[4:7], left_dot_product_eq[4:7]),
+                  gx.ReplacementTransform(central_dot_product_eq[:3], left_dot_product_eq[:3]),
+                  gx.FadeOut(central_dot_product_eq[3]),
+                  gx.FadeOut(leq_eq_1),
+                  gx.FadeOut(p30_48_to_manim_1),
+                  gx.FadeOut(paramter_space_text),
+                  gx.FadeOut(theta_0_label_1),
+                  gx.FadeOut(teacher_label_1),
+                  gx.FadeOut(student_label_1),
+                  gx.FadeOut(teacher_arrow_1),
+                  gx.FadeOut(student_arrow_1),
+                  gx.FadeOut(theta_0_dot),
+                  gx.FadeIn(legend_footer_group),
+                  gx.FadeIn(delta_theta_s_eq_4),
+                  gx.FadeIn(delta_theta_s_eq_3),
+                  gx.FadeIn(cross_out_line_3),
+                  gx.FadeIn(squared_error_b),
+                  gx.FadeIn(cross_out_line_2),
+                  gx.FadeIn(gradient_descent_eq_3b),
+                  gx.FadeIn(gradient_descent_eq), run_time=2.5)
         self.add(left_dot_product_eq)
         self.wait()
 
-        left_dot_product_eq_2=Tex(r"\Delta \theta_S \cdot \Delta \theta_T = [\alpha (\nabla_{\theta} g_0 \cdot \Delta \theta_T) \nabla_{\theta} g_0] \cdot \Delta \theta_T", font_size=37)
+        left_dot_product_eq_2=math_tex(r"\Delta \theta_S \cdot \Delta \theta_T = [\alpha (\nabla_{\theta} g_0 \cdot \Delta \theta_T) \nabla_{\theta} g_0] \cdot \Delta \theta_T", font_size=37)
         left_dot_product_eq_2.move_to([-0.15, -2.77, 0])
         left_dot_product_eq_2[4:7].set_color(CYAN)
         left_dot_product_eq_2[11:13].set_color(YELLOW)
@@ -1765,25 +1750,25 @@ class P27_47c(Scene):
         self.wait()
         #Ok I think I have a good solution to match the VO, do the left side bring down switch action at after the rist side!
 
-        self.play(ReplacementTransform(delta_theta_s_eq_4[1:].copy(), left_dot_product_eq_2[9:-5]), run_time=2.5)
+        self.play(gx.ReplacementTransform(delta_theta_s_eq_4[1:].copy(), left_dot_product_eq_2[9:-5]), run_time=2.5)
         self.add(left_dot_product_eq_2[7:8],left_dot_product_eq_2[-4],left_dot_product_eq_2[8], left_dot_product_eq_2[-5])
-        self.play(ReplacementTransform(left_dot_product_eq[:3].copy(), left_dot_product_eq_2[-3:]), run_time=2.5)
+        self.play(gx.ReplacementTransform(left_dot_product_eq[:3].copy(), left_dot_product_eq_2[-3:]), run_time=2.5)
         self.wait()
-        self.play(ReplacementTransform(left_dot_product_eq[:3].copy(), left_dot_product_eq_2[4:7]), #The ole switcheroo
-                  ReplacementTransform(left_dot_product_eq[4:7].copy(), left_dot_product_eq_2[:3]), run_time=2.5)
+        self.play(gx.ReplacementTransform(left_dot_product_eq[:3].copy(), left_dot_product_eq_2[4:7]), #The ole switcheroo
+                  gx.ReplacementTransform(left_dot_product_eq[4:7].copy(), left_dot_product_eq_2[:3]), run_time=2.5)
         self.add(left_dot_product_eq_2[3]) #Add that dot!
         self.wait()
         
 
-        p30_48_to_manim_4 = SVGMobject(asset_dir_1+"/p40_48_to_manim-04.svg")[1:].scale(3.6)
+        p30_48_to_manim_4 = gx.SVGMobject(scene_asset('p40_48_to_manim-04.svg'))[1:].scale(3.6)
         p30_48_to_manim_4.move_to([0.15, -2.38, 0])
 
 
-        self.play(Write(p30_48_to_manim_4))
+        self.play(gx.Write(p30_48_to_manim_4))
         self.wait()
 
         #Ok now I need my penultimate equation here...
-        left_dot_product_eq_3=Tex(r" = \alpha (\nabla_{\theta} g_0 \cdot \Delta \theta_T) (\nabla_{\theta} g_0 \cdot \Delta \theta_T)", font_size=37)
+        left_dot_product_eq_3=math_tex(r" = \alpha (\nabla_{\theta} g_0 \cdot \Delta \theta_T) (\nabla_{\theta} g_0 \cdot \Delta \theta_T)", font_size=37)
         left_dot_product_eq_3.move_to([0.8, -3.55, 0])
         left_dot_product_eq_3[3:5].set_color(YELLOW)
         left_dot_product_eq_3[5:7].set_color(COOL_GREEN)
@@ -1794,78 +1779,78 @@ class P27_47c(Scene):
 
 
         self.wait()
-        self.play(ReplacementTransform(left_dot_product_eq_2[7].copy(), left_dot_product_eq_3[0]), 
-                  ReplacementTransform(left_dot_product_eq_2[9:20].copy(), left_dot_product_eq_3[1:12]),
-                  ReplacementTransform(left_dot_product_eq_2[20:24].copy(), left_dot_product_eq_3[13:17]), 
-                  ReplacementTransform(left_dot_product_eq_2[-3:].copy(), left_dot_product_eq_3[-4:-1]),
+        self.play(gx.ReplacementTransform(left_dot_product_eq_2[7].copy(), left_dot_product_eq_3[0]),
+                  gx.ReplacementTransform(left_dot_product_eq_2[9:20].copy(), left_dot_product_eq_3[1:12]),
+                  gx.ReplacementTransform(left_dot_product_eq_2[20:24].copy(), left_dot_product_eq_3[13:17]),
+                  gx.ReplacementTransform(left_dot_product_eq_2[-3:].copy(), left_dot_product_eq_3[-4:-1]),
                   run_time=2.5)
         self.add(left_dot_product_eq_3)
         self.wait()
 
-        p30_48_to_manim_4b = SVGMobject(asset_dir_1+"/p40_48_to_manim-04.svg")[1:].scale(3.5)
+        p30_48_to_manim_4b = gx.SVGMobject(scene_asset('p40_48_to_manim-04.svg'))[1:].scale(3.5)
         p30_48_to_manim_4b.move_to([0.1, -3.17, 0])
         p30_48_to_manim_4c=p30_48_to_manim_4b.copy()
         p30_48_to_manim_4c.move_to([2.15, -3.17, 0])
 
 
-        self.play(Write(p30_48_to_manim_4b), Write(p30_48_to_manim_4c))
+        self.play(gx.Write(p30_48_to_manim_4b), gx.Write(p30_48_to_manim_4c))
 
 
         #Ok almost through p43 here...
-        left_dot_product_eq_4=Tex(r" = \alpha (\nabla_{\theta} g_0 \cdot \Delta \theta_T)^2 \geq 0", font_size=37)
+        left_dot_product_eq_4=math_tex(r" = \alpha (\nabla_{\theta} g_0 \cdot \Delta \theta_T)^2 \geq 0", font_size=37)
         left_dot_product_eq_4.move_to([0.22, -4.3, 0])
         left_dot_product_eq_4[3:5].set_color(YELLOW)
         left_dot_product_eq_4[5:7].set_color(COOL_GREEN)
         left_dot_product_eq_4[8:11].set_color(CYAN)
 
         self.wait()
-        self.play(ReplacementTransform(left_dot_product_eq_3[:12].copy(), left_dot_product_eq_4[:12]), run_time=2.0)
-        self.play(ReplacementTransform(left_dot_product_eq_3[12:].copy(), left_dot_product_eq_4[2:12]), run_time=2.0) 
+        self.play(gx.ReplacementTransform(left_dot_product_eq_3[:12].copy(), left_dot_product_eq_4[:12]), run_time=2.0)
+        self.play(gx.ReplacementTransform(left_dot_product_eq_3[12:].copy(), left_dot_product_eq_4[2:12]), run_time=2.0)
         self.add(left_dot_product_eq_4[-3])
         self.wait()
                   
 
-        self.play(Write(left_dot_product_eq_4[-2:]))
+        self.play(gx.Write(left_dot_product_eq_4[-2:]))
         self.wait()
 
         dot_prod_eq_copy=left_dot_product_eq_2[:7].copy()
         self.add(dot_prod_eq_copy)
 
-        self.play(dot_prod_eq_copy.animate.next_to(left_dot_product_eq_4, LEFT, buff=0.15), 
-                 FadeOut(p30_48_to_manim_4), FadeOut(p30_48_to_manim_4b), FadeOut(p30_48_to_manim_4c), run_time=2.0
+        self.play(dot_prod_eq_copy.animate.next_to(left_dot_product_eq_4, gx.LEFT, buff=0.15),
+                 gx.FadeOut(p30_48_to_manim_4), gx.FadeOut(p30_48_to_manim_4b), gx.FadeOut(p30_48_to_manim_4c), run_time=2.0
                  )
         self.wait()
 
-        result_box_1=RoundedRectangle(width=5.7, height=0.7, corner_radius=0.1)
+        result_box_1=gx.RoundedRectangle(width=5.7, height=0.7, corner_radius=0.1)
         result_box_1.set_stroke(color=YELLOW, width=2.5)
         result_box_1.move_to([-0.66, -4.32, 0])
 
-        self.play(Write(result_box_1))
+        self.play(gx.Write(result_box_1))
         self.wait()
 
         ## --- P45 ---- ##
         ## Ok now i need to collapse down right side, bringing in a couple important elements. 
 
-        p30_48_to_manim_1b = SVGMobject(asset_dir_1+"/p40_48_to_manim-01.svg")[1:].scale(4.2)
+        p30_48_to_manim_1b = gx.SVGMobject(scene_asset('p40_48_to_manim-01.svg'))[1:].scale(4.2)
 
 
-        p45_eq_1=Tex(r"\Delta \theta_S = \alpha (\nabla_{\theta} g_0 \cdot \Delta \theta_T) \nabla_{\theta} g_0", font_size=28)
+        p45_eq_1=math_tex(r"\Delta \theta_S = \alpha (\nabla_{\theta} g_0 \cdot \Delta \theta_T) \nabla_{\theta} g_0", font_size=28)
         p45_eq_1.set_color(CHILL_BROWN)
         p45_eq_1.move_to([7, -1.6, 0])
         p30_48_to_manim_1b.move_to([7, -3.5, 0])
 
         self.remove(squared_error_b, gradient_descent_eq[4:], gradient_descent_eq_3b, delta_theta_s_eq_4[0])
         self.remove(delta_theta_s_eq_3, cross_out_line_2, cross_out_line_3)
-        self.play(ReplacementTransform(gradient_descent_eq[:4], p45_eq_1[:4]), 
-                  ReplacementTransform(delta_theta_s_eq_4[1:], p45_eq_1[4:]), run_time=2.5)
+        self.play(gx.ReplacementTransform(gradient_descent_eq[:4], p45_eq_1[:4]),
+                  gx.ReplacementTransform(delta_theta_s_eq_4[1:], p45_eq_1[4:]), run_time=2.5)
         self.wait()
 
         #Ah yeah should construct various parts bringing down bariables from equation above...
 
-        theta_0_dot_2=Dot(radius=0.07).set_color(CHILL_BROWN)
+        theta_0_dot_2=gx.Dot(radius=0.07).set_color(CHILL_BROWN)
         theta_0_dot_2.move_to([7, -3.65, 0])
 
-        theta_0_label_2=Tex(r"\theta^0", font_size=30)
+        theta_0_label_2=math_tex(r"\theta^0", font_size=30)
         theta_0_label_2.set_color(CHILL_BROWN)
         theta_0_label_2.move_to(theta_0_dot_2).shift([0.05, -0.25, 0]) #This might get tricky as we rotate! 
 
@@ -1877,7 +1862,7 @@ class P27_47c(Scene):
                                                              gradient_vector_len/2*np.sin(np.pi*gradient_vector_angle/180),0])
         gradient_vector_start=theta_0_dot_2.get_center()-np.array([gradient_vector_len/2*np.cos(np.pi*gradient_vector_angle/180), 
                                                              gradient_vector_len/2*np.sin(np.pi*gradient_vector_angle/180),0])
-        gradient_arrow_1 = Arrow(gradient_vector_start, gradient_vector_end, thickness=2.5, buff=0)
+        gradient_arrow_1 = diagram_arrow(gradient_vector_start, gradient_vector_end, thickness=2.5, buff=0)
         gradient_arrow_1.set_color(YELLOW)
 
         teacher_arrow_angle=60 #Degrees
@@ -1885,7 +1870,7 @@ class P27_47c(Scene):
         teacher_arrow_start=theta_0_dot_2.get_center()
         teacher_arrow_end=theta_0_dot_2.get_center()+np.array([teacher_arrow_len*np.cos(np.pi*teacher_arrow_angle/180), 
                                                             teacher_arrow_len*np.sin(np.pi*teacher_arrow_angle/180),0])
-        teacher_arrow_2 = Arrow(teacher_arrow_start, teacher_arrow_end, thickness=2.5, buff=0)
+        teacher_arrow_2 = diagram_arrow(teacher_arrow_start, teacher_arrow_end, thickness=2.5, buff=0)
         teacher_arrow_2.set_color(CYAN)
 
 
@@ -1899,11 +1884,11 @@ class P27_47c(Scene):
 
         student_arrow_start=theta_0_dot_2.get_center()
         student_arrow_end=projection_point
-        student_arrow_2 = Arrow(student_arrow_start, student_arrow_end, thickness=2.5, buff=0)
-        student_arrow_2.set_color(WHITE)     
+        student_arrow_2 = diagram_arrow(student_arrow_start, student_arrow_end, thickness=2.5, buff=0)
+        student_arrow_2.set_color(gx.WHITE)
 
 
-        perp_connector=DashedLine(teacher_arrow_2.get_end(), projection_point, dash_length=0.05, positive_space_ratio=0.5)
+        perp_connector=gx.DashedLine(teacher_arrow_2.get_end(), projection_point, dash_length=0.05, dashed_ratio=0.5)
         perp_connector.set_stroke(color=CYAN, width=3)
 
 
@@ -1919,7 +1904,7 @@ class P27_47c(Scene):
 
         delta_theta_s_copy_2=p45_eq_1[:3].copy()
         delta_theta_s_copy_2.scale(1.2)
-        delta_theta_s_copy_2.set_color(WHITE)
+        delta_theta_s_copy_2.set_color(gx.WHITE)
         delta_theta_s_copy_2.move_to(student_arrow_2).shift([0.15, -0.25, 0])
 
 
@@ -1937,18 +1922,18 @@ class P27_47c(Scene):
 
         #Ok yeah I think that getting the gradient vector and axis down first is less overwhelming
         self.wait()
-        self.play(Write(p30_48_to_manim_1b), 
-                  Write(gradient_arrow_1), 
-                  ReplacementTransform(p45_eq_1[-4:].copy(), grad_copy_2), run_time=2.5)
+        self.play(gx.Write(p30_48_to_manim_1b),
+                  gx.Write(gradient_arrow_1),
+                  gx.ReplacementTransform(p45_eq_1[-4:].copy(), grad_copy_2), run_time=2.5)
 
-        self.play(Write(teacher_arrow_2),
-                  Write(student_arrow_2),
-                  Write(perp_connector),
-                  Write(right_angle_symbol),
-                  Write(theta_0_dot_2),
-                  Write(theta_0_label_2),
-                  ReplacementTransform(p45_eq_1[:3].copy(), delta_theta_s_copy_2),
-                  ReplacementTransform(p45_eq_1[11:14].copy(), delta_theta_t_copy_2), run_time=2.5
+        self.play(gx.Write(teacher_arrow_2),
+                  gx.Write(student_arrow_2),
+                  gx.Write(perp_connector),
+                  gx.Write(right_angle_symbol),
+                  gx.Write(theta_0_dot_2),
+                  gx.Write(theta_0_label_2),
+                  gx.ReplacementTransform(p45_eq_1[:3].copy(), delta_theta_s_copy_2),
+                  gx.ReplacementTransform(p45_eq_1[11:14].copy(), delta_theta_t_copy_2), run_time=2.5
                   )
         self.wait()
 
@@ -1964,7 +1949,7 @@ class P27_47c(Scene):
 
         # Create updater functions for all dependent elements
         def update_teacher_arrow(mob, alpha):
-            current_angle = interpolate(teacher_arrow_angle, new_teacher_angle, alpha)
+            current_angle = gx.interpolate(teacher_arrow_angle, new_teacher_angle, alpha)
             new_end = theta_0_dot_2.get_center() + np.array([
                 teacher_arrow_len * np.cos(np.pi * current_angle / 180), 
                 teacher_arrow_len * np.sin(np.pi * current_angle / 180), 
@@ -1974,7 +1959,7 @@ class P27_47c(Scene):
 
         def update_projections_and_student(alpha):
             # Calculate current teacher vector
-            current_angle = interpolate(teacher_arrow_angle, new_teacher_angle, alpha)
+            current_angle = gx.interpolate(teacher_arrow_angle, new_teacher_angle, alpha)
             current_teacher_end = theta_0_dot_2.get_center() + np.array([
                 teacher_arrow_len * np.cos(np.pi * current_angle / 180), 
                 teacher_arrow_len * np.sin(np.pi * current_angle / 180), 
@@ -1991,7 +1976,7 @@ class P27_47c(Scene):
             student_arrow_2.put_start_and_end_on(student_arrow_start, current_projection_point)
             
             # Recreate perpendicular connector (since DashedLine doesn't update well)
-            new_perp_connector = DashedLine(current_teacher_end, current_projection_point, dash_length=0.05, positive_space_ratio=0.5)
+            new_perp_connector = gx.DashedLine(current_teacher_end, current_projection_point, dash_length=0.05, dashed_ratio=0.5)
             new_perp_connector.set_stroke(color=CYAN, width=3)
             perp_connector.become(new_perp_connector)
             
@@ -2016,8 +2001,8 @@ class P27_47c(Scene):
 
         # Run the animation
         self.play(
-            UpdateFromAlphaFunc(teacher_arrow_2, update_teacher_arrow),
-            UpdateFromAlphaFunc(VGroup(), lambda mob, alpha: update_projections_and_student(alpha)),
+            gx.UpdateFromAlphaFunc(teacher_arrow_2, update_teacher_arrow),
+            gx.UpdateFromAlphaFunc(gx.VGroup(), lambda mob, alpha: update_projections_and_student(alpha)),
             run_time=2
         )
         self.wait()
@@ -2027,8 +2012,8 @@ class P27_47c(Scene):
 
         new_teacher_angle = 100  # degrees
         self.play(
-            UpdateFromAlphaFunc(teacher_arrow_2, update_teacher_arrow),
-            UpdateFromAlphaFunc(VGroup(), lambda mob, alpha: update_projections_and_student(alpha)),
+            gx.UpdateFromAlphaFunc(teacher_arrow_2, update_teacher_arrow),
+            gx.UpdateFromAlphaFunc(gx.VGroup(), lambda mob, alpha: update_projections_and_student(alpha)),
             run_time=2
         )
         self.wait()
@@ -2036,8 +2021,8 @@ class P27_47c(Scene):
 
         new_teacher_angle = 60  # degrees
         self.play(
-            UpdateFromAlphaFunc(teacher_arrow_2, update_teacher_arrow),
-            UpdateFromAlphaFunc(VGroup(), lambda mob, alpha: update_projections_and_student(alpha)),
+            gx.UpdateFromAlphaFunc(teacher_arrow_2, update_teacher_arrow),
+            gx.UpdateFromAlphaFunc(gx.VGroup(), lambda mob, alpha: update_projections_and_student(alpha)),
             run_time=2
         )
         self.wait()
@@ -2052,9 +2037,7 @@ class P27_47c(Scene):
 
 
         self.wait(20)
-        self.embed()
-
-
+        # Scene authoring stops here in the interactive editor.
 
         # self.add(gradient_arrow_1
 
@@ -2205,7 +2188,6 @@ class P27_47c(Scene):
 
 
 
-        #In [4]: copy_frame_positioning_precise(self.frame)                                                                                                                          
         #reorient(0.0, 0.0, 0.0, (3.7340972, -1.8347028, 0.0), 8.74)  
         # reorient(0.0, 0.0, 0.0, (3.73, -1.84, 0.0), 8.74)  
 
@@ -2250,19 +2232,19 @@ class P27_47c(Scene):
 
 
 
-class P27_30b(Scene):
+class P27_30b(WelchScene):
     def construct(self):
         # p27_to_manim_1 = SVGMobject("p27_to_manim-01.svg")[1:].scale(4)
-        p27_to_manim_2 = SVGMobject(asset_dir_1+"/p27_to_manim-02.svg")[1:].scale(4)
-        p27_to_manim_3 = SVGMobject(asset_dir_1+"/p27_to_manim-03.svg")[1:].scale(4)
+        p27_to_manim_2 = gx.SVGMobject(scene_asset('p27_to_manim-02.svg'))[1:].scale(4)
+        p27_to_manim_3 = gx.SVGMobject(scene_asset('p27_to_manim-03.svg'))[1:].scale(4)
         # p27_to_manim_4 = SVGMobject("p27_to_manim-04.svg")[1:].scale(4)
         # p27_to_manim_5 = SVGMobject("p27_to_manim-05.svg")[1:].scale(4)
-        p27_to_manim_6 = SVGMobject(asset_dir_1+"/p27_to_manim-06.svg")[1:].scale(4)
+        p27_to_manim_6 = gx.SVGMobject(scene_asset('p27_to_manim-06.svg'))[1:].scale(4)
         # p27_to_manim_7 = SVGMobject("p27_to_manim-07.svg")[1:].scale(4)
-        p28_to_manim_4 = SVGMobject(asset_dir_1+"/p28_to_manim-04.svg")[1:].scale(4)
-        p29_to_32_to_manim_1 = SVGMobject(asset_dir_1+"/p29_to_32_to_manim-01.svg")[1:].scale(4)
+        p28_to_manim_4 = gx.SVGMobject(scene_asset('p28_to_manim-04.svg'))[1:].scale(4)
+        p29_to_32_to_manim_1 = gx.SVGMobject(scene_asset('p29_to_32_to_manim-01.svg'))[1:].scale(4)
 
-        mnist_network = ImageMobject(full_path_to_working_dir+"/mnist_network.png")
+        mnist_network = image_at_height(scene_asset('mnist_network.png'))
 
         n2_1 = p27_to_manim_2.submobjects[10]
         n3_2 = p27_to_manim_2.submobjects[9]
@@ -2277,54 +2259,54 @@ class P27_30b(Scene):
         n2_1_graph = p27_to_manim_2.submobjects[16]
         n2_2_graph = p27_to_manim_2.submobjects[21]
 
-        n2_1_text = VGroup(
+        n2_1_text = gx.VGroup(
             p27_to_manim_2.submobjects[17],
             p27_to_manim_2.submobjects[18],
             p27_to_manim_2.submobjects[19],
             p27_to_manim_2.submobjects[20],
         )
-        n2_2_text = VGroup(
+        n2_2_text = gx.VGroup(
             p27_to_manim_2.submobjects[22],
             p27_to_manim_2.submobjects[23],
             p27_to_manim_2.submobjects[24],
             p27_to_manim_2.submobjects[25],
         )
 
-        left_dimension = VGroup(
+        left_dimension = gx.VGroup(
             p27_to_manim_3[0], p27_to_manim_3[1], p27_to_manim_3[2]
-        ).next_to(VGroup(n1_1, n1_2), LEFT)
-        top_dimension = VGroup(
+        ).next_to(gx.VGroup(n1_1, n1_2), gx.LEFT)
+        top_dimension = gx.VGroup(
             p27_to_manim_3[3], p27_to_manim_3[4], p27_to_manim_3[5]
-        ).next_to(VGroup(n2_1, n3_1), UP)
+        ).next_to(gx.VGroup(n2_1, n3_1), gx.UP)
 
-        x1 = Tex(r"x_1").set_color(FRESH_TAN).move_to(n1_1.get_center())
-        x2 = Tex(r"x_2").set_color(FRESH_TAN).move_to(n1_2.get_center())
+        x1 = math_tex(r"x_1").set_color(FRESH_TAN).move_to(n1_1.get_center())
+        x2 = math_tex(r"x_2").set_color(FRESH_TAN).move_to(n1_2.get_center())
 
         model_parameters = (
-            Tex(
+            math_tex(
                 r"\theta = [\theta_1, \theta_2, \theta_3, \theta_4, \theta_5, \theta_6, \theta_7, \theta_8]"
             )
             .set_color(FRESH_TAN)
             .scale(0.75)
-            .next_to(n2_2, DOWN, buff=0.4)
+            .next_to(n2_2, gx.DOWN, buff=0.4)
         )
 
         model_parameters_text = (
-            Text("Model Parameters*", font="Myriad Pro", font_size=24, weight=BOLD)
-            .next_to(model_parameters, DOWN)
+            gx.Text("Model Parameters*", font="Myriad Pro", font_size=24, weight=gx.BOLD)
+            .next_to(model_parameters, gx.DOWN)
             .set_color(CHILL_BROWN)
         )
 
         def edge_point(c1, c2):
             c1_center = c1.get_center()
             c2_center = c2.get_center()
-            direction = normalize(c2_center - c1_center)
+            direction = gx.normalize(c2_center - c1_center)
 
             # ManimGL compatible approach - use get_corner instead of get_critical_point
-            ul = c1.get_corner(UP + LEFT)
-            ur = c1.get_corner(UP + RIGHT)
-            dl = c1.get_corner(DOWN + LEFT)
-            dr = c1.get_corner(DOWN + RIGHT)
+            ul = c1.get_corner(gx.UP + gx.LEFT)
+            ur = c1.get_corner(gx.UP + gx.RIGHT)
+            dl = c1.get_corner(gx.DOWN + gx.LEFT)
+            dr = c1.get_corner(gx.DOWN + gx.RIGHT)
 
             width = np.linalg.norm(ur - ul)
             height = np.linalg.norm(ul - dl)
@@ -2341,8 +2323,8 @@ class P27_30b(Scene):
 
             half_gap = direction * (break_width / 2)
 
-            line1 = Line(start, split_point - half_gap)
-            line2 = Line(split_point + half_gap, end)
+            line1 = gx.Line(start, split_point - half_gap)
+            line2 = gx.Line(split_point + half_gap, end)
 
             return line1, line2, split_point
 
@@ -2351,20 +2333,20 @@ class P27_30b(Scene):
             line_part_1.set_color(split_line_1.get_color())
             line_part_2.set_color(split_line_2.get_color())
             self.remove(line)
-            return AnimationGroup(
-                ReplacementTransform(line_part_1, split_line_1),
-                ReplacementTransform(line_part_2, split_line_2),
+            return gx.AnimationGroup(
+                gx.ReplacementTransform(line_part_1, split_line_1),
+                gx.ReplacementTransform(line_part_2, split_line_2),
             )
 
-        connections = VGroup(
-            Line(edge_point(n1_1, n2_1), edge_point(n2_1, n1_1), color=FRESH_TAN),
-            Line(edge_point(n1_1, n2_2), edge_point(n2_2, n1_1), color=FRESH_TAN),
-            Line(edge_point(n1_2, n2_1), edge_point(n2_1, n1_2), color=FRESH_TAN),
-            Line(edge_point(n1_2, n2_2), edge_point(n2_2, n1_2), color=FRESH_TAN),
-            Line(edge_point(n2_1, n3_1), edge_point(n3_1, n2_1), color=FRESH_TAN),
-            Line(edge_point(n2_1, n3_2), edge_point(n3_2, n2_1), color=CHILL_BROWN),
-            Line(edge_point(n2_2, n3_1), edge_point(n3_1, n2_2), color=FRESH_TAN),
-            Line(edge_point(n2_2, n3_2), edge_point(n3_2, n2_2), color=CHILL_BROWN),
+        connections = gx.VGroup(
+            gx.Line(edge_point(n1_1, n2_1), edge_point(n2_1, n1_1), color=FRESH_TAN),
+            gx.Line(edge_point(n1_1, n2_2), edge_point(n2_2, n1_1), color=FRESH_TAN),
+            gx.Line(edge_point(n1_2, n2_1), edge_point(n2_1, n1_2), color=FRESH_TAN),
+            gx.Line(edge_point(n1_2, n2_2), edge_point(n2_2, n1_2), color=FRESH_TAN),
+            gx.Line(edge_point(n2_1, n3_1), edge_point(n3_1, n2_1), color=FRESH_TAN),
+            gx.Line(edge_point(n2_1, n3_2), edge_point(n3_2, n2_1), color=CHILL_BROWN),
+            gx.Line(edge_point(n2_2, n3_1), edge_point(n3_1, n2_2), color=FRESH_TAN),
+            gx.Line(edge_point(n2_2, n3_2), edge_point(n3_2, n2_2), color=CHILL_BROWN),
         )
 
         ln1_1_n2_1 = connections[0]
@@ -2376,104 +2358,104 @@ class P27_30b(Scene):
         ln2_2_n3_1 = connections[6]
         ln2_2_n3_2 = connections[7]
 
-        theta_1 = Tex(r"\theta_1").scale(0.6).set_color(FRESH_TAN)
-        theta_2 = Tex(r"\theta_2").scale(0.6).set_color(FRESH_TAN)
-        theta_3 = Tex(r"\theta_3").scale(0.6).set_color(FRESH_TAN)
-        theta_4 = Tex(r"\theta_4").scale(0.6).set_color(FRESH_TAN)
-        theta_5 = Tex(r"\theta_5").scale(0.6).set_color(FRESH_TAN)
-        theta_6 = Tex(r"\theta_6").scale(0.6).set_color(FRESH_TAN)
-        theta_7 = Tex(r"\theta_7").scale(0.6).set_color(CHILL_BROWN)
-        theta_8 = Tex(r"\theta_8").scale(0.6).set_color(CHILL_BROWN)
+        theta_1 = math_tex(r"\theta_1").scale(0.6).set_color(FRESH_TAN)
+        theta_2 = math_tex(r"\theta_2").scale(0.6).set_color(FRESH_TAN)
+        theta_3 = math_tex(r"\theta_3").scale(0.6).set_color(FRESH_TAN)
+        theta_4 = math_tex(r"\theta_4").scale(0.6).set_color(FRESH_TAN)
+        theta_5 = math_tex(r"\theta_5").scale(0.6).set_color(FRESH_TAN)
+        theta_6 = math_tex(r"\theta_6").scale(0.6).set_color(FRESH_TAN)
+        theta_7 = math_tex(r"\theta_7").scale(0.6).set_color(CHILL_BROWN)
+        theta_8 = math_tex(r"\theta_8").scale(0.6).set_color(CHILL_BROWN)
 
         ln1_1_n2_1_left, ln1_1_n2_1_right, theta_1_position = split_line(
-            ln1_1_n2_1, theta_1.get_width() + 0.2, 0.5
+            ln1_1_n2_1, theta_1.width + 0.2, 0.5
         )
         theta_1.move_to(theta_1_position)
         ln1_1_n2_1_left.set_color(FRESH_TAN)
         ln1_1_n2_1_right.set_color(FRESH_TAN)
 
         ln1_2_n2_1_left, ln1_2_n2_1_right, theta_2_position = split_line(
-            ln1_2_n2_1, theta_2.get_width() + 0.2, 0.75
+            ln1_2_n2_1, theta_2.width + 0.2, 0.75
         )
         theta_2.move_to(theta_2_position)
         ln1_2_n2_1_left.set_color(FRESH_TAN)
         ln1_2_n2_1_right.set_color(FRESH_TAN)
 
         ln1_1_n2_2_left, ln1_1_n2_2_right, theta_3_position = split_line(
-            ln1_1_n2_2, theta_3.get_width() + 0.2, 0.75
+            ln1_1_n2_2, theta_3.width + 0.2, 0.75
         )
         theta_3.move_to(theta_3_position)
         ln1_1_n2_2_left.set_color(FRESH_TAN)
         ln1_1_n2_2_right.set_color(FRESH_TAN)
 
         ln1_2_n2_2_left, ln1_2_n2_2_right, theta_4_position = split_line(
-            ln1_2_n2_2, theta_4.get_width() + 0.2, 0.5
+            ln1_2_n2_2, theta_4.width + 0.2, 0.5
         )
         theta_4.move_to(theta_4_position)
         ln1_2_n2_2_left.set_color(FRESH_TAN)
         ln1_2_n2_2_right.set_color(FRESH_TAN)
 
         ln2_1_n3_1_left, ln2_1_n3_1_right, theta_5_position = split_line(
-            ln2_1_n3_1, theta_5.get_width() + 0.2, 0.5
+            ln2_1_n3_1, theta_5.width + 0.2, 0.5
         )
         theta_5.move_to(theta_5_position)
         ln2_1_n3_1_left.set_color(FRESH_TAN)
         ln2_1_n3_1_right.set_color(FRESH_TAN)
 
         ln2_2_n3_1_left, ln2_2_n3_1_right, theta_6_position = split_line(
-            ln2_2_n3_1, theta_6.get_width() + 0.2, 0.75
+            ln2_2_n3_1, theta_6.width + 0.2, 0.75
         )
         theta_6.move_to(theta_6_position)
         ln2_2_n3_1_left.set_color(FRESH_TAN)
         ln2_2_n3_1_right.set_color(FRESH_TAN)
 
         ln2_1_n3_2_left, ln2_1_n3_2_right, theta_7_position = split_line(
-            ln2_1_n3_2, theta_7.get_width() + 0.2, 0.75
+            ln2_1_n3_2, theta_7.width + 0.2, 0.75
         )
         theta_7.move_to(theta_7_position)
         ln2_1_n3_2_left.set_color(CHILL_BROWN)
         ln2_1_n3_2_right.set_color(CHILL_BROWN)
 
         ln2_2_n3_2_left, ln2_2_n3_2_right, theta_8_position = split_line(
-            ln2_2_n3_2, theta_8.get_width() + 0.2, 0.5
+            ln2_2_n3_2, theta_8.width + 0.2, 0.5
         )
         theta_8.move_to(theta_8_position)
         ln2_2_n3_2_left.set_color(CHILL_BROWN)
         ln2_2_n3_2_right.set_color(CHILL_BROWN)
 
-        group1 = AnimationGroup(FadeIn(VGroup(n1_1, n1_2, x1, x2)))
+        group1 = gx.AnimationGroup(gx.FadeIn(gx.VGroup(n1_1, n1_2, x1, x2)))
 
-        group2 = AnimationGroup(
-            GrowArrow(ln1_1_n2_1),
-            GrowArrow(ln1_1_n2_2),
-            GrowArrow(ln1_2_n2_1),
-            GrowArrow(ln1_2_n2_2),
+        group2 = gx.AnimationGroup(
+            gx.GrowArrow(ln1_1_n2_1),
+            gx.GrowArrow(ln1_1_n2_2),
+            gx.GrowArrow(ln1_2_n2_1),
+            gx.GrowArrow(ln1_2_n2_2),
         )
 
-        group3 = AnimationGroup(FadeIn(VGroup(n2_1, n2_2)))
+        group3 = gx.AnimationGroup(gx.FadeIn(gx.VGroup(n2_1, n2_2)))
 
-        group4 = AnimationGroup(
-            FadeIn(VGroup(n2_1_graph, n2_2_graph)),
-            Write(n2_1_text),
-            Write(n2_2_text),
+        group4 = gx.AnimationGroup(
+            gx.FadeIn(gx.VGroup(n2_1_graph, n2_2_graph)),
+            gx.Write(n2_1_text),
+            gx.Write(n2_2_text),
         )
 
-        group5 = AnimationGroup(
-            GrowArrow(ln2_1_n3_1),
-            GrowArrow(ln2_1_n3_2),
-            GrowArrow(ln2_2_n3_1),
-            GrowArrow(ln2_2_n3_2),
+        group5 = gx.AnimationGroup(
+            gx.GrowArrow(ln2_1_n3_1),
+            gx.GrowArrow(ln2_1_n3_2),
+            gx.GrowArrow(ln2_2_n3_1),
+            gx.GrowArrow(ln2_2_n3_2),
         )
 
-        group6 = AnimationGroup(
-            FadeIn(VGroup(n3_1, n3_2)),
-            GrowFromEdge(n3_1_arrow, LEFT),
-            GrowFromEdge(n3_2_arrow, LEFT),
+        group6 = gx.AnimationGroup(
+            gx.FadeIn(gx.VGroup(n3_1, n3_2)),
+            gx.GrowFromEdge(n3_1_arrow, gx.LEFT),
+            gx.GrowFromEdge(n3_2_arrow, gx.LEFT),
         )
 
         self.wait()
         self.play(
-            LaggedStart(
+            gx.LaggedStart(
                 group1,
                 group2,
                 group3,
@@ -2491,56 +2473,56 @@ class P27_30b(Scene):
 
         self.wait(1)
 
-        theta1_group = AnimationGroup(
+        theta1_group = gx.AnimationGroup(
             animate_split_line(ln1_1_n2_1, ln1_1_n2_1_left, ln1_1_n2_1_right, 0.5),
-            Write(theta_1),
+            gx.Write(theta_1),
             lag_ratio=0.5,
         )
 
-        theta2_group = AnimationGroup(
+        theta2_group = gx.AnimationGroup(
             animate_split_line(ln1_2_n2_1, ln1_2_n2_1_left, ln1_2_n2_1_right, 0.75),
-            Write(theta_2),
+            gx.Write(theta_2),
             lag_ratio=0.5,
         )
 
-        theta3_group = AnimationGroup(
+        theta3_group = gx.AnimationGroup(
             animate_split_line(ln1_1_n2_2, ln1_1_n2_2_left, ln1_1_n2_2_right, 0.75),
-            Write(theta_3),
+            gx.Write(theta_3),
             lag_ratio=0.5,
         )
 
-        theta4_group = AnimationGroup(
+        theta4_group = gx.AnimationGroup(
             animate_split_line(ln1_2_n2_2, ln1_2_n2_2_left, ln1_2_n2_2_right, 0.5),
-            Write(theta_4),
+            gx.Write(theta_4),
             lag_ratio=0.5,
         )
 
-        theta5_group = AnimationGroup(
+        theta5_group = gx.AnimationGroup(
             animate_split_line(ln2_1_n3_1, ln2_1_n3_1_left, ln2_1_n3_1_right, 0.5),
-            Write(theta_5),
+            gx.Write(theta_5),
             lag_ratio=0.5,
         )
 
-        theta6_group = AnimationGroup(
+        theta6_group = gx.AnimationGroup(
             animate_split_line(ln2_2_n3_1, ln2_2_n3_1_left, ln2_2_n3_1_right, 0.75),
-            Write(theta_6),
+            gx.Write(theta_6),
             lag_ratio=0.5,
         )
 
-        theta7_group = AnimationGroup(
+        theta7_group = gx.AnimationGroup(
             animate_split_line(ln2_1_n3_2, ln2_1_n3_2_left, ln2_1_n3_2_right, 0.75),
-            Write(theta_7),
+            gx.Write(theta_7),
             lag_ratio=0.5,
         )
 
-        theta8_group = AnimationGroup(
+        theta8_group = gx.AnimationGroup(
             animate_split_line(ln2_2_n3_2, ln2_2_n3_2_left, ln2_2_n3_2_right, 0.5),
-            Write(theta_8),
+            gx.Write(theta_8),
             lag_ratio=0.5,
         )
 
         self.play(
-            LaggedStart(
+            gx.LaggedStart(
                 theta1_group,
                 theta2_group,
                 theta3_group,
@@ -2556,50 +2538,50 @@ class P27_30b(Scene):
 
         self.wait(1)
 
-        model_parameters_1 = AnimationGroup(FadeIn(model_parameters[0:3]))
+        model_parameters_1 = gx.AnimationGroup(gx.FadeIn(model_parameters[0:3]))
 
-        model_parameters_2 = AnimationGroup(
-            ReplacementTransform(theta_1.copy(), model_parameters[3:5]),
-            FadeIn(model_parameters[5]),
+        model_parameters_2 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_1.copy(), model_parameters[3:5]),
+            gx.FadeIn(model_parameters[5]),
         )
 
-        model_parameters_3 = AnimationGroup(
-            ReplacementTransform(theta_2.copy(), model_parameters[6:8]),
-            FadeIn(model_parameters[8]),
+        model_parameters_3 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_2.copy(), model_parameters[6:8]),
+            gx.FadeIn(model_parameters[8]),
         )
 
-        model_parameters_4 = AnimationGroup(
-            ReplacementTransform(theta_3.copy(), model_parameters[9:11]),
-            FadeIn(model_parameters[11]),
+        model_parameters_4 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_3.copy(), model_parameters[9:11]),
+            gx.FadeIn(model_parameters[11]),
         )
 
-        model_parameters_5 = AnimationGroup(
-            ReplacementTransform(theta_4.copy(), model_parameters[12:14]),
-            FadeIn(model_parameters[14]),
+        model_parameters_5 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_4.copy(), model_parameters[12:14]),
+            gx.FadeIn(model_parameters[14]),
         )
 
-        model_parameters_6 = AnimationGroup(
-            ReplacementTransform(theta_5.copy(), model_parameters[15:17]),
-            FadeIn(model_parameters[17]),
+        model_parameters_6 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_5.copy(), model_parameters[15:17]),
+            gx.FadeIn(model_parameters[17]),
         )
 
-        model_parameters_7 = AnimationGroup(
-            ReplacementTransform(theta_6.copy(), model_parameters[18:20]),
-            FadeIn(model_parameters[20]),
+        model_parameters_7 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_6.copy(), model_parameters[18:20]),
+            gx.FadeIn(model_parameters[20]),
         )
 
-        model_parameters_8 = AnimationGroup(
-            ReplacementTransform(theta_7.copy(), model_parameters[21:23]),
-            FadeIn(model_parameters[23]),
+        model_parameters_8 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_7.copy(), model_parameters[21:23]),
+            gx.FadeIn(model_parameters[23]),
         )
 
-        model_parameters_9 = AnimationGroup(
-            ReplacementTransform(theta_8.copy(), model_parameters[24:26]),
-            FadeIn(model_parameters[26]),
+        model_parameters_9 = gx.AnimationGroup(
+            gx.ReplacementTransform(theta_8.copy(), model_parameters[24:26]),
+            gx.FadeIn(model_parameters[26]),
         )
 
         self.play(
-            LaggedStart(
+            gx.LaggedStart(
                 model_parameters_1,
                 model_parameters_2,
                 model_parameters_3,
@@ -2616,38 +2598,38 @@ class P27_30b(Scene):
 
         self.wait(1)
 
-        p27_to_manim_6[29].next_to(n3_1_arrow, RIGHT, buff=0.1)
-        p27_to_manim_6[28].next_to(n3_2_arrow, RIGHT, buff=0.1)
+        p27_to_manim_6[29].next_to(n3_1_arrow, gx.RIGHT, buff=0.1)
+        p27_to_manim_6[28].next_to(n3_2_arrow, gx.RIGHT, buff=0.1)
 
-        p27_to_manim_6[0:13].next_to(p27_to_manim_6[29], DOWN, buff=0.1)
-        p27_to_manim_6[13:28].next_to(p27_to_manim_6[28], DOWN, buff=0.1)
+        p27_to_manim_6[0:13].next_to(p27_to_manim_6[29], gx.DOWN, buff=0.1)
+        p27_to_manim_6[13:28].next_to(p27_to_manim_6[28], gx.DOWN, buff=0.1)
 
-        primary_output = VGroup(p27_to_manim_6[29], p27_to_manim_6[0:13])
-        auxiliary_output = VGroup(p27_to_manim_6[28], p27_to_manim_6[13:28])
+        primary_output = gx.VGroup(p27_to_manim_6[29], p27_to_manim_6[0:13])
+        auxiliary_output = gx.VGroup(p27_to_manim_6[28], p27_to_manim_6[13:28])
 
-        outputs = VGroup(primary_output, auxiliary_output)
+        outputs = gx.VGroup(primary_output, auxiliary_output)
 
         """self.play(FadeIn(primary_output), FadeIn(auxiliary_output), model_parameters.animate.move_to([ 2.81398236e-01, -1.57497560e+00, -2.99721055e-17]))
 
         self.wait(1)"""
 
-        # p28_to_manim_4.move_to([(primary_output.get_x() + p28_to_manim_4.get_width()/2) - (p28_to_manim_4.submobjects[1].get_width()/2), 0, 0])
+        # p28_to_manim_4.move_to([(primary_output.get_x() + p28_to_manim_4.width/2) - (p28_to_manim_4.submobjects[1].width/2), 0, 0])
 
         p28_to_manim_4.move_to(
             [
-                (primary_output.get_x() + p28_to_manim_4.get_width() / 2)
-                - (p28_to_manim_4.submobjects[1].get_width() / 2),
+                (primary_output.get_x() + p28_to_manim_4.width / 2)
+                - (p28_to_manim_4.submobjects[1].width / 2),
                 0,
                 0,
             ]
         )
 
-        top_arrow = VGroup(
+        top_arrow = gx.VGroup(
             p28_to_manim_4.submobjects[0],
             p28_to_manim_4.submobjects[1],
             p28_to_manim_4.submobjects[2],
         )
-        bottom_arrow = VGroup(
+        bottom_arrow = gx.VGroup(
             p28_to_manim_4.submobjects[3],
             p28_to_manim_4.submobjects[4],
             p28_to_manim_4.submobjects[5],
@@ -2666,7 +2648,7 @@ class P27_30b(Scene):
 
         # MATH TIME ;(
         """
-        p28_to_manim_4.get_width() = 5.860444245515045
+        p28_to_manim_4.width = 5.860444245515045
         was about to pull out the ti84 for this lol
         """
 
@@ -2677,25 +2659,25 @@ class P27_30b(Scene):
         # self.play(FadeIn(model_parameters_text))
 
         self.wait()
-        self.play(LaggedStart(FadeIn(primary_output)))
+        self.play(gx.LaggedStart(gx.FadeIn(primary_output)))
         self.wait()
 
         self.play(
             self.camera.frame.animate.move_to(
                 [3, 0, 0]
             ),  # TODO: Update camera position
-            FadeOut(top_dimension),
-            FadeOut(left_dimension),
+            gx.FadeOut(top_dimension),
+            gx.FadeOut(left_dimension),
             # FadeOut(model_parameters_text),
             run_time=2,
         )
-        self.play(FadeIn(top_arrow), FadeIn(mnist_network))
+        self.play(gx.FadeIn(top_arrow), gx.FadeIn(mnist_network))
 
 
         self.wait(1)
 
         self.play(
-            LaggedStart(FadeIn(auxiliary_output), FadeIn(bottom_arrow), lag_ratio=0.75)
+            gx.LaggedStart(gx.FadeIn(auxiliary_output), gx.FadeIn(bottom_arrow), lag_ratio=0.75)
         )
 
         # when mnist gets updated
@@ -2707,14 +2689,14 @@ class P27_30b(Scene):
 
         self.play(
             self.camera.frame.animate.move_to([0, 0, 0]),
-            FadeOut(mnist_network),
-            FadeOut(p28_to_manim_4),
+            gx.FadeOut(mnist_network),
+            gx.FadeOut(p28_to_manim_4),
             run_time=2,
         )
 
         self.wait(3)
 
-        t_network_copy = VGroup(
+        t_network_copy = gx.VGroup(
             # Input neurons with labels
             n1_1.copy(),
             n1_2.copy(),
@@ -2811,9 +2793,9 @@ class P27_30b(Scene):
         self.wait()
 
         self.play(
-            # self.camera.frame.animate.set_width(16).move_to([3.9, -1.4, 0]),
-            self.frame.animate.reorient(0.0, 0.0, 0.0, (3.73, -1.84, 0.0), 8.74), #SW little different framing
-            t_network_copy.animate.shift(RIGHT * 7),
+            # self.camera.frame.animate.scale_to_fit_width(16).move_to([3.9, -1.4, 0]),
+            self.animate_view(0.0, 0.0, 0.0, (3.73, -1.84, 0.0), 8.74), #SW little different framing
+            t_network_copy.animate.shift(gx.RIGHT * 7),
             run_time=3,  # TODO: Find best camera position
         )
 

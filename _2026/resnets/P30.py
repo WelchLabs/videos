@@ -1,48 +1,38 @@
-from manimlib import *
+import manimgx as gx
+from welch_style import BLUE, CHILL_BLUE, CHILL_BROWN, CHILL_GREEN, CYAN, FRESH_TAN, GREEN, MAGENTA, YELLOW, YELLOW_FADE
 import numpy as np
 import matplotlib.pyplot as plt
 
-CHILL_BROWN='#948979'
-YELLOW='#ffd35a'
-YELLOW_FADE='#7f6a2d'
-BLUE='#65c8d0'
-GREEN='#00a14b'
-CHILL_GREEN='#6c946f'
-CHILL_BLUE='#3d5c6f'
-FRESH_TAN='#dfd0b9'
-CYAN='#00FFFF'
-MAGENTA='#FF00FF'
 
-
-class P30(InteractiveScene):
+class P30(gx.Scene):
     def construct(self):
         # Line 1: title in Myriad Pro Bold
-        title = Text(
+        title = gx.Text(
             "CROSS-ENTROPY LOSS",
             font="Myriad Pro",
-            weight=BOLD,
+            weight=gx.BOLD,
             font_size=32,
         )
         title.set_color(CHILL_BROWN)
 
         # Line 2: loss = -ln(P(Screw Driver))
-        loss_eq = Tex(
+        loss_eq = gx.MathTex(
             r"\text{loss} = -\ln\big(P(\text{Screw Driver})\big)",
             font_size=52,
         )
         # loss_eq.set_color(FRESH_TAN)
 
         # Line 3: -ln(1.0) = 0
-        example_eq = Tex(
+        example_eq = gx.MathTex(
             r"-\ln(1.0) = 0",
             font_size=52,
         )
         # example_eq.set_color(FRESH_TAN)
 
         # Stack and center
-        lines = VGroup(title, loss_eq, example_eq)
-        lines.arrange(DOWN, buff=0.7)
-        lines.move_to(ORIGIN)
+        lines = gx.VGroup(title, loss_eq, example_eq)
+        lines.arrange(gx.DOWN, buff=0.7)
+        lines.move_to(gx.ORIGIN)
 
         example_eq.shift([-0.35, 0, 0])
         example_eq.shift([0, 0.4, 0])
@@ -53,13 +43,11 @@ class P30(InteractiveScene):
 
         # Write in one at a time
         self.wait(1)
-        self.play(Write(title), run_time=2.5)
+        self.play(gx.Write(title), run_time=2.5)
         self.wait(0.5)
-        self.play(Write(loss_eq), run_time=2.5)
+        self.play(gx.Write(loss_eq), run_time=2.5)
         self.wait(0.5)
-        self.play(Write(example_eq), run_time=2.0)
-
+        self.play(gx.Write(example_eq), run_time=2.0)
 
 
         self.wait(20)
-        self.embed()

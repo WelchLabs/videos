@@ -1,7 +1,7 @@
 """
-P63-64 - Atlas: prompt -> image + depth -> autoregressive new views -> edited prompt -> summary card  (ManimGL)
+P63-64 - Atlas: prompt -> image + depth -> autoregressive new views -> edited prompt -> summary card  (ManimGX)
 
-    manimgl <path to this file> P63_64
+    uv run manimgx render p63_64.py P63_64
 
 One continuous take, storyboards in p63_64_sketches/:
 
@@ -27,13 +27,18 @@ Timings are class attributes on P63_64.
 import os
 from pathlib import Path
 
-import numpy as np
-from manimlib import *
+import manimgx as m
+
+from assets import GRAPHICS
+from welch_storyboard import (
+    PX, STROKE_PER_PX, STORYBOARD_BACKGROUND, FRESH_TAN, TEXT_FONT, load_image, place_px,
+    px_arrow as arrow, px_box, px_line, px_text, storyboard_offset as V, storyboard_point as P,
+)
 
 # ----------------------------------------------------------------------------- config
 ASSETS = Path(os.environ.get(
     "WM_P60_64_ASSETS",
-    "/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/world_models/graphics/p60_64_assets"))
+    GRAPHICS / "p60_64_assets"))
 BOOKS = ASSETS / "moar_books"
 BOOKS_DEPTH = BOOKS / "depth_renders" / "magma_linear"
 
@@ -48,62 +53,13 @@ VIEW_FILES = {
     "E": (BOOKS / "02-view.png", BOOKS_DEPTH / "02-depth.png"),                 # beat 7
 }
 
-FRESH_TAN = "#f4ebd9"       # line art, prompt, ATLAS
 CHILL_BROWN = "#948678"     # summary title, dividers, column labels
 YELLOW_HL = "#fcc947"       # the added prompt clause
-LABEL_FONT = "Open Sans"
-TEXT_FONT = "STIX Two Text"
-CAP = {LABEL_FONT: 0.714, TEXT_FONT: 0.656}     # cap height / em, to match Illustrator's point sizes
 
 LINE_1 = "“A home office with wooden desk and"
 LINE_2 = "floor-to-ceiling dark green bookshelves"
 TAIL = ".”"                                       # closes line 2 until the extra clause arrives
 LINE_3 = "with an absurd number of books.”"
-
-# ----------------------------------------------------------------------------- storyboard coordinates
-PX = FRAME_HEIGHT / 1080            # manim units per storyboard pixel
-STROKE_PER_PX = 1 / 2.03            # manim stroke_width that renders 1 storyboard pixel wide (measured at 1080p)
-
-
-def P(x, y):
-    """Storyboard pixel (1920x1080, y down) -> manim point."""
-    return np.array([(x - 960) * PX, (540 - y) * PX, 0.0])
-
-
-def V(dx, dy):
-    """Storyboard pixel offset -> manim vector."""
-    return np.array([dx * PX, -dy * PX, 0.0])
-
-
-def px_line(a, b, stroke_px, color=FRESH_TAN):
-    return Line(P(*a), P(*b)).set_stroke(color, stroke_px * STROKE_PER_PX)
-
-
-def arrow(tail, tip, stroke_px=2.0, head=(19.9, 8.13, 15.18), color=FRESH_TAN):
-    """Storyboard-style arrow: shaft + notched head. head = (length, half width, notch depth) in pixels."""
-    tail, tip = np.array(tail, float), np.array(tip, float)
-    u = (tip - tail) / np.linalg.norm(tip - tail)
-    n = np.array([-u[1], u[0]])
-    length, half, notch = head
-    shaft = px_line(tail, tip - notch * u, stroke_px, color)
-    barb = Polygon(P(*tip), P(*(tip - length * u + half * n)), P(*(tip - notch * u)), P(*(tip - length * u - half * n)))
-    barb.set_fill(color, 1).set_stroke(color, 0)
-    return VGroup(shaft, barb)
-
-
-def px_text(string, size_px, x, y, font=LABEL_FONT, bold=False, italic=False, color=FRESH_TAN):
-    """Text at storyboard size with its left edge at x and its baseline at y (pixels).
-
-    A throwaway "H" is set in front of the string: its height fixes the scale and its bottom is the baseline, so
-    strings with descenders sit correctly without per-string fudge factors.
-    """
-    full = Text("H" + string, font=font, weight=BOLD if bold else NORMAL, slant=ITALIC if italic else NORMAL,
-                font_size=48)
-    full.scale(CAP.get(font, 0.7) * size_px * PX / full[0].get_height())
-    t = full[1:]
-    t.shift(P(x, y) - np.array([t.get_left()[0], full[0].get_bottom()[1], 0.0]))
-    return t.set_color(color)
-
 
 # ----------------------------------------------------------------------------- ATLAS box + arrows
 # box centers per storyboard
@@ -116,9 +72,7 @@ C7 = (938.05, 522.55)       # -06
 
 
 def atlas_box(c):
-    box = RoundedRectangle(width=172.97 * PX, height=146.51 * PX, corner_radius=11.73 * PX)
-    box.set_fill(opacity=0).set_stroke(FRESH_TAN, 2.5 * STROKE_PER_PX)
-    return box.move_to(P(*c))
+    return px_box(*c)
 
 
 def atlas_label(c):
@@ -169,30 +123,17 @@ RECTS = {
 }
 
 
-def load_image(path):
-    """ImageMobject that doesn't keep its file handle open; a grey 4:3 placeholder if the file is missing."""
-    path = Path(path)
-    if not path.exists():
-        print(f"[P63_64] image not found: {path}")
-        return Rectangle(4.0, 3.0).set_fill(CHILL_BROWN, 0.35).set_stroke(CHILL_BROWN, 1)
-    im = ImageMobject(str(path))
-    try:
-        im.image.load()
-    except Exception:
-        pass
-    return im
-
-
-def place_px(im, x, y, h):
-    """Top-left corner at pixel (x, y), height h pixels."""
-    im.set_height(h * PX)
-    im.move_to(P(x, y), aligned_edge=UL)
-    return im
-
-
 def make_view(key, rect_key):
-    """Group(image, depth map) placed at RECTS[rect_key]."""
-    g = Group(*[load_image(f) for f in VIEW_FILES[key]])
+    """Group the image and depth map at RECTS[rect_key]."""
+    images = []
+    for path in VIEW_FILES[key]:
+        if path.is_file():
+            images.append(load_image(path))
+        else:
+            print(f"[P63_64] image not found: {path}")
+            images.append(m.Rectangle(width=4.0, height=3.0, fill_color=CHILL_BROWN,
+                                    fill_opacity=0.35, stroke_color=CHILL_BROWN, stroke_width=1))
+    g = m.Group(*images)
     for im, r in zip(g, RECTS[rect_key]):
         place_px(im, *r)
     return g
@@ -200,7 +141,7 @@ def make_view(key, rect_key):
 
 def view_to(view, rect_key):
     """Animations sliding + resizing a view to RECTS[rect_key]."""
-    return [im.animate.set_height(r[2] * PX).move_to(P(r[0], r[1]), aligned_edge=UL)
+    return [im.animate.scale_to_fit_height(r[2] * PX).move_to(P(r[0], r[1]), aligned_edge=m.UL)
             for im, r in zip(view, RECTS[rect_key])]
 
 
@@ -220,22 +161,22 @@ POSES = {
 
 
 def pose(kind, dx=0.0, dy=0.0):
-    """Camera frustum + POSE label, shifted (dx, dy) pixels from its home spot. -> VGroup with .wire .dot .label"""
+    """Camera frustum + POSE label, shifted (dx, dy) pixels from its home spot. with wire, dot, and label parts."""
     spec = POSES[kind]
     w = spec["stroke"] * STROKE_PER_PX
-    rays = VGroup(*[px_line(spec["apex"], c, spec["stroke"]) for c in spec["poly"]])
-    face = Polygon(*[P(*c) for c in spec["poly"]]).set_fill(opacity=0).set_stroke(FRESH_TAN, w)
-    dot = Dot(P(*spec["apex"]), radius=spec["dot"] * PX).set_fill(FRESH_TAN, 1).set_stroke(width=0)
+    rays = m.VGroup(*[px_line(spec["apex"], c, spec["stroke"]) for c in spec["poly"]])
+    face = m.Polygon(*[P(*c) for c in spec["poly"]]).set_fill(opacity=0).set_stroke(FRESH_TAN, w)
+    dot = m.Dot(P(*spec["apex"]), radius=spec["dot"] * PX).set_fill(FRESH_TAN, 1).set_stroke(width=0)
     size, lx, ly = spec["label"]
     label = px_text("POSE", size, lx, ly, bold=True)
-    g = VGroup(VGroup(rays, face), dot, label)
+    g = m.VGroup(m.VGroup(rays, face), dot, label)
     g.shift(V(dx, dy))
     g.wire, g.dot, g.label = g[0], g[1], g[2]
     return g
 
 
 # ----------------------------------------------------------------------------- the scene
-class P63_64(InteractiveScene):
+class P63_64(m.Scene):
     # --- timings (seconds) ---------------------------------------------------------------------------------
     fade_time = 1.5           # beat 1 fade in
     intro_hold = 4.0          # prompt -> ATLAS -> [360 video in Premiere]
@@ -255,7 +196,8 @@ class P63_64(InteractiveScene):
     train_time = 1.5          # column 3
     end_hold = 5.0
 
-    def construct(self):
+    def construct(self) -> None:
+        self.camera.background_color = STORYBOARD_BACKGROUND
         self.beat_intro()
         self.beat_first_image()
         self.beat_new_view()
@@ -272,25 +214,26 @@ class P63_64(InteractiveScene):
         v = V(c[0] - self.c[0], c[1] - self.c[1])
         mobs = [self.box, self.label, self.arrow_in] + ([self.arrow_out] if with_out else [])
         self.c = c
-        return [m.animate.shift(v) for m in mobs]
+        return [mob.animate.shift(v) for mob in mobs]
 
     def prompt_to(self, layout):
         """Animations moving the current prompt lines into a layout."""
         three = self.l3 is not None
         t1, t2, tail, t3 = prompt_at(layout, three_lines=three)
-        anims = [Transform(self.l1, t1), Transform(self.l2, t2)]
+        anims = [m.Transform(self.l1, t1), m.Transform(self.l2, t2)]
         if three:
-            anims.append(Transform(self.l3, t3))
+            anims.append(m.Transform(self.l3, t3))
         else:
-            anims.append(Transform(self.tail, tail))
+            anims.append(m.Transform(self.tail, tail))
         return anims
 
     def show_view(self, view):
-        self.play(LaggedStart(*[FadeIn(im, shift=0.25 * RIGHT) for im in view], lag_ratio=self.image_lag),
+        self.play(m.LaggedStart(*[m.FadeIn(im, shift=0.25 * m.RIGHT) for im in view], lag_ratio=self.image_lag),
                   run_time=self.image_time)
 
     def draw_pose(self, p):
-        self.play(ShowCreation(p.wire, lag_ratio=0.15), FadeIn(p.dot), FadeIn(p.label), run_time=self.pose_time)
+        self.play(m.Create(p.wire, lag_ratio=0.15), m.FadeIn(p.dot), m.FadeIn(p.label), run_time=self.pose_time)
+        self.add(p)
 
     # ------------------------------------------------------------------------------------------- beat 1  (-01)
     def beat_intro(self):
@@ -298,7 +241,7 @@ class P63_64(InteractiveScene):
         self.box, self.label = atlas_box(C1), atlas_label(C1)
         self.arrow_in, self.arrow_out = in_arrow(C1), out_arrow(C1)
         self.l1, self.l2, self.tail, self.l3 = prompt_at(L1)
-        self.play(*[FadeIn(m) for m in (self.l1, self.l2, self.tail, self.arrow_in, self.box, self.label,
+        self.play(*[m.FadeIn(part) for part in (self.l1, self.l2, self.tail, self.arrow_in, self.box, self.label,
                                         self.arrow_out)], run_time=self.fade_time)
         self.wait(self.intro_hold)          # <- the 360 video sits to the right of the out arrow (Premiere)
 
@@ -306,8 +249,8 @@ class P63_64(InteractiveScene):
     def beat_first_image(self):
         # the slide and the first image + depth happen together
         self.A = make_view("A", "A_out")
-        self.play(AnimationGroup(*self.core_to(C2), *self.prompt_to(L2), run_time=self.slide_time),
-                  LaggedStart(*[FadeIn(im, shift=0.25 * RIGHT) for im in self.A], lag_ratio=self.image_lag,
+        self.play(m.AnimationGroup(*self.core_to(C2), *self.prompt_to(L2), run_time=self.slide_time),
+                  m.LaggedStart(*[m.FadeIn(im, shift=0.25 * m.RIGHT) for im in self.A], lag_ratio=self.image_lag,
                               run_time=self.image_time))
         self.wait(self.beat_hold)
 
@@ -337,18 +280,18 @@ class P63_64(InteractiveScene):
     # ------------------------------------------------------------------------------------------- beat 5
     def beat_new_prompt(self):
         gone = [*self.A, *self.B, *self.C, self.pose_1, self.pose_2, self.pose_3, self.arrow_out]
-        self.play(*[FadeOut(m) for m in gone], run_time=self.clear_time)
+        self.play(*[m.FadeOut(part) for part in gone], run_time=self.clear_time)
 
         # prompt -> ATLAS settle into the -05 layout; the closing '.”' fades as line 2 opens up for the new clause
         t1, t2, tail, l3 = prompt_at(L5, three_lines=True)
         tail.set_opacity(0)
         self.play(*self.core_to(C5, with_out=False),
-                  Transform(self.l1, t1), Transform(self.l2, t2), Transform(self.tail, tail),
+                  m.Transform(self.l1, t1), m.Transform(self.l2, t2), m.Transform(self.tail, tail),
                   run_time=self.slide_time)
         self.remove(self.tail)
         self.wait(self.prompt_only_hold)
         self.l3 = l3
-        self.play(Write(self.l3), run_time=self.clause_time)
+        self.play(m.Write(self.l3), run_time=self.clause_time)
         self.wait(self.clause_hold)
 
     # ------------------------------------------------------------------------------------------- beat 6  (-05)
@@ -356,7 +299,7 @@ class P63_64(InteractiveScene):
         self.arrow_out = out_arrow(C5)
         self.D = make_view("D", "D_out")
         self.pose_4 = pose("front", 1127.06, -14.10)      # under the new image + depth
-        self.play(FadeIn(self.arrow_out), run_time=0.5)
+        self.play(m.FadeIn(self.arrow_out), run_time=0.5)
         self.show_view(self.D)
         self.draw_pose(self.pose_4)
         self.wait(self.beat_hold)
@@ -377,21 +320,21 @@ class P63_64(InteractiveScene):
         title = px_text("ATLAS", 42, 894.73, 114.18, bold=True, color=CHILL_BROWN)
         gone = [self.l1, self.l2, self.l3, self.arrow_in, self.arrow_out, self.box,
                 *self.D, *self.E, self.pose_4, self.pose_5]
-        self.play(*[FadeOut(m) for m in gone], Transform(self.label, title), run_time=self.title_time)
+        self.play(*[m.FadeOut(part) for part in gone], m.Transform(self.label, title), run_time=self.title_time)
 
         kw = dict(font=TEXT_FONT, italic=True)
         tag = dict(bold=True, color=CHILL_BROWN)
-        target = VGroup(px_text("New View Prediction", 36.58, 140.18, 509.18, **kw),
+        target = m.VGroup(px_text("New View Prediction", 36.58, 140.18, 509.18, **kw),
                         px_text("PREDICTION TARGET", 24, 185.55, 674.08, **tag))
-        arch = VGroup(px_text("Multimodal Autoregressive", 36.58, 740.59, 486.83, **kw),
+        arch = m.VGroup(px_text("Multimodal Autoregressive", 36.58, 740.59, 486.83, **kw),
                       px_text("Diffusion Transformer", 36.58, 775.14, 530.73, **kw),
                       px_text("ARCHITECTURE", 24, 859.68, 672.29, **tag))
-        training = VGroup(px_text("From Scratch Pre-Train", 36.58, 1425.13, 497.76, **kw),
+        training = m.VGroup(px_text("From Scratch Pre-Train", 36.58, 1425.13, 497.76, **kw),
                           px_text("TRAINING", 24, 1563.88, 674.08, **tag))
-        dividers = VGroup(px_line((590.75, 264.0), (590.75, 821.12), 1.0, CHILL_BROWN),
+        dividers = m.VGroup(px_line((590.75, 264.0), (590.75, 821.12), 1.0, CHILL_BROWN),
                           px_line((1286.06, 264.0), (1286.06, 821.12), 1.0, CHILL_BROWN))
 
-        self.play(*[Write(m) for m in (*target, *arch)], *[ShowCreation(d) for d in dividers],
+        self.play(*[m.Write(part) for part in (*target, *arch)], *[m.Create(d) for d in dividers],
                   run_time=self.write_time)
         self.wait(self.hole_hold)           # <- obvious hole in the third spot
-        self.play(*[Write(m) for m in training], run_time=self.train_time)
+        self.play(*[m.Write(part) for part in training], run_time=self.train_time)

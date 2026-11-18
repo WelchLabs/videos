@@ -1,4 +1,8 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_geometry import diagram_axes_3d
+from welch_surface import SampledSurface
+from welch_scene import WelchScene, image_at_height
 import numpy as np
 
 CHILL_BROWN='#948979'
@@ -9,9 +13,9 @@ GREEN='#6e9671'
 CHILL_GREEN='#6c946f'
 CHILL_BLUE='#3d5c6f'
 FRESH_TAN='#dfd0b9'
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/graphics/' #Point to folder where map images are
+graphics_dir=welch_path('backprop_3/graphics/') #Point to folder where map images are
 
-class LinearPlane(Surface):
+class LinearPlane(SampledSurface):
     """A plane defined by z = m1*x1 + m2*x2 + b"""
     def __init__(self, axes, m1=0.5, m2=0.3, b=1.0, vertical_viz_scale=0.5, **kwargs):
         self.axes = axes
@@ -75,7 +79,7 @@ def find_plane_intersection(plane1, plane2):
     
     return get_point
 
-class IntersectionLine(ParametricCurve):
+class IntersectionLine(m.ParametricFunction):
     """A parametric line representing the intersection of two planes"""
     def __init__(self, axes, plane1, plane2, t_range=(-5, 5, 0.1), **kwargs):
         self.axes = axes
@@ -91,7 +95,7 @@ class IntersectionLine(ParametricCurve):
             **kwargs
         )
 
-class HalfPlane(Surface):
+class HalfPlane(SampledSurface):
     def __init__(self, axes, base_plane, other_plane, above=True, **kwargs):
         self.axes = axes
         self.base_plane = base_plane
@@ -117,7 +121,7 @@ class HalfPlane(Surface):
         else:
             return self.axes.c2p(x1, x2, z1)
 
-class FlatHalfPlane(Surface):
+class FlatHalfPlane(SampledSurface):
     def __init__(self, axes, base_plane, other_plane, above=True, **kwargs):
         self.axes = axes
         self.base_plane = base_plane
@@ -143,13 +147,13 @@ class FlatHalfPlane(Surface):
         else:
             return self.axes.c2p(x1, x2, 0)  # Flatten to z=0
 
-class p17(InteractiveScene):
+class p17(WelchScene):
     def construct(self):
-        map_img=ImageMobject(graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        map_img.move_to(ORIGIN)
+        map_img=image_at_height(graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+        map_img.move_to(m.ORIGIN)
         map_img.scale(0.25)
         
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             x_range=[-5, 5, 1],
             y_range=[-5, 5, 1],
             z_range=[-3.5, 3.5, 1],
@@ -184,20 +188,20 @@ class p17(InteractiveScene):
             stroke_width=4
         )
             
-        self.frame.reorient(0, 0, 0, (0.01, -0.01, 0.0), 1.29)
+        self.set_view(0, 0, 0, (0.01, -0.01, 0.0), 1.29)
         self.add(map_img)
 
         self.wait()
-        self.play(ShowCreation(plane_1), ShowCreation(plane_2), self.frame.animate.reorient(0, 46, 0, (-0.03, 0.02, 0.01), 1.62), run_time=5)
+        self.play(m.Create(plane_1), m.Create(plane_2), self.animate_view(0, 46, 0, (-0.03, 0.02, 0.01), 1.62), run_time=5)
         self.wait()
 
-        self.play(self.frame.animate.reorient(-16, 47, 0, (-0.04, 0.02, 0.0), 1.62))
-        self.play(ShowCreation(intersection_line))
+        self.play(self.animate_view(-16, 47, 0, (-0.04, 0.02, 0.0), 1.62))
+        self.play(m.Create(intersection_line))
         self.wait()
         
         ## Move to overhead view, bring down line flat onto z=0, and each color half plane onto z=0
         
-        class FlatIntersectionLine(ParametricCurve):
+        class FlatIntersectionLine(m.ParametricFunction):
             def __init__(self, axes, plane1, plane2, t_range=(-5, 5, 0.1), **kwargs):
                 self.axes = axes
                 self.plane1 = plane1
@@ -221,10 +225,10 @@ class p17(InteractiveScene):
 
         self.wait()
 
-        self.play(ReplacementTransform(intersection_line, flat_intersection_line), 
+        self.play(m.ReplacementTransform(intersection_line, flat_intersection_line),
                   plane_1.animate.set_opacity(0.0),
                   plane_2.animate.set_opacity(0.0),
-                  self.frame.animate.reorient(0, 2, 0, (-0.04, 0.02, 0.0), 1.62),
+                  self.animate_view(0, 2, 0, (-0.04, 0.02, 0.0), 1.62),
                   run_time=4)
 
         self.wait()
@@ -235,7 +239,7 @@ class p17(InteractiveScene):
 
 
         # First, move to overhead view
-        # self.play(self.frame.animate.reorient(-90, 0, 0, (0, 0, 0), 1.62), run_time=3)
+        # self.play(self.animate_view(-90, 0, 0, (0, 0, 0), 1.62), run_time=3)
         # self.wait()
         
         # # Create flattened intersection line (same line but at z=0)
@@ -260,16 +264,16 @@ class p17(InteractiveScene):
         # self.wait(3)
 
         self.wait(20)
-        self.embed()
+        pass
 
-class p21_final_planes(InteractiveScene):
+class p21_final_planes(WelchScene):
     def construct(self):
         # map_img=ImageMobject(graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        map_img=ImageMobject('/Users/stephen/Stephencwelch\ Dropbox/welch_labs/ai_book/3_backprop_2/graphics/barrle_hertog_map_32.png')
-        map_img.move_to(ORIGIN)
+        map_img=image_at_height(welch_path('ai_book/3_backprop_2/graphics/barrle_hertog_map_32.png'))
+        map_img.move_to(m.ORIGIN)
         map_img.scale(0.25)
         
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             x_range=[-5, 5, 1],
             y_range=[-5, 5, 1],
             z_range=[-3.5, 3.5, 1],
@@ -300,24 +304,24 @@ class p21_final_planes(InteractiveScene):
             plane_1, 
             plane_2, 
             t_range=(-5, 5, 0.1),
-            color=WHITE,
+            color=m.WHITE,
             stroke_width=4
         )
             
-        self.frame.reorient(0, 0, 0, (0.01, -0.01, 0.0), 1.29)
+        self.set_view(0, 0, 0, (0.01, -0.01, 0.0), 1.29)
         self.add(map_img)
 
         self.wait()
-        self.play(ShowCreation(plane_1), ShowCreation(plane_2), self.frame.animate.reorient(0, 46, 0, (-0.03, 0.02, 0.01), 1.62), run_time=5)
+        self.play(m.Create(plane_1), m.Create(plane_2), self.animate_view(0, 46, 0, (-0.03, 0.02, 0.01), 1.62), run_time=5)
         self.wait()
 
-        self.play(self.frame.animate.reorient(-16, 47, 0, (-0.04, 0.02, 0.0), 1.62))
-        self.play(ShowCreation(intersection_line))
+        self.play(self.animate_view(-16, 47, 0, (-0.04, 0.02, 0.0), 1.62))
+        self.play(m.Create(intersection_line))
         self.wait()
         
         ## Move to overhead view, bring down line flat onto z=0, and each color half plane onto z=0
         
-        class FlatIntersectionLine(ParametricCurve):
+        class FlatIntersectionLine(m.ParametricFunction):
             def __init__(self, axes, plane1, plane2, t_range=(-5, 5, 0.1), **kwargs):
                 self.axes = axes
                 self.plane1 = plane1
@@ -335,7 +339,7 @@ class p21_final_planes(InteractiveScene):
             plane_1, 
             plane_2, 
             t_range=(-5, 5, 0.1),
-            color=WHITE,
+            color=m.WHITE,
             stroke_width=4
         )
 
@@ -344,7 +348,7 @@ class p21_final_planes(InteractiveScene):
         # self.play(ReplacementTransform(intersection_line, flat_intersection_line), 
         #           plane_1.animate.set_opacity(0.0),
         #           plane_2.animate.set_opacity(0.0),
-        #           self.frame.animate.reorient(0, 2, 0, (-0.04, 0.02, 0.0), 1.62),
+        #           self.animate_view(0, 2, 0, (-0.04, 0.02, 0.0), 1.62),
         #           run_time=4)
 
         self.wait()
@@ -355,7 +359,7 @@ class p21_final_planes(InteractiveScene):
 
 
         # First, move to overhead view
-        # self.play(self.frame.animate.reorient(-90, 0, 0, (0, 0, 0), 1.62), run_time=3)
+        # self.play(self.animate_view(-90, 0, 0, (0, 0, 0), 1.62), run_time=3)
         # self.wait()
         
         # # Create flattened intersection line (same line but at z=0)
@@ -380,7 +384,7 @@ class p21_final_planes(InteractiveScene):
         # self.wait(3)
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 

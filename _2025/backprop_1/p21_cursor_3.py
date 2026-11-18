@@ -1,8 +1,9 @@
-from manimlib import *
+import manimgx as m
+import numpy as np
+from welch_axes import WelchXAxis, WelchYAxis, generate_nice_ticks
+from welch_scene import WelchScene
 from functools import partial
 import sys
-sys.path.append('/Users/stephen/manim/videos/welch_assets')
-from welch_axes import *
 
 sys.path.append('/Users/stephen/manim/videos/_2025/backprop_1')
 from backprop_data import xs1, losses1, all_probs_1
@@ -158,7 +159,7 @@ def get_scatter_points(t, initial_bounds, final_bounds, x_axis_position, y_axis_
     origin_y = y_axis_position[1] - y_axis_length / 2
     
     # Create scatter plot points
-    dots = VGroup()
+    dots = m.VGroup()
     
     for x_val, y_val in zip(x_values, y_values):
         # Calculate normalized position within the data range (0 to 1)
@@ -170,7 +171,7 @@ def get_scatter_points(t, initial_bounds, final_bounds, x_axis_position, y_axis_
         y_pos = origin_y + y_norm * y_axis_length
         
         # Create dot
-        dot = Dot(
+        dot = m.Dot(
             point=[x_pos, y_pos, 0],
             radius=0.05,
             stroke_width=0,
@@ -223,7 +224,7 @@ def get_scatter_points_with_interpolated_y(t, initial_bounds, final_bounds, x_ax
     origin_y = y_axis_position[1] - y_axis_length / 2
     
     # Create scatter plot points
-    dots = VGroup()
+    dots = m.VGroup()
     
     for x_val, y_val in zip(x_values, y_values):
         # Calculate normalized position within the data range (0 to 1)
@@ -235,7 +236,7 @@ def get_scatter_points_with_interpolated_y(t, initial_bounds, final_bounds, x_ax
         y_pos = origin_y + y_norm * y_axis_length
         
         # Create dot
-        dot = Dot(
+        dot = m.Dot(
             point=[x_pos, y_pos, 0],
             radius=0.05,
             stroke_width=0,
@@ -288,7 +289,7 @@ def get_losses_scatter_points(t, initial_bounds, final_bounds, x_axis_position, 
     origin_y = y_axis_position[1] - y_axis_length / 2
     
     # Create scatter plot points
-    dots = VGroup()
+    dots = m.VGroup()
     
     for x_val, y_val in zip(x_values, y_values):
         # Calculate normalized position within the data range (0 to 1)
@@ -300,7 +301,7 @@ def get_losses_scatter_points(t, initial_bounds, final_bounds, x_axis_position, 
         y_pos = origin_y + y_norm * y_axis_length
         
         # Create dot
-        dot = Dot(
+        dot = m.Dot(
             point=[x_pos, y_pos, 0],
             radius=0.05,
             stroke_width=0,
@@ -316,7 +317,7 @@ def time_to_bounds(t, intial_bounds, final_bounds):
     upper_bound=t*(final_bounds[1]-intial_bounds[1])+intial_bounds[1]
     return lower_bound, upper_bound
 
-class P21(InteractiveScene):
+class P21(WelchScene):
     '''
     Code is messy and animation is a little stuttery - but I think I coudl ship this if I need to
     Probably makes sense to keep moving, this is a small scene.
@@ -331,19 +332,19 @@ class P21(InteractiveScene):
         final_y_range = [0.15, 0.6]
 
         initial_time = 0.0
-        t_tracker = ValueTracker(initial_time)
+        t_tracker = m.ValueTracker(initial_time)
         
         # Add a second tracker for the y-axis zoom
-        y_zoom_tracker = ValueTracker(0.0)
+        y_zoom_tracker = m.ValueTracker(0.0)
         
         # Add a third tracker for the losses scatter plot
-        losses_tracker = ValueTracker(0.0)
+        losses_tracker = m.ValueTracker(0.0)
 
         x_axis_position = [0, -2, 0]
         y_axis_position = [-3.84, 0.73, 0]
         
         # Create axes
-        x_axis = always_redraw(lambda: get_x_axis(
+        x_axis = m.always_redraw(lambda: get_x_axis(
             t_tracker.get_value(), 
             initial_x_range, 
             final_x_range, 
@@ -351,7 +352,7 @@ class P21(InteractiveScene):
         ))
         
         # First y-axis that changes with the scatter plot
-        y_axis = always_redraw(lambda: get_y_axis(
+        y_axis = m.always_redraw(lambda: get_y_axis(
             t_tracker.get_value(), 
             initial_x_range, 
             final_x_range, 
@@ -359,7 +360,7 @@ class P21(InteractiveScene):
         ))
         
         # Second y-axis with fixed bounds that will be used for the second zoom
-        fixed_y_axis = always_redraw(lambda: get_fixed_y_axis(
+        fixed_y_axis = m.always_redraw(lambda: get_fixed_y_axis(
             t_tracker.get_value(), 
             initial_x_range, 
             final_x_range, 
@@ -368,7 +369,7 @@ class P21(InteractiveScene):
         ))
         
         # Create scatter plot with direct time parameter
-        scatter = always_redraw(lambda: get_scatter_points(
+        scatter = m.always_redraw(lambda: get_scatter_points(
             t_tracker.get_value(),
             initial_x_range,
             final_x_range,
@@ -377,7 +378,7 @@ class P21(InteractiveScene):
         ))
         
         # Create scatter plot that scales with the interpolated y-axis
-        interpolated_scatter = always_redraw(lambda: get_scatter_points_with_interpolated_y(
+        interpolated_scatter = m.always_redraw(lambda: get_scatter_points_with_interpolated_y(
             t_tracker.get_value(),
             initial_x_range,
             final_x_range,
@@ -387,7 +388,7 @@ class P21(InteractiveScene):
         ))
         
         # Create losses scatter plot that scales with the interpolated y-axis
-        losses_scatter = always_redraw(lambda: get_losses_scatter_points(
+        losses_scatter = m.always_redraw(lambda: get_losses_scatter_points(
             t_tracker.get_value(),
             initial_x_range,
             final_x_range,
@@ -557,7 +558,7 @@ class P21(InteractiveScene):
 
 
 
-class AxisHacking(InteractiveScene):
+class AxisHacking(WelchScene):
     def construct(self):
 
         x_axis=WelchXAxis(        

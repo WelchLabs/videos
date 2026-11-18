@@ -1,6 +1,0 @@
-[
-    {
-        "caption": "ManimExit: Exit manim scene",
-        "command": "manim_exit"
-    }
-]

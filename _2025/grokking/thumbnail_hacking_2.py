@@ -1,4 +1,13 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+from activation_diagrams import black_to_tan_hex, draw_attention_patterns, draw_attention_values, draw_embeddings, draw_embeddings_2, draw_inputs, draw_logits, draw_mlp_1, draw_mlp_2, draw_mlp_3, softmax_with_temperature, viridis_hex
+import numpy as np
+from welch_geometry import diagram_axes, diagram_axes_3d
+import pickle
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, set_surface_shading, textured_surface
+from welch_text import math_tex
+
 from functools import partial
 
 from pathlib import Path
@@ -18,189 +27,8 @@ CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
 resolution=113
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/graphics/to_manim')
-data_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
-
-def viridis_hex(value, vmin, vmax):
-    """
-    Map a scalar `value` in [vmin, vmax] to a Viridis color (hex string).
-    """
-    # Normalize into [0,1]
-    norm = colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
-    # Get RGBA from viridis
-    rgba = cm.viridis(norm(value))
-    # Convert to hex
-    return colors.to_hex(rgba)
-
-def black_to_tan_hex(value, vmin, vmax=1):
-    """
-    Map a scalar `value` in [vmin, vmax] to a color from black to FRESH_TAN (#dfd0b9).
-    """
-    cmap = colors.LinearSegmentedColormap.from_list('black_tan', ['#000000', '#dfd0b9'])
-    norm = colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
-    return colors.to_hex(cmap(norm(value)))
-
-def softmax_with_temperature(logits, temperature=1.0, axis=-1):
-    scaled = logits / temperature
-    exp_scaled = np.exp(scaled - np.max(scaled, axis=axis, keepdims=True))
-    return exp_scaled / np.sum(exp_scaled, axis=axis, keepdims=True)
-
-
-
-
-def draw_inputs(self, activations, all_svgs, reset=False, example_index=0, wait=0.0):
-
-    #Borders and fills
-    input_mapping_1a=[[0, 1], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16], [17, 18]]
-    input_mapping_1b=[[19, 20], [21, 22]]
-    input_mapping_2a=[[23, 24], [28, 29], [30, 31], [32, 33], [34, 35], [36, 37], [38, 39], [40, 41]]
-    input_mapping_2b=[[42, 43], [44, 45]]
-    input_mapping_3a=[[46, 47], [51, 52], [53, 54], [55, 56], [57, 58], [59, 60], [61, 62], [63, 64]]
-    input_mapping_3b=[[65, 66], [67, 68]]
-
-
-    #Color inputs
-    for mapping, activations_index, offset in zip([input_mapping_1a, input_mapping_1b, input_mapping_2a, input_mapping_2b, input_mapping_3a, input_mapping_3b], 
-                                          [0, 0, 1, 1, 2, 2], [0, 112, 0, 112, 0, 112]):
-        for i, idx in enumerate(mapping):
-            if i+offset == activations['x'][example_index][activations_index]:
-                all_svgs[2][idx[0]].set_color(FRESH_TAN)
-            else:
-                all_svgs[2][idx[0]].set_color(BLACK)
-            if reset:
-                all_svgs[2][idx[0]].set_color(BLACK)
-        if wait!=0.0: self.wait(wait)
-
-def draw_embeddings(self, activations, all_svgs, reset=False, example_index=0, wait=0, colormap=black_to_tan_hex):
-
-    embedding_fill_indices_1=[3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]
-    embedding_fill_indices_2=[28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
-    embedding_fill_indices_3=[53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73]
-    # vmin=np.min(activations['blocks.0.hook_resid_pre'])*0.9 
-    # vmax=np.max(activations['blocks.0.hook_resid_pre'])*0.9
-    for i, indices in enumerate([embedding_fill_indices_1, embedding_fill_indices_2, embedding_fill_indices_3]):
-        vmin=np.min(activations['blocks.0.hook_resid_pre'][example_index][i])*1.5 #Scaling by column
-        vmax=np.max(activations['blocks.0.hook_resid_pre'][example_index][i])*1.5
-        for j, idx in enumerate(indices):
-            # c=viridis_hex(activations['blocks.0.hook_resid_pre'][example_index, 0, i], vmin, vmax)
-            c=colormap(activations['blocks.0.hook_resid_pre'][example_index, i, j], vmin, vmax)
-            # print(activations['blocks.0.hook_resid_pre'][example_index, 0, j])
-            all_svgs[4][idx].set_color(c)
-            if reset: all_svgs[4][idx].set_color(BLACK)
-            if wait!=0.0: self.wait(wait)
-
-def draw_embeddings_2(self, activations, all_svgs, reset=False, example_index=0, wait=0, colormap=black_to_tan_hex):
-
-    embedding_fill_indices_1=[3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]
-    embedding_fill_indices_2=[28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48]
-    embedding_fill_indices_3=[53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73]
-    # vmin=np.min(activations['blocks.0.hook_resid_pre'])*0.9 
-    # vmax=np.max(activations['blocks.0.hook_resid_pre'])*0.9
-    for i, indices in enumerate([embedding_fill_indices_1, embedding_fill_indices_2, embedding_fill_indices_3]):
-        vmin=np.min(activations['blocks.0.hook_resid_pre'][example_index][i])*0.8 #Scaling by column
-        vmax=np.max(activations['blocks.0.hook_resid_pre'][example_index][i])*0.8
-        for j, idx in enumerate(indices):
-            # c=viridis_hex(activations['blocks.0.hook_resid_pre'][example_index, 0, i], vmin, vmax)
-            c=colormap(activations['blocks.0.hook_resid_pre'][example_index, i, j], vmin, vmax)
-            # print(activations['blocks.0.hook_resid_pre'][example_index, 0, j])
-            all_svgs[4][idx].set_color(c)
-            if reset: all_svgs[4][idx].set_color(BLACK)
-            if wait!=0.0: self.wait(wait)
-
-
-def draw_attention_values(self, activations, all_svgs, reset=False, example_index=0, wait=0, colormap=black_to_tan_hex):
-
-        ## Attention - Values - mapping again is hacky here, technicall first layer should be same for all
-        ## Keep moving for now.
-        vmin=np.min(activations['blocks.0.attn.hook_v'][example_index])*0.25 #Scaling
-        vmax=np.max(activations['blocks.0.attn.hook_v'][example_index])*0.25
-        value_fill_indices_1=[0, 2, 4, 6, 8]
-        value_fill_indices_2=[10, 12, 14, 16, 18]
-        value_fill_indices_3=[20, 22, 24, 26, 28]
-        value_fill_indices_4=[30, 32, 34, 36, 38]
-
-        for head_id, indices in enumerate([value_fill_indices_1, value_fill_indices_2, value_fill_indices_3, value_fill_indices_4]):
-            for j, idx in enumerate(indices):
-                c=colormap(activations['blocks.0.attn.hook_v'][example_index, head_id, 1, j], vmin, vmax)
-                all_svgs[12][idx].set_color(c)
-                if reset: all_svgs[4][idx].set_color(BLACK)
-                if wait!=0.0: self.wait(wait)
-
-def draw_attention_patterns(self, activations, all_svgs, reset=False, example_index=0, wait=0, colormap=black_to_tan_hex):
-        #Attention - attention patterns - need to be more precise with these!
-        vmin=0
-        vmax=0.8
-        attn_fill_indices=[[0,0], [1,0], [1,1], [2,0], [2,1], [2,2]] #Indices to sample matrix at
-        head_id=0
-        for head_id, offset in enumerate([0, 6, 12, 18]):
-            for j, idx in enumerate(attn_fill_indices):
-                a=activations['blocks.0.attn.hook_attn'][example_index, head_id, idx[0], idx[1]]
-                c=black_to_tan_hex(a, vmin, vmax)
-                all_svgs[13][offset+j].set_color(c)
-                if reset: all_svgs[13][offset+j].set_color(BLACK)
-                self.remove(all_svgs[7]); self.add(all_svgs[7]) #Stacking for grid
-                if wait!=0.0: self.wait(wait)
-
-def draw_mlp_1(self, activations, all_svgs, reset=False, example_index=0, wait=0, colormap=black_to_tan_hex):
-    #MLP layer 1 (565, 3, 128) 
-    vmin=np.min(activations['blocks.0.hook_resid_mid'][example_index])*0.85 #Scaling
-    vmax=np.max(activations['blocks.0.hook_resid_mid'][example_index])*0.85
-    mlp_indices_1=[0, 2, 4, 6, 8, 10, 12]
-    for i, idx in enumerate(mlp_indices_1):
-        c=black_to_tan_hex(activations['blocks.0.hook_resid_mid'][example_index, 2, i], vmin, vmax)
-        all_svgs[9][idx].set_color(c)
-        if reset: all_svgs[9][idx].set_color(BLACK)
-        if wait!=0.0: self.wait(wait)
-
-def draw_mlp_2(self, activations, all_svgs, reset=False, example_index=0, wait=0, colormap=black_to_tan_hex):
-    #MLP Layer 2 (565, 3, 512)
-    vmin=np.min(activations['blocks.0.mlp.hook_pre'][example_index])*0.85 #Scaling
-    vmax=np.max(activations['blocks.0.mlp.hook_pre'][example_index])*0.85
-    mlp_indices_2=[14, 16, 18, 20, 22, 24, 26, 28, 30]
-    for i, idx in enumerate(mlp_indices_2):
-        c=black_to_tan_hex(activations['blocks.0.mlp.hook_pre'][example_index, 2, i], vmin, vmax)
-        all_svgs[9][idx].set_color(c)
-        if reset: all_svgs[9][idx].set_color(BLACK)
-        if wait!=0.0: self.wait(wait)
-
-def draw_mlp_3(self, activations, all_svgs, reset=False, example_index=0, wait=0, colormap=black_to_tan_hex):
-    # MLP Layer 3 (565, 3, 128) 
-    vmin=np.min(activations['blocks.0.hook_mlp_out'][example_index])*0.85 #Scaling
-    vmax=np.max(activations['blocks.0.hook_mlp_out'][example_index])*0.85
-    mlp_indices_3=[32, 34, 36, 38, 40, 42, 44]
-    for i, idx in enumerate(mlp_indices_3):
-        c=black_to_tan_hex(activations['blocks.0.hook_mlp_out'][example_index, 2, i], vmin, vmax)
-        all_svgs[9][idx].set_color(c)
-        if reset: all_svgs[9][idx].set_color(BLACK)
-        if wait!=0.0: self.wait(wait)
-
-
-
-def draw_logits(self, activations, all_svgs, reset=False, example_index=0, wait=0, colormap=black_to_tan_hex, temperature=25.0):
-
-        #Logits or probs (565, 113)
-        logit_indices_1=[3, 5, 7, 9, 11, 13, 15, 17]
-        logit_indices_2=[19, 21]
-
-        #Don't love probs or logits, how about temperature?
-        probs_sortof=softmax_with_temperature(activations['logits'][example_index], temperature=temperature, axis=0)
-
-
-        vmin=np.min(probs_sortof)*1.0 #Scaling
-        vmax=np.max(probs_sortof)*1.0
-
-        for i, idx in enumerate(logit_indices_1):
-            c=black_to_tan_hex(probs_sortof[i], vmin, vmax)
-            all_svgs[11][idx].set_color(c)
-            if reset: all_svgs[11][idx].set_color(BLACK)
-            if wait!=0.0: self.wait(wait)
-
-        for i, idx in enumerate(logit_indices_2):
-            c=black_to_tan_hex(probs_sortof[i+111], vmin, vmax)
-            all_svgs[11][idx].set_color(c)
-            if reset: all_svgs[11][idx].set_color(BLACK)
-            if wait!=0.0: self.wait(wait)
-
+svg_dir=Path(welch_path('grokking/graphics/to_manim'))
+data_dir=Path(welch_path('grokking/from_linux/grok_1764706121'))
 
 alphas_1=np.linspace(0, 1, resolution) #Crank up here for better spatial resolution I think
 def param_surface(u, v, surf_array, scale=0.15):
@@ -227,8 +55,8 @@ def surf_func(u, v, axes, surf_array, scale=1.0):
     return axes.c2p(x, y, z)
 
 
-class Dot3D(Sphere):
-    def __init__(self, center=ORIGIN, radius=0.05, **kwargs):
+class Dot3D(gx.Sphere):
+    def __init__(self, center=gx.ORIGIN, radius=0.05, **kwargs):
         super().__init__(radius=radius, **kwargs)
         self.move_to(center)
 
@@ -244,7 +72,7 @@ def make_fourier_surf_func(axes, comp_func):
     return func
 
 
-class P44_58b(InteractiveScene):
+class P44_58b(WelchScene):
     def construct(self): 
         '''
         Big 2d scene, building up to most zoomed out view. 
@@ -265,9 +93,9 @@ class P44_58b(InteractiveScene):
         with open(data_dir/'final_model_activations.p', 'rb') as f:
             activations = pickle.load(f)
 
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for svg_file in svg_files[1:28]: #Expand if I add more artboards
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             all_svgs.add(svg_image[1:]) #Thowout background
 
         all_svgs.scale(6.0) #Eh?
@@ -276,7 +104,7 @@ class P44_58b(InteractiveScene):
         # then turn them into circles
 
         example_index=0
-        self.frame.reorient(0, 0, 0, (0, 0, 0), 8.0)
+        self.set_view(0, 0, 0, (0, 0, 0), 8.0)
 
         draw_inputs(self, activations, all_svgs, reset=False, example_index=example_index, wait=0)
         draw_embeddings(self, activations, all_svgs, reset=False, example_index=example_index, wait=0, colormap=black_to_tan_hex)
@@ -290,7 +118,7 @@ class P44_58b(InteractiveScene):
         self.remove(all_svgs[7]); self.add(all_svgs[7]) 
 
 
-        axis_1 = Axes(
+        axis_1 = diagram_axes(
             x_range=[0, 1.0, 1],
             y_range=[-1.0, 1.0, 1],
             width=2*2.4,
@@ -305,7 +133,7 @@ class P44_58b(InteractiveScene):
                 }
             )
 
-        axis_2 = Axes(
+        axis_2 = diagram_axes(
             x_range=[0, 1.0, 1],
             y_range=[-1.0, 1.0, 1],
             width=2*2.4,
@@ -321,15 +149,15 @@ class P44_58b(InteractiveScene):
             )
 
         axis_1.move_to([-4, 3.05, 0])
-        x_label=Tex('x', font_size=24)
+        x_label=math_tex('x', font_size=24)
         x_label.set_color(CHILL_BROWN)
-        x_label.next_to(axis_1, RIGHT, buff=0.1)
+        x_label.next_to(axis_1, gx.RIGHT, buff=0.1)
         x_label.shift([0, -0.1, 0])
         
         axis_2.move_to([-4, -2.85, 0])
-        y_label=Tex('y', font_size=24)
+        y_label=math_tex('y', font_size=24)
         y_label.set_color(CHILL_BROWN)
-        y_label.next_to(axis_2, RIGHT, buff=0.1)
+        y_label.next_to(axis_2, gx.RIGHT, buff=0.1)
         y_label.shift([0, -0.1, 0])
 
         sparse_probe_1=np.load(data_dir/'sparse_probe_1.npy')
@@ -343,7 +171,7 @@ class P44_58b(InteractiveScene):
             y = sparse_probe_1[j]
             pts_curve_1.append(axis_1.c2p(x, y))
 
-        curve_1 = VMobject(stroke_width=3)
+        curve_1 = gx.VMobject(stroke_width=3)
         curve_1.set_points_smoothly(pts_curve_1)
         curve_1.set_color(YELLOW)
 
@@ -353,7 +181,7 @@ class P44_58b(InteractiveScene):
             y = sparse_probe_2[j]
             pts_curve_2.append(axis_1.c2p(x, y))
 
-        curve_2 = VMobject(stroke_width=3)
+        curve_2 = gx.VMobject(stroke_width=3)
         curve_2.set_points_smoothly(pts_curve_2)
         curve_2.set_color(MAGENTA)
 
@@ -363,7 +191,7 @@ class P44_58b(InteractiveScene):
             y = sparse_probe_3[j]
             pts_curve_3.append(axis_2.c2p(x, y))
 
-        curve_3 = VMobject(stroke_width=3)
+        curve_3 = gx.VMobject(stroke_width=3)
         curve_3.set_points_smoothly(pts_curve_3)
         curve_3.set_color(CYAN)
 
@@ -373,29 +201,29 @@ class P44_58b(InteractiveScene):
             y = sparse_probe_4[j]
             pts_curve_4.append(axis_2.c2p(x, y))
 
-        curve_4 = VMobject(stroke_width=3)
+        curve_4 = gx.VMobject(stroke_width=3)
         curve_4.set_points_smoothly(pts_curve_4)
-        curve_4.set_color(RED)
+        curve_4.set_color(gx.RED)
 
 
-        wave_label_1 =  Tex(r'\cos \big(\tfrac{8\pi}{113}x\big)')
+        wave_label_1 =  math_tex(r'\cos \big(\tfrac{8\pi}{113}x\big)')
         wave_label_1.set_color(YELLOW)
         wave_label_1.scale(0.45*1.5)
         wave_label_1.move_to([-0.85, 3.5, 0])
 
 
-        wave_label_2 = Tex(r'\sin \big(\tfrac{8\pi}{113}x\big)')
+        wave_label_2 = math_tex(r'\sin \big(\tfrac{8\pi}{113}x\big)')
         wave_label_2.set_color(MAGENTA)
         wave_label_2.scale(0.45*1.5)
         wave_label_2.move_to([-0.9, 2.5, 0])
 
-        wave_label_3 = Tex(r'\cos \big(\tfrac{8\pi}{113}y\big)')
+        wave_label_3 = math_tex(r'\cos \big(\tfrac{8\pi}{113}y\big)')
         wave_label_3.set_color(CYAN)
         wave_label_3.scale(0.45*1.5)
         wave_label_3.move_to([-0.9, -2.5, 0])
 
-        wave_label_4 = Tex(r'\sin \big(\tfrac{8\pi}{113}y\big)')
-        wave_label_4.set_color(RED)
+        wave_label_4 = math_tex(r'\sin \big(\tfrac{8\pi}{113}y\big)')
+        wave_label_4.set_color(gx.RED)
         wave_label_4.scale(0.45*1.5)
         wave_label_4.move_to([-0.9, -3.6, 0])
 
@@ -407,16 +235,16 @@ class P44_58b(InteractiveScene):
         self.remove(all_svgs[7]); self.add(all_svgs[7]) 
         self.remove(all_svgs[9]); self.add(all_svgs[9]) 
         
-        probe_group_1=Group(axis_2, curve_3, curve_4, y_label) #wave_label_3, wave_label_4, 
+        probe_group_1=gx.Group(axis_2, curve_3, curve_4, y_label) #wave_label_3, wave_label_4,
         probe_group_1.shift([0, -0.3, 0])
 
-        probe_group_2=Group(axis_1, curve_1, curve_2, x_label) #wave_label_1, wave_label_2
+        probe_group_2=gx.Group(axis_1, curve_1, curve_2, x_label) #wave_label_1, wave_label_2
         probe_group_2.shift([0, -0.15, 0])
 
         self.wait()
 
         #Ok so I think this is just like p30ish, where I fade out everything past the second MLP layer?
-        mid_mlp_fade_group=Group(all_svgs[14][9],
+        mid_mlp_fade_group=gx.Group(all_svgs[14][9],
                                 all_svgs[14][:3], 
                                 all_svgs[10],
                                 all_svgs[11],
@@ -427,13 +255,13 @@ class P44_58b(InteractiveScene):
                                 all_svgs[14][-20:])
 
         self.wait()
-        self.play(FadeOut(mid_mlp_fade_group), 
-                 # self.frame.animate.reorient(0, 90, 0, (1.32, 0.17, 0.0), 8.35), 
-                 # self.frame.animate.reorient(0, 0, 0, (1.19, 0.17, 0.09), 9.02),
-                 self.frame.animate.reorient(0, 0, 0, (2.37, -0.07, 0.09), 10.33), #Moar zoomed out/space
+        self.play(gx.FadeOut(mid_mlp_fade_group),
+                 # self.animate_view(0, 90, 0, (1.32, 0.17, 0.0), 8.35),
+                 # self.animate_view(0, 0, 0, (1.19, 0.17, 0.09), 9.02),
+                 self.animate_view(0, 0, 0, (2.37, -0.07, 0.09), 10.33), #Moar zoomed out/space
                  run_time=4)
         self.wait()
-        self.play(Write(all_svgs[25])) #Little yellow arrow bro
+        self.play(gx.Write(all_svgs[25])) #Little yellow arrow bro
         self.wait()
 
 
@@ -476,26 +304,26 @@ class P44_58b(InteractiveScene):
         self.wait()
         self.remove(all_svgs[18], all_svgs[25])
         self.play(
-            FadeIn(all_svgs[8][-105:]),
-            FadeIn(all_svgs[9][-14:]),
-            FadeIn(all_svgs[14][:9]),
-            FadeIn(all_svgs[14][10:]),
+            gx.FadeIn(all_svgs[8][-105:]),
+            gx.FadeIn(all_svgs[9][-14:]),
+            gx.FadeIn(all_svgs[14][:9]),
+            gx.FadeIn(all_svgs[14][10:]),
             probe_group_1.animate.move_to([-6.7, -3.05, 0]),
             wave_label_3.animate.scale(1.2).move_to([-7.8, -4.1, 0]),
             wave_label_4.animate.scale(1.2).move_to([-5.7, -4.1, 0]),
             probe_group_2.animate.move_to([-6.7, 3.3, 0]),
             wave_label_2.animate.scale(1.2).move_to([-5.7, 2.3, 0]),
             wave_label_1.animate.scale(1.2).move_to([-7.8, 2.3, 0]),
-            self.frame.animate.reorient(0, 0, 0, (1.46, 0.11, 0.2), 12.32),
-            FadeIn(all_svgs[22][:2]), 
-            FadeIn(all_svgs[22][4:6]),
+            self.animate_view(0, 0, 0, (1.46, 0.11, 0.2), 12.32),
+            gx.FadeIn(all_svgs[22][:2]),
+            gx.FadeIn(all_svgs[22][4:6]),
             run_time=6)
         self.add(all_svgs[21])
         self.remove(all_svgs[9]); self.add(all_svgs[9])
         self.remove(all_svgs[22][:2]); self.add(all_svgs[22][:2])
 
         self.wait()
-        self.play(Write(all_svgs[26])) #Little yellow arrow bro
+        self.play(gx.Write(all_svgs[26])) #Little yellow arrow bro
         self.wait()
 
         # Ok p51 now. I imagine I'll probably "slide" the 2d network over in illustrator
@@ -509,7 +337,7 @@ class P44_58b(InteractiveScene):
         #Ok so I think it's actually add the bottom arrow? I think that's the next hting
 
         #Bing in arrow pointing to sin/sin surface
-        self.play(Write(all_svgs[22][2]), Write(all_svgs[22][6:]), run_time=3)
+        self.play(gx.Write(all_svgs[22][2]), gx.Write(all_svgs[22][6:]), run_time=3)
         self.wait()
 
 
@@ -519,13 +347,13 @@ class P44_58b(InteractiveScene):
         # self.remove(all_svgs[14][-20:])
 
         self.wait()
-        self.play(FadeOut(all_svgs[26]),
-                  FadeIn(all_svgs[14][9]),
-                  FadeIn(all_svgs[10]),
-                  FadeIn(all_svgs[11]),
-                  FadeIn(all_svgs[0][7:14]),
-                  FadeIn(all_svgs[0][-1]),
-                  FadeIn(all_svgs[23]), #This is the arrow out of the final MLP layer, I think we'll want this here. 
+        self.play(gx.FadeOut(all_svgs[26]),
+                  gx.FadeIn(all_svgs[14][9]),
+                  gx.FadeIn(all_svgs[10]),
+                  gx.FadeIn(all_svgs[11]),
+                  gx.FadeIn(all_svgs[0][7:14]),
+                  gx.FadeIn(all_svgs[0][-1]),
+                  gx.FadeIn(all_svgs[23]), #This is the arrow out of the final MLP layer, I think we'll want this here.
                   # FadeIn(all_svgs[8][-105:]),
                   # FadeIn(all_svgs[9][-14:]),
                   # FadeIn(all_svgs[14][-20:]),
@@ -534,7 +362,7 @@ class P44_58b(InteractiveScene):
         # self.add(all_svgs[23])
 
         self.wait()
-        self.play(Write(all_svgs[24]), run_time=3) #Draw arrow from output. Hmm ya know we want neuron 7 I think. Fixing...
+        self.play(gx.Write(all_svgs[24]), run_time=3) #Draw arrow from output. Hmm ya know we want neuron 7 I think. Fixing...
         self.wait()
 
 
@@ -542,11 +370,9 @@ class P44_58b(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-
-class P56a_neuron_100(InteractiveScene):
+class P56a_neuron_100(WelchScene):
     '''
     Ok so here we want to show a few additional final MLP outputs that the unembedding layer will
     bring together to make the final shape. 
@@ -557,7 +383,7 @@ class P56a_neuron_100(InteractiveScene):
 
         mlp_out=np.load(data_dir/'hook_mlp_out.npy')
 
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             x_range=[0, p, 10],
             y_range=[0, p, 10],
             z_range=[-1, 1, 1],
@@ -574,14 +400,14 @@ class P56a_neuron_100(InteractiveScene):
                 }
         )
 
-        x_label = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
-        y_label = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
-        axes_1_group=VGroup(axes_1, x_label, y_label)
-        x_label.rotate(DEGREES*90, [1, 0, 0])
-        y_label.rotate(DEGREES*90, [1, 0, 0])
-        y_label.rotate(DEGREES*90, [0, 0, 1])
-        axes_1[0].rotate(DEGREES*90, [1, 0, 0])
-        axes_1[1].rotate(DEGREES*90, [0, 1, 0])
+        x_label = math_tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), gx.RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label = math_tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), gx.UP, buff=0.1).set_color(CHILL_BROWN)
+        axes_1_group=gx.VGroup(axes_1, x_label, y_label)
+        x_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        y_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        y_label.rotate(gx.DEGREES*90, [0, 0, 1])
+        axes_1[0].rotate(gx.DEGREES*90, [1, 0, 0])
+        axes_1[1].rotate(gx.DEGREES*90, [0, 1, 0])
 
         neuron_idx_1 = 100
         neuron_1_mean=np.mean(mlp_out[:,:,2,neuron_idx_1])
@@ -594,34 +420,33 @@ class P56a_neuron_100(InteractiveScene):
             scale=1.0
         )
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func_with_axes,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts = TexturedSurface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(0.8)
 
-        self.frame.reorient(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
+        self.set_view(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
 
         self.wait()
-        self.play(ShowCreation(axes_1), ShowCreation(x_label), ShowCreation(y_label), run_time=5)
+        self.play(gx.Create(axes_1), gx.Create(x_label), gx.Create(y_label), run_time=5)
         self.wait()
 
 
-        self.play(ShowCreation(ts), 
-                 # self.frame.animate.reorient(44, 53, 0, (-0.55, -0.54, -0.39), 7.20), 
+        self.play(gx.Create(ts),
+                 # self.animate_view(44, 53, 0, (-0.55, -0.54, -0.39), 7.20),
                  run_time=5)
         self.wait()
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-class P56a_neuron_101(InteractiveScene):
+class P56a_neuron_101(WelchScene):
     '''
     Ok so here we want to show a few additional final MLP outputs that the unembedding layer will
     bring together to make the final shape. 
@@ -632,7 +457,7 @@ class P56a_neuron_101(InteractiveScene):
 
         mlp_out=np.load(data_dir/'hook_mlp_out.npy')
 
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             x_range=[0, p, 10],
             y_range=[0, p, 10],
             z_range=[-1, 1, 1],
@@ -649,14 +474,14 @@ class P56a_neuron_101(InteractiveScene):
                 }
         )
 
-        x_label = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
-        y_label = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
-        axes_1_group=VGroup(axes_1, x_label, y_label)
-        x_label.rotate(DEGREES*90, [1, 0, 0])
-        y_label.rotate(DEGREES*90, [1, 0, 0])
-        y_label.rotate(DEGREES*90, [0, 0, 1])
-        axes_1[0].rotate(DEGREES*90, [1, 0, 0])
-        axes_1[1].rotate(DEGREES*90, [0, 1, 0])
+        x_label = math_tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), gx.RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label = math_tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), gx.UP, buff=0.1).set_color(CHILL_BROWN)
+        axes_1_group=gx.VGroup(axes_1, x_label, y_label)
+        x_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        y_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        y_label.rotate(gx.DEGREES*90, [0, 0, 1])
+        axes_1[0].rotate(gx.DEGREES*90, [1, 0, 0])
+        axes_1[1].rotate(gx.DEGREES*90, [0, 1, 0])
 
         neuron_idx_1 = 101
         neuron_1_mean=np.mean(mlp_out[:,:,2,neuron_idx_1])
@@ -669,33 +494,33 @@ class P56a_neuron_101(InteractiveScene):
             scale=1.0
         )
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func_with_axes,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts = TexturedSurface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(0.8)
 
-        self.frame.reorient(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
+        self.set_view(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
 
         self.wait()
-        self.play(ShowCreation(axes_1), ShowCreation(x_label), ShowCreation(y_label), run_time=5)
+        self.play(gx.Create(axes_1), gx.Create(x_label), gx.Create(y_label), run_time=5)
         self.wait()
 
 
-        self.play(ShowCreation(ts), 
-                 # self.frame.animate.reorient(44, 53, 0, (-0.55, -0.54, -0.39), 7.20), 
+        self.play(gx.Create(ts),
+                 # self.animate_view(44, 53, 0, (-0.55, -0.54, -0.39), 7.20),
                  run_time=5)
         self.wait()
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-class P56a_neuron_102(InteractiveScene):
+class P56a_neuron_102(WelchScene):
     '''
     Ok so here we want to show a few additional final MLP outputs that the unembedding layer will
     bring together to make the final shape. 
@@ -706,7 +531,7 @@ class P56a_neuron_102(InteractiveScene):
 
         mlp_out=np.load(data_dir/'hook_mlp_out.npy')
 
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             x_range=[0, p, 10],
             y_range=[0, p, 10],
             z_range=[-1, 1, 1],
@@ -723,14 +548,14 @@ class P56a_neuron_102(InteractiveScene):
                 }
         )
 
-        x_label = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
-        y_label = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
-        axes_1_group=VGroup(axes_1, x_label, y_label)
-        x_label.rotate(DEGREES*90, [1, 0, 0])
-        y_label.rotate(DEGREES*90, [1, 0, 0])
-        y_label.rotate(DEGREES*90, [0, 0, 1])
-        axes_1[0].rotate(DEGREES*90, [1, 0, 0])
-        axes_1[1].rotate(DEGREES*90, [0, 1, 0])
+        x_label = math_tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), gx.RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label = math_tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), gx.UP, buff=0.1).set_color(CHILL_BROWN)
+        axes_1_group=gx.VGroup(axes_1, x_label, y_label)
+        x_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        y_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        y_label.rotate(gx.DEGREES*90, [0, 0, 1])
+        axes_1[0].rotate(gx.DEGREES*90, [1, 0, 0])
+        axes_1[1].rotate(gx.DEGREES*90, [0, 1, 0])
 
         neuron_idx_1 = 102
         neuron_1_mean=np.mean(mlp_out[:,:,2,neuron_idx_1])
@@ -743,33 +568,33 @@ class P56a_neuron_102(InteractiveScene):
             scale=1.0
         )
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func_with_axes,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts = TexturedSurface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(0.8)
 
-        self.frame.reorient(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
+        self.set_view(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
 
         self.wait()
-        self.play(ShowCreation(axes_1), ShowCreation(x_label), ShowCreation(y_label), run_time=5)
+        self.play(gx.Create(axes_1), gx.Create(x_label), gx.Create(y_label), run_time=5)
         self.wait()
 
 
-        self.play(ShowCreation(ts), 
-                 # self.frame.animate.reorient(44, 53, 0, (-0.55, -0.54, -0.39), 7.20), 
+        self.play(gx.Create(ts),
+                 # self.animate_view(44, 53, 0, (-0.55, -0.54, -0.39), 7.20),
                  run_time=5)
         self.wait()
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-class P56_logits(InteractiveScene):
+class P56_logits(WelchScene):
     def construct(self): 
 
         logits=np.load(data_dir/'logits.npy')
@@ -777,7 +602,7 @@ class P56_logits(InteractiveScene):
 
         p=113
 
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             x_range=[0, p, 10],
             y_range=[0, p, 10],
             z_range=[-1, 1, 1],
@@ -794,14 +619,14 @@ class P56_logits(InteractiveScene):
                 }
         )
 
-        x_label = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
-        y_label = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
-        x_label.rotate(DEGREES*90, [1, 0, 0])
-        x_label.rotate(DEGREES*180, [0, 0, 1])
-        y_label.rotate(DEGREES*90, [0, 0, 1])
-        y_label.rotate(DEGREES*90, [0, 1, 0])
-        axes_1[0].rotate(DEGREES*90, [1, 0, 0])
-        axes_1[1].rotate(DEGREES*90, [0, 1, 0])
+        x_label = math_tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), gx.RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label = math_tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), gx.UP, buff=0.1).set_color(CHILL_BROWN)
+        x_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        x_label.rotate(gx.DEGREES*180, [0, 0, 1])
+        y_label.rotate(gx.DEGREES*90, [0, 0, 1])
+        y_label.rotate(gx.DEGREES*90, [0, 1, 0])
+        axes_1[0].rotate(gx.DEGREES*90, [1, 0, 0])
+        axes_1[1].rotate(gx.DEGREES*90, [0, 1, 0])
 
         neuron_idx=7
         neuron_1_mean=np.mean(logits[:,:,neuron_idx])
@@ -814,31 +639,31 @@ class P56_logits(InteractiveScene):
             scale=1.0
         )
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func_with_axes,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts = TexturedSurface(surface, str(data_dir/('logits_'+str(neuron_idx).zfill(3)+'.png')))
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, str(data_dir/('logits_'+str(neuron_idx).zfill(3)+'.png')))
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(0.8)
 
         ts_copy=ts.copy()
 
-        axes_1_group=Group(axes_1[:2], x_label, y_label, ts)
+        axes_1_group=gx.Group(axes_1[:2], x_label, y_label, ts)
 
-        self.frame.reorient(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
+        self.set_view(43, 57, 0, (-0.15, -0.07, -0.33), 6.60)
 
 
         self.wait()
-        self.play(ShowCreation(axes_1), ShowCreation(x_label), ShowCreation(y_label), run_time=5)
+        self.play(gx.Create(axes_1), gx.Create(x_label), gx.Create(y_label), run_time=5)
         self.wait()
 
 
-        self.play(ShowCreation(ts), 
-                 # self.frame.animate.reorient(44, 53, 0, (-0.55, -0.54, -0.39), 7.20), 
+        self.play(gx.Create(ts),
+                 # self.animate_view(44, 53, 0, (-0.55, -0.54, -0.39), 7.20),
                  run_time=5)
         self.wait()
 
@@ -858,45 +683,45 @@ class P56_logits(InteractiveScene):
         flat_surf_func_with_axes = partial(flat_surf_func, axes=axes_1)
 
         # Create the flat surface with the same texture
-        flat_surface = ParametricSurface(
+        flat_surface = parametric_surface(
             flat_surf_func_with_axes,
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        flat_ts = TexturedSurface(flat_surface, str(data_dir/('logits_'+str(neuron_idx).zfill(3)+'.png')))
-        flat_ts.set_shading(0.0, 0.1, 0)
+        flat_ts = textured_surface(flat_surface, str(data_dir/('logits_'+str(neuron_idx).zfill(3)+'.png')))
+        set_surface_shading(flat_ts, 0.0, 0.1, 0)
         flat_ts.set_opacity(0.8)
 
         # Animate: morph surface flat + move camera overhead
         self.wait()
         self.play(
-            ReplacementTransform(ts, flat_ts),
-            FadeOut(axes_1[2]),
-            y_label.animate.rotate(-90*DEGREES, [0, 1, 0]),
-            x_label.animate.rotate(90*DEGREES, [1, 0, 0]).rotate(90*DEGREES, [0, 0, 1]),
-            self.frame.animate.reorient(90, 0, 0, (-0.03, -0.11, -0.33), 5.73),
+            gx.ReplacementTransform(ts, flat_ts),
+            gx.FadeOut(axes_1[2]),
+            y_label.animate.rotate(-90*gx.DEGREES, [0, 1, 0]),
+            x_label.animate.rotate(90*gx.DEGREES, [1, 0, 0]).rotate(90*gx.DEGREES, [0, 0, 1]),
+            self.animate_view(90, 0, 0, (-0.03, -0.11, -0.33), 5.73),
             run_time=9
         )
         self.wait()
 
         # x_label.rotate(90*DEGREES, [1, 0, 0])
         # x_label.rotate(90*DEGREES, [0, 0, 1])
-        # self.frame.reorient(90, 0, 0, (-0.03, -0.11, -0.33), 5.73)
+        # self.set_view(90, 0, 0, (-0.03, -0.11, -0.33), 5.73)
 
         #Zoom in to upper left corner -> to do- create illustrator overlay
         self.wait()
-        self.play(self.frame.animate.reorient(90, 0, 0, (-1.82, -1.77, -0.33), 0.88), run_time=5)
+        self.play(self.animate_view(90, 0, 0, (-1.82, -1.77, -0.33), 0.88), run_time=5)
         
 
         #Cool, now back to 3d view that we can use in final deal. 
         self.wait()
         self.play(
-            ReplacementTransform(flat_ts, ts_copy),
-            y_label.animate.rotate(90*DEGREES, [0, 1, 0]),
-            x_label.animate.rotate(90*DEGREES, [0, 0, 1]).rotate(-90*DEGREES, [1, 0, 0]).rotate(180*DEGREES, [0, 0, 1]),
-            self.frame.animate.reorient(43, 57, 0, (-0.15, -0.07, -0.33), 6.60), 
+            gx.ReplacementTransform(flat_ts, ts_copy),
+            y_label.animate.rotate(90*gx.DEGREES, [0, 1, 0]),
+            x_label.animate.rotate(90*gx.DEGREES, [0, 0, 1]).rotate(-90*gx.DEGREES, [1, 0, 0]).rotate(180*gx.DEGREES, [0, 0, 1]),
+            self.animate_view(43, 57, 0, (-0.15, -0.07, -0.33), 6.60),
             run_time=9
             )
         self.wait()
@@ -906,11 +731,9 @@ class P56_logits(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-
-class P52_54_3Df(InteractiveScene):
+class P52_54_3Df(WelchScene):
     def construct(self): 
 
         # Kinda digging the idea of "bringing the strongest components from each "over to the side"
@@ -926,7 +749,7 @@ class P52_54_3Df(InteractiveScene):
 
         p=113
 
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             x_range=[0, p, 10],
             y_range=[0, p, 10],
             z_range=[-1, 1, 1],
@@ -943,7 +766,7 @@ class P52_54_3Df(InteractiveScene):
                 }
         )
 
-        axes_2 = ThreeDAxes(
+        axes_2 = diagram_axes_3d(
             x_range=[0, p, 10],
             y_range=[0, p, 10],
             z_range=[-1, 1, 1],
@@ -961,23 +784,23 @@ class P52_54_3Df(InteractiveScene):
         )
 
         #May want to rotate these labels, we'll see. 
-        x_label = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
-        y_label = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
-        x_label.rotate(DEGREES*90, [1, 0, 0])
-        x_label.rotate(DEGREES*180, [0, 0, 1])
-        y_label.rotate(DEGREES*90, [0, 0, 1])
-        y_label.rotate(DEGREES*90, [0, 1, 0])
-        axes_1[0].rotate(DEGREES*90, [1, 0, 0])
-        axes_1[1].rotate(DEGREES*90, [0, 1, 0])
+        x_label = math_tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), gx.RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label = math_tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), gx.UP, buff=0.1).set_color(CHILL_BROWN)
+        x_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        x_label.rotate(gx.DEGREES*180, [0, 0, 1])
+        y_label.rotate(gx.DEGREES*90, [0, 0, 1])
+        y_label.rotate(gx.DEGREES*90, [0, 1, 0])
+        axes_1[0].rotate(gx.DEGREES*90, [1, 0, 0])
+        axes_1[1].rotate(gx.DEGREES*90, [0, 1, 0])
 
-        x_label_2 = Tex("x", font_size=32).next_to(axes_2.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
-        y_label_2 = Tex("y", font_size=32).next_to(axes_2.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
-        x_label_2.rotate(DEGREES*90, [1, 0, 0])
-        x_label_2.rotate(DEGREES*180, [0, 0, 1])
-        y_label_2.rotate(DEGREES*90, [0, 0, 1])
-        y_label_2.rotate(DEGREES*90, [0, 1, 0])
-        axes_2[0].rotate(DEGREES*90, [1, 0, 0])
-        axes_2[1].rotate(DEGREES*90, [0, 1, 0])
+        x_label_2 = math_tex("x", font_size=32).next_to(axes_2.x_axis.get_end(), gx.RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label_2 = math_tex("y", font_size=32).next_to(axes_2.y_axis.get_end(), gx.UP, buff=0.1).set_color(CHILL_BROWN)
+        x_label_2.rotate(gx.DEGREES*90, [1, 0, 0])
+        x_label_2.rotate(gx.DEGREES*180, [0, 0, 1])
+        y_label_2.rotate(gx.DEGREES*90, [0, 0, 1])
+        y_label_2.rotate(gx.DEGREES*90, [0, 1, 0])
+        axes_2[0].rotate(gx.DEGREES*90, [1, 0, 0])
+        axes_2[1].rotate(gx.DEGREES*90, [0, 1, 0])
 
         neuron_idx_1=106
         neuron_1_mean=np.mean(mlp_hook_pre[:,:,2, neuron_idx_1])-0.20 #Eh?
@@ -989,27 +812,27 @@ class P52_54_3Df(InteractiveScene):
             scale=1.0
         )
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func_with_axes,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts = TexturedSurface(surface, str(data_dir/('activations_'+str(neuron_idx_1).zfill(3)+'.png')))
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, str(data_dir/('activations_'+str(neuron_idx_1).zfill(3)+'.png')))
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(0.8)
         
         surf_1_component_eq=lambda i, j: 0.354 * np.cos(2*np.pi*((4*i)/113) - 0.516) * np.cos(2*np.pi*((4*j)/113) - 0.516)
-        surf_1_component = ParametricSurface(
+        surf_1_component = parametric_surface(
             make_fourier_surf_func(axes_1, surf_1_component_eq),
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
-        surf_1_component.set_color(ORANGE).set_shading(0.1, 0.5, 0.5)
-        axes_1_group=Group(axes_1[:2], x_label, y_label, ts, surf_1_component)
-        axes_1_group.rotate(3*DEGREES, [-1, -1, 0])
+        set_surface_shading(surf_1_component.set_color(gx.ORANGE), reflectiveness=1)
+        axes_1_group=gx.Group(axes_1[:2], x_label, y_label, ts, surf_1_component)
+        axes_1_group.rotate(3*gx.DEGREES, [-1, -1, 0])
 
 
         #Ok now let's add the sin-sin surface. 
@@ -1023,56 +846,56 @@ class P52_54_3Df(InteractiveScene):
             scale=1.0
         )
 
-        surface_2 = ParametricSurface(
+        surface_2 = parametric_surface(
             surf_func_with_axes,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts2 = TexturedSurface(surface_2, str(data_dir/('activations_'+str(neuron_idx_2).zfill(3)+'.png')))
-        ts2.set_shading(0.0, 0.1, 0)
+        ts2 = textured_surface(surface_2, str(data_dir/('activations_'+str(neuron_idx_2).zfill(3)+'.png')))
+        set_surface_shading(ts2, 0.0, 0.1, 0)
 
         # surf_2_component_eq=lambda i, j: 0.155 * np.cos(2*np.pi*((4*i)/113) + 3.04) * np.cos(2*np.pi*((4*j)/113) + 3.04)
         surf_2_component_eq=lambda i, j: 2*0.211 * np.cos(2*np.pi*((4*i)/113) + 1.068) * np.cos(2*np.pi*((4*j)/113) + 1.068)
-        surf_2_component = ParametricSurface(
+        surf_2_component = parametric_surface(
             make_fourier_surf_func(axes_2, surf_2_component_eq),
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
-        # surf_2_component.set_color(CYAN).set_shading(0.1, 0.5, 0.5) 
-        surf_2_component.set_color('#00AAAA').set_shading(0.1, 0.5, 0.5) 
+        # surf_2_component.set_color(CYAN).set_shade_in_3d(True)
+        set_surface_shading(surf_2_component.set_color('#00AAAA'), reflectiveness=1)
 
 
         surf_2_component_eq_flipped=lambda i, j: -2.4*0.211 * np.cos(2*np.pi*((4*i)/113) + 1.068) * np.cos(2*np.pi*((4*j)/113) + 1.068)
-        surf_2_component_flipped = ParametricSurface(
+        surf_2_component_flipped = parametric_surface(
             make_fourier_surf_func(axes_2, surf_2_component_eq_flipped),
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
-        surf_2_component_flipped.set_color('#00AAAA').set_shading(0.1, 0.5, 0.5) 
+        set_surface_shading(surf_2_component_flipped.set_color('#00AAAA'), reflectiveness=1)
 
-        axes_2_group=Group(axes_2[:2], x_label_2, y_label_2, ts2, surf_2_component, surf_2_component_flipped)
+        axes_2_group=gx.Group(axes_2[:2], x_label_2, y_label_2, ts2, surf_2_component, surf_2_component_flipped)
         axes_2_group.move_to([1.7, -1.7, -17.5])
     
 
-        axes_2_group.rotate(25*DEGREES, [1, -1, 0]) #Tilt up and scale to compensate for FOV
-        axes_2_group.rotate(7*DEGREES, [-1, -1, 0])
+        axes_2_group.rotate(25*gx.DEGREES, [1, -1, 0]) #Tilt up and scale to compensate for FOV
+        axes_2_group.rotate(7*gx.DEGREES, [-1, -1, 0])
         axes_2_group.scale(1.7)
 
-        # self.frame.reorient(134, 42, 0, (1.31, 1.43, -2.65), 11.48) #Where P45 scene below ends right now. 
-        # self.frame.reorient(135, 42, 0, (1.62, 1.74, -3.08), 12.34)
-        # self.frame.reorient(132, 45, 0, (-0.42, 4.11, -3.43), 12.94)
-        # self.frame.reorient(132, 45, 0, (-0.47, 5.38, -4.24), 15.03)
-        self.frame.reorient(132, 45, 0, (-0.72, 5.18, -3.92), 14.30)
+        # self.set_view(134, 42, 0, (1.31, 1.43, -2.65), 11.48) #Where P45 scene below ends right now.
+        # self.set_view(135, 42, 0, (1.62, 1.74, -3.08), 12.34)
+        # self.set_view(132, 45, 0, (-0.42, 4.11, -3.43), 12.94)
+        # self.set_view(132, 45, 0, (-0.47, 5.38, -4.24), 15.03)
+        self.set_view(132, 45, 0, (-0.72, 5.18, -3.92), 14.30)
 
         self.add(axes_1_group[:4])
         self.wait()
 
-        self.play(ShowCreation(axes_2_group[:3]), run_time=4)
-        self.play(ShowCreation(axes_2_group[3]), run_time=4)  
+        self.play(gx.Create(axes_2_group[:3]), run_time=4)
+        self.play(gx.Create(axes_2_group[3]), run_time=4)
 
         self.wait()
         #Ok I think this staring FOV and arangemetn will work. 
@@ -1084,8 +907,8 @@ class P52_54_3Df(InteractiveScene):
 
         self.wait()
         self.add(surf_1_component)
-        self.play(surf_1_component.animate.move_to([-7.0-ha, 7.0+ha, 0]).rotate(5*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1]),
-                 rate_func=linear,  
+        self.play(surf_1_component.animate.move_to([-7.0-ha, 7.0+ha, 0]).rotate(5*gx.DEGREES, [1, -1, 0]).rotate(5*gx.DEGREES, [1, 1, 0]).rotate(-10*gx.DEGREES, [0, 0, 1]),
+                 rate_func=gx.linear,
                  run_time=4)
         # surf_1_component.rotate(5*DEGREES, [1, -1, 0])
         # surf_1_component.rotate(3*DEGREES, [1, 1, 0])
@@ -1102,8 +925,8 @@ class P52_54_3Df(InteractiveScene):
         surf_2_component.shift([0, 0, -0.42])
         self.add(surf_2_component)
 
-        self.play(surf_2_component.animate.move_to([-7.2-ha, 7.2+ha, -2.5]).scale(1/1.7).rotate(-20*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1]), 
-                 rate_func=linear, 
+        self.play(surf_2_component.animate.move_to([-7.2-ha, 7.2+ha, -2.5]).scale(1/1.7).rotate(-20*gx.DEGREES, [1, -1, 0]).rotate(5*gx.DEGREES, [1, 1, 0]).rotate(-10*gx.DEGREES, [0, 0, 1]),
+                 rate_func=gx.linear,
                  run_time=4)
         # surf_1_component.rotate(5*DEGREES, [1, -1, 0])
         # surf_1_component.rotate(3*DEGREES, [1, 1, 0])
@@ -1113,12 +936,12 @@ class P52_54_3Df(InteractiveScene):
         # self.add(axes_2_group[3])
 
         #Now flip second surface
-        surf_2_component_flipped.move_to([-7.2-ha, 7.2+ha, -2.5]).scale(1/1.7).rotate(-20*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1])
+        surf_2_component_flipped.move_to([-7.2-ha, 7.2+ha, -2.5]).scale(1/1.7).rotate(-20*gx.DEGREES, [1, -1, 0]).rotate(5*gx.DEGREES, [1, 1, 0]).rotate(-10*gx.DEGREES, [0, 0, 1])
 
         # self.add(surf_2_component_flipped)
         # Cool now animate to this. 
         self.wait()
-        self.play(ReplacementTransform(surf_2_component, surf_2_component_flipped), 
+        self.play(gx.ReplacementTransform(surf_2_component, surf_2_component_flipped),
                   run_time=4)
         self.wait()
 
@@ -1128,22 +951,22 @@ class P52_54_3Df(InteractiveScene):
         #Hmm mnani I do kinda want this last surface to be in viridis...maybe it's ok tho?
 
         combined_surf_eq=lambda i, j: 0.354 * np.cos(2*np.pi*((4*i)/113) - 0.516) * np.cos(2*np.pi*((4*j)/113) - 0.516)+ 0.354 * np.cos(2*np.pi*((4*i)/113) + 1.068) * np.cos(2*np.pi*((4*j)/113) + 1.068)
-        combined_surf = ParametricSurface(
+        combined_surf = parametric_surface(
             make_fourier_surf_func(axes_1, combined_surf_eq),
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
-        combined_surf.set_color(GREEN).set_shading(0.1, 0.5, 0.5)
+        set_surface_shading(combined_surf.set_color(GREEN), reflectiveness=1)
         # self.add(combined_surf)
         combined_surf.scale(1.05)
-        combined_surf.rotate(5*DEGREES, [1, -1, 0]).rotate(5*DEGREES, [1, 1, 0]).rotate(-10*DEGREES, [0, 0, 1])
+        combined_surf.rotate(5*gx.DEGREES, [1, -1, 0]).rotate(5*gx.DEGREES, [1, 1, 0]).rotate(-10*gx.DEGREES, [0, 0, 1])
         combined_surf.move_to([-7.5-ha, 7.5+ha, -6])
 
         
         self.wait()
-        self.play(ReplacementTransform(surf_1_component.copy(), combined_surf),
-                  ReplacementTransform(surf_2_component_flipped.copy(), combined_surf), 
+        self.play(gx.ReplacementTransform(surf_1_component.copy(), combined_surf),
+                  gx.ReplacementTransform(surf_2_component_flipped.copy(), combined_surf),
                   run_time=6)
         self.wait()
 
@@ -1152,16 +975,15 @@ class P52_54_3Df(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-class P49_51_3D(InteractiveScene):
+class P49_51_3D(WelchScene):
     def construct(self): 
         p=113
 
         mlp_out=np.load(data_dir/'hook_mlp_out.npy')
 
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             x_range=[0, p, 10],
             y_range=[0, p, 10],
             z_range=[-1, 1, 1],
@@ -1178,14 +1000,14 @@ class P49_51_3D(InteractiveScene):
                 }
         )
 
-        x_label = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
-        y_label = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
-        axes_1_group=VGroup(axes_1, x_label, y_label)
-        x_label.rotate(DEGREES*90, [1, 0, 0])
-        y_label.rotate(DEGREES*90, [1, 0, 0])
-        y_label.rotate(DEGREES*90, [0, 0, 1])
-        axes_1[0].rotate(DEGREES*90, [1, 0, 0])
-        axes_1[1].rotate(DEGREES*90, [0, 1, 0])
+        x_label = math_tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), gx.RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label = math_tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), gx.UP, buff=0.1).set_color(CHILL_BROWN)
+        axes_1_group=gx.VGroup(axes_1, x_label, y_label)
+        x_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        y_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        y_label.rotate(gx.DEGREES*90, [0, 0, 1])
+        axes_1[0].rotate(gx.DEGREES*90, [1, 0, 0])
+        axes_1[1].rotate(gx.DEGREES*90, [0, 1, 0])
 
         # Ok trying to pick a good neuron here -> I want a very pronounced peak. 
         # Hmm so an important thing coming up shortly here is showing the interference
@@ -1207,35 +1029,35 @@ class P49_51_3D(InteractiveScene):
             scale=1.0
         )
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func_with_axes,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts = TexturedSurface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(0.8)
 
 
         
-        self.frame.reorient(51, 71, 0, (-0.8, -0.78, -0.3), 7.20)
+        self.set_view(51, 71, 0, (-0.8, -0.78, -0.3), 7.20)
 
         self.wait()
-        self.play(ShowCreation(axes_1), ShowCreation(x_label), ShowCreation(y_label), run_time=5)
+        self.play(gx.Create(axes_1), gx.Create(x_label), gx.Create(y_label), run_time=5)
         self.wait()
 
 
-        self.play(ShowCreation(ts), 
-                 self.frame.animate.reorient(44, 53, 0, (-0.55, -0.54, -0.39), 7.20), 
+        self.play(gx.Create(ts),
+                 self.animate_view(44, 53, 0, (-0.55, -0.54, -0.39), 7.20),
                  run_time=5)
         self.wait()
 
 
         #Let's consider these two top crests where the outputs 
 
-        self.play(self.frame.animate.reorient(47, 84, 0, (-0.55, -0.54, -0.39), 7.20), run_time=3)
+        self.play(self.animate_view(47, 84, 0, (-0.55, -0.54, -0.39), 7.20), run_time=3)
         self.wait() #Add arrows to top crests in illustrator
 
 
@@ -1254,25 +1076,25 @@ class P49_51_3D(InteractiveScene):
         flat_surf_func_with_axes = partial(flat_surf_func, axes=axes_1)
 
         # Create the flat surface with the same texture
-        flat_surface = ParametricSurface(
+        flat_surface = parametric_surface(
             flat_surf_func_with_axes,
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        flat_ts = TexturedSurface(flat_surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
-        flat_ts.set_shading(0.0, 0.1, 0)
+        flat_ts = textured_surface(flat_surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
+        set_surface_shading(flat_ts, 0.0, 0.1, 0)
         flat_ts.set_opacity(0.8)
 
         # Animate: morph surface flat + move camera overhead
         self.wait()
         self.play(
-            ReplacementTransform(ts, flat_ts),
-            FadeOut(axes_1[2]),
-            y_label.animate.rotate(-90*DEGREES, [0, 1, 0]),
-            x_label.animate.rotate(-90*DEGREES, [1, -0, 0]).rotate(90*DEGREES, [0, 0, 1]),
-            self.frame.animate.reorient(90, 0, 0, (-0.03, -0.11, -0.33), 5.73),
+            gx.ReplacementTransform(ts, flat_ts),
+            gx.FadeOut(axes_1[2]),
+            y_label.animate.rotate(-90*gx.DEGREES, [0, 1, 0]),
+            x_label.animate.rotate(-90*gx.DEGREES, [1, -0, 0]).rotate(90*gx.DEGREES, [0, 0, 1]),
+            self.animate_view(90, 0, 0, (-0.03, -0.11, -0.33), 5.73),
             run_time=9
         )
 
@@ -1284,29 +1106,29 @@ class P49_51_3D(InteractiveScene):
             scale=1.0
         )
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func_with_axes,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts2 = TexturedSurface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
-        ts2.set_shading(0.0, 0.1, 0)
+        ts2 = textured_surface(surface, str(data_dir/('activations_post_'+str(neuron_idx_1).zfill(3)+'.png')))
+        set_surface_shading(ts2, 0.0, 0.1, 0)
         ts2.set_opacity(0.8)
 
-        # self.frame.reorient(90, 0, 0, (-0.03, -0.11, -0.33), 5.73)
+        # self.set_view(90, 0, 0, (-0.03, -0.11, -0.33), 5.73)
         # x_label.rotate(90*DEGREES, [0, 0, 1])
 
         #Ok now we have the big p51 "zoom out", so back to nice 3D angled view. 
         #I'll also need ot move this sucker into it's final position
         #Can try in premiere, or do in manim, try premiere first. 
         self.wait()
-        self.play(ReplacementTransform(flat_ts, ts2), 
-                 FadeIn(axes_1[2]),
-                 y_label.animate.rotate(90*DEGREES, [0, 1, 0]),
-                 x_label.animate.rotate(90*DEGREES, [0, 0, 1]).rotate(90*DEGREES, [1, 0, 0]),
-                 self.frame.animate.reorient(42, 52, 0, (-0.02, -0.06, -0.46), 7.20), 
+        self.play(gx.ReplacementTransform(flat_ts, ts2),
+                 gx.FadeIn(axes_1[2]),
+                 y_label.animate.rotate(90*gx.DEGREES, [0, 1, 0]),
+                 x_label.animate.rotate(90*gx.DEGREES, [0, 0, 1]).rotate(90*gx.DEGREES, [1, 0, 0]),
+                 self.animate_view(42, 52, 0, (-0.02, -0.06, -0.46), 7.20),
                  run_time=6)
         self.wait()
 
@@ -1316,14 +1138,9 @@ class P49_51_3D(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-
-
-
-
-class P45_3Db(InteractiveScene):
+class P45_3Db(WelchScene):
     def construct(self): 
 
         mlp_hook_pre=np.load(data_dir/'mlp_hook_pre.npy')
@@ -1331,7 +1148,7 @@ class P45_3Db(InteractiveScene):
 
         p=113
 
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             x_range=[0, p, 10],
             y_range=[0, p, 10],
             z_range=[-1, 1, 1],
@@ -1350,14 +1167,14 @@ class P45_3Db(InteractiveScene):
 
 
         #May want to rotate these labels, we'll see. 
-        x_label = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
-        y_label = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
-        axes_1_group=VGroup(axes_1, x_label, y_label)
-        x_label.rotate(DEGREES*90, [1, 0, 0])
-        y_label.rotate(DEGREES*90, [1, 0, 0])
-        y_label.rotate(DEGREES*90, [0, 0, 1])
-        axes_1[0].rotate(DEGREES*90, [1, 0, 0])
-        axes_1[1].rotate(DEGREES*90, [0, 1, 0])
+        x_label = math_tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), gx.RIGHT, buff=0.1).set_color(CHILL_BROWN)
+        y_label = math_tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), gx.UP, buff=0.1).set_color(CHILL_BROWN)
+        axes_1_group=gx.VGroup(axes_1, x_label, y_label)
+        x_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        y_label.rotate(gx.DEGREES*90, [1, 0, 0])
+        y_label.rotate(gx.DEGREES*90, [0, 0, 1])
+        axes_1[0].rotate(gx.DEGREES*90, [1, 0, 0])
+        axes_1[1].rotate(gx.DEGREES*90, [0, 1, 0])
 
 
 
@@ -1372,7 +1189,7 @@ class P45_3Db(InteractiveScene):
 
 
 
-        pts_1_x=Group()
+        pts_1_x=gx.Group()
         for j in range(p):
             x = j
             y = (mlp_hook_pre[j, 0, 2, neuron_idx_1]-neuron_1_mean)
@@ -1380,7 +1197,7 @@ class P45_3Db(InteractiveScene):
             pt.set_color(FRESH_TAN)
             pts_1_x.add(pt)
 
-        pts_1_y=Group()
+        pts_1_y=gx.Group()
         for j in range(p):
             x = j
             y = (mlp_hook_pre[0, j, 2, neuron_idx_1]-neuron_1_mean)
@@ -1398,8 +1215,8 @@ class P45_3Db(InteractiveScene):
         #         all_pts.add(pt)
 
 
-        # self.frame.reorient(0, 89, 0, (1.19, 0.17, 0.09), 9.02)
-        self.frame.reorient(0, 90, 0)
+        # self.set_view(0, 89, 0, (1.19, 0.17, 0.09), 9.02)
+        self.set_view(0, 90, 0)
         self.add(axes_1[0], x_label, axes_1[2]) #No y-label yet, just x. 
         self.wait()
 
@@ -1410,9 +1227,9 @@ class P45_3Db(InteractiveScene):
 
         self.wait()
 
-        self.play(self.frame.animate.reorient(92, 79, 0, (-0.48, -0.58, -0.02), 6.58), 
-                  ShowCreation(axes_1[1]), ShowCreation(y_label), 
-                  x_label.animate.rotate(180*DEGREES, [0,0,1]), run_time=5)
+        self.play(self.animate_view(92, 79, 0, (-0.48, -0.58, -0.02), 6.58),
+                  gx.Create(axes_1[1]), gx.Create(y_label),
+                  x_label.animate.rotate(180*gx.DEGREES, [0,0,1]), run_time=5)
         self.wait()
 
         # Turn back on before final render
@@ -1428,7 +1245,7 @@ class P45_3Db(InteractiveScene):
 
         # #Now add all points, then surface. 
         # self.play(ShowCreation(all_pts), 
-        #          # self.frame.animate.reorient(92, 79, 0, (-0.48, -0.58, -0.02), 6.58),
+        #          # self.animate_view(92, 79, 0, (-0.48, -0.58, -0.02), 6.58),
         #          run_time=5)
 
         # self.wait()
@@ -1440,44 +1257,44 @@ class P45_3Db(InteractiveScene):
             scale=1.0
         )
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func_with_axes,  
             u_range=[0, 1.0],
             v_range=[0, 1.0],
             resolution=(resolution, resolution),
         )
 
-        ts = TexturedSurface(surface, str(data_dir/('activations_'+str(neuron_idx_1).zfill(3)+'.png')))
-        ts.set_shading(0.0, 0.1, 0)
-        # ts.set_shading(0.1, 0.5, 0.1)
+        ts = textured_surface(surface, str(data_dir/('activations_'+str(neuron_idx_1).zfill(3)+'.png')))
+        set_surface_shading(ts, 0.0, 0.1, 0)
+        # set_surface_shading(ts, 0.1, 0.5, 0.1)
         ts.set_opacity(0.8)
 
         self.wait()
 
         #Pan around to get ready for reveal
-        self.play(self.frame.animate.reorient(31, 70, 0, (-0.19, -0.28, -0.29), 6.60), run_time=4)
+        self.play(self.animate_view(31, 70, 0, (-0.19, -0.28, -0.29), 6.60), run_time=4)
 
         self.wait()
-        self.play(ShowCreation(ts), 
-                  self.frame.animate.reorient(132, 36, 0, (-0.4, -0.43, -0.72), 8.05), 
+        self.play(gx.Create(ts),
+                  self.animate_view(132, 36, 0, (-0.4, -0.43, -0.72), 8.05),
                   run_time=10)
 
         self.wait()
 
         #Add a little pan-around action
-        # self.play(self.frame.animate.reorient(120, 50, 0, (-0.4, -0.43, -0.72), 8.05), run_time=3, rate_func=linear)
-        # self.play(self.frame.animate.reorient(152, 51, 0, (-0.4, -0.43, -0.72), 8.05), run_time=3, rate_func=linear)
-        # self.play(self.frame.animate.reorient(132, 36, 0, (-0.4, -0.43, -0.72), 8.05), run_time=3, rate_func=linear)
-        # self.frame.reorient(132, 36, 0, (-0.4, -0.43, -0.72), 8.05)
+        # self.play(self.animate_view(120, 50, 0, (-0.4, -0.43, -0.72), 8.05), run_time=3, rate_func=linear)
+        # self.play(self.animate_view(152, 51, 0, (-0.4, -0.43, -0.72), 8.05), run_time=3, rate_func=linear)
+        # self.play(self.animate_view(132, 36, 0, (-0.4, -0.43, -0.72), 8.05), run_time=3, rate_func=linear)
+        # self.set_view(132, 36, 0, (-0.4, -0.43, -0.72), 8.05)
 
-        self.play(self.frame.animate.reorient(61, 53, 0, (-0.4, -0.43, -0.72), 8.05), run_time=6)
-        self.play(self.frame.animate.reorient(132, 36, 0, (-0.4, -0.43, -0.72), 8.05), run_time=6)
+        self.play(self.animate_view(61, 53, 0, (-0.4, -0.43, -0.72), 8.05), run_time=6)
+        self.play(self.animate_view(132, 36, 0, (-0.4, -0.43, -0.72), 8.05), run_time=6)
 
         
         # self.play(Succession(
-        #     self.frame.animate.reorient(120, 50, 0, (-0.4, -0.43, -0.72), 8.05).set_anim_args(run_time=3, rate_func=smooth),
-        #     self.frame.animate.reorient(152, 51, 0, (-0.4, -0.43, -0.72), 8.05).set_anim_args(run_time=3, rate_func=smooth),
-        #     self.frame.animate.reorient(132, 36, 0, (-0.4, -0.43, -0.72), 8.05).set_anim_args(run_time=3, rate_func=smooth),
+        #     self.animate_view(120, 50, 0, (-0.4, -0.43, -0.72), 8.05).set_anim_args(run_time=3, rate_func=smooth),
+        #     self.animate_view(152, 51, 0, (-0.4, -0.43, -0.72), 8.05).set_anim_args(run_time=3, rate_func=smooth),
+        #     self.animate_view(132, 36, 0, (-0.4, -0.43, -0.72), 8.05).set_anim_args(run_time=3, rate_func=smooth),
         # ))
         # self.wait()
 
@@ -1485,7 +1302,7 @@ class P45_3Db(InteractiveScene):
         self.wait()
 
 
-        # self.frame.reorient(132, 36, 0, (-0.4, -0.43, -0.72), 8.05)
+        # self.set_view(132, 36, 0, (-0.4, -0.43, -0.72), 8.05)
         # Ok now the "break apart" into multiple frequencies. 
         # This should be interesting. 
         # Let me try all 4, then if that's a problem I'll remove the second freq. 
@@ -1508,13 +1325,13 @@ class P45_3Db(InteractiveScene):
         axes_scale = 1.0
 
         # Create axes for the components
-        component_axes = Group()
-        labels = VGroup()
+        component_axes = gx.Group()
+        labels = gx.VGroup()
         
 
         
         for k in range(3):
-            ax = ThreeDAxes(
+            ax = diagram_axes_3d(
                 x_range=[0, p, 10],
                 y_range=[0, p, 10],
                 z_range=[-0.5, 0.5, 0.5],
@@ -1531,29 +1348,29 @@ class P45_3Db(InteractiveScene):
                 }
             )
 
-            x_label_temp = Tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), RIGHT, buff=0.1).set_color(CHILL_BROWN)
-            y_label_temp = Tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), UP, buff=0.1).set_color(CHILL_BROWN)
-            x_label_temp.rotate(DEGREES*90, [1, 0, 0])
-            y_label_temp.rotate(DEGREES*90, [1, 0, 0])
-            y_label_temp.rotate(DEGREES*90, [0, 0, 1])
-            x_label_temp.rotate(DEGREES*180, [0, 0, 1])
+            x_label_temp = math_tex("x", font_size=32).next_to(axes_1.x_axis.get_end(), gx.RIGHT, buff=0.1).set_color(CHILL_BROWN)
+            y_label_temp = math_tex("y", font_size=32).next_to(axes_1.y_axis.get_end(), gx.UP, buff=0.1).set_color(CHILL_BROWN)
+            x_label_temp.rotate(gx.DEGREES*90, [1, 0, 0])
+            y_label_temp.rotate(gx.DEGREES*90, [1, 0, 0])
+            y_label_temp.rotate(gx.DEGREES*90, [0, 0, 1])
+            x_label_temp.rotate(gx.DEGREES*180, [0, 0, 1])
             x_label_temp.shift([0,0,-vertical_spacing * (k+1)])
             y_label_temp.shift([0,0,-vertical_spacing * (k+1)])
-            ax[0].rotate(DEGREES * 90, [1, 0, 0])
-            ax[1].rotate(DEGREES * 90, [0, 1, 0])
+            ax[0].rotate(gx.DEGREES * 90, [1, 0, 0])
+            ax[1].rotate(gx.DEGREES * 90, [0, 1, 0])
 
             ax.move_to([0, 0, -vertical_spacing * (k+1) + 0.0])
             component_axes.add(ax)
-            labels.add(VGroup(x_label_temp, y_label_temp))
+            labels.add(gx.VGroup(x_label_temp, y_label_temp))
 
         
 
         # Create surfaces directly from the Fourier functions
-        surface_colors = [ORANGE, YELLOW, CYAN]
-        component_surfaces = Group()
+        surface_colors = [gx.ORANGE, YELLOW, CYAN]
+        component_surfaces = gx.Group()
         
         for i, ax, func, color in zip(np.arange(len(component_axes)), component_axes, fourier_funcs, surface_colors):
-            surf = ParametricSurface(
+            surf = parametric_surface(
                 make_fourier_surf_func(ax, func),
                 u_range=[0, 1.0],
                 v_range=[0, 1.0],
@@ -1561,10 +1378,10 @@ class P45_3Db(InteractiveScene):
             )
             # print(str(data_dir/('activations_'+str(neuron_idx_1).zfill(3)+'_component_'+str(i)+'.png')))
             # ts_temp = TexturedSurface(surf, str(data_dir/('activations_'+str(neuron_idx_1).zfill(3)+'_component_'+str(i)+'.png')))
-            # ts_temp.set_shading(0.0, 0.1, 0)
+            # set_surface_shading(ts_temp, 0.0, 0.1, 0)
             # ts_temp.set_opacity(0.8)
             # component_surfaces.add(ts_temp)
-            surf.set_color(color).set_shading(0.1, 0.5, 0.5)
+            set_surface_shading(surf.set_color(color), reflectiveness=1)
             component_surfaces.add(surf)
 
 
@@ -1574,7 +1391,7 @@ class P45_3Db(InteractiveScene):
 
         surf_copy_2=surface.copy().set_color(YELLOW).shift([0, 0, -0.001])
         surf_copy_1=surface.copy().set_color(CYAN).shift([0, 0, -0.001])
-        surf_copy_0=surface.copy().set_color(ORANGE).shift([0, 0, -0.001])
+        surf_copy_0=surface.copy().set_color(gx.ORANGE).shift([0, 0, -0.001])
         # surf_copy_2.shift([0, 0, -0.1])
 
         self.wait()
@@ -1583,14 +1400,14 @@ class P45_3Db(InteractiveScene):
 
         self.remove(axes_1, x_label, y_label)
         # self.add(ts)
-        ts.set_shading(0.1, 0.3, 0.1)
+        set_surface_shading(ts, 0.1, 0.3, 0.1)
 
         self.remove(ts)
 
         # self.remove(component_surfaces[0])
         self.add(component_surfaces[2])
 
-        self.frame.reorient(137, 55, 0, (0.25, 0.12, -1.87), 6.11)
+        self.set_view(137, 55, 0, (0.25, 0.12, -1.87), 6.11)
 
 
 
@@ -1598,19 +1415,19 @@ class P45_3Db(InteractiveScene):
 
         self.add(surf_copy_2, surf_copy_1, surf_copy_0)
         self.remove(ts); self.add(ts)
-        self.play(ReplacementTransform(surf_copy_2, component_surfaces[2]), 
-                  ReplacementTransform(axes_1.copy(), component_axes[2]), 
-                  ReplacementTransform(surf_copy_1, component_surfaces[1]), 
-                  ReplacementTransform(axes_1.copy(), component_axes[1]), 
-                  ReplacementTransform(surf_copy_0, component_surfaces[0]), 
-                  ReplacementTransform(axes_1.copy(), component_axes[0]), 
-                  ReplacementTransform(x_label.copy(), labels[0][0]),
-                  ReplacementTransform(x_label.copy(), labels[1][0]),
-                  ReplacementTransform(x_label.copy(), labels[2][0]),
-                  ReplacementTransform(y_label.copy(), labels[0][1]),
-                  ReplacementTransform(y_label.copy(), labels[1][1]),
-                  ReplacementTransform(y_label.copy(), labels[2][1]),
-                  self.frame.animate.reorient(137, 59, 0, (0.28, 0.08, -2.34), 8.54), 
+        self.play(gx.ReplacementTransform(surf_copy_2, component_surfaces[2]),
+                  gx.ReplacementTransform(axes_1.copy(), component_axes[2]),
+                  gx.ReplacementTransform(surf_copy_1, component_surfaces[1]),
+                  gx.ReplacementTransform(axes_1.copy(), component_axes[1]),
+                  gx.ReplacementTransform(surf_copy_0, component_surfaces[0]),
+                  gx.ReplacementTransform(axes_1.copy(), component_axes[0]),
+                  gx.ReplacementTransform(x_label.copy(), labels[0][0]),
+                  gx.ReplacementTransform(x_label.copy(), labels[1][0]),
+                  gx.ReplacementTransform(x_label.copy(), labels[2][0]),
+                  gx.ReplacementTransform(y_label.copy(), labels[0][1]),
+                  gx.ReplacementTransform(y_label.copy(), labels[1][1]),
+                  gx.ReplacementTransform(y_label.copy(), labels[2][1]),
+                  self.animate_view(137, 59, 0, (0.28, 0.08, -2.34), 8.54),
                   run_time=7)
         self.remove(component_surfaces); self.add(component_surfaces)
         # self.add(labels)
@@ -1620,35 +1437,35 @@ class P45_3Db(InteractiveScene):
         # I should go ahead and sketch that out. 
 
 
-        self.play(self.frame.animate.reorient(163, 84, 0, (-0.02, 0.17, -2.58), 8.54), run_time=4) #Focus on bottom plot
+        self.play(self.animate_view(163, 84, 0, (-0.02, 0.17, -2.58), 8.54), run_time=4) #Focus on bottom plot
         self.wait()
-        self.play(self.frame.animate.reorient(89, 84, 0, (-0.02, 0.17, -2.58), 8.54), run_time=4) #Now y plot
+        self.play(self.animate_view(89, 84, 0, (-0.02, 0.17, -2.58), 8.54), run_time=4) #Now y plot
         self.wait()
-        self.play(self.frame.animate.reorient(133, 68, 0, (-0.02, 0.17, -2.58), 8.54), run_time=4) #Now product plot
+        self.play(self.animate_view(133, 68, 0, (-0.02, 0.17, -2.58), 8.54), run_time=4) #Now product plot
         self.wait()
 
 
         #Ok now we collpase back!
-        # self.frame.animate.reorient(132, 36, 0, (-0.4, -0.43, -0.72), 8.05)
+        # self.animate_view(132, 36, 0, (-0.4, -0.43, -0.72), 8.05)
 
         surf_copy_2b=surface.copy().set_color(YELLOW).shift([0, 0, -0.001])
         surf_copy_1b=surface.copy().set_color(CYAN).shift([0, 0, -0.001])
-        surf_copy_0b=surface.copy().set_color(ORANGE).shift([0, 0, -0.001])
+        surf_copy_0b=surface.copy().set_color(gx.ORANGE).shift([0, 0, -0.001])
 
         self.wait()
-        self.play(ReplacementTransform(component_surfaces[2], surf_copy_2b), 
-                  ReplacementTransform(component_axes[2], axes_1.copy()), 
-                  ReplacementTransform(component_surfaces[1], surf_copy_1b), 
-                  ReplacementTransform(component_axes[1], axes_1.copy()), 
-                  ReplacementTransform(component_surfaces[0], surf_copy_0b), 
-                  ReplacementTransform(component_axes[0], axes_1.copy()), 
-                  ReplacementTransform(labels[0][0], x_label.copy()),
-                  ReplacementTransform(labels[1][0], x_label.copy()),
-                  ReplacementTransform(labels[2][0], x_label.copy()),
-                  ReplacementTransform(labels[0][1], y_label.copy()),
-                  ReplacementTransform(labels[1][1], y_label.copy()),
-                  ReplacementTransform(labels[2][1], y_label.copy()),
-                  self.frame.animate.reorient(135, 39, 0, (-0.09, -0.17, -1.42), 8.05), 
+        self.play(gx.ReplacementTransform(component_surfaces[2], surf_copy_2b),
+                  gx.ReplacementTransform(component_axes[2], axes_1.copy()),
+                  gx.ReplacementTransform(component_surfaces[1], surf_copy_1b),
+                  gx.ReplacementTransform(component_axes[1], axes_1.copy()),
+                  gx.ReplacementTransform(component_surfaces[0], surf_copy_0b),
+                  gx.ReplacementTransform(component_axes[0], axes_1.copy()),
+                  gx.ReplacementTransform(labels[0][0], x_label.copy()),
+                  gx.ReplacementTransform(labels[1][0], x_label.copy()),
+                  gx.ReplacementTransform(labels[2][0], x_label.copy()),
+                  gx.ReplacementTransform(labels[0][1], y_label.copy()),
+                  gx.ReplacementTransform(labels[1][1], y_label.copy()),
+                  gx.ReplacementTransform(labels[2][1], y_label.copy()),
+                  self.animate_view(135, 39, 0, (-0.09, -0.17, -1.42), 8.05),
                   run_time=7)
         self.remove(component_surfaces, surf_copy_2b, surf_copy_1b, surf_copy_0b, component_axes)
         self.remove(ts); self.add(ts)
@@ -1656,7 +1473,7 @@ class P45_3Db(InteractiveScene):
 
 
         #Now move to what could be kinda a "final" position in the overall network viz
-        self.play(self.frame.animate.reorient(134, 42, 0, (1.31, 1.43, -2.65), 11.48), run_time=5)
+        self.play(self.animate_view(134, 42, 0, (1.31, 1.43, -2.65), 11.48), run_time=5)
         self.wait()
 
 
@@ -1687,7 +1504,7 @@ class P45_3Db(InteractiveScene):
         # # )
 
         # ts = TexturedSurface(surface, str(data_dir/('activations_'+str(neuron_idx).zfill(3)+'.png')))
-        # ts.set_shading(0.0, 0.1, 0)
+        # set_surface_shading(ts, 0.0, 0.1, 0)
 
 
         # self.wait()
@@ -1712,13 +1529,9 @@ class P45_3Db(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-
-
-
-class P41_43(InteractiveScene):
+class P41_43(WelchScene):
     def construct(self): 
 
         p=113
@@ -1728,9 +1541,9 @@ class P41_43(InteractiveScene):
         with open(data_dir/'final_model_activations_sample.p', 'rb') as f:
             activations = pickle.load(f)
 
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for svg_file in svg_files[1:20]: #Expand if I add more artboards
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             all_svgs.add(svg_image[1:]) #Thowout background
 
         all_svgs.scale(6.0) #Eh?
@@ -1739,7 +1552,7 @@ class P41_43(InteractiveScene):
         # then turn them into circles
 
         example_index=0
-        self.frame.reorient(0, 0, 0, (0, 0, 0), 8.0)
+        self.set_view(0, 0, 0, (0, 0, 0), 8.0)
 
         draw_inputs(self, activations, all_svgs, reset=False, example_index=example_index, wait=0)
         draw_embeddings(self, activations, all_svgs, reset=False, example_index=example_index, wait=0, colormap=black_to_tan_hex)
@@ -1752,7 +1565,7 @@ class P41_43(InteractiveScene):
         self.add(all_svgs[:15], all_svgs[16])
         self.remove(all_svgs[7]); self.add(all_svgs[7])        
 
-        axis_1 = Axes(
+        axis_1 = diagram_axes(
             x_range=[0, 1.0, 1],
             y_range=[-1.0, 1.0, 1],
             width=2*2.4,
@@ -1767,7 +1580,7 @@ class P41_43(InteractiveScene):
                 }
             )
 
-        axis_2 = Axes(
+        axis_2 = diagram_axes(
             x_range=[0, 1.0, 1],
             y_range=[-1.0, 1.0, 1],
             width=2*2.4,
@@ -1783,15 +1596,15 @@ class P41_43(InteractiveScene):
             )
 
         axis_1.move_to([-4, 3.05, 0])
-        x_label=Tex('x', font_size=24)
+        x_label=math_tex('x', font_size=24)
         x_label.set_color(CHILL_BROWN)
-        x_label.next_to(axis_1, RIGHT, buff=0.1)
+        x_label.next_to(axis_1, gx.RIGHT, buff=0.1)
         x_label.shift([0, -0.1, 0])
         
         axis_2.move_to([-4, -2.85, 0])
-        y_label=Tex('y', font_size=24)
+        y_label=math_tex('y', font_size=24)
         y_label.set_color(CHILL_BROWN)
-        y_label.next_to(axis_2, RIGHT, buff=0.1)
+        y_label.next_to(axis_2, gx.RIGHT, buff=0.1)
         y_label.shift([0, -0.1, 0])
 
         sparse_probe_1=np.load(data_dir/'sparse_probe_1.npy')
@@ -1800,83 +1613,83 @@ class P41_43(InteractiveScene):
         sparse_probe_4=np.load(data_dir/'sparse_probe_4.npy')
 
         pts_curve_1=[]
-        dots_curve_1=VGroup()
+        dots_curve_1=gx.VGroup()
         for j in range(p):
             x = j / p
             y = sparse_probe_1[j]
             pts_curve_1.append(axis_1.c2p(x, y))
 
-            pt = Dot(axis_1.c2p(x, y), radius=0.02, stroke_width=0)
-            pt.set_color(WHITE)
+            pt = gx.Dot(axis_1.c2p(x, y), radius=0.02, stroke_width=0)
+            pt.set_color(gx.WHITE)
             dots_curve_1.add(pt)
 
-        curve_1 = VMobject(stroke_width=3)
+        curve_1 = gx.VMobject(stroke_width=3)
         curve_1.set_points_smoothly(pts_curve_1)
         curve_1.set_color(YELLOW)
 
         pts_curve_2=[]
-        dots_curve_2=VGroup()
+        dots_curve_2=gx.VGroup()
         for j in range(p):
             x = j / p
             y = sparse_probe_2[j]
             pts_curve_2.append(axis_1.c2p(x, y))
 
-            pt = Dot(axis_1.c2p(x, y), radius=0.02, stroke_width=0)
-            pt.set_color(WHITE)
+            pt = gx.Dot(axis_1.c2p(x, y), radius=0.02, stroke_width=0)
+            pt.set_color(gx.WHITE)
             dots_curve_2.add(pt)
 
-        curve_2 = VMobject(stroke_width=3)
+        curve_2 = gx.VMobject(stroke_width=3)
         curve_2.set_points_smoothly(pts_curve_2)
         curve_2.set_color(MAGENTA)
 
         pts_curve_3=[]
-        dots_curve_3=VGroup()
+        dots_curve_3=gx.VGroup()
         for j in range(p):
             x = j / p
             y = sparse_probe_3[j]
             pts_curve_3.append(axis_2.c2p(x, y))
 
-            pt = Dot(axis_2.c2p(x, y), radius=0.02, stroke_width=0)
-            pt.set_color(WHITE)
+            pt = gx.Dot(axis_2.c2p(x, y), radius=0.02, stroke_width=0)
+            pt.set_color(gx.WHITE)
             dots_curve_3.add(pt)
 
-        curve_3 = VMobject(stroke_width=3)
+        curve_3 = gx.VMobject(stroke_width=3)
         curve_3.set_points_smoothly(pts_curve_3)
         curve_3.set_color(CYAN)
 
         pts_curve_4=[]
-        dots_curve_4=VGroup()
+        dots_curve_4=gx.VGroup()
         for j in range(p):
             x = j / p
             y = sparse_probe_4[j]
             pts_curve_4.append(axis_2.c2p(x, y))
 
-            pt = Dot(axis_2.c2p(x, y), radius=0.02, stroke_width=0)
-            pt.set_color(WHITE)
+            pt = gx.Dot(axis_2.c2p(x, y), radius=0.02, stroke_width=0)
+            pt.set_color(gx.WHITE)
             dots_curve_4.add(pt)
 
-        curve_4 = VMobject(stroke_width=3)
+        curve_4 = gx.VMobject(stroke_width=3)
         curve_4.set_points_smoothly(pts_curve_4)
-        curve_4.set_color(RED)
+        curve_4.set_color(gx.RED)
 
 
-        wave_label_1 =  Tex(r'\cos \big(\tfrac{8\pi}{113}x\big)')
+        wave_label_1 =  math_tex(r'\cos \big(\tfrac{8\pi}{113}x\big)')
         wave_label_1.set_color(YELLOW)
         wave_label_1.scale(0.45*1.5)
         wave_label_1.move_to([-0.9, 3.65, 0])
 
-        wave_label_2 = Tex(r'\sin \big(\tfrac{8\pi}{113}x\big)')
+        wave_label_2 = math_tex(r'\sin \big(\tfrac{8\pi}{113}x\big)')
         wave_label_2.set_color(MAGENTA)
         wave_label_2.scale(0.45*1.5)
         wave_label_2.move_to([-0.95, 2.65, 0])
 
-        wave_label_3 = Tex(r'\cos \big(\tfrac{8\pi}{113}y\big)')
+        wave_label_3 = math_tex(r'\cos \big(\tfrac{8\pi}{113}y\big)')
         wave_label_3.set_color(CYAN)
         wave_label_3.scale(0.45*1.5)
         wave_label_3.move_to([-0.9, -2.2, 0])
 
-        wave_label_4 = Tex(r'\sin \big(\tfrac{8\pi}{113}y\big)')
-        wave_label_4.set_color(RED)
+        wave_label_4 = math_tex(r'\sin \big(\tfrac{8\pi}{113}y\big)')
+        wave_label_4.set_color(gx.RED)
         wave_label_4.scale(0.45*1.5)
         wave_label_4.move_to([-0.9, -3.2, 0])
 
@@ -1895,14 +1708,14 @@ class P41_43(InteractiveScene):
 
         self.wait()
         self.play(
-                  FadeOut(all_svgs[5:15]),
-                  FadeOut(all_svgs[0][15:]),
-                  FadeOut(all_svgs[0][5:14]), 
+                  gx.FadeOut(all_svgs[5:15]),
+                  gx.FadeOut(all_svgs[0][15:]),
+                  gx.FadeOut(all_svgs[0][5:14]),
                   run_time=5)
         self.wait()
 
 
-        axis_3 = Axes(
+        axis_3 = diagram_axes(
             x_range=[-1.1, 1.1, 1],
             y_range=[-1.1, 1.1, 1],
             width=3.5,
@@ -1920,7 +1733,7 @@ class P41_43(InteractiveScene):
         axis_3[1].set_color(MAGENTA)
         axis_3.move_to([3, 1.9, 0])
         
-        axis_4 = Axes(
+        axis_4 = diagram_axes(
             x_range=[-1.1, 1.1, 1],
             y_range=[-1.1, 1.1, 1],
             width=3.5,
@@ -1935,74 +1748,74 @@ class P41_43(InteractiveScene):
                 }
             )
         axis_4[0].set_color(CYAN)
-        axis_4[1].set_color(RED)
+        axis_4[1].set_color(gx.RED)
         axis_4.move_to([3, -1.9, 0])
 
 
-        dots_curve_5=VGroup()
+        dots_curve_5=gx.VGroup()
         for j in range(p):
-            pt = Dot(axis_3.c2p(sparse_probe_1[j], sparse_probe_2[j]), 
+            pt = gx.Dot(axis_3.c2p(sparse_probe_1[j], sparse_probe_2[j]),
                      radius=0.02, stroke_width=0)
-            pt.set_color(WHITE)
+            pt.set_color(gx.WHITE)
             dots_curve_5.add(pt)
 
-        dots_curve_6=VGroup()
+        dots_curve_6=gx.VGroup()
         for j in range(p):
-            pt = Dot(axis_4.c2p(sparse_probe_3[j], sparse_probe_4[j]), 
+            pt = gx.Dot(axis_4.c2p(sparse_probe_3[j], sparse_probe_4[j]),
                      radius=0.02, stroke_width=0)
-            pt.set_color(WHITE)
+            pt.set_color(gx.WHITE)
             dots_curve_6.add(pt)
 
         wave_label_1_copy=wave_label_1.copy()
-        wave_label_1_copy.next_to(axis_3, RIGHT, buff=0.2)
+        wave_label_1_copy.next_to(axis_3, gx.RIGHT, buff=0.2)
         wave_label_2_copy=wave_label_2.copy()
-        wave_label_2_copy.next_to(axis_3, TOP, buff=0)
+        wave_label_2_copy.next_to(axis_3, (gx.config.frame_height / 2 * gx.UP), buff=0)
         wave_label_2_copy.shift([0.9, -0.2, 0])
         wave_label_3_copy=wave_label_3.copy()
-        wave_label_3_copy.next_to(axis_4, RIGHT, buff=0.2)
+        wave_label_3_copy.next_to(axis_4, gx.RIGHT, buff=0.2)
         wave_label_4_copy=wave_label_4.copy()
-        wave_label_4_copy.next_to(axis_4, TOP, buff=0)
+        wave_label_4_copy.next_to(axis_4, (gx.config.frame_height / 2 * gx.UP), buff=0)
         wave_label_4_copy.shift([0.9, -0.2, 0])
 
         self.wait()
-        self.play(ShowCreation(axis_3), run_time=2)
-        self.play(ReplacementTransform(wave_label_1.copy(), wave_label_1_copy), run_time=2)
-        self.play(ReplacementTransform(wave_label_2.copy(), wave_label_2_copy), run_time=2)
+        self.play(gx.Create(axis_3), run_time=2)
+        self.play(gx.ReplacementTransform(wave_label_1.copy(), wave_label_1_copy), run_time=2)
+        self.play(gx.ReplacementTransform(wave_label_2.copy(), wave_label_2_copy), run_time=2)
         self.wait()
 
-        self.play(FadeIn(dots_curve_1), FadeIn(dots_curve_2), run_time=2)
-        self.play(ReplacementTransform(dots_curve_1, dots_curve_5), 
-                  ReplacementTransform(dots_curve_2, dots_curve_5), 
+        self.play(gx.FadeIn(dots_curve_1), gx.FadeIn(dots_curve_2), run_time=2)
+        self.play(gx.ReplacementTransform(dots_curve_1, dots_curve_5),
+                  gx.ReplacementTransform(dots_curve_2, dots_curve_5),
                   # lag_ratio=0.5, #This is fun but I think the other way is more clear. 
                   run_time=5)
         self.wait()
 
-        self.play(ShowCreation(axis_4),
-                ReplacementTransform(wave_label_3.copy(), wave_label_3_copy), 
-                ReplacementTransform(wave_label_4.copy(), wave_label_4_copy), run_time=2)        
-        self.play(ReplacementTransform(dots_curve_3, dots_curve_6), 
-                  ReplacementTransform(dots_curve_4, dots_curve_6), 
+        self.play(gx.Create(axis_4),
+                gx.ReplacementTransform(wave_label_3.copy(), wave_label_3_copy),
+                gx.ReplacementTransform(wave_label_4.copy(), wave_label_4_copy), run_time=2)
+        self.play(gx.ReplacementTransform(dots_curve_3, dots_curve_6),
+                  gx.ReplacementTransform(dots_curve_4, dots_curve_6),
                   # lag_ratio=0.5, #This is fun but I think the other way is more clear. 
                   run_time=5)
         self.wait()
 
         #P42 Fade out scatter plots and bring in network
-        self.play(FadeOut(wave_label_1_copy),
-                FadeOut(wave_label_2_copy),
-                FadeOut(wave_label_3_copy),
-                FadeOut(wave_label_4_copy),
-                FadeOut(axis_3),
-                FadeOut(axis_4),
-                FadeOut(dots_curve_5),
-                FadeOut(dots_curve_6),
+        self.play(gx.FadeOut(wave_label_1_copy),
+                gx.FadeOut(wave_label_2_copy),
+                gx.FadeOut(wave_label_3_copy),
+                gx.FadeOut(wave_label_4_copy),
+                gx.FadeOut(axis_3),
+                gx.FadeOut(axis_4),
+                gx.FadeOut(dots_curve_5),
+                gx.FadeOut(dots_curve_6),
                 # FadeOut(),
                 # FadeOut(),
                 run_time=2)
 
         self.play(
-                  FadeIn(all_svgs[5:15]),
-                  FadeIn(all_svgs[0][15:]),
-                  FadeIn(all_svgs[0][5:14]), 
+                  gx.FadeIn(all_svgs[5:15]),
+                  gx.FadeIn(all_svgs[0][15:]),
+                  gx.FadeIn(all_svgs[0][5:14]),
                   run_time=2)        
         self.add(all_svgs[:15], all_svgs[16])
         self.remove(all_svgs[7]); self.add(all_svgs[7]) 
@@ -2034,22 +1847,22 @@ class P41_43(InteractiveScene):
         # wave_label_1.move_to([-.45, 0.5, 0])
         # wave_label_3.move_to([-.45, 0., 0])
 
-        addition_line=Line(start=[-1.13, -0.3, 0], end=[0.6, -0.3, 0])
+        addition_line=gx.Line(start=[-1.13, -0.3, 0], end=[0.6, -0.3, 0])
         addition_line.set_stroke(width=2)
-        addition_line.set_color(WHITE)
-        plus_sign=Tex('+', font_size=28)
-        plus_sign.set_color(WHITE)
+        addition_line.set_color(gx.WHITE)
+        plus_sign=math_tex('+', font_size=28)
+        plus_sign.set_color(gx.WHITE)
         plus_sign.move_to([0.5, -0.1, 0])
 
-        self.play(FadeOut(all_svgs[6:8]), 
-                  FadeOut(all_svgs[12:14]), 
-                  FadeOut(all_svgs[5][0]),
-                  FadeOut(all_svgs[5][11:]),
+        self.play(gx.FadeOut(all_svgs[6:8]),
+                  gx.FadeOut(all_svgs[12:14]),
+                  gx.FadeOut(all_svgs[5][0]),
+                  gx.FadeOut(all_svgs[5][11:]),
                   run_time=2)
         self.play(wave_label_1.animate.move_to([-.45, 0.5, 0]),
                   wave_label_3.animate.move_to([-.45, 0., 0]),
                   run_time=3)
-        self.play(ShowCreation(addition_line), ShowCreation(plus_sign), run_time=2)
+        self.play(gx.Create(addition_line), gx.Create(plus_sign), run_time=2)
         self.wait()
 
         #AH yeah draw nice horizontal line and plus sign let's go
@@ -2066,11 +1879,7 @@ class P41_43(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
-
-
-
-
+        # Scene authoring stops here in the interactive editor.
 
 # class P44_49(InteractiveScene):
 #     def construct(self): 
@@ -2104,7 +1913,7 @@ class P41_43(InteractiveScene):
 #         # then turn them into circles
 
 #         example_index=0
-#         self.frame.reorient(0, 0, 0, (0, 0, 0), 8.0)
+#         self.set_view(0, 0, 0, (0, 0, 0), 8.0)
 
 #         draw_inputs(self, activations, all_svgs, reset=False, example_index=example_index, wait=0)
 #         draw_embeddings(self, activations, all_svgs, reset=False, example_index=example_index, wait=0, colormap=black_to_tan_hex)
@@ -2231,7 +2040,7 @@ class P41_43(InteractiveScene):
 #         all_flat_objs=Group(all_svgs, axis_1, axis_2, curve_1, curve_2, curve_3, curve_4, x_label, y_label)
 #                             # wave_label_1, wave_label_2, wave_label_3, wave_label_4, )
 #         all_flat_objs.rotate(90*DEGREES, [1, 0, 0])
-#         self.frame.reorient(0, 90, 0, (0.00, 0.0, 0.00), 7.86)
+#         self.set_view(0, 90, 0, (0.00, 0.0, 0.00), 7.86)
 
 #         self.add(all_svgs[18])
 #         self.add(axis_1, axis_2, x_label, y_label)
@@ -2267,8 +2076,8 @@ class P41_43(InteractiveScene):
 
 #         self.wait()
 #         self.play(FadeOut(mid_mlp_fade_group), 
-#                  # self.frame.animate.reorient(0, 90, 0, (1.32, 0.17, 0.0), 8.35), 
-#                  self.frame.animate.reorient(0, 89, 0, (1.19, 0.17, 0.09), 9.02),
+#                  # self.animate_view(0, 90, 0, (1.32, 0.17, 0.0), 8.35),
+#                  self.animate_view(0, 89, 0, (1.19, 0.17, 0.09), 9.02),
 #                  run_time=4)
 #         self.wait()
 
@@ -2361,7 +2170,7 @@ class P41_43(InteractiveScene):
 
 #         self.add(mid_mlp_fade_group)
 
-#         self.frame.reorient(0, 89, 0, (0.03, 0.17, 0.2), 12.02)
+#         self.set_view(0, 89, 0, (0.03, 0.17, 0.2), 12.02)
 
 
 #         self.remove(all_svgs[18])

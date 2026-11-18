@@ -1,28 +1,43 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_surface import set_surface_shading
 from functools import partial
 import sys
 
 sys.path.append('_2025/backprop_3') #Point to folder where plane_folding_utils.py is
-from geometric_dl_utils import *
-from plane_folding_utils import *
-from geometric_dl_utils_simplified import *
+import manimgx as gx
+import numpy as np
+import torch
+from geometric_dl_utils import BaarleNet, manim_polygons_from_np_list, surface_func_from_model
+from geometric_dl_utils_simplified import (
+    clip_polygons,
+    compute_top_polytope,
+    merge_zero_regions,
+    process_with_layers,
+    recompute_tiling_general,
+    split_polygons_with_relu_simple,
+)
+from plane_folding_utils import CHILL_BROWN, get_relu_joint, line_from_joint_points_1
+from welch_geometry import diagram_axes_3d
+from welch_scene import WelchScene, image_at_height
+from welch_surface import parametric_surface, textured_surface
 from polytope_intersection_utils import intersect_polytopes
 # from decision_boundary_utils import *
 WELCH_RED='#EC2027'
 
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/ai_book/4_deep_learning/graphics/baarle_hertog_maps/' #Point to folder where map images are
-colors = [RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+graphics_dir=welch_path('ai_book/4_deep_learning/graphics/baarle_hertog_maps/') #Point to folder where map images are
+colors = [gx.RED, gx.BLUE, gx.GREEN, gx.YELLOW, gx.PURPLE, gx.ORANGE, gx.PINK, gx.TEAL]
 
 map_filename='baarle_hertog_maps-13.png'
 # map_filename='baarle_hertog_maps-10.png'
 
-class p3_6_book_9(InteractiveScene):
+class p3_6_book_9(WelchScene):
     def construct(self):
 
-        map_img=ImageMobject(graphics_dir+map_filename)
-        map_img.set_height(2)  # This sets the height to 2 units (-1 to 1)
-        map_img.set_width(2)   # This sets the width to 2 units (-1 to 1)
-        map_img.move_to(ORIGIN)
+        map_img=image_at_height(graphics_dir+map_filename)
+        map_img.scale_to_fit_height(2)  # This sets the height to 2 units (-1 to 1)
+        map_img.scale_to_fit_width(2)   # This sets the width to 2 units (-1 to 1)
+        map_img.move_to(gx.ORIGIN)
 
         model = BaarleNet([3])
 
@@ -48,13 +63,13 @@ class p3_6_book_9(InteractiveScene):
         surfaces=[]
         surface_funcs=[]
         for layer_idx in range(len(model.model)):
-            s=Group()
+            s=gx.Group()
             surface_funcs.append([])
             for neuron_idx in range(num_neurons[layer_idx]):
                 surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=viz_scales[layer_idx])
-                bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                ts=TexturedSurface(bent_surface, graphics_dir+map_filename)
-                ts.set_shading(0,0,0).set_opacity(0.8)
+                bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                ts=textured_surface(bent_surface, graphics_dir+map_filename)
+                set_surface_shading(ts, 0,0,0).set_opacity(0.8)
                 s.add(ts)
                 surface_funcs[-1].append(surface_func)
             surfaces.append(s)
@@ -92,13 +107,13 @@ class p3_6_book_9(InteractiveScene):
         #Get first layer Relu Joints
         joint_points_11 = get_relu_joint(w1[0,0], w1[0,1], b1[0], extent=1)
         joint_line_11=line_from_joint_points_1(joint_points_11, stroke_width=8).set_opacity(0.9).set_color(WELCH_RED)
-        group_11=Group(surfaces[1][0], joint_line_11)
+        group_11=gx.Group(surfaces[1][0], joint_line_11)
         joint_points_12 = get_relu_joint(w1[1,0], w1[1,1], b1[1], extent=1)
         joint_line_12=line_from_joint_points_1(joint_points_12, stroke_width=8).set_opacity(0.9).set_color(WELCH_RED)
-        group_12=Group(surfaces[1][1], joint_line_12)
+        group_12=gx.Group(surfaces[1][1], joint_line_12)
         joint_points_13 = get_relu_joint(w1[2,0], w1[2,1], b1[2], extent=1)
         joint_line_13=line_from_joint_points_1(joint_points_13, stroke_width=8).set_opacity(0.9).set_color(WELCH_RED)
-        group_13=Group(surfaces[1][2], joint_line_13)
+        group_13=gx.Group(surfaces[1][2], joint_line_13)
 
         # group_11.shift([-3, 0, 0])
         # group_13.shift([3, 0, 0])
@@ -112,96 +127,96 @@ class p3_6_book_9(InteractiveScene):
         #If this animation kinda works, then we definitely want to bring along the fold lines!
 
         surface_func=partial(surface_func_from_model, model=model, layer_idx=1, neuron_idx=0, viz_scale=w2[0, 0]*viz_scales[2])
-        bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        scaled_surface_1=TexturedSurface(bent_surface, graphics_dir+map_filename)
-        scaled_surface_1.set_shading(0,0,0).set_opacity(0.9)
+        bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        scaled_surface_1=textured_surface(bent_surface, graphics_dir+map_filename)
+        set_surface_shading(scaled_surface_1, 0,0,0).set_opacity(0.9)
         scaled_surface_1.shift([3, 0, 1.5])
 
         surface_func=partial(surface_func_from_model, model=model, layer_idx=1, neuron_idx=1, viz_scale=w2[0, 1]*viz_scales[2])
-        bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        scaled_surface_2=TexturedSurface(bent_surface, graphics_dir+map_filename)
-        scaled_surface_2.set_shading(0,0,0).set_opacity(0.9)
+        bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        scaled_surface_2=textured_surface(bent_surface, graphics_dir+map_filename)
+        set_surface_shading(scaled_surface_2, 0,0,0).set_opacity(0.9)
         scaled_surface_2.shift([3, 0, 0])
 
         surface_func=partial(surface_func_from_model, model=model, layer_idx=1, neuron_idx=2, viz_scale=w2[0, 2]*viz_scales[2])
-        bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        scaled_surface_3=TexturedSurface(bent_surface, graphics_dir+map_filename)
-        scaled_surface_3.set_shading(0,0,0).set_opacity(0.9)
+        bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        scaled_surface_3=textured_surface(bent_surface, graphics_dir+map_filename)
+        set_surface_shading(scaled_surface_3, 0,0,0).set_opacity(0.9)
         scaled_surface_3.shift([3, 0, -1.5])
 
 
         # self.add(scaled_surface_1)
-        group_11_scaled=Group(scaled_surface_1, joint_line_11.copy().shift([3,0,0]))
-        group_12_scaled=Group(scaled_surface_2, joint_line_12.copy().shift([3,0,0]))
-        group_13_scaled=Group(scaled_surface_3, joint_line_13.copy().shift([3,0,0]))
+        group_11_scaled=gx.Group(scaled_surface_1, joint_line_11.copy().shift([3,0,0]))
+        group_12_scaled=gx.Group(scaled_surface_2, joint_line_12.copy().shift([3,0,0]))
+        group_13_scaled=gx.Group(scaled_surface_3, joint_line_13.copy().shift([3,0,0]))
 
 
 
-        bent_plane_joint_lines=VGroup()
-        pre_move_lines=VGroup()
+        bent_plane_joint_lines=gx.VGroup()
+        pre_move_lines=gx.VGroup()
         #Kinda hacky, but it might actually be easiest just to pick out edges from my polygons?
         # Line Section 1
         line_start=polygons['1.linear_out'][0][0][2]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][0][0][1]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
         # joint_line.shift([3, 0, 0.0])
         bent_plane_joint_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][0][2]*np.array([1,1,0]) #z=0 version
         line_end=polygons['1.linear_out'][0][0][1]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
         # joint_line.shift([3, 0, -1.5])
         pre_move_lines.add(joint_line)
 
         # Line Section 2
         line_start=polygons['1.linear_out'][0][1][3]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][0][1][4]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
         # joint_line.shift([3, 0, 0.0])
         bent_plane_joint_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][1][3]*np.array([1,1,0])
         line_end=polygons['1.linear_out'][0][1][4]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
         # joint_line.shift([3, 0, 1.5])
         pre_move_lines.add(joint_line)
 
         # Line Section 3
         line_start=polygons['1.linear_out'][0][2][3]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][0][2][0]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
         # joint_line.shift([3, 0, 0.0])
         bent_plane_joint_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][2][3]*np.array([1,1,0])
         line_end=polygons['1.linear_out'][0][2][0]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
         # joint_line.shift([3, 0, 1.5])
         pre_move_lines.add(joint_line)
 
         #Line Section 4
         line_start=polygons['1.linear_out'][0][2][0]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][0][2][1]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
         # joint_line.shift([3, 0, 0.0])
         bent_plane_joint_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][2][0]*np.array([1,1,0])
         line_end=polygons['1.linear_out'][0][2][1]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
         # joint_line.shift([3, 0, 0.0])
         pre_move_lines.add(joint_line)
 
         #Line Section 5
         line_start=polygons['1.linear_out'][0][4][2]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][0][4][0]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
         # joint_line.shift([3, 0, 0.0])
         bent_plane_joint_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][4][2]*np.array([1,1,0])
         line_end=polygons['1.linear_out'][0][4][0]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=WELCH_RED, stroke_width=8, dash_length=0.05)
         # joint_line.shift([3, 0, 0.0])
         pre_move_lines.add(joint_line)
 
@@ -213,7 +228,7 @@ class p3_6_book_9(InteractiveScene):
         # group_11.shift([-3, 0, 0])
         # group_13.shift([3, 0, 0])
 
-        # self.frame.reorient(-8, 57, 0, (3.16, 0.5, -0.45), 7.91)
+        # self.set_view(-8, 57, 0, (3.16, 0.5, -0.45), 7.91)
         # self.add(group_11, group_12, group_13)
 
 
@@ -222,13 +237,13 @@ class p3_6_book_9(InteractiveScene):
         #I think having overhead and 3D views as we go could be helpful!!
 
         self.wait()
-        self.frame.reorient(0, 0, 0, (-0.0, 0.03, 0.0), 2.31)
+        self.set_view(0, 0, 0, (-0.0, 0.03, 0.0), 2.31)
         # self.add(map_img)
 
         def flat_surf_func(u, v): return [u, v, 0]
-        flat_map_surf = ParametricSurface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        flat_map=TexturedSurface(flat_map_surf, graphics_dir+map_filename)
-        flat_map.set_shading(0,0,0).set_opacity(0.8)
+        flat_map_surf = parametric_surface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        flat_map=textured_surface(flat_map_surf, graphics_dir+map_filename)
+        set_surface_shading(flat_map, 0,0,0).set_opacity(0.8)
         self.add(flat_map)
 
 
@@ -236,7 +251,7 @@ class p3_6_book_9(InteractiveScene):
         self.remove(flat_map)
 
 
-        self.frame.reorient(0, 54, 0, (0.0, 0.0, 0.0), 2.72)
+        self.set_view(0, 54, 0, (0.0, 0.0, 0.0), 2.72)
         self.add(group_11[0])
         self.wait()
 
@@ -261,7 +276,7 @@ class p3_6_book_9(InteractiveScene):
         # self.play(ReplacementTransform(group_11.copy(), group_11_scaled), 
         #           # ReplacementTransform(group_12.copy(), group_12_scaled),
         #           # ReplacementTransform(group_13.copy(), group_13_scaled), 
-        #           self.frame.animate.reorient(8, 63, 0, (3.25, 0.84, 0.06), 7.46),
+        #           self.animate_view(8, 63, 0, (3.25, 0.84, 0.06), 7.46),
         #           run_time=3)
         # self.wait()
 
@@ -283,9 +298,9 @@ class p3_6_book_9(InteractiveScene):
         polygons_21=manim_polygons_from_np_list(polygons['1.linear_out'][0], colors=colors, viz_scale=viz_scales[2])
         # polygons_21.shift([3, 0, 0.001]) #Move slightly above map
 
-        self.frame.reorient(0, 54, 0, (0.0, 0.0, 0.0), 2.72)
-        # self.frame.reorient(1, 44, 0, (0, 0, 0), 2.60)
-        # self.frame.reorient(1, 44, 0, (-0.08, -0.03, -0.02), 2.49)
+        self.set_view(0, 54, 0, (0.0, 0.0, 0.0), 2.72)
+        # self.set_view(1, 44, 0, (0, 0, 0), 2.60)
+        # self.set_view(1, 44, 0, (-0.08, -0.03, -0.02), 2.49)
 
         self.add(surfaces[2][0])
         # self.add(bent_plane_joint_lines)
@@ -295,7 +310,7 @@ class p3_6_book_9(InteractiveScene):
         self.remove(surfaces[2][0], bent_plane_joint_lines, polygons_21)
 
 
-        # self.play(self.frame.animate.reorient(18, 52, 0, (3.23, 0.7, -0.1), 6.18), run_time=2.5)
+        # self.play(self.animate_view(18, 52, 0, (3.23, 0.7, -0.1), 6.18), run_time=2.5)
         # self.wait()
         # for p in polygons_21:
         #     self.add(p)
@@ -305,7 +320,7 @@ class p3_6_book_9(InteractiveScene):
         # # Reframe and clear room for second neuron
         # # Cant quite decide if I need a little "guide/reference network along the way - ya know?"
 
-        # self.play(self.frame.animate.reorient(-8, 65, 0, (3.04, 0.61, -0.23), 7.05), 
+        # self.play(self.animate_view(-8, 65, 0, (3.04, 0.61, -0.23), 7.05),
         #           bent_plane_joint_lines.animate.set_opacity(0.0), 
         #           bent_plane_joint_lines.animate.shift([0,0,0.8]).set_opacity(0.0),
         #           surfaces[2][0].animate.shift([0,0,0.8]),
@@ -314,7 +329,7 @@ class p3_6_book_9(InteractiveScene):
 
 
         # surfaces[2][1].shift([3,0,-0.8])
-        self.frame.reorient(4, 41, 0, (-0.05, -0.18, -0.23), 2.72)
+        self.set_view(4, 41, 0, (-0.05, -0.18, -0.23), 2.72)
         polygons_22=manim_polygons_from_np_list(polygons['1.linear_out'][1], colors=colors, viz_scale=viz_scales[2])
 
         self.add(surfaces[2][1])
@@ -337,7 +352,7 @@ class p3_6_book_9(InteractiveScene):
         # self.play(FadeIn(polygons_22))
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(17, 53, 0, (3.06, 0.86, -0.02), 7.05), run_time=3.0)
+        # self.play(self.animate_view(17, 53, 0, (3.06, 0.86, -0.02), 7.05), run_time=3.0)
         # self.wait()
 
         # # self.add(polygons_22)
@@ -351,7 +366,7 @@ class p3_6_book_9(InteractiveScene):
         # # ~P(Netherlands)
         # # I can then bring these two axes together. 
 
-        axes_1 = ThreeDAxes(
+        axes_1 = diagram_axes_3d(
             x_range=[-1.2, 1.2, 1],
             y_range=[-1.2, 1.2, 1],
             z_range=[-0.7, 0.7, 1],
@@ -372,7 +387,7 @@ class p3_6_book_9(InteractiveScene):
 
         # # self.add(axes_1)
         # self.wait()
-        # self.play(self.frame.animate.reorient(0, 71, 0, (2.65, 1.0, -0.06), 6.31), 
+        # self.play(self.animate_view(0, 71, 0, (2.65, 1.0, -0.06), 6.31),
         #           FadeIn(axes_1), 
         #           group_11[0].animate.set_opacity(0.7),
         #           group_11[1].animate.set_opacity(0.4),
@@ -412,7 +427,7 @@ class p3_6_book_9(InteractiveScene):
         #           polygons_22.animate.shift([0, 0, 0.8]),
         #           surfaces[2][1].animate.shift([0, 0, 0.8]), 
         #           axes_2.animate.shift([0, 0, 0.8]),
-        #           # self.frame.animate.reorient(-7, 40, 0, (3.21, 0.51, -0.66), 3.95), 
+        #           # self.animate_view(-7, 40, 0, (3.21, 0.51, -0.66), 3.95),
         #           group_11[0].animate.set_opacity(0.0),
         #           group_11[1].animate.set_opacity(0.0),
         #           group_12[0].animate.set_opacity(0.0),
@@ -429,7 +444,7 @@ class p3_6_book_9(InteractiveScene):
         # intersection_points_raveled=intersection_points_raveled[(0, 1, 5, 6, 2),:] #Change ordering for smooth animation in
         intersection_points_raveled=intersection_points_raveled[(2, 6, 5, 1, 0),:] #Change ordering for smooth animation in
 
-        line = VMobject()
+        line = gx.VMobject()
         line.set_points_as_corners(intersection_points_raveled)
         line.set_stroke(color='#FF00FF', width=5)
         # self.add(line)
@@ -438,8 +453,8 @@ class p3_6_book_9(InteractiveScene):
         surfaces[2][1].set_opacity(0.5)
 
 
-        polygons_21.set_color(BLUE)
-        polygons_22.set_color(YELLOW)   
+        polygons_21.set_color(gx.BLUE)
+        polygons_22.set_color(gx.YELLOW)
         self.wait()
 
 
@@ -460,14 +475,14 @@ class p3_6_book_9(InteractiveScene):
 
         self.wait()
 
-        # self.frame.reorient(4, 41, 0, (-0.05, -0.18, -0.23), 2.72)
-        # self.frame.reorient(33, 39, 0, (-0.1, -0.18, -0.23), 3.32)
-        # self.frame.reorient(4, 41, 0, (-0.05, -0.18, -0.23), 2.72)
-        self.frame.reorient(1, 41, 0, (-0.13, -0.06, -0.12), 2.69)
+        # self.set_view(4, 41, 0, (-0.05, -0.18, -0.23), 2.72)
+        # self.set_view(33, 39, 0, (-0.1, -0.18, -0.23), 3.32)
+        # self.set_view(4, 41, 0, (-0.05, -0.18, -0.23), 2.72)
+        self.set_view(1, 41, 0, (-0.13, -0.06, -0.12), 2.69)
         self.wait()
 
         #Side view
-        self.frame.reorient(2, 81, 0, (-0.08, -0.05, -0.07), 2.69)
+        self.set_view(2, 81, 0, (-0.08, -0.05, -0.07), 2.69)
         self.wait()
 
 
@@ -478,7 +493,7 @@ class p3_6_book_9(InteractiveScene):
         # # self.remove(line)
         # self.wait()
         # self.play(ShowCreation(line), 
-        #          self.frame.animate.reorient(-16, 45, 0, (3.02, 0.49, -0.61), 4.31),
+        #          self.animate_view(-16, 45, 0, (3.02, 0.49, -0.61), 4.31),
         #          run_time=5)
         # self.wait()
 
@@ -490,9 +505,9 @@ class p3_6_book_9(InteractiveScene):
 
         # # map_img.move_to([3, 0, 0])
         def flat_surf_func(u, v): return [u, v, 0]
-        flat_map_surf = ParametricSurface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        flat_map=TexturedSurface(flat_map_surf, graphics_dir+map_filename)
-        flat_map.set_shading(0,0,0).set_opacity(0.8)
+        flat_map_surf = parametric_surface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        flat_map=textured_surface(flat_map_surf, graphics_dir+map_filename)
+        set_surface_shading(flat_map, 0,0,0).set_opacity(0.8)
         # flat_map.shift([3, 0, 0])
 
 
@@ -500,7 +515,7 @@ class p3_6_book_9(InteractiveScene):
         self.remove(surfaces[2][0], surfaces[2][1], polygons_22, polygons_21)
         self.add(flat_map)
         self.add(line)
-        self.frame.reorient(0, 0, 0, (-0.02, -0.03, 0.0), 2.22)
+        self.set_view(0, 0, 0, (-0.02, -0.03, 0.0), 2.22)
         self.wait()
 
         # self.wait()
@@ -513,7 +528,7 @@ class p3_6_book_9(InteractiveScene):
         #           ReplacementTransform(surfaces[2][0], flat_map), 
         #           ReplacementTransform(surfaces[2][1], flat_map),
         #           # line.animate.shift([0,0,0.05]),
-        #           self.frame.animate.reorient(0, 0, 0, (3.0, -0.01, -0.67), 3.82),
+        #           self.animate_view(0, 0, 0, (3.0, -0.01, -0.67), 3.82),
         #           run_time=4)
         # self.remove(line); self.add(line) #Occlusions
         # self.wait()
@@ -569,7 +584,7 @@ class p3_6_book_9(InteractiveScene):
         # polygons_21_copy.shift([3, 0, 0]) #.set_color(BLUE).set_opacity(0.3)
         # self.add(surface_21_copy, polygons_21_copy)
         # self.wait()
-        # self.play(self.frame.animate.reorient(1, 72, 0, (3.32, 0.84, 0.01), 7.05), run_time=3)
+        # self.play(self.animate_view(1, 72, 0, (3.32, 0.84, 0.01), 7.05), run_time=3)
         # polygons_21_copy=polygons_21.copy()
         # polygons_21_copy.shift([0,0,0.01])
 
@@ -584,7 +599,7 @@ class p3_6_book_9(InteractiveScene):
 
         # self.add(axes_1)
 
-        self.embed()
+        pass
 
 
         # self.wait(20)

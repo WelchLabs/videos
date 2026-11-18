@@ -1,4 +1,10 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+from deepseek_diagrams import get_attention_head, get_input_x
+import numpy as np
+from welch_scene import WelchScene, image_at_height
+from welch_text import math_tex
+
 from tqdm import tqdm
 from pathlib import Path
 
@@ -7,111 +13,27 @@ CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
 BLUE='#65c8d0'
 
-from manimlib.mobject.svg.svg_mobject import _convert_point_to_3d
-from manimlib.logger import log
 
-def get_attention_head(svg_path='/Users/stephen/welch_labs/deepseek/graphics/to_manim',
-                       svg_file='mha_2d_segments-',
-                       img_path='/Users/stephen/welch_labs/deepseek/hackin/linux_workdir/deepseek/flowchart_graphics'):
-
-    q1=ImageMobject(str(img_path/'q_1.png'))
-    q1.scale([0.0415, 0.08, 1]) 
-    q1.move_to([-0.2,0.38,0]) 
-    # self.add(q1)
-    # self.remove(q1)      
-
-    k1=ImageMobject(str(img_path/'k_1.png'))
-    k1.scale([0.0415, 0.08, 1]) 
-    k1.move_to([-0.2,-0.06,0]) 
-    # self.add(k1)
-    # self.remove(k1)
-
-    v1=ImageMobject(str(img_path/'v_1.png'))
-    v1.scale([0.0415, 0.08, 1]) 
-    v1.move_to([-0.2,-0.48,0]) 
-    # self.add(v1)
-    # self.remove(v1)
-
-    kt=ImageMobject(str(img_path/'k_1.png'))
-    kt.scale([0.0215,0.035, 1])
-    kt.rotate([0, 0, -PI/2]) 
-    kt.move_to([0.405,0.305,0])     
-    # self.add(kt)
-    # self.remove(kt)
-
-    a1=ImageMobject(str(img_path/'attention_scores.png'))
-    a1.scale([0.055,0.055, 1])
-    a1.move_to([0.66,0.37,0]) 
-    # self.add(a1)
-    # self.remove(a1)
-
-    a2=ImageMobject(str(img_path/'attention_pattern.png'))
-    a2.scale([0.13,0.13, 1])
-    a2.move_to([1.27,0.25,0]) 
-    # self.add(a2)
-    # self.remove(a2)
-
-    z1=ImageMobject(str(img_path/'z_1.png'))
-    z1.scale([0.0425, 0.08, 1]) 
-    z1.move_to([1.035,-0.48,0]) 
-    # self.add(z1)
-    # self.remove(z1)
-
-    all_images=Group(q1, k1, v1, kt, a1, a2, z1)
-
-    svg_files=list(sorted((svg_path).glob('*'+svg_file+'*')))
-    # print(svg_files)
-
-    all_labels=Group()
-    for svg_file in svg_files:
-        svg_image=SVGMobject(str(svg_file))
-        all_labels.add(svg_image[1:]) #Thowout background
- 
-    large_white_connectors=SVGMobject(str(svg_path/'mha_2d_large_white_connectors_2.svg'))
-
-    return Group(all_images, all_labels, large_white_connectors[1:])
-
-def get_input_x(svg_path='/Users/stephen/welch_labs/deepseek/graphics/to_manim',
-           svg_file='mha_2d_grouping_test.svg',
-           img_path='/Users/stephen/welch_labs/deepseek/hackin/linux_workdir/deepseek/flowchart_graphics'):
-
-
-    x1=ImageMobject(str(Path(img_path)/'input_1_1.png'))
-    x1.scale([0.075,0.125, 1]) 
-    x1.move_to([-1.45,-0.03,0])
-
-    x2=ImageMobject(str(Path(img_path)/'input_2_1.png'))
-    x2.scale([0.075,0.125, 1]) 
-    x2.move_to([-1.225,-0.03,0])
-    
-    all_images=Group(x1, x2)
-    svg_image=SVGMobject(str(Path(svg_path)/svg_file))
-    x_labels_1=svg_image[1:45] 
-
-    return Group(all_images,x_labels_1)
-
-
-
-class poster_1(InteractiveScene):
+class poster_1(WelchScene):
     def construct(self):
 
-        img_path=Path('/Users/stephen/welch_labs/deepseek/hackin/linux_workdir/deepseek')
-        svg_path=Path('/Users/stephen/welch_labs/deepseek/graphics/to_manim')
+        img_path=Path(welch_path('deepseek/hackin/linux_workdir/deepseek'))
+        svg_path=Path(welch_path('deepseek/graphics/to_manim'))
 
         i=0
         a=get_attention_head(svg_path=svg_path,svg_file='mha_2d_segments-',
                                     img_path=img_path/'gpt_2_attention_viz_4'/str(i))
 
-        x=get_input_x(svg_path='/Users/stephen/welch_labs/deepseek/graphics/to_manim',
+        x=get_input_x(svg_path=welch_path('deepseek/graphics/to_manim'),
            svg_file='mha_2d_grouping_test.svg',
            img_path=img_path/'gpt_2_attention_viz_4')
 
-        self.frame.reorient(0, 0, 0, (-1.39, -0.06, -0.0), 1.16)
+        self.set_view(0, 0, 0, (-1.39, -0.06, -0.0), 1.16)
         self.wait()
         # self.add(x[0][0])
         # self.add(x[0][1])
 
-        self.play(FadeIn(x[0]))
+        self.play(gx.FadeIn(x[0]))
         self.add(a[1][1]) #xlabels
         self.add(a[1][2]) #xlabels
         self.wait()
@@ -121,7 +43,7 @@ class poster_1(InteractiveScene):
         self.remove(a[1][16])
         self.wait()
 
-        self.play(FadeIn(a[1][6]), self.frame.animate.reorient(0, 0, 0, (-0.65, 0.02, 0.0), 1.36), run_time=2)
+        self.play(gx.FadeIn(a[1][6]), self.animate_view(0, 0, 0, (-0.65, 0.02, 0.0), 1.36), run_time=2)
         self.wait()
 
         # self.play(FadeIn(a[1][3]), FadeIn(a[1][4]), FadeIn(a[0][0]), FadeIn(a[0][1]))
@@ -135,19 +57,19 @@ class poster_1(InteractiveScene):
         #Ok hack on row by row version here then break into subfuncrion
 
 
-        separate_row_im_path='/Users/stephen/welch_labs/deepseek/hackin/linux_workdir/deepseek/gpt_2_attention_viz_4'
-        q_rows=Group()
+        separate_row_im_path=welch_path('deepseek/hackin/linux_workdir/deepseek/gpt_2_attention_viz_4')
+        q_rows=gx.Group()
         for row_id in range(9):
-            q=ImageMobject(separate_row_im_path+'/query_row_'+str(row_id)+'.png')
+            q=image_at_height(separate_row_im_path+'/query_row_'+str(row_id)+'.png')
             q.scale([0.0127, 0.024, 1]) 
             q.move_to([-0.2,0.492-0.028*row_id,0]) 
             q_rows.add(q)
         # self.add(q_rows)
         # self.remove(q_rows)
 
-        k_rows=Group()
+        k_rows=gx.Group()
         for row_id in range(9):
-            k=ImageMobject(separate_row_im_path+'/key_row_'+str(row_id)+'.png')
+            k=image_at_height(separate_row_im_path+'/key_row_'+str(row_id)+'.png')
             k.scale([0.0127, 0.024, 1]) 
             k.move_to([-0.2,0.05-0.028*row_id,0]) 
             k_rows.add(k)
@@ -155,17 +77,17 @@ class poster_1(InteractiveScene):
         # self.remove(k_rows)
 
         self.wait()
-        self.play(FadeIn(a[1][3]), FadeIn(a[1][4]), FadeIn(k_rows), FadeIn(q_rows)) #Queries and Keys 
+        self.play(gx.FadeIn(a[1][3]), gx.FadeIn(a[1][4]), gx.FadeIn(k_rows), gx.FadeIn(q_rows)) #Queries and Keys
         self.wait()
 
         #Pan over, create space for captions, while expanding all rows
-        self.play(*[q_rows[row_id].animate.shift(0.01*(8-row_id)*UP) for row_id in range(9)]+
-                   [k_rows[row_id].animate.shift(0.01*(8-row_id)*UP) for row_id in range(9)]+
-                   [self.frame.animate.reorient(0, 0, 0, (-0.23, 0.18, 0.0), 1.20)], lag_ratio=0.2, run_time=3)
+        self.play(*[q_rows[row_id].animate.shift(0.01*(8-row_id)*gx.UP) for row_id in range(9)]+
+                   [k_rows[row_id].animate.shift(0.01*(8-row_id)*gx.UP) for row_id in range(9)]+
+                   [self.animate_view(0, 0, 0, (-0.23, 0.18, 0.0), 1.20)], lag_ratio=0.2, run_time=3)
 
         self.wait()
 
-        self.play(FadeOut(x[0]), FadeOut(a[1][1]), FadeOut(a[1][2]), FadeOut(a[1][6]))
+        self.play(gx.FadeOut(x[0]), gx.FadeOut(a[1][1]), gx.FadeOut(a[1][2]), gx.FadeOut(a[1][6]))
         a[1][18].scale(0.595)
         a[1][18].move_to([-0.75,0.2,0])
         self.add(a[1][18]) #Add american flag text
@@ -179,12 +101,12 @@ class poster_1(InteractiveScene):
         self.wait()
 
         #Multistep option
-        self.play(FadeOut(a[1][18][:11]), FadeOut(a[1][18][14:32]), FadeOut(a[1][18][40:]), FadeOut(a[1][19]), 
-                  FadeOut(a[1][3]), FadeOut(a[1][4]), FadeOut(q_rows[:2]), FadeOut(q_rows[3:]), FadeOut(k_rows[0]), 
-                  FadeOut(k_rows[2:]), run_time=2)
+        self.play(gx.FadeOut(a[1][18][:11]), gx.FadeOut(a[1][18][14:32]), gx.FadeOut(a[1][18][40:]), gx.FadeOut(a[1][19]),
+                  gx.FadeOut(a[1][3]), gx.FadeOut(a[1][4]), gx.FadeOut(q_rows[:2]), gx.FadeOut(q_rows[3:]), gx.FadeOut(k_rows[0]),
+                  gx.FadeOut(k_rows[2:]), run_time=2)
         # self.wait()
-        self.play(q_rows[2].animate.shift(0.12*DOWN), k_rows[1].animate.shift(0.12*UP),
-                  a[1][18][11:14].animate.shift(0.12*DOWN), a[1][18][32:40].animate.shift(0.12*UP))
+        self.play(q_rows[2].animate.shift(0.12*gx.DOWN), k_rows[1].animate.shift(0.12*gx.UP),
+                  a[1][18][11:14].animate.shift(0.12*gx.DOWN), a[1][18][32:40].animate.shift(0.12*gx.UP))
         self.wait()
 
         #All at once option - feels like to much
@@ -194,13 +116,13 @@ class poster_1(InteractiveScene):
         # self.wait()
 
         #Dot Product Dot
-        d=Dot(stroke_color=None, fill_color=WHITE)
+        d=gx.Dot(stroke_color=None, fill_color=gx.WHITE)
         d.scale(0.15)
         d.move_to([-0.2, 0.295, 0])
         # d.set_color(WHITE)
         self.add(d)
 
-        t=Tex("=524.2").set_color(WHITE)
+        t=math_tex("=524.2").set_color(gx.WHITE)
         t.scale(0.1)
         t.move_to([-0.2, 0.12, 0])
         self.add(t)
@@ -222,8 +144,8 @@ class poster_1(InteractiveScene):
         #Ok try to smoothly move back to full matrix
 
         # self.wait()
-        self.play(q_rows[2].animate.shift(0.059*UP), k_rows[1].animate.shift(0.188*DOWN),
-                  FadeOut(a[1][18][11:14]), FadeOut(a[1][18][32:40]))
+        self.play(q_rows[2].animate.shift(0.059*gx.UP), k_rows[1].animate.shift(0.188*gx.DOWN),
+                  gx.FadeOut(a[1][18][11:14]), gx.FadeOut(a[1][18][32:40]))
         
         # self.add(a[0][0].set_opacity(0.5)) #Query image
         # q_rows[2].shift(0.059*UP)
@@ -231,7 +153,7 @@ class poster_1(InteractiveScene):
         # self.add(a[0][1].set_opacity(0.5)) #Key image
         # k_rows[1].shift(0.188*DOWN)
 
-        self.play(FadeIn(a[0][0]), FadeIn(a[0][1]))
+        self.play(gx.FadeIn(a[0][0]), gx.FadeIn(a[0][1]))
         self.remove(q_rows[2], k_rows[1])
         self.add(a[1][3][:10], a[1][3][-1:]) #Queryt labels
         self.add(a[1][4][:4], a[1][4][-4:]) #Key labels
@@ -241,55 +163,55 @@ class poster_1(InteractiveScene):
         # self.add(a[0][3])
 
         kt=a[0][1].copy()
-        self.play(kt.animate.scale(np.array([0.0215,0.035, 1])/np.array([0.0415, 0.08, 1])).rotate([0, 0, -PI/2]).rotate(PI,UP).move_to([0.405,0.305,0]), run_time=2)  
+        self.play(kt.animate.scale(np.array([0.0215,0.035, 1])/np.array([0.0415, 0.08, 1])).rotate(-gx.PI/2).rotate(gx.PI,gx.UP).move_to([0.405,0.305,0]), run_time=2)
         # self.play(kt.animate.rotate(PI,RIGHT).rotate([0, 0, -PI/2]))
         self.add(a[1][7])
         self.wait()
         # self.remove(kt)
 
 
-        self.play(FadeIn(a[1][8]), FadeIn(a[0][4]), self.frame.animate.reorient(0, 0, 0, (0.16, 0.17, 0.0), 1.20), run_time=1.2)
+        self.play(gx.FadeIn(a[1][8]), gx.FadeIn(a[0][4]), self.animate_view(0, 0, 0, (0.16, 0.17, 0.0), 1.20), run_time=1.2)
         self.wait()
 
         self.add(a[1][9])
         self.wait()
-        self.play(FadeIn(a[0][5]), self.frame.animate.reorient(0, 0, 0, (0.46, 0.18, 0.0), 1.43))
+        self.play(gx.FadeIn(a[0][5]), self.animate_view(0, 0, 0, (0.46, 0.18, 0.0), 1.43))
         self.wait()
         self.add(a[1][10])
         self.wait()
 
         #P18 - move then add option
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0.0), 2.00))
+        self.play(self.animate_view(0, 0, 0, (0, 0, 0.0), 2.00))
         self.remove(a[1][3][:10], a[1][3][-1:]) #Remove partial labels, add back in full. 
         self.remove(a[1][4][:4], a[1][4][-4:])
         self.add(a[1][3], a[1][4]) #Key query value labels
         self.add(x[0], a[1][1], a[1][2], a[1][6]) #X inputs and intiial arrows
         self.wait()
 
-        self.play(FadeIn(a[1][17]), FadeIn(a[1][5]), FadeIn(a[0][2])) #Value Stuff
+        self.play(gx.FadeIn(a[1][17]), gx.FadeIn(a[1][5]), gx.FadeIn(a[0][2])) #Value Stuff
         self.wait()
 
         ## Zoom in on values
-        self.play(self.frame.animate.reorient(0, 0, 0, (-0.22, -0.49, -0.0), 1.15))
+        self.play(self.animate_view(0, 0, 0, (-0.22, -0.49, -0.0), 1.15))
         self.wait()
 
         ## Zoom out partially to make comparison to keys
-        self.play(self.frame.animate.reorient(0, 0, 0, (-0.16, -0.09, 0.0), 1.35))
+        self.play(self.animate_view(0, 0, 0, (-0.16, -0.09, 0.0), 1.35))
         self.wait()
 
         ## Fully Zoom out
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0.0), 2.00))
+        self.play(self.animate_view(0, 0, 0, (0, 0, 0.0), 2.00))
         self.wait()
 
         #P19
         self.add(a[1][11])
         self.wait()
 
-        self.play(FadeIn(a[0][6]), FadeIn(a[1][12]))
+        self.play(gx.FadeIn(a[0][6]), gx.FadeIn(a[1][12]))
         self.wait()
 
         #Attention head border 
-        self.play(Write(a[1][0]), run_time=1) #kind cool kind cheesy, switch to fade in if I hate it 
+        self.play(gx.Write(a[1][0]), run_time=1) #kind cool kind cheesy, switch to fade in if I hate it
         # self.play(FadeIn(a[1][0]))
         self.wait()
 
@@ -301,33 +223,33 @@ class poster_1(InteractiveScene):
         #Quick hacky test - a little weird but might work?
         #Oh man can my patters slot in from the left one after eachother as the camera moves alittle?
         #That would be dope. 
-        head_0_3d_images=Group(a[0], kt) #a[0][:2], a[3:], kt)
-        head_0_3d_vectors=Group(a[1][0], a[1][3:6], a[1][6:13], a[1][17])
-        head_0_3d=Group(head_0_3d_images, head_0_3d_vectors)
+        head_0_3d_images=gx.Group(a[0], kt) #a[0][:2], a[3:], kt)
+        head_0_3d_vectors=gx.Group(a[1][0], a[1][3:6], a[1][6:13], a[1][17])
+        head_0_3d=gx.Group(head_0_3d_images, head_0_3d_vectors)
 
         # Ok here's my alternative solution - there should not appear to be a camera jump in theory, we'll see - 
         # If there is a little one, by be able to fix in Premier
         self.remove(x, a[1][1], a[1][2])
-        head_0_3d.rotate([PI/2,0,0], axis=RIGHT)
-        self.frame.reorient(0, 90, 0, (0, 0, 0.0), 2.0)
+        head_0_3d.rotate(gx.PI/2, axis=gx.RIGHT)
+        self.set_view(0, 90, 0, (0, 0, 0.0), 2.0)
         self.wait()
 
         # self.play(head_0_3d.animate.rotate([PI/2,0,0], axis=RIGHT), 
-        #          self.frame.animate.reorient(0, 90, 0, (0, 0, 0.0), 2.0), run_time=2)
+        #          self.animate_view(0, 90, 0, (0, 0, 0.0), 2.0), run_time=2)
 
         #Ok now the cool stuff, can I slot in new heads from the left while panning to left?!
-        attention_heads=Group()
+        attention_heads=gx.Group()
         spacing=0.25
         for i in range(1, 12): 
             a=get_attention_head(svg_path=svg_path,svg_file='mha_2d_segments-',
                                         img_path=img_path/'gpt_2_attention_viz_4'/str(i))
-            a_select=Group(a[0], a[1][0], a[1][3:6], a[1][6:13], a[1][17])
-            a_select.rotate([PI/2,0,0], axis=RIGHT)
+            a_select=gx.Group(a[0], a[1][0], a[1][3:6], a[1][6:13], a[1][17])
+            a_select.rotate(gx.PI/2, axis=gx.RIGHT)
             a_select.move_to([0.27, spacing*i,0])
             attention_heads.add(a_select)
 
         # self.wait()
-        # self.frame.reorient(-27, 74, 0, (-0.29, 0.14, -0.1), 2.56)
+        # self.set_view(-27, 74, 0, (-0.29, 0.14, -0.1), 2.56)
 
         #What if I add heads and then set all their opacities to zero? Is ordering preserved then?
         for i in range(10, -1, -1): #-1):
@@ -336,22 +258,22 @@ class poster_1(InteractiveScene):
         self.add(head_0_3d)
 
         for i in range(10, -1, -1): 
-            attention_heads[i].shift(6*LEFT)
+            attention_heads[i].shift(6*gx.LEFT)
 
         # self.wait()
-        # self.frame.reorient(-38, 72, 0, (-0.37, 0.29, 0.02), 2.56)
-        self.play(self.frame.animate.reorient(-38, 72, 0, (-0.37, 0.29, 0.02), 2.56), run_time=3)
+        # self.set_view(-38, 72, 0, (-0.37, 0.29, 0.02), 2.56)
+        self.play(self.animate_view(-38, 72, 0, (-0.37, 0.29, 0.02), 2.56), run_time=3)
 
         # self.play(attention_heads[0].animate.shift(6*RIGHT)) #Works
         # self.play(attention_heads[1].animate.shift(6*RIGHT)) #Works
 
         self.wait(0)
         for i in range(11): #not my favorite, but gets the job done. 
-            self.play(attention_heads[i].animate.shift(6*RIGHT), run_time=1, rate_func=linear)
+            self.play(attention_heads[i].animate.shift(6*gx.RIGHT), run_time=1, rate_func=gx.linear)
 
         self.wait()
 
-        self.play(self.frame.animate.reorient(36, 83, 0, (0.8, 0.62, -0.11), 2.65), run_time=6)
+        self.play(self.animate_view(36, 83, 0, (0.8, 0.62, -0.11), 2.65), run_time=6)
         self.wait()
 
         #P20 -> pull out output matrices
@@ -361,11 +283,11 @@ class poster_1(InteractiveScene):
         #     o.scale(0.2).move_to([3+i*0.2, 0, 0])
 
         self.play(*[o.animate.scale(0.2).move_to([3+i*0.2, 0, 0]) for i,o in enumerate(out_matrices)]+
-                  [self.frame.animate.reorient(-1, 86, 0, (4.32, 0.84, -0.21), 3.29)], run_time=3)
+                  [self.animate_view(-1, 86, 0, (4.32, 0.84, -0.21), 3.29)], run_time=3)
         self.wait()
 
-        p20_overlay=SVGMobject('/Users/stephen/welch_labs/deepseek/graphics/to_manim/p20_svg_overay_1.svg')[1:]
-        p20_overlay.rotate([PI/2,0,0], axis=RIGHT)
+        p20_overlay=gx.SVGMobject(welch_path('deepseek/graphics/to_manim/p20_svg_overay_1.svg'))[1:]
+        p20_overlay.rotate(gx.PI/2, axis=gx.RIGHT)
         p20_overlay.scale(1.3)
         p20_overlay.move_to([4.62,0,-0.26])
         self.add(p20_overlay)
@@ -389,7 +311,7 @@ class poster_1(InteractiveScene):
 
 
         # self.play(attention_heads[i].animate.shift(6*RIGHT))
-        # self.frame.reorient(-27, 74, 0, (-0.29, 0.14, -0.1), 2.56)
+        # self.set_view(-27, 74, 0, (-0.29, 0.14, -0.1), 2.56)
 
 
         # attention_heads.set_opacity(0.0) #Ok ordering seems to survive this simple test
@@ -427,7 +349,7 @@ class poster_1(InteractiveScene):
 
         # attention_heads.shift(0.25*RIGHT)
 
-        # self.frame.reorient(-27, 74, 0, (-0.29, 0.14, -0.1), 2.56)
+        # self.set_view(-27, 74, 0, (-0.29, 0.14, -0.1), 2.56)
 
         # # animations = [attention_heads[i].animate.shift(6*RIGHT) for i in range(11)]
         # animations = [FadeIn(attention_heads[i]) for i in range(11)]
@@ -453,24 +375,23 @@ class poster_1(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-class poster_1_b(InteractiveScene):
+class poster_1_b(WelchScene):
     '''BUnch of extra stuff in here but meh'''
     def construct(self):
 
-        img_path=Path('/Users/stephen/welch_labs/deepseek/hackin/linux_workdir/deepseek')
-        svg_path=Path('/Users/stephen/welch_labs/deepseek/graphics/to_manim')
+        img_path=Path(welch_path('deepseek/hackin/linux_workdir/deepseek'))
+        svg_path=Path(welch_path('deepseek/graphics/to_manim'))
 
-        attention_heads=Group()
+        attention_heads=gx.Group()
         spacing=0.25
         for i in range(12): 
             a=get_attention_head(svg_path=svg_path,svg_file='mha_2d_segments-',
                                         img_path=img_path/'gpt_2_attention_viz_4'/str(i))
             # a_select=Group(a[0], a[1][0], a[1][3:6], a[1][6:13], a[1][17])
             # a_select=Group(a[0], a[1][3:7], a[1][13], a[1][17])
-            a.rotate([PI/2,0,0], axis=RIGHT)
+            a.rotate(gx.PI/2, axis=gx.RIGHT)
             a.move_to([0.27, spacing*i,0])
             attention_heads.add(a)
 
@@ -495,45 +416,41 @@ class poster_1_b(InteractiveScene):
 
 
         ### --- Get poster fram here.  ---- ###
-        # self.frame.reorient(51, 74, 0, (0.05, 0.82, -0.29), 3.44)
-        # self.frame.reorient(-38, 59, 0, (0.12, 0.93, -0.18), 2.93)
+        # self.set_view(51, 74, 0, (0.05, 0.82, -0.29), 3.44)
+        # self.set_view(-38, 59, 0, (0.12, 0.93, -0.18), 2.93)
 
         #Book bro
-        self.frame.reorient(32, 84, 0, (0.57, 1.22, -0.24), 3.40)
+        self.set_view(32, 84, 0, (0.57, 1.22, -0.24), 3.40)
         self.wait()
 
-        self.frame.reorient(33, 85, 0, (0.71, 1.32, -0.14), 2.88)
+        self.set_view(33, 85, 0, (0.71, 1.32, -0.14), 2.88)
         self.wait()
 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-
-
-
-class book_3d_1b(InteractiveScene):
+class book_3d_1b(WelchScene):
     '''BUnch of extra stuff in here but meh'''
     def construct(self):
 
-        img_path=Path('/Users/stephen/welch_labs/deepseek/hackin/linux_workdir/deepseek')
-        svg_path=Path('/Users/stephen/welch_labs/deepseek/graphics/to_manim')
+        img_path=Path(welch_path('deepseek/hackin/linux_workdir/deepseek'))
+        svg_path=Path(welch_path('deepseek/graphics/to_manim'))
 
         i=0
         a=get_attention_head(svg_path=svg_path,svg_file='mha_2d_segments-',
                                     img_path=img_path/'gpt_2_attention_viz_4'/str(i))
 
-        x=get_input_x(svg_path='/Users/stephen/welch_labs/deepseek/graphics/to_manim',
+        x=get_input_x(svg_path=welch_path('deepseek/graphics/to_manim'),
            svg_file='mha_2d_grouping_test.svg',
-           img_path='/Users/stephen/welch_labs/deepseek/hackin/linux_workdir/deepseek/flowchart_graphics')
+           img_path=welch_path('deepseek/hackin/linux_workdir/deepseek/flowchart_graphics'))
 
-        self.frame.reorient(0, 0, 0, (-1.39, -0.06, -0.0), 1.16)
+        self.set_view(0, 0, 0, (-1.39, -0.06, -0.0), 1.16)
         self.wait()
         # self.add(x[0][0])
         # self.add(x[0][1])
 
-        self.play(FadeIn(x[0]))
+        self.play(gx.FadeIn(x[0]))
         self.add(a[1][1]) #xlabels
         self.add(a[1][2]) #xlabels
         self.wait()
@@ -543,7 +460,7 @@ class book_3d_1b(InteractiveScene):
         self.remove(a[1][16])
         self.wait()
 
-        self.play(FadeIn(a[1][6]), self.frame.animate.reorient(0, 0, 0, (-0.65, 0.02, 0.0), 1.36), run_time=2)
+        self.play(gx.FadeIn(a[1][6]), self.animate_view(0, 0, 0, (-0.65, 0.02, 0.0), 1.36), run_time=2)
         self.wait()
 
         # self.play(FadeIn(a[1][3]), FadeIn(a[1][4]), FadeIn(a[0][0]), FadeIn(a[0][1]))
@@ -557,19 +474,19 @@ class book_3d_1b(InteractiveScene):
         #Ok hack on row by row version here then break into subfuncrion
 
 
-        separate_row_im_path='/Users/stephen/welch_labs/deepseek/hackin/linux_workdir/deepseek/gpt_2_attention_viz_4'
-        q_rows=Group()
+        separate_row_im_path=welch_path('deepseek/hackin/linux_workdir/deepseek/gpt_2_attention_viz_4')
+        q_rows=gx.Group()
         for row_id in range(9):
-            q=ImageMobject(separate_row_im_path+'/query_row_'+str(row_id)+'.png')
+            q=image_at_height(separate_row_im_path+'/query_row_'+str(row_id)+'.png')
             q.scale([0.0127, 0.024, 1]) 
             q.move_to([-0.2,0.492-0.028*row_id,0]) 
             q_rows.add(q)
         # self.add(q_rows)
         # self.remove(q_rows)
 
-        k_rows=Group()
+        k_rows=gx.Group()
         for row_id in range(9):
-            k=ImageMobject(separate_row_im_path+'/key_row_'+str(row_id)+'.png')
+            k=image_at_height(separate_row_im_path+'/key_row_'+str(row_id)+'.png')
             k.scale([0.0127, 0.024, 1]) 
             k.move_to([-0.2,0.05-0.028*row_id,0]) 
             k_rows.add(k)
@@ -577,17 +494,17 @@ class book_3d_1b(InteractiveScene):
         # self.remove(k_rows)
 
         self.wait()
-        self.play(FadeIn(a[1][3]), FadeIn(a[1][4]), FadeIn(k_rows), FadeIn(q_rows)) #Queries and Keys 
+        self.play(gx.FadeIn(a[1][3]), gx.FadeIn(a[1][4]), gx.FadeIn(k_rows), gx.FadeIn(q_rows)) #Queries and Keys
         self.wait()
 
         #Pan over, create space for captions, while expanding all rows
-        self.play(*[q_rows[row_id].animate.shift(0.01*(8-row_id)*UP) for row_id in range(9)]+
-                   [k_rows[row_id].animate.shift(0.01*(8-row_id)*UP) for row_id in range(9)]+
-                   [self.frame.animate.reorient(0, 0, 0, (-0.23, 0.18, 0.0), 1.20)], lag_ratio=0.2, run_time=3)
+        self.play(*[q_rows[row_id].animate.shift(0.01*(8-row_id)*gx.UP) for row_id in range(9)]+
+                   [k_rows[row_id].animate.shift(0.01*(8-row_id)*gx.UP) for row_id in range(9)]+
+                   [self.animate_view(0, 0, 0, (-0.23, 0.18, 0.0), 1.20)], lag_ratio=0.2, run_time=3)
 
         self.wait()
 
-        self.play(FadeOut(x[0]), FadeOut(a[1][1]), FadeOut(a[1][2]), FadeOut(a[1][6]))
+        self.play(gx.FadeOut(x[0]), gx.FadeOut(a[1][1]), gx.FadeOut(a[1][2]), gx.FadeOut(a[1][6]))
         a[1][18].scale(0.595)
         a[1][18].move_to([-0.75,0.2,0])
         self.add(a[1][18]) #Add american flag text
@@ -601,12 +518,12 @@ class book_3d_1b(InteractiveScene):
         self.wait()
 
         #Multistep option
-        self.play(FadeOut(a[1][18][:11]), FadeOut(a[1][18][14:32]), FadeOut(a[1][18][40:]), FadeOut(a[1][19]), 
-                  FadeOut(a[1][3]), FadeOut(a[1][4]), FadeOut(q_rows[:2]), FadeOut(q_rows[3:]), FadeOut(k_rows[0]), 
-                  FadeOut(k_rows[2:]), run_time=2)
+        self.play(gx.FadeOut(a[1][18][:11]), gx.FadeOut(a[1][18][14:32]), gx.FadeOut(a[1][18][40:]), gx.FadeOut(a[1][19]),
+                  gx.FadeOut(a[1][3]), gx.FadeOut(a[1][4]), gx.FadeOut(q_rows[:2]), gx.FadeOut(q_rows[3:]), gx.FadeOut(k_rows[0]),
+                  gx.FadeOut(k_rows[2:]), run_time=2)
         # self.wait()
-        self.play(q_rows[2].animate.shift(0.12*DOWN), k_rows[1].animate.shift(0.12*UP),
-                  a[1][18][11:14].animate.shift(0.12*DOWN), a[1][18][32:40].animate.shift(0.12*UP))
+        self.play(q_rows[2].animate.shift(0.12*gx.DOWN), k_rows[1].animate.shift(0.12*gx.UP),
+                  a[1][18][11:14].animate.shift(0.12*gx.DOWN), a[1][18][32:40].animate.shift(0.12*gx.UP))
         self.wait()
 
         #All at once option - feels like to much
@@ -616,13 +533,13 @@ class book_3d_1b(InteractiveScene):
         # self.wait()
 
         #Dot Product Dot
-        d=Dot(stroke_color=None, fill_color=WHITE)
+        d=gx.Dot(stroke_color=None, fill_color=gx.WHITE)
         d.scale(0.15)
         d.move_to([-0.2, 0.295, 0])
         # d.set_color(WHITE)
         self.add(d)
 
-        t=Tex("=524.2").set_color(WHITE)
+        t=math_tex("=524.2").set_color(gx.WHITE)
         t.scale(0.1)
         t.move_to([-0.2, 0.12, 0])
         self.add(t)
@@ -644,8 +561,8 @@ class book_3d_1b(InteractiveScene):
         #Ok try to smoothly move back to full matrix
 
         # self.wait()
-        self.play(q_rows[2].animate.shift(0.059*UP), k_rows[1].animate.shift(0.188*DOWN),
-                  FadeOut(a[1][18][11:14]), FadeOut(a[1][18][32:40]))
+        self.play(q_rows[2].animate.shift(0.059*gx.UP), k_rows[1].animate.shift(0.188*gx.DOWN),
+                  gx.FadeOut(a[1][18][11:14]), gx.FadeOut(a[1][18][32:40]))
         
         # self.add(a[0][0].set_opacity(0.5)) #Query image
         # q_rows[2].shift(0.059*UP)
@@ -653,7 +570,7 @@ class book_3d_1b(InteractiveScene):
         # self.add(a[0][1].set_opacity(0.5)) #Key image
         # k_rows[1].shift(0.188*DOWN)
 
-        self.play(FadeIn(a[0][0]), FadeIn(a[0][1]))
+        self.play(gx.FadeIn(a[0][0]), gx.FadeIn(a[0][1]))
         self.remove(q_rows[2], k_rows[1])
         self.add(a[1][3][:10], a[1][3][-1:]) #Queryt labels
         self.add(a[1][4][:4], a[1][4][-4:]) #Key labels
@@ -663,37 +580,37 @@ class book_3d_1b(InteractiveScene):
         # self.add(a[0][3])
 
         kt=a[0][1].copy()
-        self.play(kt.animate.scale(np.array([0.0215,0.035, 1])/np.array([0.0415, 0.08, 1])).rotate([0, 0, -PI/2]).rotate(PI,UP).move_to([0.405,0.305,0]), run_time=2)  
+        self.play(kt.animate.scale(np.array([0.0215,0.035, 1])/np.array([0.0415, 0.08, 1])).rotate(-gx.PI/2).rotate(gx.PI,gx.UP).move_to([0.405,0.305,0]), run_time=2)
         self.add(a[1][7])
         self.wait()
 
 
-        self.play(FadeIn(a[1][8]), FadeIn(a[0][4]), self.frame.animate.reorient(0, 0, 0, (0.16, 0.17, 0.0), 1.20), run_time=1.2)
+        self.play(gx.FadeIn(a[1][8]), gx.FadeIn(a[0][4]), self.animate_view(0, 0, 0, (0.16, 0.17, 0.0), 1.20), run_time=1.2)
         self.wait()
 
         self.add(a[1][9])
         self.wait()
-        self.play(FadeIn(a[0][5]), self.frame.animate.reorient(0, 0, 0, (0.46, 0.18, 0.0), 1.43))
+        self.play(gx.FadeIn(a[0][5]), self.animate_view(0, 0, 0, (0.46, 0.18, 0.0), 1.43))
         self.wait()
         self.add(a[1][10])
         self.wait()
 
         #P18 - move then add option
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0.0), 2.00))
+        self.play(self.animate_view(0, 0, 0, (0, 0, 0.0), 2.00))
         self.remove(a[1][3][:10], a[1][3][-1:]) #Remove partial labels, add back in full. 
         self.remove(a[1][4][:4], a[1][4][-4:])
         self.add(a[1][3], a[1][4]) #Key query value labels
         self.add(x[0], a[1][1], a[1][2], a[1][6]) #X inputs and intiial arrows
         self.wait()
 
-        self.play(FadeIn(a[1][17]), FadeIn(a[1][5]), FadeIn(a[0][2])) #Value Stuff
+        self.play(gx.FadeIn(a[1][17]), gx.FadeIn(a[1][5]), gx.FadeIn(a[0][2])) #Value Stuff
         self.wait()
 
         #P19
         self.add(a[1][11])
         self.wait()
 
-        self.play(FadeIn(a[0][6]), FadeIn(a[1][12]))
+        self.play(gx.FadeIn(a[0][6]), gx.FadeIn(a[1][12]))
         self.wait()
 
         #Attention head border 
@@ -709,35 +626,35 @@ class book_3d_1b(InteractiveScene):
         #Quick hacky test - a little weird but might work?
         #Oh man can my patters slot in from the left one after eachother as the camera moves alittle?
         #That would be dope. 
-        head_0_3d_images=Group(a[0], kt) #a[0][:2], a[3:], kt)
+        head_0_3d_images=gx.Group(a[0], kt) #a[0][:2], a[3:], kt)
         # head_0_3d_vectors=Group(a[1][0], a[1][3:6], a[1][6:13], a[1][17])
-        head_0_3d_vectors=Group(a[1][3:6], a[1][6:13], a[1][17])
-        head_0_3d=Group(head_0_3d_images, head_0_3d_vectors)
+        head_0_3d_vectors=gx.Group(a[1][3:6], a[1][6:13], a[1][17])
+        head_0_3d=gx.Group(head_0_3d_images, head_0_3d_vectors)
 
         # Ok here's my alternative solution - there should not appear to be a camera jump in theory, we'll see - 
         # If there is a little one, by be able to fix in Premier
         self.remove(x, a[1][1], a[1][2])
-        head_0_3d.rotate([PI/2,0,0], axis=RIGHT)
-        self.frame.reorient(0, 90, 0, (0, 0, 0.0), 2.0)
+        head_0_3d.rotate(gx.PI/2, axis=gx.RIGHT)
+        self.set_view(0, 90, 0, (0, 0, 0.0), 2.0)
         self.wait()
 
         # self.play(head_0_3d.animate.rotate([PI/2,0,0], axis=RIGHT), 
-        #          self.frame.animate.reorient(0, 90, 0, (0, 0, 0.0), 2.0), run_time=2)
+        #          self.animate_view(0, 90, 0, (0, 0, 0.0), 2.0), run_time=2)
 
         #Ok now the cool stuff, can I slot in new heads from the left while panning to left?!
-        attention_heads=Group()
+        attention_heads=gx.Group()
         spacing=0.25
         for i in range(1, 12): 
             a=get_attention_head(svg_path=svg_path,svg_file='mha_2d_segments-',
                                         img_path=img_path/'gpt_2_attention_viz_4'/str(i))
             # a_select=Group(a[0], a[1][0], a[1][3:6], a[1][6:13], a[1][17])
-            a_select=Group(a[0], a[1][3:7], a[1][13], a[1][17])
-            a_select.rotate([PI/2,0,0], axis=RIGHT)
+            a_select=gx.Group(a[0], a[1][3:7], a[1][13], a[1][17])
+            a_select.rotate(gx.PI/2, axis=gx.RIGHT)
             a_select.move_to([0.27, spacing*i,0])
             attention_heads.add(a_select)
 
         # self.wait()
-        # self.frame.reorient(-27, 74, 0, (-0.29, 0.14, -0.1), 2.56)
+        # self.set_view(-27, 74, 0, (-0.29, 0.14, -0.1), 2.56)
 
         #What if I add heads and then set all their opacities to zero? Is ordering preserved then?
         for i in range(10, -1, -1): #-1):
@@ -746,43 +663,40 @@ class book_3d_1b(InteractiveScene):
         self.add(head_0_3d)
 
         for i in range(10, -1, -1): 
-            attention_heads[i].shift(6*LEFT)
+            attention_heads[i].shift(6*gx.LEFT)
 
         self.wait()
-        # self.frame.reorient(-38, 72, 0, (-0.37, 0.29, 0.02), 2.56)
-        self.play(self.frame.animate.reorient(-38, 72, 0, (-0.37, 0.29, 0.02), 2.56), run_time=3)
+        # self.set_view(-38, 72, 0, (-0.37, 0.29, 0.02), 2.56)
+        self.play(self.animate_view(-38, 72, 0, (-0.37, 0.29, 0.02), 2.56), run_time=3)
 
 
         for i in range(11): #not my favorite, but gets the job done. 
-            self.play(attention_heads[i].animate.shift(6*RIGHT), run_time=1, rate_func=linear)
+            self.play(attention_heads[i].animate.shift(6*gx.RIGHT), run_time=1, rate_func=gx.linear)
 
         self.wait()
 
         ### --- Get poster fram here.  ---- ###
-        self.frame.reorient(51, 74, 0, (0.05, 0.82, -0.29), 3.44)
+        self.set_view(51, 74, 0, (0.05, 0.82, -0.29), 3.44)
 
 
 
-        # self.play(self.frame.animate.reorient(-48, 70, 0, (0.05, 0.82, -0.29), 3.44), run_time=10, rate_func=linear)
+        # self.play(self.animate_view(-48, 70, 0, (0.05, 0.82, -0.29), 3.44), run_time=10, rate_func=linear)
         self.wait()
 
         #Second book frame grab
         self.wait()
-        self.frame.reorient(-33, 69, 0, (0.26, 0.84, -0.18), 2.42)
+        self.set_view(-33, 69, 0, (0.26, 0.84, -0.18), 2.42)
         self.wait()
-        self.frame.reorient(-38, 66, 0, (0.28, 0.84, -0.15), 2.31)
+        self.set_view(-38, 66, 0, (0.28, 0.84, -0.15), 2.31)
         self.wait()
-        # self.frame.reorient(-38, 62, 0, (0.17, 0.82, -0.32), 2.69)
-        # self.frame.reorient(-38, 62, 0, (0.21, 0.8, -0.31), 2.31)
-        self.frame.reorient(-47, 62, 0, (0.06, 0.97, -0.28), 2.87)
+        # self.set_view(-38, 62, 0, (0.17, 0.82, -0.32), 2.69)
+        # self.set_view(-38, 62, 0, (0.21, 0.8, -0.31), 2.31)
+        self.set_view(-47, 62, 0, (0.06, 0.97, -0.28), 2.87)
         self.wait()
         
 
         self.wait(20)
-        self.embed()
-
-
-
+        # Scene authoring stops here in the interactive editor.
 
         # q1=ImageMobject(str(img_path/'q_1.png'))
         # q1.scale([0.0415, 0.08, 1]) 
@@ -818,7 +732,7 @@ class book_3d_1b(InteractiveScene):
         #                             svg_file='mha_2d_grouped_separate_lines.svg')
         # self.add(x)
 
-        # self.frame.reorient(0, 0, 0, (0.00, 0.00, 0.00), 2.80)
+        # self.set_view(0, 0, 0, (0.00, 0.00, 0.00), 2.80)
         # # self.wait()
 
 

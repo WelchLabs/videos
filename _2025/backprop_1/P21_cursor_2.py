@@ -1,4 +1,7 @@
-from manimlib import *
+import manimgx as m
+from welch_geometry import diagram_axes
+import sys
+from welch_scene import WelchScene
 sys.path.append('/Users/stephen/manim/videos/_2025/backprop_1')
 from backprop_data import xs1, losses1, all_probs_1
 
@@ -8,12 +11,12 @@ BLUE='#65c8d0'
 
 
 def get_prob_graph(axes):
-    curve = VMobject()
+    curve = m.VMobject()
     curve.set_points_smoothly(axes.c2p(xs1, all_probs_1)) #To Do: replace with scatter plot
     return curve
 
 def get_loss_graph(axes):
-    curve = VMobject()
+    curve = m.VMobject()
     curve.set_points_smoothly(axes.c2p(xs1, losses1)) #To Do: replace with scatter plot
     return curve
 
@@ -34,7 +37,7 @@ def create_axes_with_ranges(x_range, y_range):
     Axes
         A new Axes object with the specified ranges
     """
-    return Axes(
+    return diagram_axes(
         x_range=x_range,
         y_range=y_range,
         axis_config={
@@ -51,7 +54,7 @@ def create_axes_with_ranges(x_range, y_range):
     )
 
 
-class P21(InteractiveScene):
+class P21(WelchScene):
     def construct(self):
         # Initial axes setup
         initial_x_range = [-1, 4, 1.0]
@@ -62,24 +65,24 @@ class P21(InteractiveScene):
         target_y_range = [0.5, 1.0, 0.1]
         
         # Create a tracker for the animation
-        zoom_tracker = ValueTracker(0)
+        zoom_tracker = m.ValueTracker(0)
         
         # Create the axes with always_redraw to update during animation
-        axes = always_redraw(lambda: create_axes_with_ranges(
+        axes = m.always_redraw(lambda: create_axes_with_ranges(
             [
-                interpolate(initial_x_range[0], target_x_range[0], zoom_tracker.get_value()),
-                interpolate(initial_x_range[1], target_x_range[1], zoom_tracker.get_value()),
-                interpolate(initial_x_range[2], target_x_range[2], zoom_tracker.get_value())
+                m.interpolate(initial_x_range[0], target_x_range[0], zoom_tracker.get_value()),
+                m.interpolate(initial_x_range[1], target_x_range[1], zoom_tracker.get_value()),
+                m.interpolate(initial_x_range[2], target_x_range[2], zoom_tracker.get_value())
             ],
             [
-                interpolate(initial_y_range[0], target_y_range[0], zoom_tracker.get_value()),
-                interpolate(initial_y_range[1], target_y_range[1], zoom_tracker.get_value()),
-                interpolate(initial_y_range[2], target_y_range[2], zoom_tracker.get_value())
+                m.interpolate(initial_y_range[0], target_y_range[0], zoom_tracker.get_value()),
+                m.interpolate(initial_y_range[1], target_y_range[1], zoom_tracker.get_value()),
+                m.interpolate(initial_y_range[2], target_y_range[2], zoom_tracker.get_value())
             ]
         ))
         
         # Create the graph that will update with the axes
-        graph = always_redraw(lambda: get_prob_graph(axes))
+        graph = m.always_redraw(lambda: get_prob_graph(axes))
         
         # Add everything to the scene
         self.add(axes, graph)
@@ -89,7 +92,7 @@ class P21(InteractiveScene):
         self.play(
             zoom_tracker.animate.set_value(1),
             run_time=2,
-            rate_func=smooth
+            rate_func=m.smooth
         )
         
         self.wait()

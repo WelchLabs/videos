@@ -1,8 +1,13 @@
-from manimlib import *
+from welch_paths import welch_path
+import copy
+import numpy as np
+import os
+import manimgx as gx
+from welch_scene import WelchScene, image_at_height
 from tqdm import tqdm
 from pathlib import Path
 import matplotlib.pyplot as plt
-import colorsys
+from _2026.vla.patch_colors import boost_colors_hsv, patch_bright_average
 # import gc
 # import resource
 import shutil
@@ -21,8 +26,8 @@ CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 PINK='#FAD0E2'
 
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/graphics/to_manim/')
-hacking_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/hackin')
+svg_dir=Path(welch_path('vla/graphics/to_manim/'))
+hacking_dir=Path(welch_path('vla/hackin'))
 
 # Might need to run this to allow for opening enough files
 # before rendering:
@@ -32,42 +37,9 @@ SATURATION_BOOST=1.5 #1.3
 MIN_SATURATION=0.2 #0.1
 MIN_VALUE=0.5 #0.3
 
-def patch_bright_average(img, exponent=2.0):
-    patches = img.reshape(16, 14, 16, 14, 3)
-    chroma = patches.max(axis=-1, keepdims=True) - patches.min(axis=-1, keepdims=True)
-    weights = chroma**exponent / (chroma**exponent).sum(axis=(1,3), keepdims=True)
-    return (patches * weights).sum(axis=(1, 3))  # (16, 16, 3)
 
-def boost_colors_hsv(colors, saturation_boost=1.0, min_saturation=0.0, min_value=0.0):
-    """
-    Adjust colors in HSV space for better visibility in the barcode viz.
- 
-    Parameters
-    ----------
-    colors : ndarray, shape (N, 3)
-        RGB colors in [0, 1].
-    saturation_boost : float
-        Multiplier on S channel. 1.0 = no change, 1.5 = 50% more saturated.
-    min_saturation : float in [0, 1]
-        Floor for S channel. Prevents fully gray rows.
-    min_value : float in [0, 1]
-        Floor for V channel. Lifts dark/muddy colors so the hue reads clearly.
- 
-    Returns
-    -------
-    boosted : ndarray, shape (N, 3), dtype float32
-    """
-    colors = np.asarray(colors, dtype=np.float32)
-    out = np.empty_like(colors)
-    for i in range(len(colors)):
-        h, s, v = colorsys.rgb_to_hsv(*colors[i])
-        s = min(1.0, s * saturation_boost)
-        s = max(s, min_saturation)
-        v = max(v, min_value)
-        out[i] = colorsys.hsv_to_rgb(h, s, v)
-    return out
 
-class P61a(InteractiveScene):
+class P61a(WelchScene):
     def construct(self): 
 
         '''
@@ -78,15 +50,15 @@ class P61a(InteractiveScene):
         # ── Load SVGs (same as P31_49) ──
         svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(3.9)
             all_svgs.add(svg_image[1:])
 
         # ── Set frame to end-of-P52_60 state ──
-        self.frame.reorient(0, 0, 0, (4.04, -2.31, 0.0), 13.17)
+        self.set_view(0, 0, 0, (4.04, -2.31, 0.0), 13.17)
 
         # ── Constants ──
         FRAME_IDX = 160
@@ -106,15 +78,15 @@ class P61a(InteractiveScene):
             [-5.23, 0.175, 0],     # left wrist
             [-5.23, -2.22, 0],     # right wrist
         ]
-        pixel_squares = Group()
+        pixel_squares = gx.Group()
         for k, image_name in enumerate(['base_0_rgb', 'left_wrist_0_rgb', 'right_wrist_0_rgb']):
-            pixel_squares.add(Group())
+            pixel_squares.add(gx.Group())
             patch_dir = hacking_dir / f'p35/{FRAME_IDX}/{image_name}'
             for i in range(2, 14):
                 for j in range(grid_n):
-                    patch_mob = ImageMobject(str(patch_dir / f'patch_{i}_{j}.png'))
-                    patch_mob.set_height(patch_size)
-                    patch_mob.set_width(patch_size, stretch=True)
+                    patch_mob = image_at_height(str(patch_dir / f'patch_{i}_{j}.png'))
+                    patch_mob.scale_to_fit_height(patch_size)
+                    patch_mob.stretch_to_fit_width(patch_size)
                     x_pos = (j - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
                     y_pos = -(i - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
                     patch_mob.move_to([x_pos, y_pos, 0])
@@ -151,9 +123,8 @@ class P61a(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
 
-class P61b(InteractiveScene):
+class P61b(WelchScene):
     def construct(self): 
 
         '''
@@ -164,15 +135,15 @@ class P61b(InteractiveScene):
         # ── Load SVGs (same as P31_49) ──
         svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(3.9)
             all_svgs.add(svg_image[1:])
 
         # ── Set frame to end-of-P52_60 state ──
-        self.frame.reorient(0, 0, 0, (4.04, -2.31, 0.0), 13.17)
+        self.set_view(0, 0, 0, (4.04, -2.31, 0.0), 13.17)
 
         # ── Constants ──
         FRAME_IDX = 170
@@ -192,15 +163,15 @@ class P61b(InteractiveScene):
             [-5.23, 0.175, 0],     # left wrist
             [-5.23, -2.22, 0],     # right wrist
         ]
-        pixel_squares = Group()
+        pixel_squares = gx.Group()
         for k, image_name in enumerate(['base_0_rgb', 'left_wrist_0_rgb', 'right_wrist_0_rgb']):
-            pixel_squares.add(Group())
+            pixel_squares.add(gx.Group())
             patch_dir = hacking_dir / f'p35/{FRAME_IDX}/{image_name}'
             for i in range(2, 14):
                 for j in range(grid_n):
-                    patch_mob = ImageMobject(str(patch_dir / f'patch_{i}_{j}.png'))
-                    patch_mob.set_height(patch_size)
-                    patch_mob.set_width(patch_size, stretch=True)
+                    patch_mob = image_at_height(str(patch_dir / f'patch_{i}_{j}.png'))
+                    patch_mob.scale_to_fit_height(patch_size)
+                    patch_mob.stretch_to_fit_width(patch_size)
                     x_pos = (j - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
                     y_pos = -(i - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
                     patch_mob.move_to([x_pos, y_pos, 0])
@@ -237,10 +208,9 @@ class P61b(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
 
 
-class P52_61(InteractiveScene):
+class P52_61(WelchScene):
     def construct(self): 
         '''
         Clean break/pickup from P49.
@@ -249,15 +219,15 @@ class P52_61(InteractiveScene):
         # ── Load SVGs (same as P31_49) ──
         svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(3.9)
             all_svgs.add(svg_image[1:])
 
         # ── Set frame to end-of-P49 state ──
-        self.frame.reorient(0, 0, 0, (-2.03, -6.66, 0.0), 5.33)
+        self.set_view(0, 0, 0, (-2.03, -6.66, 0.0), 5.33)
 
         # ── Constants ──
         FRAME_IDX = 150
@@ -275,15 +245,15 @@ class P52_61(InteractiveScene):
             [-5.23, 0.175, 0],     # left wrist (0.375 - 0.2 shift)
             [-5.23, -2.22, 0],     # right wrist (-1.82 - 0.4 shift)
         ]
-        pixel_squares = Group()
+        pixel_squares = gx.Group()
         for k, image_name in enumerate(['base_0_rgb', 'left_wrist_0_rgb', 'right_wrist_0_rgb']):
-            pixel_squares.add(Group())
+            pixel_squares.add(gx.Group())
             patch_dir = hacking_dir / f'p35/{FRAME_IDX}/{image_name}'
             for i in range(2, 14):
                 for j in range(grid_n):
-                    patch_mob = ImageMobject(str(patch_dir / f'patch_{i}_{j}.png'))
-                    patch_mob.set_height(patch_size)
-                    patch_mob.set_width(patch_size, stretch=True)
+                    patch_mob = image_at_height(str(patch_dir / f'patch_{i}_{j}.png'))
+                    patch_mob.scale_to_fit_height(patch_size)
+                    patch_mob.stretch_to_fit_width(patch_size)
                     # Bake in gap expansion: offset * (1 + gap_factor)
                     x_pos = (j - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
                     y_pos = -(i - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
@@ -343,41 +313,41 @@ class P52_61(InteractiveScene):
         right_colors = patch_bright_average(right_im, exponent=2.0).reshape(-1, 3)
 
         def make_embedding_row(color_arr, patch_index, y_pos):
-            bc = rgb_to_color(boost_colors_hsv(
+            bc = gx.rgb_to_color(boost_colors_hsv(
                 color_arr[patch_index + 32].reshape(1, 3) / 255.,
                 saturation_boost=SATURATION_BOOST, min_saturation=MIN_SATURATION, min_value=MIN_VALUE).ravel())
-            r = Rectangle(width=1.1, height=0.03)
+            r = gx.Rectangle(width=1.1, height=0.03)
             r.set_fill(bc, opacity=1).set_stroke(width=0)
             r.move_to([-1.5, y_pos, 0])
             return r
 
         # Overhead embeddings
-        embedding_rows_1 = VGroup()
+        embedding_rows_1 = gx.VGroup()
         for i, pi in enumerate([0, 1, 2, 3, 4, 5, 6, 7, 8]):
             embedding_rows_1.add(make_embedding_row(overhead_colors, pi, 3.15 - i * vertical_spacing))
 
-        ellipsis_dots = VGroup(*[Dot(radius=0.025).set_color(CHILL_BROWN) for _ in range(3)])
-        ellipsis_dots.arrange(DOWN, buff=0.035)
-        ellipsis_dots.next_to(embedding_rows_1[-1], DOWN, buff=0.15)
+        ellipsis_dots = gx.VGroup(*[gx.Dot(radius=0.025).set_color(CHILL_BROWN) for _ in range(3)])
+        ellipsis_dots.arrange(gx.DOWN, buff=0.035)
+        ellipsis_dots.next_to(embedding_rows_1[-1], gx.DOWN, buff=0.15)
 
         # Left wrist embeddings
-        embedding_rows_2 = VGroup()
+        embedding_rows_2 = gx.VGroup()
         for i, pi in enumerate([82, 83, 84, 85, 86, 87, 88, 89, 90, 91]):
             embedding_rows_2.add(make_embedding_row(left_colors, pi, 1.0 - i * vertical_spacing))
 
-        ellipsis_dots_2 = VGroup(*[Dot(radius=0.025).set_color(CHILL_BROWN) for _ in range(3)])
-        ellipsis_dots_2.arrange(DOWN, buff=0.035)
-        ellipsis_dots_2.next_to(embedding_rows_2[-1], DOWN, buff=0.1)
+        ellipsis_dots_2 = gx.VGroup(*[gx.Dot(radius=0.025).set_color(CHILL_BROWN) for _ in range(3)])
+        ellipsis_dots_2.arrange(gx.DOWN, buff=0.035)
+        ellipsis_dots_2.next_to(embedding_rows_2[-1], gx.DOWN, buff=0.1)
 
         # Right wrist embeddings
-        embedding_rows_3 = VGroup()
+        embedding_rows_3 = gx.VGroup()
         for i, pi in enumerate([186, 186, 187, 188, 189, 190, 191]):
             embedding_rows_3.add(make_embedding_row(right_colors, pi, -1.3 - i * vertical_spacing))
 
         # Text token embeddings (blue)
-        embedding_rows_4 = VGroup()
+        embedding_rows_4 = gx.VGroup()
         for i in range(4):
-            l = Line(LEFT * 0.55, RIGHT * 0.55)
+            l = gx.Line(gx.LEFT * 0.55, gx.RIGHT * 0.55)
             l.set_stroke(BLUE, width=4)
             l.move_to([-1.5, -2.75 - i * vertical_spacing, 0])
             embedding_rows_4.add(l)
@@ -385,7 +355,7 @@ class P52_61(InteractiveScene):
         # ═══════════════════════════════════════════════════
         # 5. TOKENIZED PROMPT
         # ═══════════════════════════════════════════════════
-        tokenized_prompt = Text('Un  cap  the  pen', font="Myriad Pro", weight='bold', font_size=25)
+        tokenized_prompt = gx.Text('Un  cap  the  pen', font="Myriad Pro", weight='bold', font_size=25)
         tokenized_prompt.set_color(BLUE)
         tokenized_prompt.set_stroke(BLUE, width=0.1)
         # Position: started at [-5.5, -3.34], then shifted [0.2, -0.3]
@@ -395,15 +365,15 @@ class P52_61(InteractiveScene):
         # 6. GEMMA NETWORK
         # ═══════════════════════════════════════════════════
         # Apply the [0.2, 0, 0] shift to all gemma internals (incl hidden ones)
-        full_gemma = Group(all_svgs[8], all_svgs[9], all_svgs[10], 
+        full_gemma = gx.Group(all_svgs[8], all_svgs[9], all_svgs[10],
                            all_svgs[11], all_svgs[12], all_svgs[13])
         full_gemma.shift([0.2, 0, 0])
-        full_gemma_copy=Group(all_svgs[8].copy(), all_svgs[9].copy(), all_svgs[10].copy(), 
+        full_gemma_copy=gx.Group(all_svgs[8].copy(), all_svgs[9].copy(), all_svgs[10].copy(),
                            all_svgs[45], all_svgs[46], all_svgs[13].copy())
         all_svgs[26].shift([0.19, 0, 0])
 
         # Only these are visible at end of P49:
-        gemma = Group(all_svgs[8], all_svgs[9], all_svgs[10], all_svgs[13], all_svgs[26])
+        gemma = gx.Group(all_svgs[8], all_svgs[9], all_svgs[10], all_svgs[13], all_svgs[26])
 
         action_expert_full = full_gemma.copy()
         action_expert_full_copy = full_gemma_copy.copy()
@@ -415,10 +385,10 @@ class P52_61(InteractiveScene):
         for layer in range(18):
             all_attn_patterns.append([])
             for head in range(8):
-                im = ImageMobject(str(hacking_dir / f'p47/attn_pattern_{layer}_{head}.png'))
+                im = image_at_height(str(hacking_dir / f'p47/attn_pattern_{layer}_{head}.png'))
                 all_attn_patterns[-1].append(im)
 
-        attn_patterns_to_show = Group()
+        attn_patterns_to_show = gx.Group()
         for i in range(8):
             all_attn_patterns[0][i].scale(0.096).move_to([0.25, 1.5 - 0.358 * i, 0])
             attn_patterns_to_show.add(all_attn_patterns[0][i])
@@ -431,7 +401,7 @@ class P52_61(InteractiveScene):
             attn_patterns_to_show.add(all_attn_patterns[-1][i])
 
         # The single pattern that was shrunk into the layer-1/head-6 slot
-        attn_pattern = ImageMobject(str(hacking_dir / 'p44/attn_pattern_1.png'))
+        attn_pattern = image_at_height(str(hacking_dir / 'p44/attn_pattern_1.png'))
         attn_pattern.scale(1.3 * 0.41 * 0.18)  # cumulative relative scales
         attn_pattern.move_to([2.65, 1.5 - 0.358 * 6, 0])
 
@@ -444,22 +414,22 @@ class P52_61(InteractiveScene):
         all_svgs[30].move_to([-1.53, -6.7, 0])
         all_svgs[31].move_to([-4.25, -6.765, 0])
 
-        arm_img = ImageMobject(str(hacking_dir / 'arm_1.png'))
+        arm_img = image_at_height(str(hacking_dir / 'arm_1.png'))
         arm_img.scale(0.52).move_to([-4.6, -5.97, 0])
-        arm_img_flipped = ImageMobject(str(hacking_dir / 'arm_1_flipped.png'))
+        arm_img_flipped = image_at_height(str(hacking_dir / 'arm_1_flipped.png'))
         arm_img_flipped.scale(0.52).move_to([-5.78, -5.97, 0])
 
         # Action expert embedding rows (red/pink)
-        embedding_rows_action_expert = VGroup()
+        embedding_rows_action_expert = gx.VGroup()
         for i in range(20):
             if i == 9:
-                dots = VGroup(*[Dot(radius=0.02).set_color(CHILL_BROWN) for _ in range(3)])
-                dots.arrange(DOWN, buff=0.03)
-                dots.next_to(embedding_rows_action_expert[-1], DOWN, buff=0.09)
+                dots = gx.VGroup(*[gx.Dot(radius=0.02).set_color(CHILL_BROWN) for _ in range(3)])
+                dots.arrange(gx.DOWN, buff=0.03)
+                dots.next_to(embedding_rows_action_expert[-1], gx.DOWN, buff=0.09)
                 embedding_rows_action_expert.add(dots)
                 continue
-            r = Rectangle(width=1.1, height=0.03)
-            r.set_fill(RED if i == 0 else PINK, opacity=1)
+            r = gx.Rectangle(width=1.1, height=0.03)
+            r.set_fill(gx.RED if i == 0 else PINK, opacity=1)
             r.set_stroke(width=0)
             r.move_to([-1.5, -4.7 - i * vertical_spacing, 0])
             embedding_rows_action_expert.add(r)
@@ -499,13 +469,13 @@ class P52_61(InteractiveScene):
         # P53
 
         # Ok let me load up the action images.
-        diffusion_images=Group()
+        diffusion_images=gx.Group()
         for i in range(11):
-            im=ImageMobject(str(hacking_dir/('p51b/'+str(i).zfill(2)+'.png')))
+            im=image_at_height(str(hacking_dir/('p51b/'+str(i).zfill(2)+'.png')))
             diffusion_images.add(im)
 
 
-        action_expert_box = RoundedRectangle(
+        action_expert_box = gx.RoundedRectangle(
             width=1.9,
             height=1.5,
             corner_radius=0.1,
@@ -521,12 +491,12 @@ class P52_61(InteractiveScene):
 
         # self.add(manual_action_expert_box)
 
-        action_expert_label=Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=22)
+        action_expert_label=gx.Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=22)
         action_expert_label.set_color(CHILL_BROWN)
         action_expert_label.move_to(manual_action_expert_box)
         action_expert_label.shift([0, -0.05, 0])
 
-        action_expert_box_group=Group(manual_action_expert_box, action_expert_label)
+        action_expert_box_group=gx.Group(manual_action_expert_box, action_expert_label)
 
 
         action_expert_box_group.move_to([0.57, -6.45, 0])
@@ -561,12 +531,12 @@ class P52_61(InteractiveScene):
         self.add(diffusion_images[0])
 
         self.add(lil_arrow_2, lil_arrow_2b)
-        self.frame.reorient(0, 0, 0, (-0.88, -7.24, 0.0), 6.82)
+        self.set_view(0, 0, 0, (-0.88, -7.24, 0.0), 6.82)
 
         self.wait()
 
-        self.play(FadeIn(diffusion_images[1]),
-                  FadeIn(all_svgs[35]), 
+        self.play(gx.FadeIn(diffusion_images[1]),
+                  gx.FadeIn(all_svgs[35]),
                   run_time=3)
 
         self.wait()
@@ -578,7 +548,7 @@ class P52_61(InteractiveScene):
         diffusion_images[1].set_opacity(0.5)
 
         diffusion_images[2].move_to([3.53, -6.5, 0])
-        self.play(FadeIn(diffusion_images[2]), run_time=2)
+        self.play(gx.FadeIn(diffusion_images[2]), run_time=2)
 
         self.play(diffusion_images[2].animate.move_to(diffusion_images[0]),
                   run_time=4)
@@ -586,9 +556,9 @@ class P52_61(InteractiveScene):
         self.remove(diffusion_images[2]); self.add(diffusion_images[2])
 
         diffusion_images[3].move_to([3.53, -6.5, 0])
-        self.play(FadeIn(diffusion_images[3]), run_time=2)
+        self.play(gx.FadeIn(diffusion_images[3]), run_time=2)
 
-        tmp_diffusion_images=Group()
+        tmp_diffusion_images=gx.Group()
         for i in range(3, 10):
             tmp_1=diffusion_images[i].copy()
             tmp_1.move_to([-5.18, -8.0, 0])
@@ -612,7 +582,7 @@ class P52_61(InteractiveScene):
 
         # self.add(action_expert_group_1[4])
 
-        action_expert_group_1=Group(all_svgs[27], all_svgs[28], all_svgs[29], all_svgs[30], #all_svgs[31],
+        action_expert_group_1=gx.Group(all_svgs[27], all_svgs[28], all_svgs[29], all_svgs[30], #all_svgs[31],
                                     # all_svgs[32], 
                                     all_svgs[33], all_svgs[34], #all_svgs[35],
                                     arm_img, arm_img_flipped, 
@@ -624,7 +594,7 @@ class P52_61(InteractiveScene):
         
 
         # self.add(action_expert_group_1)
-        gemma_group=Group(gemma, attn_patterns_to_show, attn_pattern)
+        gemma_group=gx.Group(gemma, attn_patterns_to_show, attn_pattern)
         gemma_group.scale(1.5)
         gemma_group.move_to([5.1, 0.6, 0])
 
@@ -641,7 +611,7 @@ class P52_61(InteractiveScene):
         # action_expert_full.add(all_svgs[36])
         action_expert_full.scale(1.5)
         action_expert_full.move_to([5.1, -5.4, 0])
-        action_expert_full_2=Group(*[action_expert_full[i] for i in [1, 2, 3, 4]])
+        action_expert_full_2=gx.Group(*[action_expert_full[i] for i in [1, 2, 3, 4]])
 
         action_expert_full_copy[3].shift([0.2, 0, 0])
         action_expert_full_copy[4].shift([0.2, 0, 0])
@@ -653,7 +623,7 @@ class P52_61(InteractiveScene):
         all_svgs[36].move_to([5.1, -5.5, 0])
 
         
-        final_actions_text=Text('ACTIONS', font="Myriad Pro", weight='bold', font_size=26)
+        final_actions_text=gx.Text('ACTIONS', font="Myriad Pro", weight='bold', font_size=26)
         final_actions_text.set_color(PINK)
         # final_actions_text.next_to(diffusion_images[10], DOWN, buff=0.2)
         final_actions_text.move_to([12.4, -5.8, 0])
@@ -681,10 +651,10 @@ class P52_61(InteractiveScene):
 
         self.wait()
         self.remove(all_svgs[35])
-        self.play(ReplacementTransform(action_expert_box_group[0], all_svgs[36][0]), 
+        self.play(gx.ReplacementTransform(action_expert_box_group[0], all_svgs[36][0]),
                   action_expert_label.animate.scale(1.25).set_color(YELLOW).move_to([4.95, -8.28, 0]),
                   action_expert_group_1.animate.shift([0, 0.5, 0]),  #Nudge  right next to LLM
-                  self.frame.animate.reorient(0, 0, 0, (4.34, -2.34, 0.0), 13.00),
+                  self.animate_view(0, 0, 0, (4.34, -2.34, 0.0), 13.00),
                   all_svgs[34][1].animate.move_to([10.8, -5.2, 0]), #Arrow from action expert to output
                   diffusion_images[10].animate.move_to([12.4, -5.2, 0]), #ouput difussion image
                   run_time=7)
@@ -692,19 +662,19 @@ class P52_61(InteractiveScene):
 
 
         self.wait()
-        self.play(Write(action_expert_full_2[0]), 
-                  Write(action_expert_full_2[1]),
-                  Write(action_expert_full_2[2]),
-                  Write(action_expert_full_2[3]),
+        self.play(gx.Write(action_expert_full_2[0]),
+                  gx.Write(action_expert_full_2[1]),
+                  gx.Write(action_expert_full_2[2]),
+                  gx.Write(action_expert_full_2[3]),
                   run_time=6
                   )
 
         # Ok we're into p58 now
         # I think a zoom into action expert?
         # might cut this in the edit, but probably not a terrible option to have
-        self.play(self.frame.animate.reorient(0, 0, 0, (5.13, -5.51, 0.0), 6.41), run_time=6)
+        self.play(self.animate_view(0, 0, 0, (5.13, -5.51, 0.0), 6.41), run_time=6)
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (4.34, -2.34, 0.0), 13.00), run_time=6)
+        self.play(self.animate_view(0, 0, 0, (4.34, -2.34, 0.0), 13.00), run_time=6)
         self.wait()
 
         # Ok so now I need to zoom into a head on the LLM, like we did before in P31_49
@@ -732,49 +702,49 @@ class P52_61(InteractiveScene):
         # Should be able to follow a pretty similar approach!
         # self.play(ReplacementTransform(all_svgs[12][0], all_svgs[14][-1]),
         #           h6_label.animate.scale(1.5).move_to([6.4, -3.4, 0]),
-        #           self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8),
+        #           self.animate_view(0, 0, 0, (0, 0, 0), 8),
         #           run_time=5)
 
 
-        queries=Group(); keys=Group(); values=Group(); 
-        attn_dots=VGroup()
+        queries=gx.Group(); keys=gx.Group(); values=gx.Group();
+        attn_dots=gx.VGroup()
         q_spacing=0.135
         for i in range(11):
-            q=ImageMobject(str(hacking_dir/('p40_1/queries_'+ str(i).zfill(2) +'.png')))
+            q=image_at_height(str(hacking_dir/('p40_1/queries_'+ str(i).zfill(2) +'.png')))
             q.scale(0.022)
             q.move_to([3.5, 2.8-i*q_spacing, 0])
             queries.add(q)
             if i==1 or i==6:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(q)
                 attn_dots.add(e)
 
         for i in range(11):
-            k=ImageMobject(str(hacking_dir/('p40_1/keys_'+ str(i).zfill(2) +'.png')))
+            k=image_at_height(str(hacking_dir/('p40_1/keys_'+ str(i).zfill(2) +'.png')))
             k.scale(0.022)
             k.move_to([3.5, 1.0-i*q_spacing, 0])
             keys.add(k)
             if i==1 or i==6:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(k)
                 attn_dots.add(e)
 
         for i in range(11):
-            v=ImageMobject(str(hacking_dir/('p40_1/values_'+ str(i).zfill(2) +'.png')))
+            v=image_at_height(str(hacking_dir/('p40_1/values_'+ str(i).zfill(2) +'.png')))
             v.scale(0.022)
             v.move_to([3.5, -0.8-i*q_spacing, 0])
             values.add(v)
             if i==1 or i==6:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(v)
                 attn_dots.add(e)
 
-        all_svgs[17].next_to(q, DOWN, buff=0.05)
-        all_svgs[18].next_to(k, DOWN, buff=0.05)
-        all_svgs[19].next_to(v, DOWN, buff=0.05)
+        all_svgs[17].next_to(q, gx.DOWN, buff=0.05)
+        all_svgs[18].next_to(k, gx.DOWN, buff=0.05)
+        all_svgs[19].next_to(v, gx.DOWN, buff=0.05)
         all_svgs[37].move_to([0.2, 0.3, 0])
 
         # self.add(all_svgs[37]) #WQ QK QV Arrows
@@ -789,11 +759,11 @@ class P52_61(InteractiveScene):
         # Gemma first I should just zoom in - it's just so little!
 
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (5.15, 0.71, 0.0), 7.01), 
+        self.play(self.animate_view(0, 0, 0, (5.15, 0.71, 0.0), 7.01),
                   run_time=4)
         self.remove(final_actions_text)
 
-        gemma_attn_head_group=Group(all_svgs[37], queries, all_svgs[17], keys, all_svgs[18], 
+        gemma_attn_head_group=gx.Group(all_svgs[37], queries, all_svgs[17], keys, all_svgs[18],
               values, all_svgs[19], attn_dots)
         
         gemma_attn_head_group.scale(0.08)
@@ -802,10 +772,10 @@ class P52_61(InteractiveScene):
 
 
         self.wait()
-        self.play(FadeOut(gemma_group), 
-                  FadeIn(gemma_attn_head_group), run_time=3)
+        self.play(gx.FadeOut(gemma_group),
+                  gx.FadeIn(gemma_attn_head_group), run_time=3)
 
-        self.play(ReplacementTransform(gemma_h6_border, all_svgs[14][-1]), 
+        self.play(gx.ReplacementTransform(gemma_h6_border, all_svgs[14][-1]),
                   gemma_attn_head_group.animate.scale(1.0/0.08).move_to([2.7000403 , 0.22694729, 0.]),
                   run_time=5)
 
@@ -814,7 +784,7 @@ class P52_61(InteractiveScene):
 
         #Pan down to action expert
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (5.26, -5.43, 0.0), 6.99),
+        self.play(self.animate_view(0, 0, 0, (5.26, -5.43, 0.0), 6.99),
                   run_time=4)
 
 
@@ -840,39 +810,39 @@ class P52_61(InteractiveScene):
         # but yeah let's go ahead and build out keys queries and values here
         # Then come back and figure out the transition!
 
-        queries_ae=Group(); keys_ae=Group(); values_ae=Group(); 
-        attn_dots_ae=VGroup()
+        queries_ae=gx.Group(); keys_ae=gx.Group(); values_ae=gx.Group();
+        attn_dots_ae=gx.VGroup()
         q_spacing=0.135
         for i in range(7):
-            q=ImageMobject(str(hacking_dir/('p58/queries_'+ str(i).zfill(2) +'.png')))
+            q=image_at_height(str(hacking_dir/('p58/queries_'+ str(i).zfill(2) +'.png')))
             q.scale(0.022)
             q.move_to([3.5, -i*q_spacing, 0])
             queries_ae.add(q)
             if i==3:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(q)
                 attn_dots_ae.add(e)
 
         for i in range(7):
-            k=ImageMobject(str(hacking_dir/('p58/keys_'+ str(i).zfill(2) +'.png')))
+            k=image_at_height(str(hacking_dir/('p58/keys_'+ str(i).zfill(2) +'.png')))
             k.scale(0.022)
             k.move_to([3.5, -i*q_spacing, 0])
             keys_ae.add(k)
             if i==3:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(k)
                 attn_dots_ae.add(e)
 
         for i in range(7):
-            v=ImageMobject(str(hacking_dir/('p58/values_'+ str(i).zfill(2) +'.png')))
+            v=image_at_height(str(hacking_dir/('p58/values_'+ str(i).zfill(2) +'.png')))
             v.scale(0.022)
             v.move_to([3.5, -i*q_spacing, 0])
             values_ae.add(v)
             if i==3:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(v)
                 attn_dots_ae.add(e)
 
@@ -896,7 +866,7 @@ class P52_61(InteractiveScene):
         # Ah yeah I want the little baby version of 
         # the attention head again. 
 
-        ae_attn_head_group=Group(action_expert_qkv_flow, 
+        ae_attn_head_group=gx.Group(action_expert_qkv_flow,
                                  # action_expert_attn_head_border,
                                  queries_ae, 
                                  keys_ae, 
@@ -919,33 +889,33 @@ class P52_61(InteractiveScene):
         ae_attn_head_group.move_to([4.3, -6.38, 0])
 
         self.wait()
-        self.play(FadeOut(action_expert_full_2), 
-                  FadeOut(action_expert_label),
-                  FadeOut(all_svgs[36][0]),
-                  FadeOut(all_svgs[34][1]),
-                  FadeOut(diffusion_images[10]),
-                  FadeIn(ae_attn_head_group),
+        self.play(gx.FadeOut(action_expert_full_2),
+                  gx.FadeOut(action_expert_label),
+                  gx.FadeOut(all_svgs[36][0]),
+                  gx.FadeOut(all_svgs[34][1]),
+                  gx.FadeOut(diffusion_images[10]),
+                  gx.FadeIn(ae_attn_head_group),
                   run_time=2)
 
         self.wait()
-        self.play(ReplacementTransform(action_expert_h6_border, action_expert_attn_head_border), 
+        self.play(gx.ReplacementTransform(action_expert_h6_border, action_expert_attn_head_border),
                   ae_attn_head_group.animate.scale(1/0.08).move_to([ 2.7 , -5.6124,  0.]),
-                  self.frame.animate.reorient(0, 0, 0, (-0.12, -5.59, 0.0), 7.51),
+                  self.animate_view(0, 0, 0, (-0.12, -5.59, 0.0), 7.51),
                   run_time=5)
 
         # Ok yeah I think i like this sliding to the side thing
         # Goes nicely with "different set of inputs"
 
         self.wait()
-        self.play(Write(all_svgs[42]), 
-                 self.frame.animate.reorient(0, 0, 0, (3.41, -5.6, 0.0), 5.31), 
+        self.play(gx.Write(all_svgs[42]),
+                 self.animate_view(0, 0, 0, (3.41, -5.6, 0.0), 5.31),
                  run_time=5)
 
         self.wait()
-        self.play(FadeOut(all_svgs[42]), run_time=2)
+        self.play(gx.FadeOut(all_svgs[42]), run_time=2)
 
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (-0.12, -5.59, 0.0), 7.51),
+        self.play(self.animate_view(0, 0, 0, (-0.12, -5.59, 0.0), 7.51),
                   # FadeOut(all_svgs[42]),
                   run_time=5)
 
@@ -954,7 +924,7 @@ class P52_61(InteractiveScene):
         # work!
         # Zoom out to setup P59!
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (4.14, -2.4, 0.0), 12.75), 
+        self.play(self.animate_view(0, 0, 0, (4.14, -2.4, 0.0), 12.75),
                  run_time=6)
 
 
@@ -962,8 +932,8 @@ class P52_61(InteractiveScene):
         # Ok so now we bring down a copy of the keys, and then values
         # A bit messy but we're really close!
         # Let me get everything positioned where we want here. 
-        keys_to_move=Group(keys.copy(), attn_dots[2].copy(), attn_dots[3].copy())
-        values_to_move=Group(values.copy(), attn_dots[4].copy(), attn_dots[5].copy())
+        keys_to_move=gx.Group(keys.copy(), attn_dots[2].copy(), attn_dots[3].copy())
+        values_to_move=gx.Group(values.copy(), attn_dots[4].copy(), attn_dots[5].copy())
 
         self.add(keys_to_move)
         self.add(values_to_move)
@@ -998,10 +968,10 @@ class P52_61(InteractiveScene):
                   WV_box.animate.move_to([0.416, -8.4, 0]),
                   action_expert_qkv_flow[31].animate.scale([1.0, 1.8, 1.0]).move_to([-0.2478, -6.83, 0]), 
                   action_expert_qkv_flow[32].animate.move_to([-0.134, -8.4, 0]),
-                  self.frame.animate.reorient(0, 0, 0, (5.87, -6.61, 0.0), 8.18),
+                  self.animate_view(0, 0, 0, (5.87, -6.61, 0.0), 8.18),
                   run_time=6)
 
-        self.play(keys_to_move.animate.next_to(keys_ae, DOWN, buff=0.05), 
+        self.play(keys_to_move.animate.next_to(keys_ae, gx.DOWN, buff=0.05),
                   values_to_move.animate.move_to([3.5, -9.62,  0.]), 
                   run_time=3)
         self.add(all_svgs[43], all_svgs[44])
@@ -1024,7 +994,7 @@ class P52_61(InteractiveScene):
         # Just for action expert first, then zoom out to full system. 
 
 
-        ae_attn_head_group_2=Group(action_expert_qkv_flow, 
+        ae_attn_head_group_2=gx.Group(action_expert_qkv_flow,
                                  # action_expert_attn_head_border,
                                  queries_ae, 
                                  keys_ae, 
@@ -1041,18 +1011,18 @@ class P52_61(InteractiveScene):
         # ae_attn_head_group_2.move_to([4.3, -6.5, 0])
 
         self.wait()
-        self.play(ReplacementTransform(action_expert_attn_head_border, action_expert_h6_border_copy), 
+        self.play(gx.ReplacementTransform(action_expert_attn_head_border, action_expert_h6_border_copy),
                   ae_attn_head_group_2.animate.scale(0.055).move_to([4.3, -6.47, 0]),
-                  self.frame.animate.reorient(0, 0, 0, (5.18, -5.78, 0.0), 6.52),
+                  self.animate_view(0, 0, 0, (5.18, -5.78, 0.0), 6.52),
                   run_time=6)
 
         # self.wait()
-        self.play(FadeIn(action_expert_full_2), 
-                  FadeIn(action_expert_label),
-                  FadeIn(all_svgs[36][0]),
-                  FadeIn(all_svgs[34][1]),
-                  FadeIn(diffusion_images[10]),
-                  FadeOut(ae_attn_head_group_2),
+        self.play(gx.FadeIn(action_expert_full_2),
+                  gx.FadeIn(action_expert_label),
+                  gx.FadeIn(all_svgs[36][0]),
+                  gx.FadeIn(all_svgs[34][1]),
+                  gx.FadeIn(diffusion_images[10]),
+                  gx.FadeOut(ae_attn_head_group_2),
                   run_time=3)
 
 
@@ -1071,12 +1041,12 @@ class P52_61(InteractiveScene):
         diffusion_images[-1].scale(1.3)
         diffusion_images[-1].move_to([12.8, -5.2,  0.])
         final_actions_text.scale(1.1)
-        final_actions_text.next_to(diffusion_images[-1], DOWN, buff=0.1)
+        final_actions_text.next_to(diffusion_images[-1], gx.DOWN, buff=0.1)
 
         self.add(final_actions_text)
 
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (4.04, -2.31, 0.0), 13.17),
+        self.play(self.animate_view(0, 0, 0, (4.04, -2.31, 0.0), 13.17),
                   run_time=8)
 
         #Ok getting close!
@@ -1086,12 +1056,12 @@ class P52_61(InteractiveScene):
         # another svg I guess...
 
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (4.27, 0.69, 0.0), 7.52), 
-                  FadeOut(all_svgs[46]), 
+        self.play(self.animate_view(0, 0, 0, (4.27, 0.69, 0.0), 7.52),
+                  gx.FadeOut(all_svgs[46]),
                   run_time=4)
 
         #Swap these while we're focused on Gemma
-        action_expert_full_copy_2=VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3, 4]])
+        action_expert_full_copy_2=gx.VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3, 4]])
         self.remove(action_expert_h6_border_copy) #, action_expert_full_2[3], action_expert_full_2[2])
         self.remove(action_expert_full)
         self.add(action_expert_full_copy_2) #[3], action_expert_full_copy[4])
@@ -1099,22 +1069,22 @@ class P52_61(InteractiveScene):
 
         # VGroup(*[action_expert_full_copy[i] for i in [0, 1, 2, 3, 5]]).set_opacity(0.6)
 
-        llm_attn_rows_tmp=VGroup() #Text ones
+        llm_attn_rows_tmp=gx.VGroup() #Text ones
         for i in range(8):
-            flat_line = Line(LEFT * 0.45, RIGHT * 0.45)
+            flat_line = gx.Line(gx.LEFT * 0.45, gx.RIGHT * 0.45)
             flat_line.set_stroke(GREEN, width=3)
             llm_attn_rows_tmp.add(flat_line)
 
-        llm_attn_rows_1=VGroup(llm_attn_rows_tmp, llm_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy())
+        llm_attn_rows_1=gx.VGroup(llm_attn_rows_tmp, llm_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy())
         
-        llm_attn_rows_1[0].arrange(DOWN, buff=0.53) 
+        llm_attn_rows_1[0].arrange(gx.DOWN, buff=0.53)
         llm_attn_rows_1[0].move_to([0.7, 0.98, 0])
 
-        llm_attn_rows_1[1].arrange(DOWN, buff=0.53)
-        llm_attn_rows_1[1].set_color(ORANGE) 
+        llm_attn_rows_1[1].arrange(gx.DOWN, buff=0.53)
+        llm_attn_rows_1[1].set_color(gx.ORANGE)
         llm_attn_rows_1[1].move_to([0.7, 0.86, 0])
 
-        llm_attn_rows_1[2].arrange(DOWN, buff=0.53) 
+        llm_attn_rows_1[2].arrange(gx.DOWN, buff=0.53)
         llm_attn_rows_1[2].set_color(BLUE) 
         llm_attn_rows_1[2].move_to([0.7, 0.74, 0])
 
@@ -1126,31 +1096,31 @@ class P52_61(InteractiveScene):
 
         # Ok i think we make like the full 5 rows down here 
         # And then Replacement Transform
-        ae_attn_rows_tmp=VGroup() #Text ones
+        ae_attn_rows_tmp=gx.VGroup() #Text ones
         for i in range(8):
-            flat_line = Line(LEFT * 0.45, RIGHT * 0.45)
-            flat_line.set_stroke(RED, width=3)
+            flat_line = gx.Line(gx.LEFT * 0.45, gx.RIGHT * 0.45)
+            flat_line.set_stroke(gx.RED, width=3)
             ae_attn_rows_tmp.add(flat_line)
 
-        ae_attn_rows_1=VGroup(ae_attn_rows_tmp, ae_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy(), 
+        ae_attn_rows_1=gx.VGroup(ae_attn_rows_tmp, ae_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy(),
                               ae_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy())
         
-        ae_attn_rows_1[0].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[0].arrange(gx.DOWN, buff=0.53)
         ae_attn_rows_1[0].move_to([0.7, -4.98, 0])
 
-        ae_attn_rows_1[1].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[1].arrange(gx.DOWN, buff=0.53)
         ae_attn_rows_1[3].set_color(PINK) 
         ae_attn_rows_1[1].move_to([0.7, -5.06, 0])
 
-        ae_attn_rows_1[2].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[2].arrange(gx.DOWN, buff=0.53)
         ae_attn_rows_1[3].set_color(GREEN) 
         ae_attn_rows_1[2].move_to([0.7, -5.14, 0])
 
-        ae_attn_rows_1[3].arrange(DOWN, buff=0.53)
-        ae_attn_rows_1[3].set_color(ORANGE) 
+        ae_attn_rows_1[3].arrange(gx.DOWN, buff=0.53)
+        ae_attn_rows_1[3].set_color(gx.ORANGE)
         ae_attn_rows_1[3].move_to([0.7, -5.22, 0])
 
-        ae_attn_rows_1[4].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[4].arrange(gx.DOWN, buff=0.53)
         ae_attn_rows_1[4].set_color(BLUE) 
         ae_attn_rows_1[4].move_to([0.7, -5.30, 0])
 
@@ -1173,43 +1143,43 @@ class P52_61(InteractiveScene):
         self.wait()
         self.remove(action_expert_full_copy[4])
         all_svgs[27].set_opacity(0.85) #Lower opacity of robot background so it jumps out less
-        self.play(VGroup(*[full_gemma_copy[i] for i in [0, 1, 2, 3, 5]]).animate.set_opacity(0.6), 
-                  VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3]]).animate.set_opacity(0.6),
+        self.play(gx.VGroup(*[full_gemma_copy[i] for i in [0, 1, 2, 3, 5]]).animate.set_opacity(0.6),
+                  gx.VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3]]).animate.set_opacity(0.6),
                   all_svgs[36][0].animate.set_opacity(0.6),
                   action_expert_label.animate.set_opacity(0.6),
-                  *[ShowCreation(llm_attn_rows_1[0][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_1[1][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_1[2][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_1[0][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_1[1][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_1[2][j]) for j in range(8)],
                   run_time=4)
-        self.play(*[ShowCreation(llm_attn_rows_2[0][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_2[1][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_2[2][j]) for j in range(8)],
+        self.play(*[gx.Create(llm_attn_rows_2[0][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_2[1][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_2[2][j]) for j in range(8)],
                   run_time=4)
-        self.play(*[ShowCreation(llm_attn_rows_3[0][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_3[1][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_3[2][j]) for j in range(8)],
+        self.play(*[gx.Create(llm_attn_rows_3[0][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_3[1][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_3[2][j]) for j in range(8)],
                   run_time=4)
 
 
         self.add(ae_attn_rows_1[0], ae_attn_rows_2[0], ae_attn_rows_3[0])
         self.add(ae_attn_rows_1[1], ae_attn_rows_2[1], ae_attn_rows_3[1])
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (4.29, -5.41, 0.0), 7.52),
-                  *[ReplacementTransform(llm_attn_rows_1[0], ae_attn_rows_1[2])], 
-                  *[ReplacementTransform(llm_attn_rows_1[1], ae_attn_rows_1[3])],
-                  *[ReplacementTransform(llm_attn_rows_1[2], ae_attn_rows_1[4])],
-                  *[ReplacementTransform(llm_attn_rows_2[0], ae_attn_rows_2[2])], 
-                  *[ReplacementTransform(llm_attn_rows_2[1], ae_attn_rows_2[3])],
-                  *[ReplacementTransform(llm_attn_rows_2[2], ae_attn_rows_2[4])],
-                  *[ReplacementTransform(llm_attn_rows_3[0], ae_attn_rows_3[2])], 
-                  *[ReplacementTransform(llm_attn_rows_3[1], ae_attn_rows_3[3])],
-                  *[ReplacementTransform(llm_attn_rows_3[2], ae_attn_rows_3[4])],
+        self.play(self.animate_view(0, 0, 0, (4.29, -5.41, 0.0), 7.52),
+                  *[gx.ReplacementTransform(llm_attn_rows_1[0], ae_attn_rows_1[2])],
+                  *[gx.ReplacementTransform(llm_attn_rows_1[1], ae_attn_rows_1[3])],
+                  *[gx.ReplacementTransform(llm_attn_rows_1[2], ae_attn_rows_1[4])],
+                  *[gx.ReplacementTransform(llm_attn_rows_2[0], ae_attn_rows_2[2])],
+                  *[gx.ReplacementTransform(llm_attn_rows_2[1], ae_attn_rows_2[3])],
+                  *[gx.ReplacementTransform(llm_attn_rows_2[2], ae_attn_rows_2[4])],
+                  *[gx.ReplacementTransform(llm_attn_rows_3[0], ae_attn_rows_3[2])],
+                  *[gx.ReplacementTransform(llm_attn_rows_3[1], ae_attn_rows_3[3])],
+                  *[gx.ReplacementTransform(llm_attn_rows_3[2], ae_attn_rows_3[4])],
                   run_time=7)
 
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (4.16, -2.38, 0.0), 12.91), 
-                  VGroup(*[full_gemma_copy[i] for i in [0, 1, 2, 3, 5]]).animate.set_opacity(1.0), 
-                  VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3]]).animate.set_opacity(1.0),
+        self.play(self.animate_view(0, 0, 0, (4.16, -2.38, 0.0), 12.91),
+                  gx.VGroup(*[full_gemma_copy[i] for i in [0, 1, 2, 3, 5]]).animate.set_opacity(1.0),
+                  gx.VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3]]).animate.set_opacity(1.0),
                   all_svgs[36][0].animate.set_opacity(1.0),
                   action_expert_label.animate.set_opacity(1.0),
                   run_time=8)
@@ -1240,13 +1210,13 @@ class P52_61(InteractiveScene):
         self.add(diffusion_images_copy[0]) #, diffusion_images_copy_2[1])
 
         self.wait()
-        self.play(FadeIn(diffusion_images_copy_2[1]))
+        self.play(gx.FadeIn(diffusion_images_copy_2[1]))
 
         self.wait()
         self.play(diffusion_images_copy_2[1].animate.scale(1/1.3).move_to(diffusion_images_copy[0]),
                   run_time=4)
 
-        self.play(FadeIn(diffusion_images_copy_2[2]))
+        self.play(gx.FadeIn(diffusion_images_copy_2[2]))
 
         #Now just step through the rest:
         for i in range(2, len(diffusion_images_copy_2)):
@@ -1278,42 +1248,42 @@ class P52_61(InteractiveScene):
 
     
         def _make_lines(color, n=8):
-            return VGroup(*[
-                Line(LEFT * 0.45, RIGHT * 0.45).set_stroke(color, width=3)
+            return gx.VGroup(*[
+                gx.Line(gx.LEFT * 0.45, gx.RIGHT * 0.45).set_stroke(color, width=3)
                 for _ in range(n)
             ])
 
-        _l1 = VGroup(_make_lines(GREEN), _make_lines(ORANGE), _make_lines(BLUE))
-        _l1[0].arrange(DOWN, buff=0.53).move_to([0.7, 0.98, 0])
-        _l1[1].arrange(DOWN, buff=0.53).move_to([0.7, 0.86, 0])
-        _l1[2].arrange(DOWN, buff=0.53).move_to([0.7, 0.74, 0])
+        _l1 = gx.VGroup(_make_lines(GREEN), _make_lines(gx.ORANGE), _make_lines(BLUE))
+        _l1[0].arrange(gx.DOWN, buff=0.53).move_to([0.7, 0.98, 0])
+        _l1[1].arrange(gx.DOWN, buff=0.53).move_to([0.7, 0.86, 0])
+        _l1[2].arrange(gx.DOWN, buff=0.53).move_to([0.7, 0.74, 0])
         _l2 = _l1.copy().move_to([4.3, 0.86, 0])
         _l3 = _l1.copy().move_to([7.9, 0.85, 0])
 
         self.wait()
 
         self.play(
-            *[ShowCreation(_l1[c][j]) for c in range(3) for j in range(8)],
+            *[gx.Create(_l1[c][j]) for c in range(3) for j in range(8)],
             run_time=3,
         )
         self.play(
-            *[ShowCreation(_l2[c][j]) for c in range(3) for j in range(8)],
+            *[gx.Create(_l2[c][j]) for c in range(3) for j in range(8)],
             run_time=3,
         )
         self.play(
-            *[ShowCreation(_l3[c][j]) for c in range(3) for j in range(8)],
+            *[gx.Create(_l3[c][j]) for c in range(3) for j in range(8)],
             run_time=3,
         )
 
-        _a1 = VGroup(
-            _make_lines(RED), _make_lines(PINK),
-            _make_lines(GREEN), _make_lines(ORANGE), _make_lines(BLUE),
+        _a1 = gx.VGroup(
+            _make_lines(gx.RED), _make_lines(PINK),
+            _make_lines(GREEN), _make_lines(gx.ORANGE), _make_lines(BLUE),
         )
-        _a1[0].arrange(DOWN, buff=0.53).move_to([0.7, -4.98, 0])
-        _a1[1].arrange(DOWN, buff=0.53).move_to([0.7, -5.06, 0])
-        _a1[2].arrange(DOWN, buff=0.53).move_to([0.7, -5.14, 0])
-        _a1[3].arrange(DOWN, buff=0.53).move_to([0.7, -5.22, 0])
-        _a1[4].arrange(DOWN, buff=0.53).move_to([0.7, -5.30, 0])
+        _a1[0].arrange(gx.DOWN, buff=0.53).move_to([0.7, -4.98, 0])
+        _a1[1].arrange(gx.DOWN, buff=0.53).move_to([0.7, -5.06, 0])
+        _a1[2].arrange(gx.DOWN, buff=0.53).move_to([0.7, -5.14, 0])
+        _a1[3].arrange(gx.DOWN, buff=0.53).move_to([0.7, -5.22, 0])
+        _a1[4].arrange(gx.DOWN, buff=0.53).move_to([0.7, -5.30, 0])
         _a2 = _a1.copy().move_to([4.3, -5.14, 0])
         _a3 = _a1.copy().move_to([7.9, -5.15, 0])
 
@@ -1324,9 +1294,9 @@ class P52_61(InteractiveScene):
         # Green/orange/blue slide down from LLM → action expert
         self.wait()
         self.play(
-            *[ReplacementTransform(_l1[c], _a1[c + 2]) for c in range(3)],
-            *[ReplacementTransform(_l2[c], _a2[c + 2]) for c in range(3)],
-            *[ReplacementTransform(_l3[c], _a3[c + 2]) for c in range(3)],
+            *[gx.ReplacementTransform(_l1[c], _a1[c + 2]) for c in range(3)],
+            *[gx.ReplacementTransform(_l2[c], _a2[c + 2]) for c in range(3)],
+            *[gx.ReplacementTransform(_l3[c], _a3[c + 2]) for c in range(3)],
             run_time=5,
         )
 
@@ -1358,11 +1328,10 @@ class P52_61(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
 
 
  
-class P52_61_uncropped(InteractiveScene):
+class P52_61_uncropped(WelchScene):
     # Same content as P52_61, but with a single fixed wide frame and every
     # camera move stripped out - crop/zoom in the edit instead.
     # Tweak these two if the bounds need nudging:
@@ -1377,10 +1346,10 @@ class P52_61_uncropped(InteractiveScene):
         # ── Load SVGs (same as P31_49) ──
         svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(3.9)
             all_svgs.add(svg_image[1:])
 
@@ -1388,7 +1357,7 @@ class P52_61_uncropped(InteractiveScene):
         # ── Fixed uncropped frame: covers image patches (top-left) through
         # ── the appended keys/values under the action expert (bottom, y ~ -10.5)
         # ── and the output actions (right, x ~ 13.5).
-        self.frame.reorient(0, 0, 0, self.UNCROPPED_CENTER, self.UNCROPPED_HEIGHT)
+        self.set_view(0, 0, 0, self.UNCROPPED_CENTER, self.UNCROPPED_HEIGHT)
 
         # ── Constants ──
         FRAME_IDX = 150
@@ -1406,15 +1375,15 @@ class P52_61_uncropped(InteractiveScene):
             [-5.23, 0.175, 0],     # left wrist (0.375 - 0.2 shift)
             [-5.23, -2.22, 0],     # right wrist (-1.82 - 0.4 shift)
         ]
-        pixel_squares = Group()
+        pixel_squares = gx.Group()
         for k, image_name in enumerate(['base_0_rgb', 'left_wrist_0_rgb', 'right_wrist_0_rgb']):
-            pixel_squares.add(Group())
+            pixel_squares.add(gx.Group())
             patch_dir = hacking_dir / f'p35/{FRAME_IDX}/{image_name}'
             for i in range(2, 14):
                 for j in range(grid_n):
-                    patch_mob = ImageMobject(str(patch_dir / f'patch_{i}_{j}.png'))
-                    patch_mob.set_height(patch_size)
-                    patch_mob.set_width(patch_size, stretch=True)
+                    patch_mob = image_at_height(str(patch_dir / f'patch_{i}_{j}.png'))
+                    patch_mob.scale_to_fit_height(patch_size)
+                    patch_mob.stretch_to_fit_width(patch_size)
                     # Bake in gap expansion: offset * (1 + gap_factor)
                     x_pos = (j - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
                     y_pos = -(i - grid_n/2 + 0.5) * patch_size * (1 + gap_factor)
@@ -1474,41 +1443,41 @@ class P52_61_uncropped(InteractiveScene):
         right_colors = patch_bright_average(right_im, exponent=2.0).reshape(-1, 3)
 
         def make_embedding_row(color_arr, patch_index, y_pos):
-            bc = rgb_to_color(boost_colors_hsv(
+            bc = gx.rgb_to_color(boost_colors_hsv(
                 color_arr[patch_index + 32].reshape(1, 3) / 255.,
                 saturation_boost=SATURATION_BOOST, min_saturation=MIN_SATURATION, min_value=MIN_VALUE).ravel())
-            r = Rectangle(width=1.1, height=0.03)
+            r = gx.Rectangle(width=1.1, height=0.03)
             r.set_fill(bc, opacity=1).set_stroke(width=0)
             r.move_to([-1.5, y_pos, 0])
             return r
 
         # Overhead embeddings
-        embedding_rows_1 = VGroup()
+        embedding_rows_1 = gx.VGroup()
         for i, pi in enumerate([0, 1, 2, 3, 4, 5, 6, 7, 8]):
             embedding_rows_1.add(make_embedding_row(overhead_colors, pi, 3.15 - i * vertical_spacing))
 
-        ellipsis_dots = VGroup(*[Dot(radius=0.025).set_color(CHILL_BROWN) for _ in range(3)])
-        ellipsis_dots.arrange(DOWN, buff=0.035)
-        ellipsis_dots.next_to(embedding_rows_1[-1], DOWN, buff=0.15)
+        ellipsis_dots = gx.VGroup(*[gx.Dot(radius=0.025).set_color(CHILL_BROWN) for _ in range(3)])
+        ellipsis_dots.arrange(gx.DOWN, buff=0.035)
+        ellipsis_dots.next_to(embedding_rows_1[-1], gx.DOWN, buff=0.15)
 
         # Left wrist embeddings
-        embedding_rows_2 = VGroup()
+        embedding_rows_2 = gx.VGroup()
         for i, pi in enumerate([82, 83, 84, 85, 86, 87, 88, 89, 90, 91]):
             embedding_rows_2.add(make_embedding_row(left_colors, pi, 1.0 - i * vertical_spacing))
 
-        ellipsis_dots_2 = VGroup(*[Dot(radius=0.025).set_color(CHILL_BROWN) for _ in range(3)])
-        ellipsis_dots_2.arrange(DOWN, buff=0.035)
-        ellipsis_dots_2.next_to(embedding_rows_2[-1], DOWN, buff=0.1)
+        ellipsis_dots_2 = gx.VGroup(*[gx.Dot(radius=0.025).set_color(CHILL_BROWN) for _ in range(3)])
+        ellipsis_dots_2.arrange(gx.DOWN, buff=0.035)
+        ellipsis_dots_2.next_to(embedding_rows_2[-1], gx.DOWN, buff=0.1)
 
         # Right wrist embeddings
-        embedding_rows_3 = VGroup()
+        embedding_rows_3 = gx.VGroup()
         for i, pi in enumerate([186, 186, 187, 188, 189, 190, 191]):
             embedding_rows_3.add(make_embedding_row(right_colors, pi, -1.3 - i * vertical_spacing))
 
         # Text token embeddings (blue)
-        embedding_rows_4 = VGroup()
+        embedding_rows_4 = gx.VGroup()
         for i in range(4):
-            l = Line(LEFT * 0.55, RIGHT * 0.55)
+            l = gx.Line(gx.LEFT * 0.55, gx.RIGHT * 0.55)
             l.set_stroke(BLUE, width=4)
             l.move_to([-1.5, -2.75 - i * vertical_spacing, 0])
             embedding_rows_4.add(l)
@@ -1516,7 +1485,7 @@ class P52_61_uncropped(InteractiveScene):
         # ═══════════════════════════════════════════════════
         # 5. TOKENIZED PROMPT
         # ═══════════════════════════════════════════════════
-        tokenized_prompt = Text('Un  cap  the  pen', font="Myriad Pro", weight='bold', font_size=25)
+        tokenized_prompt = gx.Text('Un  cap  the  pen', font="Myriad Pro", weight='bold', font_size=25)
         tokenized_prompt.set_color(BLUE)
         tokenized_prompt.set_stroke(BLUE, width=0.1)
         # Position: started at [-5.5, -3.34], then shifted [0.2, -0.3]
@@ -1526,15 +1495,15 @@ class P52_61_uncropped(InteractiveScene):
         # 6. GEMMA NETWORK
         # ═══════════════════════════════════════════════════
         # Apply the [0.2, 0, 0] shift to all gemma internals (incl hidden ones)
-        full_gemma = Group(all_svgs[8], all_svgs[9], all_svgs[10], 
+        full_gemma = gx.Group(all_svgs[8], all_svgs[9], all_svgs[10],
                            all_svgs[11], all_svgs[12], all_svgs[13])
         full_gemma.shift([0.2, 0, 0])
-        full_gemma_copy=Group(all_svgs[8].copy(), all_svgs[9].copy(), all_svgs[10].copy(), 
+        full_gemma_copy=gx.Group(all_svgs[8].copy(), all_svgs[9].copy(), all_svgs[10].copy(),
                            all_svgs[45], all_svgs[46], all_svgs[13].copy())
         all_svgs[26].shift([0.19, 0, 0])
 
         # Only these are visible at end of P49:
-        gemma = Group(all_svgs[8], all_svgs[9], all_svgs[10], all_svgs[13], all_svgs[26])
+        gemma = gx.Group(all_svgs[8], all_svgs[9], all_svgs[10], all_svgs[13], all_svgs[26])
 
         action_expert_full = full_gemma.copy()
         action_expert_full_copy = full_gemma_copy.copy()
@@ -1546,10 +1515,10 @@ class P52_61_uncropped(InteractiveScene):
         for layer in range(18):
             all_attn_patterns.append([])
             for head in range(8):
-                im = ImageMobject(str(hacking_dir / f'p47/attn_pattern_{layer}_{head}.png'))
+                im = image_at_height(str(hacking_dir / f'p47/attn_pattern_{layer}_{head}.png'))
                 all_attn_patterns[-1].append(im)
 
-        attn_patterns_to_show = Group()
+        attn_patterns_to_show = gx.Group()
         for i in range(8):
             all_attn_patterns[0][i].scale(0.096).move_to([0.25, 1.5 - 0.358 * i, 0])
             attn_patterns_to_show.add(all_attn_patterns[0][i])
@@ -1562,7 +1531,7 @@ class P52_61_uncropped(InteractiveScene):
             attn_patterns_to_show.add(all_attn_patterns[-1][i])
 
         # The single pattern that was shrunk into the layer-1/head-6 slot
-        attn_pattern = ImageMobject(str(hacking_dir / 'p44/attn_pattern_1.png'))
+        attn_pattern = image_at_height(str(hacking_dir / 'p44/attn_pattern_1.png'))
         attn_pattern.scale(1.3 * 0.41 * 0.18)  # cumulative relative scales
         attn_pattern.move_to([2.65, 1.5 - 0.358 * 6, 0])
 
@@ -1575,22 +1544,22 @@ class P52_61_uncropped(InteractiveScene):
         all_svgs[30].move_to([-1.53, -6.7, 0])
         all_svgs[31].move_to([-4.25, -6.765, 0])
 
-        arm_img = ImageMobject(str(hacking_dir / 'arm_1.png'))
+        arm_img = image_at_height(str(hacking_dir / 'arm_1.png'))
         arm_img.scale(0.52).move_to([-4.6, -5.97, 0])
-        arm_img_flipped = ImageMobject(str(hacking_dir / 'arm_1_flipped.png'))
+        arm_img_flipped = image_at_height(str(hacking_dir / 'arm_1_flipped.png'))
         arm_img_flipped.scale(0.52).move_to([-5.78, -5.97, 0])
 
         # Action expert embedding rows (red/pink)
-        embedding_rows_action_expert = VGroup()
+        embedding_rows_action_expert = gx.VGroup()
         for i in range(20):
             if i == 9:
-                dots = VGroup(*[Dot(radius=0.02).set_color(CHILL_BROWN) for _ in range(3)])
-                dots.arrange(DOWN, buff=0.03)
-                dots.next_to(embedding_rows_action_expert[-1], DOWN, buff=0.09)
+                dots = gx.VGroup(*[gx.Dot(radius=0.02).set_color(CHILL_BROWN) for _ in range(3)])
+                dots.arrange(gx.DOWN, buff=0.03)
+                dots.next_to(embedding_rows_action_expert[-1], gx.DOWN, buff=0.09)
                 embedding_rows_action_expert.add(dots)
                 continue
-            r = Rectangle(width=1.1, height=0.03)
-            r.set_fill(RED if i == 0 else PINK, opacity=1)
+            r = gx.Rectangle(width=1.1, height=0.03)
+            r.set_fill(gx.RED if i == 0 else PINK, opacity=1)
             r.set_stroke(width=0)
             r.move_to([-1.5, -4.7 - i * vertical_spacing, 0])
             embedding_rows_action_expert.add(r)
@@ -1630,13 +1599,13 @@ class P52_61_uncropped(InteractiveScene):
         # P53
 
         # Ok let me load up the action images.
-        diffusion_images=Group()
+        diffusion_images=gx.Group()
         for i in range(11):
-            im=ImageMobject(str(hacking_dir/('p51b/'+str(i).zfill(2)+'.png')))
+            im=image_at_height(str(hacking_dir/('p51b/'+str(i).zfill(2)+'.png')))
             diffusion_images.add(im)
 
 
-        action_expert_box = RoundedRectangle(
+        action_expert_box = gx.RoundedRectangle(
             width=1.9,
             height=1.5,
             corner_radius=0.1,
@@ -1652,12 +1621,12 @@ class P52_61_uncropped(InteractiveScene):
 
         # self.add(manual_action_expert_box)
 
-        action_expert_label=Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=22)
+        action_expert_label=gx.Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=22)
         action_expert_label.set_color(CHILL_BROWN)
         action_expert_label.move_to(manual_action_expert_box)
         action_expert_label.shift([0, -0.05, 0])
 
-        action_expert_box_group=Group(manual_action_expert_box, action_expert_label)
+        action_expert_box_group=gx.Group(manual_action_expert_box, action_expert_label)
 
 
         action_expert_box_group.move_to([0.57, -6.45, 0])
@@ -1696,8 +1665,8 @@ class P52_61_uncropped(InteractiveScene):
 
         self.wait()
 
-        self.play(FadeIn(diffusion_images[1]),
-                  FadeIn(all_svgs[35]), 
+        self.play(gx.FadeIn(diffusion_images[1]),
+                  gx.FadeIn(all_svgs[35]),
                   run_time=3)
 
         self.wait()
@@ -1709,7 +1678,7 @@ class P52_61_uncropped(InteractiveScene):
         diffusion_images[1].set_opacity(0.5)
 
         diffusion_images[2].move_to([3.53, -6.5, 0])
-        self.play(FadeIn(diffusion_images[2]), run_time=2)
+        self.play(gx.FadeIn(diffusion_images[2]), run_time=2)
 
         self.play(diffusion_images[2].animate.move_to(diffusion_images[0]),
                   run_time=4)
@@ -1717,9 +1686,9 @@ class P52_61_uncropped(InteractiveScene):
         self.remove(diffusion_images[2]); self.add(diffusion_images[2])
 
         diffusion_images[3].move_to([3.53, -6.5, 0])
-        self.play(FadeIn(diffusion_images[3]), run_time=2)
+        self.play(gx.FadeIn(diffusion_images[3]), run_time=2)
 
-        tmp_diffusion_images=Group()
+        tmp_diffusion_images=gx.Group()
         for i in range(3, 10):
             tmp_1=diffusion_images[i].copy()
             tmp_1.move_to([-5.18, -8.0, 0])
@@ -1743,7 +1712,7 @@ class P52_61_uncropped(InteractiveScene):
 
         # self.add(action_expert_group_1[4])
 
-        action_expert_group_1=Group(all_svgs[27], all_svgs[28], all_svgs[29], all_svgs[30], #all_svgs[31],
+        action_expert_group_1=gx.Group(all_svgs[27], all_svgs[28], all_svgs[29], all_svgs[30], #all_svgs[31],
                                     # all_svgs[32], 
                                     all_svgs[33], all_svgs[34], #all_svgs[35],
                                     arm_img, arm_img_flipped, 
@@ -1755,7 +1724,7 @@ class P52_61_uncropped(InteractiveScene):
         
 
         # self.add(action_expert_group_1)
-        gemma_group=Group(gemma, attn_patterns_to_show, attn_pattern)
+        gemma_group=gx.Group(gemma, attn_patterns_to_show, attn_pattern)
         gemma_group.scale(1.5)
         gemma_group.move_to([5.1, 0.6, 0])
 
@@ -1772,7 +1741,7 @@ class P52_61_uncropped(InteractiveScene):
         # action_expert_full.add(all_svgs[36])
         action_expert_full.scale(1.5)
         action_expert_full.move_to([5.1, -5.4, 0])
-        action_expert_full_2=Group(*[action_expert_full[i] for i in [1, 2, 3, 4]])
+        action_expert_full_2=gx.Group(*[action_expert_full[i] for i in [1, 2, 3, 4]])
 
         action_expert_full_copy[3].shift([0.2, 0, 0])
         action_expert_full_copy[4].shift([0.2, 0, 0])
@@ -1784,7 +1753,7 @@ class P52_61_uncropped(InteractiveScene):
         all_svgs[36].move_to([5.1, -5.5, 0])
 
         
-        final_actions_text=Text('ACTIONS', font="Myriad Pro", weight='bold', font_size=26)
+        final_actions_text=gx.Text('ACTIONS', font="Myriad Pro", weight='bold', font_size=26)
         final_actions_text.set_color(PINK)
         # final_actions_text.next_to(diffusion_images[10], DOWN, buff=0.2)
         final_actions_text.move_to([12.4, -5.8, 0])
@@ -1812,7 +1781,7 @@ class P52_61_uncropped(InteractiveScene):
 
         self.wait()
         self.remove(all_svgs[35])
-        self.play(ReplacementTransform(action_expert_box_group[0], all_svgs[36][0]), 
+        self.play(gx.ReplacementTransform(action_expert_box_group[0], all_svgs[36][0]),
                   action_expert_label.animate.scale(1.25).set_color(YELLOW).move_to([4.95, -8.28, 0]),
                   action_expert_group_1.animate.shift([0, 0.5, 0]),  #Nudge  right next to LLM
                   all_svgs[34][1].animate.move_to([10.8, -5.2, 0]), #Arrow from action expert to output
@@ -1822,10 +1791,10 @@ class P52_61_uncropped(InteractiveScene):
 
 
         self.wait()
-        self.play(Write(action_expert_full_2[0]), 
-                  Write(action_expert_full_2[1]),
-                  Write(action_expert_full_2[2]),
-                  Write(action_expert_full_2[3]),
+        self.play(gx.Write(action_expert_full_2[0]),
+                  gx.Write(action_expert_full_2[1]),
+                  gx.Write(action_expert_full_2[2]),
+                  gx.Write(action_expert_full_2[3]),
                   run_time=6
                   )
 
@@ -1862,49 +1831,49 @@ class P52_61_uncropped(InteractiveScene):
         # Should be able to follow a pretty similar approach!
         # self.play(ReplacementTransform(all_svgs[12][0], all_svgs[14][-1]),
         #           h6_label.animate.scale(1.5).move_to([6.4, -3.4, 0]),
-        #           self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8),
+        #           self.animate_view(0, 0, 0, (0, 0, 0), 8),
         #           run_time=5)
 
 
-        queries=Group(); keys=Group(); values=Group(); 
-        attn_dots=VGroup()
+        queries=gx.Group(); keys=gx.Group(); values=gx.Group();
+        attn_dots=gx.VGroup()
         q_spacing=0.135
         for i in range(11):
-            q=ImageMobject(str(hacking_dir/('p40_1/queries_'+ str(i).zfill(2) +'.png')))
+            q=image_at_height(str(hacking_dir/('p40_1/queries_'+ str(i).zfill(2) +'.png')))
             q.scale(0.022)
             q.move_to([3.5, 2.8-i*q_spacing, 0])
             queries.add(q)
             if i==1 or i==6:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(q)
                 attn_dots.add(e)
 
         for i in range(11):
-            k=ImageMobject(str(hacking_dir/('p40_1/keys_'+ str(i).zfill(2) +'.png')))
+            k=image_at_height(str(hacking_dir/('p40_1/keys_'+ str(i).zfill(2) +'.png')))
             k.scale(0.022)
             k.move_to([3.5, 1.0-i*q_spacing, 0])
             keys.add(k)
             if i==1 or i==6:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(k)
                 attn_dots.add(e)
 
         for i in range(11):
-            v=ImageMobject(str(hacking_dir/('p40_1/values_'+ str(i).zfill(2) +'.png')))
+            v=image_at_height(str(hacking_dir/('p40_1/values_'+ str(i).zfill(2) +'.png')))
             v.scale(0.022)
             v.move_to([3.5, -0.8-i*q_spacing, 0])
             values.add(v)
             if i==1 or i==6:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(v)
                 attn_dots.add(e)
 
-        all_svgs[17].next_to(q, DOWN, buff=0.05)
-        all_svgs[18].next_to(k, DOWN, buff=0.05)
-        all_svgs[19].next_to(v, DOWN, buff=0.05)
+        all_svgs[17].next_to(q, gx.DOWN, buff=0.05)
+        all_svgs[18].next_to(k, gx.DOWN, buff=0.05)
+        all_svgs[19].next_to(v, gx.DOWN, buff=0.05)
         all_svgs[37].move_to([0.2, 0.3, 0])
 
         # self.add(all_svgs[37]) #WQ QK QV Arrows
@@ -1922,7 +1891,7 @@ class P52_61_uncropped(InteractiveScene):
         self.wait(4)  # (was a camera move)
         self.remove(final_actions_text)
 
-        gemma_attn_head_group=Group(all_svgs[37], queries, all_svgs[17], keys, all_svgs[18], 
+        gemma_attn_head_group=gx.Group(all_svgs[37], queries, all_svgs[17], keys, all_svgs[18],
               values, all_svgs[19], attn_dots)
         
         gemma_attn_head_group.scale(0.08)
@@ -1931,10 +1900,10 @@ class P52_61_uncropped(InteractiveScene):
 
 
         self.wait()
-        self.play(FadeOut(gemma_group), 
-                  FadeIn(gemma_attn_head_group), run_time=3)
+        self.play(gx.FadeOut(gemma_group),
+                  gx.FadeIn(gemma_attn_head_group), run_time=3)
 
-        self.play(ReplacementTransform(gemma_h6_border, all_svgs[14][-1]), 
+        self.play(gx.ReplacementTransform(gemma_h6_border, all_svgs[14][-1]),
                   gemma_attn_head_group.animate.scale(1.0/0.08).move_to([2.7000403 , 0.22694729, 0.]),
                   run_time=5)
 
@@ -1968,39 +1937,39 @@ class P52_61_uncropped(InteractiveScene):
         # but yeah let's go ahead and build out keys queries and values here
         # Then come back and figure out the transition!
 
-        queries_ae=Group(); keys_ae=Group(); values_ae=Group(); 
-        attn_dots_ae=VGroup()
+        queries_ae=gx.Group(); keys_ae=gx.Group(); values_ae=gx.Group();
+        attn_dots_ae=gx.VGroup()
         q_spacing=0.135
         for i in range(7):
-            q=ImageMobject(str(hacking_dir/('p58/queries_'+ str(i).zfill(2) +'.png')))
+            q=image_at_height(str(hacking_dir/('p58/queries_'+ str(i).zfill(2) +'.png')))
             q.scale(0.022)
             q.move_to([3.5, -i*q_spacing, 0])
             queries_ae.add(q)
             if i==3:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(q)
                 attn_dots_ae.add(e)
 
         for i in range(7):
-            k=ImageMobject(str(hacking_dir/('p58/keys_'+ str(i).zfill(2) +'.png')))
+            k=image_at_height(str(hacking_dir/('p58/keys_'+ str(i).zfill(2) +'.png')))
             k.scale(0.022)
             k.move_to([3.5, -i*q_spacing, 0])
             keys_ae.add(k)
             if i==3:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(k)
                 attn_dots_ae.add(e)
 
         for i in range(7):
-            v=ImageMobject(str(hacking_dir/('p58/values_'+ str(i).zfill(2) +'.png')))
+            v=image_at_height(str(hacking_dir/('p58/values_'+ str(i).zfill(2) +'.png')))
             v.scale(0.022)
             v.move_to([3.5, -i*q_spacing, 0])
             values_ae.add(v)
             if i==3:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(v)
                 attn_dots_ae.add(e)
 
@@ -2024,7 +1993,7 @@ class P52_61_uncropped(InteractiveScene):
         # Ah yeah I want the little baby version of 
         # the attention head again. 
 
-        ae_attn_head_group=Group(action_expert_qkv_flow, 
+        ae_attn_head_group=gx.Group(action_expert_qkv_flow,
                                  # action_expert_attn_head_border,
                                  queries_ae, 
                                  keys_ae, 
@@ -2047,16 +2016,16 @@ class P52_61_uncropped(InteractiveScene):
         ae_attn_head_group.move_to([4.3, -6.38, 0])
 
         self.wait()
-        self.play(FadeOut(action_expert_full_2), 
-                  FadeOut(action_expert_label),
-                  FadeOut(all_svgs[36][0]),
-                  FadeOut(all_svgs[34][1]),
-                  FadeOut(diffusion_images[10]),
-                  FadeIn(ae_attn_head_group),
+        self.play(gx.FadeOut(action_expert_full_2),
+                  gx.FadeOut(action_expert_label),
+                  gx.FadeOut(all_svgs[36][0]),
+                  gx.FadeOut(all_svgs[34][1]),
+                  gx.FadeOut(diffusion_images[10]),
+                  gx.FadeIn(ae_attn_head_group),
                   run_time=2)
 
         self.wait()
-        self.play(ReplacementTransform(action_expert_h6_border, action_expert_attn_head_border), 
+        self.play(gx.ReplacementTransform(action_expert_h6_border, action_expert_attn_head_border),
                   ae_attn_head_group.animate.scale(1/0.08).move_to([ 2.7 , -5.6124,  0.]),
                   run_time=5)
 
@@ -2064,11 +2033,11 @@ class P52_61_uncropped(InteractiveScene):
         # Goes nicely with "different set of inputs"
 
         self.wait()
-        self.play(Write(all_svgs[42]), 
+        self.play(gx.Write(all_svgs[42]),
                  run_time=5)
 
         self.wait()
-        self.play(FadeOut(all_svgs[42]), run_time=2)
+        self.play(gx.FadeOut(all_svgs[42]), run_time=2)
 
         self.wait()
         self.wait(5)  # (was a camera move)
@@ -2085,8 +2054,8 @@ class P52_61_uncropped(InteractiveScene):
         # Ok so now we bring down a copy of the keys, and then values
         # A bit messy but we're really close!
         # Let me get everything positioned where we want here. 
-        keys_to_move=Group(keys.copy(), attn_dots[2].copy(), attn_dots[3].copy())
-        values_to_move=Group(values.copy(), attn_dots[4].copy(), attn_dots[5].copy())
+        keys_to_move=gx.Group(keys.copy(), attn_dots[2].copy(), attn_dots[3].copy())
+        values_to_move=gx.Group(values.copy(), attn_dots[4].copy(), attn_dots[5].copy())
 
         self.add(keys_to_move)
         self.add(values_to_move)
@@ -2123,7 +2092,7 @@ class P52_61_uncropped(InteractiveScene):
                   action_expert_qkv_flow[32].animate.move_to([-0.134, -8.4, 0]),
                   run_time=6)
 
-        self.play(keys_to_move.animate.next_to(keys_ae, DOWN, buff=0.05), 
+        self.play(keys_to_move.animate.next_to(keys_ae, gx.DOWN, buff=0.05),
                   values_to_move.animate.move_to([3.5, -9.62,  0.]), 
                   run_time=3)
         self.add(all_svgs[43], all_svgs[44])
@@ -2146,7 +2115,7 @@ class P52_61_uncropped(InteractiveScene):
         # Just for action expert first, then zoom out to full system. 
 
 
-        ae_attn_head_group_2=Group(action_expert_qkv_flow, 
+        ae_attn_head_group_2=gx.Group(action_expert_qkv_flow,
                                  # action_expert_attn_head_border,
                                  queries_ae, 
                                  keys_ae, 
@@ -2163,17 +2132,17 @@ class P52_61_uncropped(InteractiveScene):
         # ae_attn_head_group_2.move_to([4.3, -6.5, 0])
 
         self.wait()
-        self.play(ReplacementTransform(action_expert_attn_head_border, action_expert_h6_border_copy), 
+        self.play(gx.ReplacementTransform(action_expert_attn_head_border, action_expert_h6_border_copy),
                   ae_attn_head_group_2.animate.scale(0.055).move_to([4.3, -6.47, 0]),
                   run_time=6)
 
         # self.wait()
-        self.play(FadeIn(action_expert_full_2), 
-                  FadeIn(action_expert_label),
-                  FadeIn(all_svgs[36][0]),
-                  FadeIn(all_svgs[34][1]),
-                  FadeIn(diffusion_images[10]),
-                  FadeOut(ae_attn_head_group_2),
+        self.play(gx.FadeIn(action_expert_full_2),
+                  gx.FadeIn(action_expert_label),
+                  gx.FadeIn(all_svgs[36][0]),
+                  gx.FadeIn(all_svgs[34][1]),
+                  gx.FadeIn(diffusion_images[10]),
+                  gx.FadeOut(ae_attn_head_group_2),
                   run_time=3)
 
 
@@ -2192,7 +2161,7 @@ class P52_61_uncropped(InteractiveScene):
         diffusion_images[-1].scale(1.3)
         diffusion_images[-1].move_to([12.8, -5.2,  0.])
         final_actions_text.scale(1.1)
-        final_actions_text.next_to(diffusion_images[-1], DOWN, buff=0.1)
+        final_actions_text.next_to(diffusion_images[-1], gx.DOWN, buff=0.1)
 
         self.add(final_actions_text)
 
@@ -2206,11 +2175,11 @@ class P52_61_uncropped(InteractiveScene):
         # another svg I guess...
 
         self.wait()
-        self.play(FadeOut(all_svgs[46]), 
+        self.play(gx.FadeOut(all_svgs[46]),
                   run_time=4)
 
         #Swap these while we're focused on Gemma
-        action_expert_full_copy_2=VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3, 4]])
+        action_expert_full_copy_2=gx.VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3, 4]])
         self.remove(action_expert_h6_border_copy) #, action_expert_full_2[3], action_expert_full_2[2])
         self.remove(action_expert_full)
         self.add(action_expert_full_copy_2) #[3], action_expert_full_copy[4])
@@ -2218,22 +2187,22 @@ class P52_61_uncropped(InteractiveScene):
 
         # VGroup(*[action_expert_full_copy[i] for i in [0, 1, 2, 3, 5]]).set_opacity(0.6)
 
-        llm_attn_rows_tmp=VGroup() #Text ones
+        llm_attn_rows_tmp=gx.VGroup() #Text ones
         for i in range(8):
-            flat_line = Line(LEFT * 0.45, RIGHT * 0.45)
+            flat_line = gx.Line(gx.LEFT * 0.45, gx.RIGHT * 0.45)
             flat_line.set_stroke(GREEN, width=3)
             llm_attn_rows_tmp.add(flat_line)
 
-        llm_attn_rows_1=VGroup(llm_attn_rows_tmp, llm_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy())
+        llm_attn_rows_1=gx.VGroup(llm_attn_rows_tmp, llm_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy())
         
-        llm_attn_rows_1[0].arrange(DOWN, buff=0.53) 
+        llm_attn_rows_1[0].arrange(gx.DOWN, buff=0.53)
         llm_attn_rows_1[0].move_to([0.7, 0.98, 0])
 
-        llm_attn_rows_1[1].arrange(DOWN, buff=0.53)
-        llm_attn_rows_1[1].set_color(ORANGE) 
+        llm_attn_rows_1[1].arrange(gx.DOWN, buff=0.53)
+        llm_attn_rows_1[1].set_color(gx.ORANGE)
         llm_attn_rows_1[1].move_to([0.7, 0.86, 0])
 
-        llm_attn_rows_1[2].arrange(DOWN, buff=0.53) 
+        llm_attn_rows_1[2].arrange(gx.DOWN, buff=0.53)
         llm_attn_rows_1[2].set_color(BLUE) 
         llm_attn_rows_1[2].move_to([0.7, 0.74, 0])
 
@@ -2245,31 +2214,31 @@ class P52_61_uncropped(InteractiveScene):
 
         # Ok i think we make like the full 5 rows down here 
         # And then Replacement Transform
-        ae_attn_rows_tmp=VGroup() #Text ones
+        ae_attn_rows_tmp=gx.VGroup() #Text ones
         for i in range(8):
-            flat_line = Line(LEFT * 0.45, RIGHT * 0.45)
-            flat_line.set_stroke(RED, width=3)
+            flat_line = gx.Line(gx.LEFT * 0.45, gx.RIGHT * 0.45)
+            flat_line.set_stroke(gx.RED, width=3)
             ae_attn_rows_tmp.add(flat_line)
 
-        ae_attn_rows_1=VGroup(ae_attn_rows_tmp, ae_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy(), 
+        ae_attn_rows_1=gx.VGroup(ae_attn_rows_tmp, ae_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy(),
                               ae_attn_rows_tmp.copy(), llm_attn_rows_tmp.copy())
         
-        ae_attn_rows_1[0].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[0].arrange(gx.DOWN, buff=0.53)
         ae_attn_rows_1[0].move_to([0.7, -4.98, 0])
 
-        ae_attn_rows_1[1].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[1].arrange(gx.DOWN, buff=0.53)
         ae_attn_rows_1[3].set_color(PINK) 
         ae_attn_rows_1[1].move_to([0.7, -5.06, 0])
 
-        ae_attn_rows_1[2].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[2].arrange(gx.DOWN, buff=0.53)
         ae_attn_rows_1[3].set_color(GREEN) 
         ae_attn_rows_1[2].move_to([0.7, -5.14, 0])
 
-        ae_attn_rows_1[3].arrange(DOWN, buff=0.53)
-        ae_attn_rows_1[3].set_color(ORANGE) 
+        ae_attn_rows_1[3].arrange(gx.DOWN, buff=0.53)
+        ae_attn_rows_1[3].set_color(gx.ORANGE)
         ae_attn_rows_1[3].move_to([0.7, -5.22, 0])
 
-        ae_attn_rows_1[4].arrange(DOWN, buff=0.53) 
+        ae_attn_rows_1[4].arrange(gx.DOWN, buff=0.53)
         ae_attn_rows_1[4].set_color(BLUE) 
         ae_attn_rows_1[4].move_to([0.7, -5.30, 0])
 
@@ -2292,41 +2261,41 @@ class P52_61_uncropped(InteractiveScene):
         self.wait()
         self.remove(action_expert_full_copy[4])
         all_svgs[27].set_opacity(0.85) #Lower opacity of robot background so it jumps out less
-        self.play(VGroup(*[full_gemma_copy[i] for i in [0, 1, 2, 3, 5]]).animate.set_opacity(0.6), 
-                  VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3]]).animate.set_opacity(0.6),
+        self.play(gx.VGroup(*[full_gemma_copy[i] for i in [0, 1, 2, 3, 5]]).animate.set_opacity(0.6),
+                  gx.VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3]]).animate.set_opacity(0.6),
                   all_svgs[36][0].animate.set_opacity(0.6),
                   action_expert_label.animate.set_opacity(0.6),
-                  *[ShowCreation(llm_attn_rows_1[0][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_1[1][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_1[2][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_1[0][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_1[1][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_1[2][j]) for j in range(8)],
                   run_time=4)
-        self.play(*[ShowCreation(llm_attn_rows_2[0][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_2[1][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_2[2][j]) for j in range(8)],
+        self.play(*[gx.Create(llm_attn_rows_2[0][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_2[1][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_2[2][j]) for j in range(8)],
                   run_time=4)
-        self.play(*[ShowCreation(llm_attn_rows_3[0][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_3[1][j]) for j in range(8)],
-                  *[ShowCreation(llm_attn_rows_3[2][j]) for j in range(8)],
+        self.play(*[gx.Create(llm_attn_rows_3[0][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_3[1][j]) for j in range(8)],
+                  *[gx.Create(llm_attn_rows_3[2][j]) for j in range(8)],
                   run_time=4)
 
 
         self.add(ae_attn_rows_1[0], ae_attn_rows_2[0], ae_attn_rows_3[0])
         self.add(ae_attn_rows_1[1], ae_attn_rows_2[1], ae_attn_rows_3[1])
 
-        self.play(*[ReplacementTransform(llm_attn_rows_1[0], ae_attn_rows_1[2])], 
-                  *[ReplacementTransform(llm_attn_rows_1[1], ae_attn_rows_1[3])],
-                  *[ReplacementTransform(llm_attn_rows_1[2], ae_attn_rows_1[4])],
-                  *[ReplacementTransform(llm_attn_rows_2[0], ae_attn_rows_2[2])], 
-                  *[ReplacementTransform(llm_attn_rows_2[1], ae_attn_rows_2[3])],
-                  *[ReplacementTransform(llm_attn_rows_2[2], ae_attn_rows_2[4])],
-                  *[ReplacementTransform(llm_attn_rows_3[0], ae_attn_rows_3[2])], 
-                  *[ReplacementTransform(llm_attn_rows_3[1], ae_attn_rows_3[3])],
-                  *[ReplacementTransform(llm_attn_rows_3[2], ae_attn_rows_3[4])],
+        self.play(*[gx.ReplacementTransform(llm_attn_rows_1[0], ae_attn_rows_1[2])],
+                  *[gx.ReplacementTransform(llm_attn_rows_1[1], ae_attn_rows_1[3])],
+                  *[gx.ReplacementTransform(llm_attn_rows_1[2], ae_attn_rows_1[4])],
+                  *[gx.ReplacementTransform(llm_attn_rows_2[0], ae_attn_rows_2[2])],
+                  *[gx.ReplacementTransform(llm_attn_rows_2[1], ae_attn_rows_2[3])],
+                  *[gx.ReplacementTransform(llm_attn_rows_2[2], ae_attn_rows_2[4])],
+                  *[gx.ReplacementTransform(llm_attn_rows_3[0], ae_attn_rows_3[2])],
+                  *[gx.ReplacementTransform(llm_attn_rows_3[1], ae_attn_rows_3[3])],
+                  *[gx.ReplacementTransform(llm_attn_rows_3[2], ae_attn_rows_3[4])],
                   run_time=7)
 
         self.wait()
-        self.play(VGroup(*[full_gemma_copy[i] for i in [0, 1, 2, 3, 5]]).animate.set_opacity(1.0), 
-                  VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3]]).animate.set_opacity(1.0),
+        self.play(gx.VGroup(*[full_gemma_copy[i] for i in [0, 1, 2, 3, 5]]).animate.set_opacity(1.0),
+                  gx.VGroup(*[action_expert_full_copy[i] for i in [1, 2, 3]]).animate.set_opacity(1.0),
                   all_svgs[36][0].animate.set_opacity(1.0),
                   action_expert_label.animate.set_opacity(1.0),
                   run_time=8)
@@ -2357,13 +2326,13 @@ class P52_61_uncropped(InteractiveScene):
         self.add(diffusion_images_copy[0]) #, diffusion_images_copy_2[1])
 
         self.wait()
-        self.play(FadeIn(diffusion_images_copy_2[1]))
+        self.play(gx.FadeIn(diffusion_images_copy_2[1]))
 
         self.wait()
         self.play(diffusion_images_copy_2[1].animate.scale(1/1.3).move_to(diffusion_images_copy[0]),
                   run_time=4)
 
-        self.play(FadeIn(diffusion_images_copy_2[2]))
+        self.play(gx.FadeIn(diffusion_images_copy_2[2]))
 
         #Now just step through the rest:
         for i in range(2, len(diffusion_images_copy_2)):
@@ -2395,42 +2364,42 @@ class P52_61_uncropped(InteractiveScene):
 
     
         def _make_lines(color, n=8):
-            return VGroup(*[
-                Line(LEFT * 0.45, RIGHT * 0.45).set_stroke(color, width=3)
+            return gx.VGroup(*[
+                gx.Line(gx.LEFT * 0.45, gx.RIGHT * 0.45).set_stroke(color, width=3)
                 for _ in range(n)
             ])
 
-        _l1 = VGroup(_make_lines(GREEN), _make_lines(ORANGE), _make_lines(BLUE))
-        _l1[0].arrange(DOWN, buff=0.53).move_to([0.7, 0.98, 0])
-        _l1[1].arrange(DOWN, buff=0.53).move_to([0.7, 0.86, 0])
-        _l1[2].arrange(DOWN, buff=0.53).move_to([0.7, 0.74, 0])
+        _l1 = gx.VGroup(_make_lines(GREEN), _make_lines(gx.ORANGE), _make_lines(BLUE))
+        _l1[0].arrange(gx.DOWN, buff=0.53).move_to([0.7, 0.98, 0])
+        _l1[1].arrange(gx.DOWN, buff=0.53).move_to([0.7, 0.86, 0])
+        _l1[2].arrange(gx.DOWN, buff=0.53).move_to([0.7, 0.74, 0])
         _l2 = _l1.copy().move_to([4.3, 0.86, 0])
         _l3 = _l1.copy().move_to([7.9, 0.85, 0])
 
         self.wait()
 
         self.play(
-            *[ShowCreation(_l1[c][j]) for c in range(3) for j in range(8)],
+            *[gx.Create(_l1[c][j]) for c in range(3) for j in range(8)],
             run_time=3,
         )
         self.play(
-            *[ShowCreation(_l2[c][j]) for c in range(3) for j in range(8)],
+            *[gx.Create(_l2[c][j]) for c in range(3) for j in range(8)],
             run_time=3,
         )
         self.play(
-            *[ShowCreation(_l3[c][j]) for c in range(3) for j in range(8)],
+            *[gx.Create(_l3[c][j]) for c in range(3) for j in range(8)],
             run_time=3,
         )
 
-        _a1 = VGroup(
-            _make_lines(RED), _make_lines(PINK),
-            _make_lines(GREEN), _make_lines(ORANGE), _make_lines(BLUE),
+        _a1 = gx.VGroup(
+            _make_lines(gx.RED), _make_lines(PINK),
+            _make_lines(GREEN), _make_lines(gx.ORANGE), _make_lines(BLUE),
         )
-        _a1[0].arrange(DOWN, buff=0.53).move_to([0.7, -4.98, 0])
-        _a1[1].arrange(DOWN, buff=0.53).move_to([0.7, -5.06, 0])
-        _a1[2].arrange(DOWN, buff=0.53).move_to([0.7, -5.14, 0])
-        _a1[3].arrange(DOWN, buff=0.53).move_to([0.7, -5.22, 0])
-        _a1[4].arrange(DOWN, buff=0.53).move_to([0.7, -5.30, 0])
+        _a1[0].arrange(gx.DOWN, buff=0.53).move_to([0.7, -4.98, 0])
+        _a1[1].arrange(gx.DOWN, buff=0.53).move_to([0.7, -5.06, 0])
+        _a1[2].arrange(gx.DOWN, buff=0.53).move_to([0.7, -5.14, 0])
+        _a1[3].arrange(gx.DOWN, buff=0.53).move_to([0.7, -5.22, 0])
+        _a1[4].arrange(gx.DOWN, buff=0.53).move_to([0.7, -5.30, 0])
         _a2 = _a1.copy().move_to([4.3, -5.14, 0])
         _a3 = _a1.copy().move_to([7.9, -5.15, 0])
 
@@ -2441,9 +2410,9 @@ class P52_61_uncropped(InteractiveScene):
         # Green/orange/blue slide down from LLM → action expert
         self.wait()
         self.play(
-            *[ReplacementTransform(_l1[c], _a1[c + 2]) for c in range(3)],
-            *[ReplacementTransform(_l2[c], _a2[c + 2]) for c in range(3)],
-            *[ReplacementTransform(_l3[c], _a3[c + 2]) for c in range(3)],
+            *[gx.ReplacementTransform(_l1[c], _a1[c + 2]) for c in range(3)],
+            *[gx.ReplacementTransform(_l2[c], _a2[c + 2]) for c in range(3)],
+            *[gx.ReplacementTransform(_l3[c], _a3[c + 2]) for c in range(3)],
             run_time=5,
         )
 
@@ -2475,11 +2444,10 @@ class P52_61_uncropped(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
 
 
 
-class P34_Pickup(InteractiveScene):
+class P34_Pickup(WelchScene):
     def construct(self): 
         '''
         Ok not sure how I want to break stuff up just yet - lets start hacking
@@ -2488,10 +2456,10 @@ class P34_Pickup(InteractiveScene):
 
         svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(3.9)
             all_svgs.add(svg_image[1:]) #Thowout background
 
@@ -2503,31 +2471,31 @@ class P34_Pickup(InteractiveScene):
         # Now that I have things setup - probably do this in a separte
         # scene to avoid slowing down the big scene - could be a quick 
         # pranav hack later. 
-        final_time_series=ImageMobject(str(hacking_dir/'p31/000/pred_tall/299.png'))
+        final_time_series=image_at_height(str(hacking_dir/'p31/000/pred_tall/299.png'))
         final_time_series.scale(0.7)
         final_time_series.move_to([2.3, -2.1, 0])
 
-        legend=ImageMobject(str(hacking_dir/'p31/legend_2.png'))
+        legend=image_at_height(str(hacking_dir/'p31/legend_2.png'))
         legend.scale(0.6)
         legend.move_to([6.1, -2.1, 0])
         legend.set_opacity(0.8)
 
-        final_image_overhead=ImageMobject(str(hacking_dir/'p31/000/high/299.jpg'))
+        final_image_overhead=image_at_height(str(hacking_dir/'p31/000/high/299.jpg'))
         final_image_overhead.scale(0.78)
         final_image_overhead.move_to([-4.55, 1.83, 0])
 
-        final_image_left=ImageMobject(str(hacking_dir/'p31/000/left_wrist/299.jpg'))
+        final_image_left=image_at_height(str(hacking_dir/'p31/000/left_wrist/299.jpg'))
         final_image_left.scale(0.78)
         final_image_left.move_to([-0.15, 1.83, 0])
 
-        final_image_right=ImageMobject(str(hacking_dir/'p31/000/right_wrist/299.jpg'))
+        final_image_right=image_at_height(str(hacking_dir/'p31/000/right_wrist/299.jpg'))
         final_image_right.scale(0.78)
         final_image_right.move_to([4.21, 1.83, 0])
 
-        prompt=Text('"Uncap the pen"', font="Myriad Pro", weight='bold', font_size=28)
+        prompt=gx.Text('"Uncap the pen"', font="Myriad Pro", weight='bold', font_size=28)
         prompt.move_to([-5.6, -2.08, 0])
 
-        pi0_box = RoundedRectangle(
+        pi0_box = gx.RoundedRectangle(
             width=1.85,
             height=1.55,
             corner_radius=0.1,
@@ -2537,7 +2505,7 @@ class P34_Pickup(InteractiveScene):
         )
         pi0_box.move_to([-2.76, -2.1, 0])       
 
-        pi0_logo=Tex(r'\pi_0', font_size=60)
+        pi0_logo=gx.MathTex(r'\pi_0', font_size=60)
         pi0_logo.set_color(FRESH_TAN)
         pi0_logo.move_to(pi0_box)
         pi0_logo.shift([0, -0.05, 0])
@@ -2550,7 +2518,7 @@ class P34_Pickup(InteractiveScene):
 
         # P31b 
         # Move things around to start drilling into Pi0!
-        pi0_box_2 = RoundedRectangle(
+        pi0_box_2 = gx.RoundedRectangle(
             width=5.1,
             height=4.0,
             corner_radius=0.1,
@@ -2562,7 +2530,7 @@ class P34_Pickup(InteractiveScene):
         self.wait()
 
         self.remove(all_svgs[0], legend)
-        self.play(ReplacementTransform(pi0_box, pi0_box_2), 
+        self.play(gx.ReplacementTransform(pi0_box, pi0_box_2),
                   prompt.animate.scale(0.9).move_to([-5.5, -3.34, 0]),
                   final_image_overhead.animate.scale(0.66).move_to([-5.23, 2.58, 0]),
                   final_image_left.animate.scale(0.66).move_to([-5.23, 0.35, 0]),
@@ -2585,24 +2553,24 @@ class P34_Pickup(InteractiveScene):
 
         #Pi0 is built on top of PaliGemma
         self.wait()
-        self.play(Write((all_svgs[3])), 
-                  self.frame.animate.reorient(0, 0, 0, (-0.24, 0.62, 0.0), 5.09), 
+        self.play(gx.Write((all_svgs[3])),
+                  self.animate_view(0, 0, 0, (-0.24, 0.62, 0.0), 5.09),
                   run_time=4)
         self.wait()
 
-        self.play(Write((all_svgs[2])), run_time=4)
-        self.play(Write((all_svgs[4])), run_time=4)
+        self.play(gx.Write((all_svgs[2])), run_time=4)
+        self.play(gx.Write((all_svgs[4])), run_time=4)
         self.wait()
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
-                  Write(all_svgs[1]), 
+        self.play(self.animate_view(0, 0, 0, (0, 0, 0), 8),
+                  gx.Write(all_svgs[1]),
                   run_time=5)
         
 
 
         #P32 
 
-        action_expert_box = RoundedRectangle(
+        action_expert_box = gx.RoundedRectangle(
             width=3.2,
             height=1.5,
             corner_radius=0.1,
@@ -2611,7 +2579,7 @@ class P34_Pickup(InteractiveScene):
             fill_opacity=0,
         )
         action_expert_box.move_to([0.33, -1.8, 0])
-        pi0_box_3 = RoundedRectangle(
+        pi0_box_3 = gx.RoundedRectangle(
             width=5.1,
             height=5.7,
             corner_radius=0.1,
@@ -2621,34 +2589,34 @@ class P34_Pickup(InteractiveScene):
         )
         pi0_box_3.move_to([-0.25, -0.15, 0]) 
 
-        action_expert_label=Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=24)
+        action_expert_label=gx.Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=24)
         action_expert_label.set_color(YELLOW)
         action_expert_label.move_to(action_expert_box)
 
-        action_expert_sublabel=Text('gemma_expert = GemmaForCausalLM()', font="consolas", font_size=16)
-        action_expert_sublabel.next_to(action_expert_label, DOWN, buff=0.13)
+        action_expert_sublabel=gx.Text('gemma_expert = GemmaForCausalLM()', font="consolas", font_size=16)
+        action_expert_sublabel.next_to(action_expert_label, gx.DOWN, buff=0.13)
 
 
         self.wait()
-        self.play(ReplacementTransform(pi0_box_2, pi0_box_3), 
+        self.play(gx.ReplacementTransform(pi0_box_2, pi0_box_3),
                   pi0_logo.animate.move_to([2, -2.8, 0]), 
                   final_time_series.animate.move_to([4.7, -1.7, 0]),
                   all_svgs[1][-2:].animate.move_to([2.5, -1.8, 0]), #lil Arrow
                   run_time=4)
-        self.play(ShowCreation(action_expert_box), 
-                  Write(action_expert_label), 
+        self.play(gx.Create(action_expert_box),
+                  gx.Write(action_expert_label),
                   run_time=3)
 
         self.wait()
 
-        # self.frame.reorient(0, 0, 0, (-0.22, -0.19, 0.0), 6.32)
-        self.frame.reorient(0, 0, 0, (0.38, -0.14, 0.0), 6.18)
+        # self.set_view(0, 0, 0, (-0.22, -0.19, 0.0), 6.32)
+        self.set_view(0, 0, 0, (0.38, -0.14, 0.0), 6.18)
 
 
         # Yo Claude! Please collect all items on screen with the exception of:
         # action_expert_label, action_expert_box, all_svgs[3], all_svgs[4], pi0_logo, pi0_box_3
         # into a group called group_to_fade. 
-        group_to_fade = Group(
+        group_to_fade = gx.Group(
             final_time_series,
             final_image_overhead,
             final_image_left,
@@ -2662,24 +2630,23 @@ class P34_Pickup(InteractiveScene):
         self.remove(group_to_fade)
         self.wait()
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8),
-            FadeIn(group_to_fade),
+        self.play(self.animate_view(0, 0, 0, (0, 0, 0), 8),
+            gx.FadeIn(group_to_fade),
             run_time=16)
 
 
         # self.wait()
         # self.play(Write(action_expert_sublabel), 
-        #          self.frame.animate.reorient(0, 0, 0, (0.45, -1.81, 0.0), 4.13), 
+        #          self.animate_view(0, 0, 0, (0.45, -1.81, 0.0), 4.13),
         #          run_time=3)
         # self.wait()
 
         self.wait(20)
-        self.embed()
 
 
 
 
-class P31_49b(InteractiveScene):
+class P31_49b(WelchScene):
     def construct(self): 
         '''
         Ok not sure how I want to break stuff up just yet - lets start hacking
@@ -2688,10 +2655,10 @@ class P31_49b(InteractiveScene):
 
         svgs_to_skip=[0, 2, 3, 8, 12, 13, 20, 21]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(3.9)
             all_svgs.add(svg_image[1:]) #Thowout background
 
@@ -2703,31 +2670,31 @@ class P31_49b(InteractiveScene):
         # Now that I have things setup - probably do this in a separte
         # scene to avoid slowing down the big scene - could be a quick 
         # pranav hack later. 
-        final_time_series=ImageMobject(str(hacking_dir/'p31/000/pred_tall/299.png'))
+        final_time_series=image_at_height(str(hacking_dir/'p31/000/pred_tall/299.png'))
         final_time_series.scale(0.7)
         final_time_series.move_to([2.3, -2.1, 0])
 
-        legend=ImageMobject(str(hacking_dir/'p31/legend_2.png'))
+        legend=image_at_height(str(hacking_dir/'p31/legend_2.png'))
         legend.scale(0.6)
         legend.move_to([6.1, -2.1, 0])
         legend.set_opacity(0.8)
 
-        final_image_overhead=ImageMobject(str(hacking_dir/'p31/000/high/299.jpg'))
+        final_image_overhead=image_at_height(str(hacking_dir/'p31/000/high/299.jpg'))
         final_image_overhead.scale(0.78)
         final_image_overhead.move_to([-4.55, 1.83, 0])
 
-        final_image_left=ImageMobject(str(hacking_dir/'p31/000/left_wrist/299.jpg'))
+        final_image_left=image_at_height(str(hacking_dir/'p31/000/left_wrist/299.jpg'))
         final_image_left.scale(0.78)
         final_image_left.move_to([-0.15, 1.83, 0])
 
-        final_image_right=ImageMobject(str(hacking_dir/'p31/000/right_wrist/299.jpg'))
+        final_image_right=image_at_height(str(hacking_dir/'p31/000/right_wrist/299.jpg'))
         final_image_right.scale(0.78)
         final_image_right.move_to([4.21, 1.83, 0])
 
-        prompt=Text('"Uncap the pen"', font="Myriad Pro", weight='bold', font_size=28)
+        prompt=gx.Text('"Uncap the pen"', font="Myriad Pro", weight='bold', font_size=28)
         prompt.move_to([-5.6, -2.08, 0])
 
-        pi0_box = RoundedRectangle(
+        pi0_box = gx.RoundedRectangle(
             width=1.85,
             height=1.55,
             corner_radius=0.1,
@@ -2737,7 +2704,7 @@ class P31_49b(InteractiveScene):
         )
         pi0_box.move_to([-2.76, -2.1, 0])       
 
-        pi0_logo=Tex(r'\pi_0', font_size=60)
+        pi0_logo=gx.MathTex(r'\pi_0', font_size=60)
         pi0_logo.set_color(FRESH_TAN)
         pi0_logo.move_to(pi0_box)
         pi0_logo.shift([0, -0.05, 0])
@@ -2750,7 +2717,7 @@ class P31_49b(InteractiveScene):
 
         # P31b 
         # Move things around to start drilling into Pi0!
-        pi0_box_2 = RoundedRectangle(
+        pi0_box_2 = gx.RoundedRectangle(
             width=5.1,
             height=4.0,
             corner_radius=0.1,
@@ -2762,7 +2729,7 @@ class P31_49b(InteractiveScene):
         self.wait()
 
         self.remove(all_svgs[0], legend)
-        self.play(ReplacementTransform(pi0_box, pi0_box_2), 
+        self.play(gx.ReplacementTransform(pi0_box, pi0_box_2),
                   prompt.animate.scale(0.9).move_to([-5.5, -3.34, 0]),
                   final_image_overhead.animate.scale(0.66).move_to([-5.23, 2.58, 0]),
                   final_image_left.animate.scale(0.66).move_to([-5.23, 0.35, 0]),
@@ -2785,24 +2752,24 @@ class P31_49b(InteractiveScene):
 
         #Pi0 is built on top of PaliGemma
         self.wait()
-        self.play(Write((all_svgs[3])), 
-                  self.frame.animate.reorient(0, 0, 0, (-0.24, 0.62, 0.0), 5.09), 
+        self.play(gx.Write((all_svgs[3])),
+                  self.animate_view(0, 0, 0, (-0.24, 0.62, 0.0), 5.09),
                   run_time=4)
         self.wait()
 
-        self.play(Write((all_svgs[2])), run_time=4)
-        self.play(Write((all_svgs[4])), run_time=4)
+        self.play(gx.Write((all_svgs[2])), run_time=4)
+        self.play(gx.Write((all_svgs[4])), run_time=4)
         self.wait()
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
-                  Write(all_svgs[1]), 
+        self.play(self.animate_view(0, 0, 0, (0, 0, 0), 8),
+                  gx.Write(all_svgs[1]),
                   run_time=5)
         
 
 
         #P32 
 
-        action_expert_box = RoundedRectangle(
+        action_expert_box = gx.RoundedRectangle(
             width=3.2,
             height=1.5,
             corner_radius=0.1,
@@ -2811,7 +2778,7 @@ class P31_49b(InteractiveScene):
             fill_opacity=0,
         )
         action_expert_box.move_to([0.33, -1.8, 0])
-        pi0_box_3 = RoundedRectangle(
+        pi0_box_3 = gx.RoundedRectangle(
             width=5.1,
             height=5.7,
             corner_radius=0.1,
@@ -2821,27 +2788,27 @@ class P31_49b(InteractiveScene):
         )
         pi0_box_3.move_to([-0.25, -0.15, 0]) 
 
-        action_expert_label=Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=24)
+        action_expert_label=gx.Text('ACTION EXPERT', font="Myriad Pro", weight='bold', font_size=24)
         action_expert_label.set_color(YELLOW)
         action_expert_label.move_to(action_expert_box)
 
-        action_expert_sublabel=Text('gemma_expert = GemmaForCausalLM()', font="consolas", font_size=16)
-        action_expert_sublabel.next_to(action_expert_label, DOWN, buff=0.13)
+        action_expert_sublabel=gx.Text('gemma_expert = GemmaForCausalLM()', font="consolas", font_size=16)
+        action_expert_sublabel.next_to(action_expert_label, gx.DOWN, buff=0.13)
 
 
         self.wait()
-        self.play(ReplacementTransform(pi0_box_2, pi0_box_3), 
+        self.play(gx.ReplacementTransform(pi0_box_2, pi0_box_3),
                   pi0_logo.animate.move_to([2, -2.8, 0]), 
                   final_time_series.animate.move_to([4.7, -1.7, 0]),
                   all_svgs[1][-2:].animate.move_to([2.5, -1.8, 0]), #lil Arrow
                   run_time=4)
-        self.play(ShowCreation(action_expert_box), 
-                  Write(action_expert_label), 
+        self.play(gx.Create(action_expert_box),
+                  gx.Write(action_expert_label),
                   run_time=3)
 
         self.wait()
-        self.play(Write(action_expert_sublabel), 
-                 self.frame.animate.reorient(0, 0, 0, (0.45, -1.81, 0.0), 4.13), 
+        self.play(gx.Write(action_expert_sublabel),
+                 self.animate_view(0, 0, 0, (0.45, -1.81, 0.0), 4.13),
                  run_time=3)
         self.wait()
 
@@ -2873,17 +2840,17 @@ class P31_49b(InteractiveScene):
         patch_size = total_height / grid_n
 
         FRAME_IDX=150
-        pixel_squares = Group()
+        pixel_squares = gx.Group()
 
         for k, image_name in enumerate(['base_0_rgb', 'left_wrist_0_rgb', 'right_wrist_0_rgb']):
-            pixel_squares.add(Group())
+            pixel_squares.add(gx.Group())
             patch_dir = hacking_dir/('p35/'+str(FRAME_IDX)+'/'+image_name)
             for i in range(2, 14): #Skip top 2 and botton 2 rows
                 for j in range(grid_n):
                     patch_path = os.path.join(patch_dir, f'patch_{i}_{j}.png')
-                    patch_mob = ImageMobject(patch_path)
-                    patch_mob.set_height(patch_size)
-                    patch_mob.set_width(patch_size, stretch=True)
+                    patch_mob = image_at_height(patch_path)
+                    patch_mob.scale_to_fit_height(patch_size)
+                    patch_mob.stretch_to_fit_width(patch_size)
                     x_pos = (j - grid_n/2 + 0.5) * patch_size
                     y_pos = -(i - grid_n/2 + 0.5) * patch_size
                     patch_mob.move_to([x_pos, y_pos, 0])
@@ -2903,7 +2870,7 @@ class P31_49b(InteractiveScene):
 
 
         #Zoom back out to setup p35, image patches already in place!
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
+        self.play(self.animate_view(0, 0, 0, (0, 0, 0), 8),
                   run_time=3)
         self.wait()
         self.remove(action_expert_sublabel)
@@ -2918,13 +2885,13 @@ class P31_49b(InteractiveScene):
         image_encoders_label=all_svgs[2][39:]
 
         self.wait()
-        self.play(pi0_logo.animate.scale(0.85).set_color(CHILL_BROWN).to_corner(DOWN + RIGHT, buff=0.25),
-                  FadeOut(pi0_box_3), 
-                  FadeOut(all_svgs[3]),
-                  FadeOut(all_svgs[1]),
-                  FadeOut(final_time_series), 
-                  FadeOut(action_expert_label), 
-                  FadeOut(action_expert_box), 
+        self.play(pi0_logo.animate.scale(0.85).set_color(CHILL_BROWN).to_corner(gx.DOWN + gx.RIGHT, buff=0.25),
+                  gx.FadeOut(pi0_box_3),
+                  gx.FadeOut(all_svgs[3]),
+                  gx.FadeOut(all_svgs[1]),
+                  gx.FadeOut(final_time_series),
+                  gx.FadeOut(action_expert_label),
+                  gx.FadeOut(action_expert_box),
                   all_svgs[4].animate.set_color(CHILL_BROWN).move_to([2, 0.4, 0]),
                   pixel_squares[1].animate.shift([0, -0.2, 0.0]),
                   pixel_squares[2].animate.shift([0, -0.4, 0.0]),
@@ -2974,7 +2941,7 @@ class P31_49b(InteractiveScene):
                     unit_vector = direction_vector / distance
                     displacement = unit_vector * distance * gap_factor
                     new_position = pixel_pos + displacement
-                    animations.append(ApplyMethod(pixel.move_to, new_position))
+                    animations.append(gx.ApplyMethod(pixel.move_to, new_position))
 
         self.wait()
         self.play(*animations, run_time=3.0)
@@ -3013,11 +2980,11 @@ class P31_49b(InteractiveScene):
         # Ok I think a zoom in here, then pan down as we move patches over?
 
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (-3.4, 1.91, 0.0), 4.03),
-                  Write(embedding_brackets_1),
-                  Write(lil_arrows_pair_1),
-                  Write(lil_arrows_pair_2),
-                  Write(lil_arrows_pair_3),
+        self.play(self.animate_view(0, 0, 0, (-3.4, 1.91, 0.0), 4.03),
+                  gx.Write(embedding_brackets_1),
+                  gx.Write(lil_arrows_pair_1),
+                  gx.Write(lil_arrows_pair_2),
+                  gx.Write(lil_arrows_pair_3),
                   run_time=5
                   )
 
@@ -3062,20 +3029,20 @@ class P31_49b(InteractiveScene):
         right_colors=patch_bright_average(np.array(right_im_full), exponent=2.0).reshape(-1, 3) #(16, 16, 3)  
 
         patches_indices_to_move_1=[0, 1, 2, 3, 4, 5, 6, 7, 8]
-        embedding_rows_1=VGroup()
-        starting_squares_1=VGroup()
+        embedding_rows_1=gx.VGroup()
+        starting_squares_1=gx.VGroup()
         vertical_spacing=0.2
         for i, patch_index in enumerate(patches_indices_to_move_1):
 
-            boosted_color=rgb_to_color(boost_colors_hsv(overhead_colors[patch_index+32].reshape(1,3)/255., 
+            boosted_color=gx.rgb_to_color(boost_colors_hsv(overhead_colors[patch_index+32].reshape(1,3)/255.,
                                           saturation_boost=SATURATION_BOOST, min_saturation=MIN_SATURATION, min_value=MIN_VALUE).ravel())
-            flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
+            flat_rect = gx.Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
             flat_rect.set_fill(boosted_color, opacity=1)
             flat_rect.set_stroke(width=0)
             flat_rect.move_to([-1.5, 3.15-i*vertical_spacing, 0])  
 
-            color_square = Square(side_length=patch_size)
-            color_square.set_fill(rgb_to_color(overhead_colors[patch_index+32]/255.), opacity=1)
+            color_square = gx.Square(side_length=patch_size)
+            color_square.set_fill(gx.rgb_to_color(overhead_colors[patch_index+32]/255.), opacity=1)
             color_square.set_stroke(width=0)
             color_square.move_to(pixel_squares[0][patch_index])
 
@@ -3085,10 +3052,10 @@ class P31_49b(InteractiveScene):
 
         self.wait()
         self.play(
-            LaggedStart(
-                *[Succession(
-                    FadeIn(starting_squares_1[i], run_time=0.1),
-                    ReplacementTransform(starting_squares_1[i], embedding_rows_1[i]),
+            gx.LaggedStart(
+                *[gx.Succession(
+                    gx.FadeIn(starting_squares_1[i], run_time=0.1),
+                    gx.ReplacementTransform(starting_squares_1[i], embedding_rows_1[i]),
                 ) for i in range(len(embedding_rows_1))],
                 lag_ratio=0.2,
             ),
@@ -3096,36 +3063,36 @@ class P31_49b(InteractiveScene):
         )
 
         ##Ok now a little ...
-        ellipsis_dots = VGroup(*[
-            Dot(radius=0.025).set_color(CHILL_BROWN)
+        ellipsis_dots = gx.VGroup(*[
+            gx.Dot(radius=0.025).set_color(CHILL_BROWN)
             for _ in range(3)
         ])
-        ellipsis_dots.arrange(DOWN, buff=0.035)
-        ellipsis_dots.next_to(embedding_rows_1[-1], DOWN, buff=0.15)
+        ellipsis_dots.arrange(gx.DOWN, buff=0.035)
+        ellipsis_dots.next_to(embedding_rows_1[-1], gx.DOWN, buff=0.15)
 
-        self.play(Write(ellipsis_dots), run_time=2)
+        self.play(gx.Write(ellipsis_dots), run_time=2)
         self.wait()
 
         #Pan down, or maybe just out and do it again as VO talks about colors. 
         #Hmm seems lke we're grabbing the wrong colors...
 
         patches_indices_to_move_2=[82, 83, 84, 85, 86, 87, 88, 89, 90, 91]
-        embedding_rows_2=VGroup()
-        starting_squares_2=VGroup()
+        embedding_rows_2=gx.VGroup()
+        starting_squares_2=gx.VGroup()
         vertical_spacing=0.2
         for i, patch_index in enumerate(patches_indices_to_move_2):
 
-            boosted_color=rgb_to_color(boost_colors_hsv(left_colors[patch_index+32].reshape(1,3)/255., 
+            boosted_color=gx.rgb_to_color(boost_colors_hsv(left_colors[patch_index+32].reshape(1,3)/255.,
                                           saturation_boost=SATURATION_BOOST, min_saturation=MIN_SATURATION, min_value=MIN_VALUE).ravel())
             
             # boosted_color=rgb_to_color(left_colors[patch_index+32]/255.)
-            flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
+            flat_rect = gx.Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
             flat_rect.set_fill(boosted_color, opacity=1)
             flat_rect.set_stroke(width=0)
             flat_rect.move_to([-1.5, 1.0-i*vertical_spacing, 0])  
 
-            color_square = Square(side_length=patch_size)
-            color_square.set_fill(rgb_to_color(left_colors[patch_index+32]/255.), opacity=1)
+            color_square = gx.Square(side_length=patch_size)
+            color_square.set_fill(gx.rgb_to_color(left_colors[patch_index+32]/255.), opacity=1)
             color_square.set_stroke(width=0)
             color_square.move_to(pixel_squares[1][patch_index])
 
@@ -3134,11 +3101,11 @@ class P31_49b(InteractiveScene):
 
         self.wait()
         self.play(
-            self.frame.animate.reorient(0, 0, 0, (-2.39, 1.34, 0.0), 5.19),
-            LaggedStart(
-                *[Succession(
-                    FadeIn(starting_squares_2[i], run_time=0.1),
-                    ReplacementTransform(starting_squares_2[i], embedding_rows_2[i]),
+            self.animate_view(0, 0, 0, (-2.39, 1.34, 0.0), 5.19),
+            gx.LaggedStart(
+                *[gx.Succession(
+                    gx.FadeIn(starting_squares_2[i], run_time=0.1),
+                    gx.ReplacementTransform(starting_squares_2[i], embedding_rows_2[i]),
                 ) for i in range(len(embedding_rows_2))],
                 lag_ratio=0.3,
             ),
@@ -3146,14 +3113,14 @@ class P31_49b(InteractiveScene):
         )
 
         ##Ok now a little ...
-        ellipsis_dots_2 = VGroup(*[
-            Dot(radius=0.025).set_color(CHILL_BROWN)
+        ellipsis_dots_2 = gx.VGroup(*[
+            gx.Dot(radius=0.025).set_color(CHILL_BROWN)
             for _ in range(3)
         ])
-        ellipsis_dots_2.arrange(DOWN, buff=0.035)
-        ellipsis_dots_2.next_to(embedding_rows_2[-1], DOWN, buff=0.1)
+        ellipsis_dots_2.arrange(gx.DOWN, buff=0.035)
+        ellipsis_dots_2.next_to(embedding_rows_2[-1], gx.DOWN, buff=0.1)
 
-        self.play(Write(ellipsis_dots_2), run_time=2)
+        self.play(gx.Write(ellipsis_dots_2), run_time=2)
         # self.wait()
 
         # This will probably liine up with p36. 
@@ -3161,22 +3128,22 @@ class P31_49b(InteractiveScene):
         # Could zoom then move, but I think doing them both at 
         # once will be a little better?
         patches_indices_to_move_3=[186, 186, 187, 188, 189, 190, 191]
-        embedding_rows_3=VGroup()
-        starting_squares_3=VGroup()
+        embedding_rows_3=gx.VGroup()
+        starting_squares_3=gx.VGroup()
         vertical_spacing=0.2
         for i, patch_index in enumerate(patches_indices_to_move_3):
 
-            boosted_color=rgb_to_color(boost_colors_hsv(right_colors[patch_index+32].reshape(1,3)/255., 
+            boosted_color=gx.rgb_to_color(boost_colors_hsv(right_colors[patch_index+32].reshape(1,3)/255.,
                                           saturation_boost=SATURATION_BOOST, min_saturation=MIN_SATURATION, min_value=MIN_VALUE).ravel())
             
             # boosted_color=rgb_to_color(right_colors[patch_index+32]/255.)
-            flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
+            flat_rect = gx.Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
             flat_rect.set_fill(boosted_color, opacity=1)
             flat_rect.set_stroke(width=0)
             flat_rect.move_to([-1.5, -1.3-i*vertical_spacing, 0])  
 
-            color_square = Square(side_length=patch_size)
-            color_square.set_fill(rgb_to_color(right_colors[patch_index+32]/255.), opacity=1)
+            color_square = gx.Square(side_length=patch_size)
+            color_square.set_fill(gx.rgb_to_color(right_colors[patch_index+32]/255.), opacity=1)
             color_square.set_stroke(width=0)
             color_square.move_to(pixel_squares[2][patch_index])
 
@@ -3185,11 +3152,11 @@ class P31_49b(InteractiveScene):
 
         self.wait()
         self.play(
-            self.frame.animate.reorient(0, 0, 0, (0, 0, 0.0), 8.0),
-            LaggedStart(
-                *[Succession(
-                    FadeIn(starting_squares_3[i], run_time=0.1),
-                    ReplacementTransform(starting_squares_3[i], embedding_rows_3[i]),
+            self.animate_view(0, 0, 0, (0, 0, 0.0), 8.0),
+            gx.LaggedStart(
+                *[gx.Succession(
+                    gx.FadeIn(starting_squares_3[i], run_time=0.1),
+                    gx.ReplacementTransform(starting_squares_3[i], embedding_rows_3[i]),
                 ) for i in range(len(embedding_rows_3))],
                 lag_ratio=0.3,
             ),
@@ -3218,7 +3185,7 @@ class P31_49b(InteractiveScene):
         # self.remove(embedding_brackets_1[0]) #Right
         # self.remove(embedding_brackets_1[7]) #Bottom left
         # self.remove(embedding_brackets_1[8]) #Upper left
-        embedding_brackets_1_only=VGroup(*[embedding_brackets_1[i] for i in [0, 8, 7, 9, 10, 11]])
+        embedding_brackets_1_only=gx.VGroup(*[embedding_brackets_1[i] for i in [0, 8, 7, 9, 10, 11]])
 
         # self.remove(embedding_brackets_1_only)
         # self.remove(embedding_brackets_1[])
@@ -3226,20 +3193,20 @@ class P31_49b(InteractiveScene):
         # Let me go ahead and get these 4 lines in place, then I'll 
         # figure out how to animate to dems
 
-        embedding_rows_4=VGroup() #Text ones
+        embedding_rows_4=gx.VGroup() #Text ones
         for i in range(4):
             # flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
             # flat_rect.set_fill(BLUE, opacity=1)
             # flat_rect.set_stroke(width=0)
             # flat_rect.move_to([-1.5, -2.75-i*vertical_spacing, 0])  
 
-            flat_line = Line(LEFT * 0.55, RIGHT * 0.55)
+            flat_line = gx.Line(gx.LEFT * 0.55, gx.RIGHT * 0.55)
             flat_line.set_stroke(BLUE, width=4)
             flat_line.move_to([-1.5, -2.75 - i * vertical_spacing, 0])
 
             embedding_rows_4.add(flat_line)
 
-        tokenized_prompt=Text('Un  cap  the  pen', font="Myriad Pro", weight='bold', font_size=25)
+        tokenized_prompt=gx.Text('Un  cap  the  pen', font="Myriad Pro", weight='bold', font_size=25)
         tokenized_prompt.set_color(BLUE)
         tokenized_prompt.set_stroke(BLUE, width=0.1)
         tokenized_prompt.move_to(prompt)
@@ -3247,15 +3214,15 @@ class P31_49b(InteractiveScene):
 
         self.wait()
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (-2.87, -1.71, 0.0), 4.66), run_time=3)
+        self.play(self.animate_view(0, 0, 0, (-2.87, -1.71, 0.0), 4.66), run_time=3)
         
         #Break apart
         self.wait()
         self.remove(prompt[0], prompt[-1])
-        self.play(ReplacementTransform(prompt[1:3], tokenized_prompt[:2]),
-                    ReplacementTransform(prompt[3:6], tokenized_prompt[2:5]),
-                    ReplacementTransform(prompt[6:9], tokenized_prompt[5:8]),
-                    ReplacementTransform(prompt[9:12], tokenized_prompt[8:11]), 
+        self.play(gx.ReplacementTransform(prompt[1:3], tokenized_prompt[:2]),
+                    gx.ReplacementTransform(prompt[3:6], tokenized_prompt[2:5]),
+                    gx.ReplacementTransform(prompt[6:9], tokenized_prompt[5:8]),
+                    gx.ReplacementTransform(prompt[9:12], tokenized_prompt[8:11]),
                   run_time=2.5)
         self.wait()
 
@@ -3269,12 +3236,12 @@ class P31_49b(InteractiveScene):
         #           run_time=4)
 
         self.play(
-            ReplacementTransform(embedding_brackets_1_only, embedding_brackets_2),
-            LaggedStart(
-                ReplacementTransform(tokenized_prompt[:2].copy(), embedding_rows_4[0]),
-                ReplacementTransform(tokenized_prompt[2:4].copy(), embedding_rows_4[1]),
-                ReplacementTransform(tokenized_prompt[5:8].copy(), embedding_rows_4[2]),
-                ReplacementTransform(tokenized_prompt[8:11].copy(), embedding_rows_4[3]),
+            gx.ReplacementTransform(embedding_brackets_1_only, embedding_brackets_2),
+            gx.LaggedStart(
+                gx.ReplacementTransform(tokenized_prompt[:2].copy(), embedding_rows_4[0]),
+                gx.ReplacementTransform(tokenized_prompt[2:4].copy(), embedding_rows_4[1]),
+                gx.ReplacementTransform(tokenized_prompt[5:8].copy(), embedding_rows_4[2]),
+                gx.ReplacementTransform(tokenized_prompt[8:11].copy(), embedding_rows_4[3]),
                 lag_ratio=0.5,
             ),
             run_time=5
@@ -3284,10 +3251,10 @@ class P31_49b(InteractiveScene):
         blue_text_embedding_arrow.shift([-0.1, 0.05, 0])
 
         self.wait()
-        self.play(Write(blue_text_embedding_arrow))
+        self.play(gx.Write(blue_text_embedding_arrow))
 
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8),
+        self.play(self.animate_view(0, 0, 0, (0, 0, 0), 8),
                   run_time=4)
 
         embedding_out_arrow=all_svgs[7][-2:]
@@ -3295,7 +3262,7 @@ class P31_49b(InteractiveScene):
         embedding_out_arrow.shift([-0.13, 0.18, 0])
    
 
-        full_gemma=Group(all_svgs[8], all_svgs[9], all_svgs[10], all_svgs[11], all_svgs[12], all_svgs[13])
+        full_gemma=gx.Group(all_svgs[8], all_svgs[9], all_svgs[10], all_svgs[11], all_svgs[12], all_svgs[13])
         full_gemma.shift([0.2, 0, 0])
 
 
@@ -3304,19 +3271,19 @@ class P31_49b(InteractiveScene):
 
         # Zoom in, expand LLM box
         self.wait()
-        self.play(ReplacementTransform(simple_llm_box[-1], all_svgs[8][0]),
-                  ReplacementTransform(simple_llm_box[0:3], all_svgs[8][1:4]),
-                  ReplacementTransform(simple_llm_box[3:-1], all_svgs[8][4:]),
-                  FadeIn(embedding_out_arrow),
-                  self.frame.animate.reorient(0, 0, 0, (3.08, 0.07, 0.0), 4.73),
+        self.play(gx.ReplacementTransform(simple_llm_box[-1], all_svgs[8][0]),
+                  gx.ReplacementTransform(simple_llm_box[0:3], all_svgs[8][1:4]),
+                  gx.ReplacementTransform(simple_llm_box[3:-1], all_svgs[8][4:]),
+                  gx.FadeIn(embedding_out_arrow),
+                  self.animate_view(0, 0, 0, (3.08, 0.07, 0.0), 4.73),
                  run_time=5)
 
         self.wait()
-        self.play(Write(all_svgs[9]), Write(all_svgs[13]), run_time=3)
+        self.play(gx.Write(all_svgs[9]), gx.Write(all_svgs[13]), run_time=3)
         # self,add(all_svgs[12])
         self.wait()
 
-        self.play(Write(all_svgs[10]), Write(all_svgs[11]), Write(all_svgs[12]), run_time=7)
+        self.play(gx.Write(all_svgs[10]), gx.Write(all_svgs[11]), gx.Write(all_svgs[12]), run_time=7)
         
 
         # Hmm do we "zoom out" before "zooming in" on the attention head?
@@ -3327,10 +3294,10 @@ class P31_49b(InteractiveScene):
 
         self.wait()
         self.remove(pi0_logo)
-        self.play(FadeOut(all_svgs[8]), 
-                  FadeOut(all_svgs[9]), 
-                  FadeOut(all_svgs[10]), 
-                  FadeOut(all_svgs[13]), 
+        self.play(gx.FadeOut(all_svgs[8]),
+                  gx.FadeOut(all_svgs[9]),
+                  gx.FadeOut(all_svgs[10]),
+                  gx.FadeOut(all_svgs[13]),
                   run_time=3)
         
  
@@ -3339,47 +3306,47 @@ class P31_49b(InteractiveScene):
         # P40 Shorty
         h6_label=all_svgs[12][1:]
         self.wait()
-        self.play(FadeOut(all_svgs[11]), run_time=1.5)
+        self.play(gx.FadeOut(all_svgs[11]), run_time=1.5)
         # self.remove(all_svgs[11]) #Probably remove here instead of fade?
-        self.play(ReplacementTransform(all_svgs[12][0], all_svgs[14][-1]),
+        self.play(gx.ReplacementTransform(all_svgs[12][0], all_svgs[14][-1]),
                   h6_label.animate.scale(1.5).move_to([6.4, -3.4, 0]),
-                  self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8),
+                  self.animate_view(0, 0, 0, (0, 0, 0), 8),
                   run_time=5)
 
 
-        queries=Group(); keys=Group(); values=Group(); 
-        attn_dots=VGroup()
+        queries=gx.Group(); keys=gx.Group(); values=gx.Group();
+        attn_dots=gx.VGroup()
         q_spacing=0.15
         for i in range(11):
-            q=ImageMobject(str(hacking_dir/('p40_1/queries_'+ str(i).zfill(2) +'.png')))
+            q=image_at_height(str(hacking_dir/('p40_1/queries_'+ str(i).zfill(2) +'.png')))
             q.scale(0.022)
             q.move_to([3.5, 3.2-i*q_spacing, 0])
             queries.add(q)
             if i==1 or i==6:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(q)
                 attn_dots.add(e)
 
         for i in range(11):
-            k=ImageMobject(str(hacking_dir/('p40_1/keys_'+ str(i).zfill(2) +'.png')))
+            k=image_at_height(str(hacking_dir/('p40_1/keys_'+ str(i).zfill(2) +'.png')))
             k.scale(0.022)
             k.move_to([3.5, 0.9-i*q_spacing, 0])
             keys.add(k)
             if i==1 or i==6:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(k)
                 attn_dots.add(e)
 
         for i in range(11):
-            v=ImageMobject(str(hacking_dir/('p40_1/values_'+ str(i).zfill(2) +'.png')))
+            v=image_at_height(str(hacking_dir/('p40_1/values_'+ str(i).zfill(2) +'.png')))
             v.scale(0.022)
             v.move_to([3.5, -1.37-i*q_spacing, 0])
             values.add(v)
             if i==1 or i==6:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(v)
                 attn_dots.add(e)
 
@@ -3388,29 +3355,29 @@ class P31_49b(InteractiveScene):
         all_svgs[19].shift([0.04, 0.00, 0])
 
         self.wait()
-        self.play(Write(all_svgs[15]), run_time=5)
+        self.play(gx.Write(all_svgs[15]), run_time=5)
 
         self.wait()
 
-        self.play(FadeIn(queries), FadeIn(all_svgs[17]), FadeIn(attn_dots[:2]), run_time=2)
-        self.play(FadeIn(keys), FadeIn(all_svgs[18]), FadeIn(attn_dots[2:4]), run_time=2)
-        self.play(FadeIn(values), FadeIn(all_svgs[19]), FadeIn(attn_dots[4:]), run_time=2)
+        self.play(gx.FadeIn(queries), gx.FadeIn(all_svgs[17]), gx.FadeIn(attn_dots[:2]), run_time=2)
+        self.play(gx.FadeIn(keys), gx.FadeIn(all_svgs[18]), gx.FadeIn(attn_dots[2:4]), run_time=2)
+        self.play(gx.FadeIn(values), gx.FadeIn(all_svgs[19]), gx.FadeIn(attn_dots[4:]), run_time=2)
 
 
         all_svgs[20].scale(1.015)
         all_svgs[20].shift([0.2, 0.03, 0])
 
         self.wait()
-        self.play(Write(all_svgs[20]))
+        self.play(gx.Write(all_svgs[20]))
 
         #Ok for the middle of this paragraph we’ll rely on some illustrator overlays to call out connections etc → I think that will work better than animation? 
         #And we’ll do one zoom in/out when we talk about the light/dark regions of the vectors.
 
         self.remove(all_svgs[20])
-        self.play(self.frame.animate.reorient(0, 0, 0, (3.47, 2.5, 0.0), 2.97), run_time=5)
+        self.play(self.animate_view(0, 0, 0, (3.47, 2.5, 0.0), 2.97), run_time=5)
 
         self.wait()
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), run_time=4)
+        self.play(self.animate_view(0, 0, 0, (0, 0, 0), 8), run_time=4)
 
     
         self.wait()
@@ -3420,15 +3387,15 @@ class P31_49b(InteractiveScene):
 
         #P41 
         #Slow zoom on Queries and keys
-        self.play(self.frame.animate.reorient(0, 0, 0, (3.63, 1.2, 0.0), 4.37), 
-                 FadeOut(all_svgs[14][-1]),#Attention head boarder
+        self.play(self.animate_view(0, 0, 0, (3.63, 1.2, 0.0), 4.37),
+                 gx.FadeOut(all_svgs[14][-1]),#Attention head boarder
                  run_time=10) 
 
 
         self.wait()
 
         #Reduce opacity on all but final query row
-        self.play(Group(*[queries[i] for i in [0, 2, 3, 4, 5, 7, 8, 9]]).animate.set_opacity(0.35), run_time=3)
+        self.play(gx.Group(*[queries[i] for i in [0, 2, 3, 4, 5, 7, 8, 9]]).animate.set_opacity(0.35), run_time=3)
 
 
         #Move copies on top of every key, adding numerical results -> i thnk one at a time. 
@@ -3463,28 +3430,28 @@ class P31_49b(InteractiveScene):
 
         dp_x = 6.3  # tweak to sit right of keys
 
-        dp_title = Text("DOT PRODUCT", font="Myriad Pro", weight='bold', font_size=14)
+        dp_title = gx.Text("DOT PRODUCT", font="Myriad Pro", weight='bold', font_size=14)
         dp_title.set_color(FRESH_TAN)
         dp_title.move_to([dp_x, 0.9 + 0.22, 0])  # just above first key row
 
-        dp_underline = Line(
-            dp_title.get_left() + DOWN * 0.08,
-            dp_title.get_right() + DOWN * 0.08,
+        dp_underline = gx.Line(
+            dp_title.get_left() + gx.DOWN * 0.08,
+            dp_title.get_right() + gx.DOWN * 0.08,
         )
         dp_underline.set_stroke(FRESH_TAN, width=2)
 
-        dp_numbers = VGroup()
+        dp_numbers = gx.VGroup()
         for i in range(11):
             y = 0.9 - i * q_spacing
             if i in dot_product_values:
-                num = Text(dot_product_values[i], font_size=14)
+                num = gx.Text(dot_product_values[i], font_size=14)
                 num.set_color(MAGENTA)
                 num.move_to([dp_x, y, 0])
                 dp_numbers.add(num)
 
         # self.add(dp_title, dp_underline, dp_numbers)
 
-        self.play(Write(dp_title), ShowCreation(dp_underline), run_time=1.5)
+        self.play(gx.Write(dp_title), gx.Create(dp_underline), run_time=1.5)
 
         self.wait()
 
@@ -3493,24 +3460,24 @@ class P31_49b(InteractiveScene):
         self.add(query_copy)
 
         self.play(query_copy.animate.move_to(keys[0]), run_time=3)
-        self.play(Write(dp_numbers[0]))
-        self.play(FadeOut(query_copy))
+        self.play(gx.Write(dp_numbers[0]))
+        self.play(gx.FadeOut(query_copy))
 
         animations=[]
-        query_copies=Group()
+        query_copies=gx.Group()
         for count, i in enumerate([2, 3, 4, 5, 7, 8, 9, 10]):
             query_copy=queries[-1].copy()
             query_copy.set_opacity(0.5)
             query_copies.add(query_copy)
             animations.append(query_copy.animate.move_to(keys[i]))
-            animations.append(Write(dp_numbers[count+1]))
+            animations.append(gx.Write(dp_numbers[count+1]))
 
         self.add(query_copies)
         #ok this is pretty good now gotta add lag ratio and drawing in results. 
-        self.play(LaggedStart(*animations, lag_ratio=0.4), run_time=10)
+        self.play(gx.LaggedStart(*animations, lag_ratio=0.4), run_time=10)
 
         self.wait()
-        self.play(FadeOut(query_copies), run_time=3)
+        self.play(gx.FadeOut(query_copies), run_time=3)
 
         #P42 - Will need a little Illustrator overlay here to point to those two large results - no problem
 
@@ -3528,21 +3495,21 @@ class P31_49b(InteractiveScene):
 
         attn_x = 7.5  #
 
-        attn_title = Text("ATTENTION VALUE", font="Myriad Pro", weight='bold', font_size=14)
+        attn_title = gx.Text("ATTENTION VALUE", font="Myriad Pro", weight='bold', font_size=14)
         attn_title.set_color(FRESH_TAN)
         attn_title.move_to([attn_x, 0.9 + 0.22, 0])  # just above first key row
 
-        attn_underline = Line(
-            attn_title.get_left() + DOWN * 0.08,
-            attn_title.get_right() + DOWN * 0.08,
+        attn_underline = gx.Line(
+            attn_title.get_left() + gx.DOWN * 0.08,
+            attn_title.get_right() + gx.DOWN * 0.08,
         )
         attn_underline.set_stroke(FRESH_TAN, width=2)
 
-        attn_numbers = VGroup()
+        attn_numbers = gx.VGroup()
         for i in range(11):
             y = 0.9 - i * q_spacing
             if i in attn_values:
-                num = Text(attn_values[i], font_size=14)
+                num = gx.Text(attn_values[i], font_size=14)
                 num.set_color(MAGENTA)
                 num.move_to([attn_x, y, 0])
                 attn_numbers.add(num)
@@ -3552,10 +3519,10 @@ class P31_49b(InteractiveScene):
 
         self.wait()
         self.add(all_svgs[21])
-        self.play(self.frame.animate.reorient(0, 0, 0, (4.56, 1.1, 0.0), 4.22), 
-                  Write(attn_title), 
-                  ShowCreation(attn_underline), 
-                  Write(attn_numbers),
+        self.play(self.animate_view(0, 0, 0, (4.56, 1.1, 0.0), 4.22),
+                  gx.Write(attn_title),
+                  gx.Create(attn_underline),
+                  gx.Write(attn_numbers),
             )
         self.remove(h6_label) #Probably add back later when we do the big zoom out. 
 
@@ -3597,19 +3564,19 @@ class P31_49b(InteractiveScene):
         attn_scales = [cam_attn_1[2:14].max(), cam_attn_2[2:14].max(), cam_attn_3[2:14].max()]
         max_opacities = [0.5, 0.95, 0.95]  # per-image max opacity
 
-        magenta_overlays = Group()
+        magenta_overlays = gx.Group()
         for k in range(3):
             cam = cam_attns[k][2:14, :]  # (12, 16)
             scale = attn_scales[k] if attn_scales[k] > 0 else 1.0
             mo = max_opacities[k]
-            overlays_k = Group()
+            overlays_k = gx.Group()
             for idx, patch_mob in enumerate(pixel_squares[k]):
                 row = idx // 16
                 col = idx % 16
                 attn_val = cam[row, col]
                 opacity = min(mo, mo * (attn_val / scale))
 
-                sq = Square(side_length=patch_size)
+                sq = gx.Square(side_length=patch_size)
                 sq.set_fill(MAGENTA, opacity=float(opacity))
                 sq.set_stroke(width=0)
                 sq.move_to(patch_mob.get_center())
@@ -3619,16 +3586,16 @@ class P31_49b(InteractiveScene):
 
         #Ok this looks great! Now, how do I animate these in/numbers comign over?
         self.wait()
-        self.play(ReplacementTransform(attn_numbers[0].copy(), magenta_overlays[0][0].set_opacity(0.2)), 
-                  ReplacementTransform(attn_numbers[1].copy(), magenta_overlays[1][85]), #.copy().set_opacity(0.5)), 
-                  ReplacementTransform(attn_numbers[2].copy(), magenta_overlays[1][86].set_opacity(0.7)), #.copy().set_opacity(0.5)), 
-                  ReplacementTransform(attn_numbers[3].copy(), magenta_overlays[1][87].set_opacity(0.7)), #.copy().set_opacity(0.5)), 
-                  ReplacementTransform(attn_numbers[4].copy(), magenta_overlays[1][88]), #.copy().set_opacity(0.5)), 
-                  self.frame.animate.reorient(0, 0, 0, (0.67, 0.02, 0.0), 8.60),
-                  FadeIn(magenta_overlays[0][1:]), 
-                  FadeIn(magenta_overlays[1][:85]), 
-                  FadeIn(magenta_overlays[1][89:]), 
-                  FadeIn(magenta_overlays[2]), 
+        self.play(gx.ReplacementTransform(attn_numbers[0].copy(), magenta_overlays[0][0].set_opacity(0.2)),
+                  gx.ReplacementTransform(attn_numbers[1].copy(), magenta_overlays[1][85]), #.copy().set_opacity(0.5)),
+                  gx.ReplacementTransform(attn_numbers[2].copy(), magenta_overlays[1][86].set_opacity(0.7)), #.copy().set_opacity(0.5)),
+                  gx.ReplacementTransform(attn_numbers[3].copy(), magenta_overlays[1][87].set_opacity(0.7)), #.copy().set_opacity(0.5)),
+                  gx.ReplacementTransform(attn_numbers[4].copy(), magenta_overlays[1][88]), #.copy().set_opacity(0.5)),
+                  self.animate_view(0, 0, 0, (0.67, 0.02, 0.0), 8.60),
+                  gx.FadeIn(magenta_overlays[0][1:]),
+                  gx.FadeIn(magenta_overlays[1][:85]),
+                  gx.FadeIn(magenta_overlays[1][89:]),
+                  gx.FadeIn(magenta_overlays[2]),
                   run_time=5)
         # self.play(FadeIn(magenta_overlays[0][1:]), 
         #           FadeIn(magenta_overlays[1][:85]), 
@@ -3647,7 +3614,7 @@ class P31_49b(InteractiveScene):
         # By stepping through FRAME_IDX values, updating all patches and magenta overlays. 
 
         # Gather everything else on screen into a group we can fade out and bring back
-        background_stuff = Group(
+        background_stuff = gx.Group(
             all_svgs[15], all_svgs[17], all_svgs[18], all_svgs[19], 
             queries, keys, values, attn_dots,
             embedding_brackets_2, embedding_rows_1, embedding_rows_2, embedding_rows_3, embedding_rows_4,
@@ -3657,7 +3624,7 @@ class P31_49b(InteractiveScene):
             siglip_1, siglip_2, siglip_3, image_encoders_label,
             tokenized_prompt, all_svgs[6][1:7]
         )
-        background_stuff_2=Group(all_svgs[21], dp_title, dp_underline, dp_numbers,
+        background_stuff_2=gx.Group(all_svgs[21], dp_title, dp_underline, dp_numbers,
                                  attn_title, attn_underline, attn_numbers)
 
         # self.wait()
@@ -3673,13 +3640,13 @@ class P31_49b(InteractiveScene):
         combined_images = []
         combined_image_start_centers=[]
         for k in range(3):
-            combo = Group(pixel_squares[k], magenta_overlays[k])
+            combo = gx.Group(pixel_squares[k], magenta_overlays[k])
             combined_images.append(combo)
             combined_image_start_centers.append(combo.get_center())
         combined_image_start_centers=copy.deepcopy(np.array(combined_image_start_centers))
 
         # Compute target x positions
-        total_width = pixel_squares[0].get_width()  # all three are same width
+        total_width = pixel_squares[0].width  # all three are same width
         center_x = 0.0
         target_xs = [
             center_x - total_width - img_gap,   # overhead (left)
@@ -3689,12 +3656,12 @@ class P31_49b(InteractiveScene):
 
         self.wait()
         self.play(
-            FadeOut(background_stuff),
-            FadeOut(background_stuff_2),
+            gx.FadeOut(background_stuff),
+            gx.FadeOut(background_stuff_2),
             combined_images[0].animate.move_to([target_xs[0], img_y, 0]),
             combined_images[1].animate.move_to([target_xs[1], img_y, 0]),
             combined_images[2].animate.move_to([target_xs[2], img_y, 0]),
-            self.frame.animate.reorient(0, 0, 0, (-0.02, -0.07, 0.0), 5.62),
+            self.animate_view(0, 0, 0, (-0.02, -0.07, 0.0), 5.62),
             run_time=4,
         )
 
@@ -3708,12 +3675,12 @@ class P31_49b(InteractiveScene):
         self.wait()
         all_svgs[12].set_opacity(0.6) #h6 box and label
         self.play(
-            FadeIn(background_stuff),
-            FadeIn(all_svgs[12]),
+            gx.FadeIn(background_stuff),
+            gx.FadeIn(all_svgs[12]),
             combined_images[0].animate.move_to(combined_image_start_centers[0]),
             combined_images[1].animate.move_to(combined_image_start_centers[1]),
             combined_images[2].animate.move_to(combined_image_start_centers[2]),
-            self.frame.animate.reorient(0, 0, 0, (0, 0, 0.0), 8),
+            self.animate_view(0, 0, 0, (0, 0, 0.0), 8),
             run_time=4,
         )
 
@@ -3726,7 +3693,7 @@ class P31_49b(InteractiveScene):
         # That's ok tho. 
 
         
-        attn_pattern=ImageMobject(str(hacking_dir/('p44/attn_pattern_1.png')))
+        attn_pattern=image_at_height(str(hacking_dir/('p44/attn_pattern_1.png')))
         attn_pattern.scale(1.3)
         attn_pattern.move_to([3.3, 1.2, 0])
         all_svgs[22].scale(0.9)
@@ -3735,24 +3702,24 @@ class P31_49b(InteractiveScene):
         all_svgs[24].move_to([4.98, -0.98, 0])
 
         self.wait()
-        self.play(FadeOut(queries),
-                  FadeOut(keys),
-                  FadeOut(all_svgs[17]),
-                  FadeOut(all_svgs[18]),
-                  FadeOut(attn_dots[:4]),
+        self.play(gx.FadeOut(queries),
+                  gx.FadeOut(keys),
+                  gx.FadeOut(all_svgs[17]),
+                  gx.FadeOut(all_svgs[18]),
+                  gx.FadeOut(attn_dots[:4]),
                   run_time=3)
 
 
-        self.play(FadeIn(attn_pattern), 
-                  Write(all_svgs[22]),
-                  Write(all_svgs[23]),
-                  Write(all_svgs[24]),
+        self.play(gx.FadeIn(attn_pattern),
+                  gx.Write(all_svgs[22]),
+                  gx.Write(all_svgs[23]),
+                  gx.Write(all_svgs[24]),
                   run_time=2)
 
         self.wait()
 
         #Eh?
-        self.play(FadeOut(all_svgs[22]),
+        self.play(gx.FadeOut(all_svgs[22]),
                   attn_pattern.animate.set_opacity(0.2))
 
 
@@ -3774,7 +3741,7 @@ class P31_49b(InteractiveScene):
 
         # Flatten all magenta squares in token order: overhead → left → right
         all_magenta_squares = [sq for k in range(3) for sq in magenta_overlays[k]]
-        all_opacities=[sq.get_opacity() for sq in all_magenta_squares]
+        all_opacities=[sq.get_fill_opacity() for sq in all_magenta_squares]
         n = len(all_magenta_squares)
         strip_w = row_right_x - row_left_x
         cell_w = strip_w / n
@@ -3784,56 +3751,56 @@ class P31_49b(InteractiveScene):
             tx = row_left_x + (idx + 0.5) * cell_w
             move_anims.append(
                 sq.animate.move_to([tx, row_center_y, 0])
-                  .set_height(target_h)
-                  .set_width(cell_w, stretch=True)
+                  .scale_to_fit_height(target_h)
+                  .stretch_to_fit_width(cell_w)
                   .set_opacity(all_opacities[idx]*5)
             )
 
         self.wait()
         self.play(
-            LaggedStart(*move_anims, lag_ratio=0.005),
+            gx.LaggedStart(*move_anims, lag_ratio=0.005),
             run_time=5,
         )
         self.play(attn_pattern.animate.set_opacity(1.0),
-                  FadeOut(magenta_overlays))
+                  gx.FadeOut(magenta_overlays))
         self.wait()
 
 
         #P45
-        self.play(FadeOut(attn_pattern), 
+        self.play(gx.FadeOut(attn_pattern),
                   # FadeOut(all_svgs[22]),
-                  FadeOut(all_svgs[23]),
-                  FadeOut(all_svgs[24]),
+                  gx.FadeOut(all_svgs[23]),
+                  gx.FadeOut(all_svgs[24]),
                   run_time=2)
         self.wait()
-        self.play(FadeIn(queries),
-                  FadeIn(keys),
-                  FadeIn(all_svgs[17]),
-                  FadeIn(all_svgs[18]),
-                  FadeIn(attn_dots[:4]),
+        self.play(gx.FadeIn(queries),
+                  gx.FadeIn(keys),
+                  gx.FadeIn(all_svgs[17]),
+                  gx.FadeIn(all_svgs[18]),
+                  gx.FadeIn(attn_dots[:4]),
                   run_time=3)
         self.wait()
 
-        self.play(FadeOut(queries),
-                  FadeOut(keys),
-                  FadeOut(all_svgs[17]),
-                  FadeOut(all_svgs[18]),
-                  FadeOut(attn_dots[:4]),
+        self.play(gx.FadeOut(queries),
+                  gx.FadeOut(keys),
+                  gx.FadeOut(all_svgs[17]),
+                  gx.FadeOut(all_svgs[18]),
+                  gx.FadeOut(attn_dots[:4]),
                   run_time=3)
 
         self.wait()
-        self.play(FadeIn(attn_pattern), 
+        self.play(gx.FadeIn(attn_pattern),
                   # FadeIn(all_svgs[22]),
-                  FadeIn(all_svgs[23]),
-                  FadeIn(all_svgs[24]),
+                  gx.FadeIn(all_svgs[23]),
+                  gx.FadeIn(all_svgs[24]),
                   run_time=2)
 
 
         self.wait()
 
 
-        self.play(FadeOut(all_svgs[12]),
-                  self.frame.animate.reorient(0, 0, 0, (4.1, -2.97, 0.0), 4.76),
+        self.play(gx.FadeOut(all_svgs[12]),
+                  self.animate_view(0, 0, 0, (4.1, -2.97, 0.0), 4.76),
                   attn_dots.animate.move_to([5.5 , 0.39, 0.  ]), #+2
                   values.animate.move_to([5.5, -2.12, 0]),
                   all_svgs[19].animate.move_to([5.5, -3.04, 0]),
@@ -3846,33 +3813,33 @@ class P31_49b(InteractiveScene):
         # Ok getting big equals sign on the bottom row vibes here. 
         # I think that will work!
 
-        head_outs=Group(); 
-        head_out_dots=VGroup()
+        head_outs=gx.Group();
+        head_out_dots=gx.VGroup()
         out_spacing=0.15
         for i in range(11):
-            o=ImageMobject(str(hacking_dir/('p45/out_'+ str(i).zfill(2) +'.png')))
+            o=image_at_height(str(hacking_dir/('p45/out_'+ str(i).zfill(2) +'.png')))
             o.scale(0.022)
             o.move_to([5.5, -3.4-i*out_spacing, 0])
             head_outs.add(o)
             if i==1 or i==6:
-                e=VGroup(*[Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
-                e.arrange(DOWN, buff=0.012)
+                e=gx.VGroup(*[gx.Dot(radius=0.01).set_color(CHILL_BROWN) for _ in range(3)])
+                e.arrange(gx.DOWN, buff=0.012)
                 e.move_to(o)
                 head_out_dots.add(e)
 
         all_svgs[25].move_to([5.5, -5.1, 0])
 
-        big_erquals=Text('=', font="Myriad Pro", weight='bold', font_size=42)
+        big_erquals=gx.Text('=', font="Myriad Pro", weight='bold', font_size=42)
         big_erquals.set_color(CHILL_BROWN)
         big_erquals.move_to(([2.8, -4.2, 0]))
         big_erquals.set_opacity(0.7)
 
         self.wait()
 
-        self.play(FadeIn(head_outs), 
-                  FadeIn(head_out_dots), 
-                  FadeIn(all_svgs[25]), 
-                  FadeIn(big_erquals),
+        self.play(gx.FadeIn(head_outs),
+                  gx.FadeIn(head_out_dots),
+                  gx.FadeIn(all_svgs[25]),
+                  gx.FadeIn(big_erquals),
                   run_time=2)
 
 
@@ -3895,7 +3862,7 @@ class P31_49b(InteractiveScene):
         # self.play(value_row_copy_2.animate.move_to(head_outs[-1]), run_time=5)
         # self.remove(value_row_copy_2)
 
-        self.play(LaggedStart(value_row_copy_2.animate.move_to(head_outs[-1]), 
+        self.play(gx.LaggedStart(value_row_copy_2.animate.move_to(head_outs[-1]),
                              value_row_copy_1.animate.move_to(head_outs[-1]),
                 lag_ratio=0.1), run_time=5)
         self.remove(value_row_copy_1, value_row_copy_2)
@@ -3913,16 +3880,16 @@ class P31_49b(InteractiveScene):
         for layer in range(18):
             all_attn_patterns.append([])
             for head in range(8):
-                im=ImageMobject(str(hacking_dir/('p47/attn_pattern_'+str(layer)+'_'+str(head)+'.png')))
+                im=image_at_height(str(hacking_dir/('p47/attn_pattern_'+str(layer)+'_'+str(head)+'.png')))
                 all_attn_patterns[-1].append(im)
 
 
         #Ok let's figure out what we gotta remove first
 
         all_svgs[26].shift([0.19, 0, 0])
-        gemma=Group(all_svgs[8:11], all_svgs[13], all_svgs[26])
+        gemma=gx.Group(all_svgs[8:11], all_svgs[13], all_svgs[26])
 
-        attn_patterns_to_show=Group()
+        attn_patterns_to_show=gx.Group()
         for i in range(8):
             all_attn_patterns[0][i].scale(0.096)
             all_attn_patterns[0][i].move_to([0.25, 1.5-0.358*i, 0])
@@ -3941,17 +3908,17 @@ class P31_49b(InteractiveScene):
 
 
 
-        fadeout_group_3=Group(values, head_outs, all_svgs[25], big_erquals, all_svgs[23], 
+        fadeout_group_3=gx.Group(values, head_outs, all_svgs[25], big_erquals, all_svgs[23],
                              all_svgs[24], all_svgs[19], all_svgs[15], attn_dots, head_out_dots)
 
 
         self.wait()
         self.remove(fadeout_group_3)
-        self.play(self.frame.animate.reorient(0, 0, 0, (0, 0, 0), 8), 
+        self.play(self.animate_view(0, 0, 0, (0, 0, 0), 8),
                 attn_pattern.animate.scale(0.18).move_to([2.65, 1.5-0.358*6, 0]), 
                 # FadeOut(fadeout_group_3),
-                FadeIn(gemma),
-                FadeIn(attn_patterns_to_show),
+                gx.FadeIn(gemma),
+                gx.FadeIn(attn_patterns_to_show),
                 run_time=8)
         self.remove(all_svgs[26]); self.add(all_svgs[26]) 
 
@@ -3960,16 +3927,16 @@ class P31_49b(InteractiveScene):
         action_expert_box.set_color(CHILL_BROWN)
         action_expert_label.set_color(CHILL_BROWN)
 
-        action_expert_group=VGroup(action_expert_box, action_expert_label)
+        action_expert_group=gx.VGroup(action_expert_box, action_expert_label)
         action_expert_group.scale(0.9)
 
         action_expert_group.move_to([3.3, -2.9, 0])
-        # action_expert_box.set_width(())
+        # action_expert_box.scale_to_fit_width(())
 
         self.wait()
-        self.play(ShowCreation(action_expert_box), 
-                  Write(action_expert_label), 
-                  FadeIn(pi0_logo), 
+        self.play(gx.Create(action_expert_box),
+                  gx.Write(action_expert_label),
+                  gx.FadeIn(pi0_logo),
                   run_time=3)
 
         # self.add(action_expert_box)
@@ -3982,8 +3949,8 @@ class P31_49b(InteractiveScene):
         lil_arrow.move_to([-3.6, -6, 0])
         # self.add(lil_arrow)
 
-        arm_img=ImageMobject(str(hacking_dir/'arm_1.png'))
-        arm_img_flipped=ImageMobject(str(hacking_dir/'arm_1_flipped.png'))
+        arm_img=image_at_height(str(hacking_dir/'arm_1.png'))
+        arm_img_flipped=image_at_height(str(hacking_dir/'arm_1_flipped.png'))
 
         arm_img_flipped.scale(0.52)
         arm_img_flipped.move_to([-5.78, -5.97, 0])
@@ -3995,15 +3962,15 @@ class P31_49b(InteractiveScene):
 
 
         self.wait()
-        self.play(FadeOut(pi0_logo), 
-                  self.frame.animate.reorient(0, 0, 0, (-3.52, -5.97, 0.0), 3.73),
-                  FadeIn(all_svgs[27]),
-                  Write(lil_arrow),
+        self.play(gx.FadeOut(pi0_logo),
+                  self.animate_view(0, 0, 0, (-3.52, -5.97, 0.0), 3.73),
+                  gx.FadeIn(all_svgs[27]),
+                  gx.Write(lil_arrow),
                   action_expert_group.animate.move_to([-1.9, -6, 0]),
-                  FadeIn(arm_img), 
-                  FadeIn(arm_img_flipped),
-                  FadeIn(all_svgs[28][-40:-15]), #State
-                  FadeIn(all_svgs[28][-58:-40]), #Image Credit
+                  gx.FadeIn(arm_img),
+                  gx.FadeIn(arm_img_flipped),
+                  gx.FadeIn(all_svgs[28][-40:-15]), #State
+                  gx.FadeIn(all_svgs[28][-58:-40]), #Image Credit
                   run_time=5)
 
         #Add joints as we talk about dems
@@ -4027,7 +3994,7 @@ class P31_49b(InteractiveScene):
         self.add(all_svgs[28][:-76]) #Right erm
         self.wait()
 
-        self.play(Write(all_svgs[28][-15:]), run_time=3) # Matrix
+        self.play(gx.Write(all_svgs[28][-15:]), run_time=3) # Matrix
         self.wait()
 
 
@@ -4037,14 +4004,14 @@ class P31_49b(InteractiveScene):
 
         self.wait()
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (3.41, -1.81, 0.0), 12.27), 
+        self.play(self.animate_view(0, 0, 0, (3.41, -1.81, 0.0), 12.27),
                  run_time=5)
 
         self.wait()
         self.remove(action_expert_group, lil_arrow)
-        self.play(self.frame.animate.reorient(0, 0, 0, (-2.03, -6.66, 0.0), 5.33), 
-                  Write(all_svgs[29]),
-                  Write(all_svgs[30]), 
+        self.play(self.animate_view(0, 0, 0, (-2.03, -6.66, 0.0), 5.33),
+                  gx.Write(all_svgs[29]),
+                  gx.Write(all_svgs[30]),
                   run_time=5)
 
 
@@ -4053,21 +4020,21 @@ class P31_49b(InteractiveScene):
         # Go ahead and make embedding vector lines
         # Lines or rectangles? Not sure how much it matters here
 
-        embedding_rows_action_expert=VGroup()
+        embedding_rows_action_expert=gx.VGroup()
         vertical_spacing=0.2
         for i in range(20):
             if i==9:
-                ellipsis_dots_action_expert_1 = VGroup(*[
-                    Dot(radius=0.02).set_color(CHILL_BROWN)
+                ellipsis_dots_action_expert_1 = gx.VGroup(*[
+                    gx.Dot(radius=0.02).set_color(CHILL_BROWN)
                     for _ in range(3)
                 ])
-                ellipsis_dots_action_expert_1.arrange(DOWN, buff=0.03)
-                ellipsis_dots_action_expert_1.next_to(flat_rect, DOWN, buff=0.09)
+                ellipsis_dots_action_expert_1.arrange(gx.DOWN, buff=0.03)
+                ellipsis_dots_action_expert_1.next_to(flat_rect, gx.DOWN, buff=0.09)
                 embedding_rows_action_expert.add(ellipsis_dots_action_expert_1)
                 continue
-            flat_rect = Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
+            flat_rect = gx.Rectangle(width=1.1, height=0.03)  # tweak height for your "line" thickness
             if i==0: 
-                flat_rect.set_fill(RED, opacity=1)
+                flat_rect.set_fill(gx.RED, opacity=1)
             else:
                 flat_rect.set_fill(PINK, opacity=1)
             flat_rect.set_stroke(width=0)
@@ -4076,13 +4043,13 @@ class P31_49b(InteractiveScene):
             embedding_rows_action_expert.add(flat_rect)
 
         self.wait()
-        self.play(ReplacementTransform(all_svgs[28][-15:].copy(), embedding_rows_action_expert[0]),
+        self.play(gx.ReplacementTransform(all_svgs[28][-15:].copy(), embedding_rows_action_expert[0]),
                  run_time=3)
 
         self.wait()
 
-        self.play(Write(all_svgs[31]),
-                  ShowCreation(embedding_rows_action_expert[1:]),
+        self.play(gx.Write(all_svgs[31]),
+                  gx.Create(embedding_rows_action_expert[1:]),
                   # ShowCreation(ellipsis_dots_action_expert_1),
                   run_time=5)
 
@@ -4095,7 +4062,6 @@ class P31_49b(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
 
 
 
@@ -4116,9 +4082,9 @@ class P31_49b(InteractiveScene):
 
 
 
-class P43a1(InteractiveScene):
+class P43a1(WelchScene):
     def construct(self):
-        hacking_dir = Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/hackin')
+        hacking_dir = Path(welch_path('vla/hackin'))
         composited_dir = hacking_dir / 'p43_patchified'
 
         total_height = 2.72
@@ -4137,15 +4103,15 @@ class P43a1(InteractiveScene):
         canvas_h_manim = (max(ys) - min(ys)) + patch_size
 
         # Create initial 3 images
-        display_imgs = Group()
+        display_imgs = gx.Group()
         img_gap = 0.3
         target_h = 3.5  # pick a nice display height
         for k in range(3):
-            img = ImageMobject(str(composited_dir / f'0_{k}.png'))
-            img.set_height(target_h)
+            img = image_at_height(str(composited_dir / f'0_{k}.png'))
+            img.scale_to_fit_height(target_h)
             display_imgs.add(img)
 
-        w = display_imgs[0].get_width()
+        w = display_imgs[0].width
         display_imgs[0].move_to([-(w + img_gap), 0, 0])
         display_imgs[1].move_to([0, 0, 0])
         display_imgs[2].move_to([(w + img_gap), 0, 0])
@@ -4155,15 +4121,15 @@ class P43a1(InteractiveScene):
         scaled_patch = patch_size * s
 
         # Build magenta overlays aligned to actual image pixels
-        magenta_overlays = Group()
+        magenta_overlays = gx.Group()
         for k in range(3):
-            overlays_k = Group()
+            overlays_k = gx.Group()
             img_center = display_imgs[k].get_center()
             for i in range(2, 14):
                 for j in range(16):
                     cx = (j - 8 + 0.5) * patch_size * scale * s
                     cy = -(i - 8 + 0.5) * patch_size * scale * s
-                    sq = Square(side_length=scaled_patch)
+                    sq = gx.Square(side_length=scaled_patch)
                     sq.set_fill(MAGENTA, opacity=0)
                     sq.set_stroke(width=0)
                     sq.move_to(img_center + np.array([cx, cy, 0]))
@@ -4174,8 +4140,8 @@ class P43a1(InteractiveScene):
 
         self.add(display_imgs, magenta_overlays)
 
-        # self.frame.reorient(0, 0, 0, (-0.02, -0.07, 0.0), 5.62)
-        self.frame.reorient(0, 0, 0, (0.01, 0.03, 0.0), 8.66)
+        # self.set_view(0, 0, 0, (-0.02, -0.07, 0.0), 5.62)
+        self.set_view(0, 0, 0, (0.01, 0.03, 0.0), 8.66)
 
         for frame_idx in range(150,300):
             attn_row = all_attn_values[frame_idx]
@@ -4187,7 +4153,7 @@ class P43a1(InteractiveScene):
                     continue
 
                 pos = display_imgs[k].get_center()
-                h = display_imgs[k].get_height()
+                h = display_imgs[k].height
                 old_img = display_imgs[k]
                 
                 # Close the PIL file handle before discarding
@@ -4195,8 +4161,8 @@ class P43a1(InteractiveScene):
                     old_img.image.close()
                 self.remove(old_img)
 
-                new_img = ImageMobject(str(path))
-                new_img.set_height(h)
+                new_img = image_at_height(str(path))
+                new_img.scale_to_fit_height(h)
                 new_img.move_to(pos)
                 display_imgs.submobjects[k] = new_img
                 self.add(new_img)
@@ -4217,9 +4183,9 @@ class P43a1(InteractiveScene):
         self.wait()
 
 
-class P43b2(InteractiveScene):
+class P43b2(WelchScene):
     def construct(self):
-        hacking_dir = Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/vla/hackin')
+        hacking_dir = Path(welch_path('vla/hackin'))
         composited_dir = hacking_dir / 'p43_patchified'
 
         total_height = 2.72
@@ -4238,15 +4204,15 @@ class P43b2(InteractiveScene):
         canvas_h_manim = (max(ys) - min(ys)) + patch_size
 
         # Create initial 3 images
-        display_imgs = Group()
+        display_imgs = gx.Group()
         img_gap = 0.3
         target_h = 3.5  # pick a nice display height
         for k in range(3):
-            img = ImageMobject(str(composited_dir / f'0_{k}.png'))
-            img.set_height(target_h)
+            img = image_at_height(str(composited_dir / f'0_{k}.png'))
+            img.scale_to_fit_height(target_h)
             display_imgs.add(img)
 
-        w = display_imgs[0].get_width()
+        w = display_imgs[0].width
         display_imgs[0].move_to([-(w + img_gap), 0, 0])
         display_imgs[1].move_to([0, 0, 0])
         display_imgs[2].move_to([(w + img_gap), 0, 0])
@@ -4256,22 +4222,22 @@ class P43b2(InteractiveScene):
         scaled_patch = patch_size * s
 
         # Build magenta overlays aligned to actual image pixels
-        magenta_overlays = Group()
+        magenta_overlays = gx.Group()
         for k in range(3):
-            overlays_k = Group()
+            overlays_k = gx.Group()
             img_center = display_imgs[k].get_center()
             for i in range(2, 14):
                 for j in range(16):
                     cx = (j - 8 + 0.5) * patch_size * scale * s
                     cy = -(i - 8 + 0.5) * patch_size * scale * s
-                    sq = Square(side_length=scaled_patch)
+                    sq = gx.Square(side_length=scaled_patch)
                     sq.set_fill(MAGENTA, opacity=0)
                     sq.set_stroke(width=0)
                     sq.move_to(img_center + np.array([cx, cy, 0]))
                     overlays_k.add(sq)
             magenta_overlays.add(overlays_k)
 
-        self.frame.reorient(0, 0, 0, (0.01, 0.03, 0.0), 8.66)
+        self.set_view(0, 0, 0, (0.01, 0.03, 0.0), 8.66)
         self.add(display_imgs, magenta_overlays)
 
         for frame_idx in range(0, 151):
@@ -4284,7 +4250,7 @@ class P43b2(InteractiveScene):
                     continue
 
                 pos = display_imgs[k].get_center()
-                h = display_imgs[k].get_height()
+                h = display_imgs[k].height
                 old_img = display_imgs[k]
                 
                 # Close the PIL file handle before discarding
@@ -4292,8 +4258,8 @@ class P43b2(InteractiveScene):
                     old_img.image.close()
                 self.remove(old_img)
 
-                new_img = ImageMobject(str(path))
-                new_img.set_height(h)
+                new_img = image_at_height(str(path))
+                new_img.scale_to_fit_height(h)
                 new_img.move_to(pos)
                 display_imgs.submobjects[k] = new_img
                 self.add(new_img)

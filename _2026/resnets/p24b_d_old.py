@@ -1,10 +1,11 @@
 # One conv-1 kernel: wired to its activation, then walked across all 55x55 positions.
 # The whole-network wireframe shots of p21-p24 are in p21_24_old.py.
 
-from manimlib import *
+import manimgx as gx
+from welch_scene import WelchScene
+from resnet_geometry import VoxelBlock, blend_views, clear_scene, polyline, prism, swap_out, viridis
 import numpy as np
 import matplotlib.pyplot as plt
-import moderngl
 
 CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
@@ -29,7 +30,7 @@ image_opacity=0.936  #Measured: what the old three-deep voxel slab composited to
 still_hold=1.0
 steps_per_viz=11     #p24c/p24d step every 11th of the 55*55 kernel positions
 kernel_k=0
-fov=PI/3
+fov=gx.PI/3
 
 image_bounds=(-32.0, 32.0, -32.0, 32.0, 0.0, 3*pixel_dim)
 
@@ -38,88 +39,11 @@ p24_end=(-135.4168, 63.3448, 114.4748, (0.0, 0.0, 0.0), 96.224)
 p24d_end=(-139.5221, 31.6032, 134.9423, (0.0, 0.0, 0.0), 96.224)
 
 
-viridis_lut=plt.get_cmap('viridis')(np.linspace(0, 1, 256))
-
-
-def viridis(values):
-    x=np.clip(np.asarray(values, dtype=np.float64), 0.0, 1.0)
-    idx=np.clip((x*256).astype(np.int32), 0, 255) #matplotlib bins with int(x*N), not round(x*(N-1))
-    return viridis_lut[idx]
-
-
 def load_activation(tag, name):
     return np.load(data_dir+'/activations/'+tag+'/'+name+'.npy')
 
 
 # 6 faces x 4 corners of a unit cube, wound counter-clockwise seen from outside
-face_corners=np.array([
-    [[-.5, -.5,  .5], [.5, -.5,  .5], [.5,  .5,  .5], [-.5,  .5,  .5]],
-    [[ .5, -.5, -.5], [-.5, -.5, -.5], [-.5, .5, -.5], [ .5,  .5, -.5]],
-    [[ .5, -.5,  .5], [.5, -.5, -.5], [.5,  .5, -.5], [ .5,  .5,  .5]],
-    [[-.5, -.5, -.5], [-.5, -.5, .5], [-.5, .5,  .5], [-.5,  .5, -.5]],
-    [[-.5,  .5,  .5], [.5,  .5,  .5], [.5,  .5, -.5], [-.5,  .5, -.5]],
-    [[-.5, -.5, -.5], [.5, -.5, -.5], [.5, -.5,  .5], [-.5, -.5,  .5]],
-], dtype=np.float64)
-
-quad_tris=np.array([0, 1, 2, 0, 2, 3], dtype=int)
-box_edges=[(0,1), (1,2), (2,3), (3,0), (4,5), (5,6), (6,7), (7,4),
-           (0,4), (1,5), (2,6), (3,7)]
-
-
-class VoxelBlock(Surface):
-    """Every box in a layer batched into one mesh."""
-    shader_folder='surface'
-    render_primitive=moderngl.TRIANGLES
-
-    def __init__(self, centers, sizes, rgba, view_forward=None, depth_test=None, **kwargs):
-        centers=np.asarray(centers, dtype=np.float64).reshape(-1, 3)
-        rgba=np.asarray(rgba, dtype=np.float64).reshape(-1, 4)
-        sizes=np.asarray(sizes, dtype=np.float64)
-        if sizes.ndim==1:
-            sizes=np.tile(sizes.reshape(1, 3), (len(centers), 1))
-
-        # Painter's algorithm: with the depth test on, the nearest translucent cell writes
-        # depth and hides the rest, flattening a 64 layer block to one face
-        if view_forward is not None and len(centers):
-            f=np.asarray(view_forward, dtype=np.float64)
-            order=np.argsort(-(centers@(f/np.linalg.norm(f)))) #farthest first
-            centers, sizes, rgba=centers[order], sizes[order], rgba[order]
-        if depth_test is None:
-            depth_test=view_forward is None
-
-        self.centers=centers
-        self.sizes=sizes
-        self.rgba=rgba
-        super().__init__(shading=(0, 0, 0), depth_test=depth_test, **kwargs) #Faces read flat
-
-    @Surface.affects_data
-    def init_points(self):
-        n=len(self.centers)
-        if n==0:
-            self.set_points(np.zeros((0, 3)))
-            self.tri_indices=np.zeros(0, dtype=int)
-            return
-
-        corners=face_corners[None,:,:,:]*self.sizes[:,None,None,:]+self.centers[:,None,None,:]
-        verts=corners.reshape(-1, 3)
-        self.set_points(verts)
-
-        # The shader takes normals from (du_point - point) x (dv_point - point)
-        c0=corners[:,:,0,:]
-        du=np.repeat((corners[:,:,1,:]-c0)[:,:,None,:], 4, axis=2)
-        dv=np.repeat((corners[:,:,3,:]-c0)[:,:,None,:], 4, axis=2)
-        self.data['du_point'][:]=verts+du.reshape(-1, 3)
-        self.data['dv_point'][:]=verts+dv.reshape(-1, 3)
-
-        self.tri_indices=(np.arange(n*6)*4).repeat(6)+np.tile(quad_tris, n*6)
-
-    def compute_triangle_indices(self):
-        self.triangle_indices=self.tri_indices
-        return self.triangle_indices
-
-    def init_colors(self):
-        if len(self.centers):
-            self.data['rgba'][:]=np.repeat(self.rgba, 24, axis=0)
 
 
 def conv_data_block(a, start_depth, thresh, view_forward, vmax=None):
@@ -140,9 +64,9 @@ def conv_data_block(a, start_depth, thresh, view_forward, vmax=None):
 
 
 def image_plane(tag, opacity):
-    img=ImageMobject(data_dir+'/activations/'+tag+'/im.png')
-    img.set_width(image_bounds[1]-image_bounds[0], stretch=True)
-    img.set_height(image_bounds[3]-image_bounds[2], stretch=True)
+    img=gx.ImageMobject(data_dir+'/activations/'+tag+'/im.png')
+    img.stretch_to_fit_width(image_bounds[1]-image_bounds[0])
+    img.stretch_to_fit_height(image_bounds[3]-image_bounds[2])
     img.set_opacity(opacity)
     img.move_to([0, 0, 0.5*(image_bounds[4]+image_bounds[5])])
     return img
@@ -167,39 +91,10 @@ def kernel_weights_block(weights, extent, view_forward):
     return VoxelBlock(centers, np.array([1.0, 1.0, depth_step]), rgba, view_forward)
 
 
-def polyline(points, color, radius):
-    """One independent segment per step, since manim miters the joins of a continuous path."""
-    pts=np.asarray(points, dtype=np.float64)
-    group=VGroup()
-    for start, end in zip(pts[:-1], pts[1:]):
-        if np.allclose(start, end):
-            continue
-        seg=Line(start, end)
-        seg.set_stroke(color, width=200*radius, opacity=1.0) #Width in world units
-        seg.set_fill(opacity=0.0)
-        seg.set_scale_stroke_with_zoom(True)
-        seg.apply_depth_test()
-        group.add(seg)
-    return group
-
-
-def prism(min_x, max_x, min_y, max_y, min_z, max_z, color, radius):
-    vertices=np.array([
-        [min_x, min_y, min_z], [max_x, min_y, min_z],
-        [max_x, max_y, min_z], [min_x, max_y, min_z],
-        [min_x, min_y, max_z], [max_x, min_y, max_z],
-        [max_x, max_y, max_z], [min_x, max_y, max_z],
-    ], dtype=np.float64)
-    group=VGroup()
-    for p, q in box_edges:
-        group.add(*polyline([vertices[p], vertices[q]], color, radius))
-    return group
-
-
 def conv1_kernel(i, j, k, a_shape, weights, view_forward):
     """The conv-1 kernel wired to its activation, with the filter painted into the patch."""
     min_x, max_x, min_y, _, min_z, max_z=image_bounds
-    group=Group()
+    group=gx.Group()
 
     step=(max_x-min_x)/a_shape[1]
     dst_x=j-np.floor(a_shape[-1]/2)
@@ -236,40 +131,6 @@ def masked_conv1(a, i, j, k):
     return out
 
 
-def swap_out(scene, mobject):
-    """Scene.remove leaves id_to_mobject_map, reference cycles and moderngl buffers behind,
-    so without this a per-frame shot leaks until the machine runs out of memory."""
-    if mobject is None:
-        return
-    scene.remove(mobject)
-    for sm in mobject.get_family():
-        scene.id_to_mobject_map.pop(id(sm), None)
-        if sm.shader_wrapper is not None:
-            sm.shader_wrapper.release() #Buffers only: the textures are shared, ctx-wide caches
-        sm.family=None
-        sm.parents.clear()
-        sm.submobjects.clear()
-        sm.data=None
-        sm.shader_wrapper=None
-        for attr in ('centers', 'sizes', 'rgba', 'tri_indices', 'triangle_indices'):
-            if hasattr(sm, attr):
-                setattr(sm, attr, None)
-
-
-def clear_scene(scene):
-    for mob in list(scene.mobjects):
-        if mob is not scene.camera.frame:
-            swap_out(scene, mob)
-    scene.clear()
-    scene.id_to_mobject_map.clear()
-    scene.add(scene.camera.frame)
-
-
-def blend_views(a, b, t):
-    return (a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t,
-            tuple(p+(q-p)*t for p, q in zip(a[3], b[3])), a[4]+(b[4]-a[4])*t)
-
-
 def forward_from(view):
     """The direction the camera looks, for the painter's-algorithm sort."""
     from scipy.spatial.transform import Rotation
@@ -277,22 +138,22 @@ def forward_from(view):
     return -Rotation.from_euler('zxz', [gamma, phi, theta]).as_matrix()[:,2]
 
 
-class P24B_D(InteractiveScene):
+class P24B_D(WelchScene):
     def construct(self):
-        self.camera.background_rgba=[0, 0, 0, 1]
-        self.frame.set_field_of_view(fov)
+        self.camera.background_color = gx.BLACK
+        self.view_fov = fov
         a=load_activation('hot_dog', 'features_2')
         weights=load_activation('weights', 'features0')[0]
         vmax=float(a[0].max())
 
-        self.frame.reorient(*p24_end)
+        self.set_view(*p24_end)
         forward=forward_from(p24_end)
-        self.add(prism(*image_bounds, WHITE, line_radius))
+        self.add(prism(*image_bounds, gx.WHITE, line_radius))
         self.add(conv1_kernel(0, 10, kernel_k, a.shape, weights, forward))
         block, bounds=conv_data_block(masked_conv1(a, 0, 10, kernel_k),
                                       spacing_between_layers+1, 0.005, forward)
         self.add(block)
-        self.add(prism(*bounds, WHITE, line_radius))
+        self.add(prism(*bounds, gx.WHITE, line_radius))
         self.wait(still_hold)
 
         num_steps=55**2+1
@@ -309,17 +170,17 @@ class P24B_D(InteractiveScene):
                           if move_camera else p24_end)
                     fwd=forward_from(view)
 
-                    shot=Group()
+                    shot=gx.Group()
                     shot.add(image_plane('hot_dog', image_opacity))
-                    shot.add(prism(*image_bounds, WHITE, line_radius))
+                    shot.add(prism(*image_bounds, gx.WHITE, line_radius))
                     shot.add(conv1_kernel(i, j, kernel_k, a.shape, weights, fwd))
                     block, bounds=conv_data_block(masked_conv1(a, i, j, kernel_k),
                                                   spacing_between_layers+1, 0.005, fwd, vmax)
                     shot.add(block)
-                    shot.add(prism(*bounds, WHITE, line_radius))
+                    shot.add(prism(*bounds, gx.WHITE, line_radius))
 
                     swap_out(self, current)
                     self.add(shot)
                     current=shot
-                    self.frame.reorient(*view)
+                    self.set_view(*view)
                     self.wait(1/30)

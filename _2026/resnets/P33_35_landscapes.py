@@ -1,8 +1,11 @@
-from manimlib import *
+import manimgx as gx
+from resnet_assets import LANDSCAPE_ROOT
+from welch_surface import parametric_surface, textured_surface
+from welch_scene import WelchScene
 import numpy as np
 from pathlib import Path
 
-data_dir = Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/resnet/hackin/P33_landscapes_v7/hires_option1')
+data_dir = LANDSCAPE_ROOT
 
 # ---- tunables ----
 MAX_HEIGHT = 1.75          # every landscape is rescaled so its tallest (clipped) point sits at this z
@@ -69,7 +72,7 @@ class LossLandscape:
         return np.stack([u, v, self._interp(u, v)], axis=-1)
 
 
-class P33_plain8_last3(InteractiveScene):
+class P33_plain8_last3(WelchScene):
 
     cfg = 'plain8_last3'
     max_height = 2.5
@@ -81,36 +84,35 @@ class P33_plain8_last3(InteractiveScene):
         land = LossLandscape(self.cfg, self.max_height)
         n = land.n
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             land.point,
             u_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
             v_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
             resolution=(n, n),
         )
-        ts = TexturedSurface(surface, land.texture)
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, land.texture, shade_in_3d=True)
 
         line_values = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, NUM_GRIDLINES)
         sweep = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, n)
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = gx.VGroup()
+        v_gridlines = gx.VGroup()
         for u in line_values:
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_smoothly(land.points(u, sweep))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.15)
             u_gridlines.add(line)
         for v in line_values:
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_smoothly(land.points(sweep, v))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.15)
             v_gridlines.add(line)
 
-        self.frame.reorient(*self.fold_view)
+        self.set_view(*self.fold_view)
         self.wait(0)
 
-        self.play(ShowCreation(u_gridlines),
-                  ShowCreation(v_gridlines),
-                  self.frame.animate.reorient(*self.gridline_view),
+        self.play(gx.Create(u_gridlines),
+                  gx.Create(v_gridlines),
+                  self.animate_view(*self.gridline_view),
                   run_time=4.0)
         self.wait()
 
@@ -118,14 +120,13 @@ class P33_plain8_last3(InteractiveScene):
         self.add(ts)
         self.add(u_gridlines, v_gridlines)
         self.play(ts.animate.set_opacity(1.0),
-                  self.frame.animate.reorient(*self.final_view),
+                  self.animate_view(*self.final_view),
                   run_time=5.0)
         self.wait(2)
 
         self.wait(20)
-        self.embed()
 
-class P33_plain8_first3(InteractiveScene):
+class P33_plain8_first3(WelchScene):
 
     cfg = 'plain8_first3'
     max_height = 2.5
@@ -137,36 +138,35 @@ class P33_plain8_first3(InteractiveScene):
         land = LossLandscape(self.cfg, self.max_height)
         n = land.n
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             land.point,
             u_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
             v_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
             resolution=(n, n),
         )
-        ts = TexturedSurface(surface, land.texture)
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, land.texture, shade_in_3d=True)
 
         line_values = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, NUM_GRIDLINES)
         sweep = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, n)
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = gx.VGroup()
+        v_gridlines = gx.VGroup()
         for u in line_values:
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_smoothly(land.points(u, sweep))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.15)
             u_gridlines.add(line)
         for v in line_values:
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_smoothly(land.points(sweep, v))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.15)
             v_gridlines.add(line)
 
-        self.frame.reorient(*self.fold_view)
+        self.set_view(*self.fold_view)
         self.wait(0)
 
-        self.play(ShowCreation(u_gridlines),
-                  ShowCreation(v_gridlines),
-                  self.frame.animate.reorient(*self.gridline_view),
+        self.play(gx.Create(u_gridlines),
+                  gx.Create(v_gridlines),
+                  self.animate_view(*self.gridline_view),
                   run_time=4.0)
         self.wait()
 
@@ -174,15 +174,14 @@ class P33_plain8_first3(InteractiveScene):
         self.add(ts)
         self.add(u_gridlines, v_gridlines)
         self.play(ts.animate.set_opacity(1.0),
-                  self.frame.animate.reorient(*self.final_view),
+                  self.animate_view(*self.final_view),
                   run_time=5.0)
         self.wait(2)
 
         self.wait(20)
-        self.embed()
 
 
-class P34_plain26_first3(InteractiveScene):
+class P34_plain26_first3(WelchScene):
 
     cfg = 'plain26_first4'
     max_height = 2.5
@@ -194,36 +193,35 @@ class P34_plain26_first3(InteractiveScene):
         land = LossLandscape(self.cfg, self.max_height)
         n = land.n
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             land.point,
             u_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
             v_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
             resolution=(n, n),
         )
-        ts = TexturedSurface(surface, land.texture)
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, land.texture, shade_in_3d=True)
 
         line_values = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, NUM_GRIDLINES)
         sweep = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, n)
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = gx.VGroup()
+        v_gridlines = gx.VGroup()
         for u in line_values:
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_smoothly(land.points(u, sweep))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.15)
             u_gridlines.add(line)
         for v in line_values:
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_smoothly(land.points(sweep, v))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.15)
             v_gridlines.add(line)
 
-        self.frame.reorient(*self.fold_view)
+        self.set_view(*self.fold_view)
         self.wait(0)
 
-        self.play(ShowCreation(u_gridlines),
-                  ShowCreation(v_gridlines),
-                  self.frame.animate.reorient(*self.gridline_view),
+        self.play(gx.Create(u_gridlines),
+                  gx.Create(v_gridlines),
+                  self.animate_view(*self.gridline_view),
                   run_time=4.0)
         self.wait()
 
@@ -231,14 +229,13 @@ class P34_plain26_first3(InteractiveScene):
         self.add(ts)
         self.add(u_gridlines, v_gridlines)
         self.play(ts.animate.set_opacity(1.0),
-                  self.frame.animate.reorient(*self.final_view),
+                  self.animate_view(*self.final_view),
                   run_time=5.0)
         self.wait(2)
 
         self.wait(20)
-        self.embed()
 
-class P34_plain74_last4(InteractiveScene):
+class P34_plain74_last4(WelchScene):
 
     cfg = 'plain74_last4'
     max_height = 2.5
@@ -250,36 +247,35 @@ class P34_plain74_last4(InteractiveScene):
         land = LossLandscape(self.cfg, self.max_height)
         n = land.n
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             land.point,
             u_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
             v_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
             resolution=(n, n),
         )
-        ts = TexturedSurface(surface, land.texture)
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, land.texture, shade_in_3d=True)
 
         line_values = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, NUM_GRIDLINES)
         sweep = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, n)
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = gx.VGroup()
+        v_gridlines = gx.VGroup()
         for u in line_values:
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_smoothly(land.points(u, sweep))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.15)
             u_gridlines.add(line)
         for v in line_values:
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_smoothly(land.points(sweep, v))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.15)
             v_gridlines.add(line)
 
-        self.frame.reorient(*self.fold_view)
+        self.set_view(*self.fold_view)
         self.wait(0)
 
-        self.play(ShowCreation(u_gridlines),
-                  ShowCreation(v_gridlines),
-                  self.frame.animate.reorient(*self.gridline_view),
+        self.play(gx.Create(u_gridlines),
+                  gx.Create(v_gridlines),
+                  self.animate_view(*self.gridline_view),
                   run_time=4.0)
         self.wait()
 
@@ -287,15 +283,14 @@ class P34_plain74_last4(InteractiveScene):
         self.add(ts)
         self.add(u_gridlines, v_gridlines)
         self.play(ts.animate.set_opacity(1.0),
-                  self.frame.animate.reorient(*self.final_view),
+                  self.animate_view(*self.final_view),
                   run_time=5.0)
         self.wait(2)
 
         self.wait(20)
-        self.embed()
 
 
-class P34_plain74_first4(InteractiveScene):
+class P34_plain74_first4(WelchScene):
 
     cfg = 'plain74_first4'
     max_height = 2.5
@@ -307,36 +302,35 @@ class P34_plain74_first4(InteractiveScene):
         land = LossLandscape(self.cfg, self.max_height)
         n = land.n
 
-        surface = ParametricSurface(
+        surface = parametric_surface(
             land.point,
             u_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
             v_range=[-CANVAS_EXTENT, CANVAS_EXTENT],
             resolution=(n, n),
         )
-        ts = TexturedSurface(surface, land.texture)
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, land.texture, shade_in_3d=True)
 
         line_values = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, NUM_GRIDLINES)
         sweep = np.linspace(-CANVAS_EXTENT, CANVAS_EXTENT, n)
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = gx.VGroup()
+        v_gridlines = gx.VGroup()
         for u in line_values:
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_smoothly(land.points(u, sweep))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.15)
             u_gridlines.add(line)
         for v in line_values:
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_smoothly(land.points(sweep, v))
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.15)
             v_gridlines.add(line)
 
-        self.frame.reorient(*self.fold_view)
+        self.set_view(*self.fold_view)
         self.wait(0)
 
-        self.play(ShowCreation(u_gridlines),
-                  ShowCreation(v_gridlines),
-                  self.frame.animate.reorient(*self.gridline_view),
+        self.play(gx.Create(u_gridlines),
+                  gx.Create(v_gridlines),
+                  self.animate_view(*self.gridline_view),
                   run_time=4.0)
         self.wait()
 
@@ -344,17 +338,11 @@ class P34_plain74_first4(InteractiveScene):
         self.add(ts)
         self.add(u_gridlines, v_gridlines)
         self.play(ts.animate.set_opacity(1.0),
-                  self.frame.animate.reorient(*self.final_view),
+                  self.animate_view(*self.final_view),
                   run_time=5.0)
         self.wait(2)
 
         self.wait(20)
-        self.embed()
-
-
-
-
-# class P33_plain8_first3(LandscapeScene):
 #     cfg = 'plain8_first3'
 
 

@@ -1,96 +1,43 @@
 #!/usr/bin/env python
-import inspect
-import os
-import sys
-import importlib
+"""Collect existing ManimGX clips in a numbered directory for editing."""
 
-from manimlib.config import get_module
-from manimlib.extract_scene import is_child_scene
+import argparse
+from itertools import count
+from pathlib import Path
+
+from manimgx.cli.scenes import load, scenes
 
 
-def get_sorted_scene_classes(module_name):
-    module = get_module(module_name)
-    if hasattr(module, "SCENES_IN_ORDER"):
-        return module.SCENES_IN_ORDER
-    # Otherwise, deduce from the order in which
-    # they're defined in a file
-    importlib.import_module(module.__name__)
-    line_to_scene = {}
-    name_scene_list = inspect.getmembers(
-        module,
-        lambda obj: is_child_scene(obj, module)
-    )
-    for name, scene_class in name_scene_list:
-        if inspect.getmodule(scene_class).__name__ != module.__name__:
+def get_sorted_scene_classes(source):
+    module = load(Path(source))
+    return module.SCENES_IN_ORDER if hasattr(module, "SCENES_IN_ORDER") else scenes(module)
+
+
+def stage_scenes(source, animation_dir=None):
+    source = Path(source).resolve()
+    animation_dir = Path(animation_dir).resolve() if animation_dir else source.parent
+    rendered = sorted(p for p in animation_dir.iterdir() if p.is_file() and p.suffix in {".mp4", ".mov"})
+    clips = [clip for scene in get_sorted_scene_classes(source) for clip in rendered
+             if clip.stem == scene.__name__]
+    if not clips:
+        return None
+
+    for number in count():
+        directory = animation_dir / f"staged_scenes_{number}"
+        try:
+            directory.mkdir()
+        except FileExistsError:
             continue
-        lines, line_no = inspect.getsourcelines(scene_class)
-        line_to_scene[line_no] = scene_class
-    return [
-        line_to_scene[index]
-        for index in sorted(line_to_scene.keys())
-    ]
-
-
-def stage_scenes(module_name):
-    scene_classes = get_sorted_scene_classes(module_name)
-    if len(scene_classes) == 0:
-        print("There are no rendered animations from this module")
-        return
-    # TODO, fix this
-    animation_dir = os.path.join(
-        os.path.expanduser('~'),
-        "Dropbox/3Blue1Brown/videos/2021/holomorphic_dynamics/videos"
-    )
-    # 
-    files = os.listdir(animation_dir)
-    sorted_files = []
-    for scene_class in scene_classes:
-        scene_name = scene_class.__name__
-        clips = [f for f in files if f.startswith(scene_name + ".")]
-        for clip in clips:
-            sorted_files.append(os.path.join(animation_dir, clip))
-        # Partial movie file directory
-        # movie_dir = get_movie_output_directory(
-        #     scene_class, **output_directory_kwargs
-        # )
-        # if os.path.exists(movie_dir):
-        #     for extension in [".mov", ".mp4"]:
-        #         int_files = get_sorted_integer_files(
-        #             pmf_dir, extension=extension
-        #         )
-        #         for file in int_files:
-        #             sorted_files.append(os.path.join(pmf_dir, file))
-        # else:
-
-    # animation_subdir = os.path.dirname(animation_dir)
-    count = 0
-    while True:
-        staged_scenes_dir = os.path.join(
-            animation_dir,
-            os.pardir,
-            "staged_scenes_{}".format(count)
-        )
-        if not os.path.exists(staged_scenes_dir):
-            os.makedirs(staged_scenes_dir)
-            break
-        # Otherwise, keep trying new names until
-        # there is a free one
-        count += 1
-    for count, f in reversed(list(enumerate(sorted_files))):
-        # Going in reversed order means that when finder
-        # sorts by date modified, it shows up in the
-        # correct order
-        symlink_name = os.path.join(
-            staged_scenes_dir,
-            "Scene_{:03}_{}".format(
-                count, f.split(os.sep)[-1]
-            )
-        )
-        os.symlink(f, symlink_name)
+        break
+    for number, clip in reversed(list(enumerate(clips))):
+        (directory / f"Scene_{number:03}_{clip.name}").symlink_to(clip)
+    return directory
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        raise Exception("No module given.")
-    module_name = sys.argv[1]
-    stage_scenes(module_name)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source", type=Path, help="Python file defining the scenes")
+    parser.add_argument("--animation-dir", type=Path, help="Folder containing already rendered clips")
+    args = parser.parse_args()
+    directory = stage_scenes(args.source, args.animation_dir)
+    print(directory if directory is not None else "No matching rendered clips.")

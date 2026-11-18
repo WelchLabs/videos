@@ -1,4 +1,7 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+import numpy as np
+from welch_scene import WelchScene, image_at_height
 from tqdm import tqdm
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -19,8 +22,8 @@ MAGENTA='#FF00FF'
 # svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/graphics/p78_80')
 # img_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/jepa/hacking/v_jepa_ac_1'
 
-svg_dir=Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/jepa/graphics/p78_80')
-img_dir='/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/jepa/hacking/v_jepa_ac_1'
+svg_dir=Path(welch_path('jepa/graphics/p78_80'))
+img_dir=welch_path('jepa/hacking/v_jepa_ac_1')
 
 
 def make_emb_tex(vals, color, position, scale=0.65):
@@ -29,31 +32,31 @@ def make_emb_tex(vals, color, position, scale=0.65):
          + f'{vals[1]:.2f}' + r', \ \dots, \ '
          + f'{vals[2]:.2f}'
          + r' \end{bmatrix}')
-    e = Tex(s)
+    e = gx.MathTex(s)
     e.set_color(color)
     e.scale(scale)
     e.move_to(position)
     return e
 
-class P78_80B(InteractiveScene):
+class P78_80B(WelchScene):
     def construct(self):
 
         svgs_to_skip=[0, 1, 2]
         svg_files=list(sorted(svg_dir.glob('*.svg')))
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for i, svg_file in enumerate(svg_files): 
             if i in svgs_to_skip: continue
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             svg_image.scale(4.0)
             all_svgs.add(svg_image[1:])
 
 
-        self.frame.reorient(0, 0, 0, (-0.1, 0.75, 0.0), 6.92)
+        self.set_view(0, 0, 0, (-0.1, 0.75, 0.0), 6.92)
         self.add(all_svgs[0], all_svgs[1], all_svgs[2], all_svgs[3],
                  all_svgs[4], all_svgs[5])
 
         self.wait()
-        self.play(Write(all_svgs[6]), run_time=5)
+        self.play(gx.Write(all_svgs[6]), run_time=5)
 
 
         # Ok getting close here, goog next step is probably to go
@@ -64,10 +67,10 @@ class P78_80B(InteractiveScene):
         # set of curves in matplotlib!
         # Ok done! Now bring in pictures. 
 
-        imgs=Group()
+        imgs=gx.Group()
         NUM_FRAMES=124
         for i in range(NUM_FRAMES):
-            imgs.add(ImageMobject(str(img_dir+'/VJEPA_AC_CLIPS'+str(i).zfill(3)+'.jpg')))
+            imgs.add(image_at_height(str(img_dir+'/VJEPA_AC_CLIPS'+str(i).zfill(3)+'.jpg')))
         
         imgs_left=imgs.copy()
         imgs_right=imgs.copy()
@@ -89,12 +92,12 @@ class P78_80B(InteractiveScene):
         self.wait()
         #Bring in actuator signals first. 
         self.remove(all_svgs[6][1:])
-        self.play(Write(all_svgs[8][1:]),
+        self.play(gx.Write(all_svgs[8][1:]),
                  all_svgs[6][0].animate.move_to([-0.233, 0.95, 0]),
                  run_time=3)
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (-0.19, 0.27, 0.0), 7.43),
-                  FadeOut(all_svgs[1]),
+        self.play(self.animate_view(0, 0, 0, (-0.19, 0.27, 0.0), 7.43),
+                  gx.FadeOut(all_svgs[1]),
                   run_time=2)
 
         #Stack that videer
@@ -131,45 +134,45 @@ class P78_80B(InteractiveScene):
         #     self.add(imgs[i])
         #     self.wait(0.1)
 
-        self.play(FadeOut(imgs[0]),
-                  FadeOut(imgs[1]),
-                  FadeOut(imgs_left[i-1]), 
-                  FadeOut(imgs_right[i]),
-                  FadeOut(all_svgs[7]),
+        self.play(gx.FadeOut(imgs[0]),
+                  gx.FadeOut(imgs[1]),
+                  gx.FadeOut(imgs_left[i-1]),
+                  gx.FadeOut(imgs_right[i]),
+                  gx.FadeOut(all_svgs[7]),
                   run_time=2)
 
         all_svgs[10].move_to([-0.15, -2.9, 0])
-        self.play(FadeIn(imgs_right[i]), 
-                  Write(all_svgs[10][5:]),
-                  FadeIn(imgs[0]),
-                  FadeIn(imgs[1]),
-                  FadeIn(imgs[2]),
-                  Write(all_svgs[10][:5]),
+        self.play(gx.FadeIn(imgs_right[i]),
+                  gx.Write(all_svgs[10][5:]),
+                  gx.FadeIn(imgs[0]),
+                  gx.FadeIn(imgs[1]),
+                  gx.FadeIn(imgs[2]),
+                  gx.Write(all_svgs[10][:5]),
                   run_time=2)
 
 
-        embedding_1=Tex(r'\begin{bmatrix} 0.22, \ -0.13, \ \dots, \ 0.31 \end{bmatrix}')
+        embedding_1=gx.MathTex(r'\begin{bmatrix} 0.22, \ -0.13, \ \dots, \ 0.31 \end{bmatrix}')
         embedding_1.set_color(BLUE)
         embedding_1.scale(0.5)
         embedding_1.move_to([2.3, 2.0, 0])
         embedding_1_og=embedding_1.copy()
 
-        embedding_2=Tex(r'\begin{bmatrix} 0.05, \ -0.02, \ \dots, \ 0.50 \end{bmatrix}')
+        embedding_2=gx.MathTex(r'\begin{bmatrix} 0.05, \ -0.02, \ \dots, \ 0.50 \end{bmatrix}')
         embedding_2.set_color(YELLOW)
         embedding_2.scale(0.5)
         embedding_2.move_to([2.3, 1.4, 0])
 
         self.wait()
-        self.play(FadeOut(all_svgs[5][1:]))
-        self.play(Write(embedding_2),
-                  FadeIn(all_svgs[11][:13]),
+        self.play(gx.FadeOut(all_svgs[5][1:]))
+        self.play(gx.Write(embedding_2),
+                  gx.FadeIn(all_svgs[11][:13]),
                   run_time=2)
 
         self.wait()
         all_svgs[11][13:].set_color(BLUE)
-        self.play(Write(embedding_1),
-                  FadeIn(all_svgs[11][13:]),
-                  Write(all_svgs[9]),
+        self.play(gx.Write(embedding_1),
+                  gx.FadeIn(all_svgs[11][13:]),
+                  gx.Write(all_svgs[9]),
                   run_time=2)
 
         # Ok so now play predicted embedding moving, 
@@ -215,7 +218,6 @@ class P78_80B(InteractiveScene):
 
 
 
-        self.embed()
         self.wait(20)
 
 

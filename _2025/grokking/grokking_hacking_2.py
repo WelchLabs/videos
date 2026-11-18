@@ -1,4 +1,10 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+from activation_diagrams import black_to_tan_hex, softmax_with_temperature, viridis_hex
+import numpy as np
+import pickle
+from welch_scene import WelchScene
+
 from functools import partial
 
 from pathlib import Path
@@ -16,34 +22,10 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 MAGENTA='#FF00FF'
 
-def viridis_hex(value, vmin, vmax):
-    """
-    Map a scalar `value` in [vmin, vmax] to a Viridis color (hex string).
-    """
-    # Normalize into [0,1]
-    norm = colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
-    # Get RGBA from viridis
-    rgba = cm.viridis(norm(value))
-    # Convert to hex
-    return colors.to_hex(rgba)
+svg_dir=Path(welch_path('grokking/graphics/to_manim'))
+data_dir=Path(welch_path('grokking/from_linux/grok_1764602090'))
 
-def black_to_tan_hex(value, vmin, vmax=1):
-    """
-    Map a scalar `value` in [vmin, vmax] to a color from black to FRESH_TAN (#dfd0b9).
-    """
-    cmap = colors.LinearSegmentedColormap.from_list('black_tan', ['#000000', '#dfd0b9'])
-    norm = colors.Normalize(vmin=vmin, vmax=vmax, clip=True)
-    return colors.to_hex(cmap(norm(value)))
-
-def softmax_with_temperature(logits, temperature=1.0, axis=-1):
-    scaled = logits / temperature
-    exp_scaled = np.exp(scaled - np.max(scaled, axis=axis, keepdims=True))
-    return exp_scaled / np.sum(exp_scaled, axis=axis, keepdims=True)
-
-svg_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/graphics/to_manim')
-data_dir=Path('/Users/stephen/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764602090')
-
-class GrokkingHackingTwo(InteractiveScene):
+class GrokkingHackingTwo(WelchScene):
     def construct(self):  
 
 
@@ -52,9 +34,9 @@ class GrokkingHackingTwo(InteractiveScene):
         with open(data_dir/'final_model_activations_sample.p', 'rb') as f:
             activations = pickle.load(f)
 
-        all_svgs=Group()
+        all_svgs=gx.Group()
         for svg_file in svg_files[1:16]: #Expand if I add more artboards
-            svg_image=SVGMobject(str(svg_file))
+            svg_image=gx.SVGMobject(str(svg_file))
             all_svgs.add(svg_image[1:]) #Thowout background
 
         all_svgs.scale(6.0) #Eh?
@@ -91,7 +73,7 @@ class GrokkingHackingTwo(InteractiveScene):
                 if i+offset == activations['x'][example_index][activations_index]:
                     all_svgs[2][idx[0]].set_color(FRESH_TAN)
                 else:
-                    all_svgs[2][idx[0]].set_color(BLACK)
+                    all_svgs[2][idx[0]].set_color(gx.BLACK)
 
 
         # 50/50 on viridis vs tan here, easy to change. 
@@ -278,4 +260,4 @@ class GrokkingHackingTwo(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        # Scene authoring stops here in the interactive editor.

@@ -1,6 +1,11 @@
-from manimlib import *
-sys.path.append('/Users/stephen/manim/videos/welch_assets') #hacks
-from welch_axes import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_scene import manual_camera_interpolation
+from landscape_geometry import get_pivot_and_scale
+from landscape_geometry import get_numerical_gradient
+import numpy as np
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, set_surface_shading, textured_surface
 from functools import partial
 from tqdm import tqdm
 
@@ -8,12 +13,12 @@ CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
 BLUE='#65c8d0'
 
-wormhole_dir='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/hackin/wormhole_merged/'
+wormhole_dir=welch_path('backpropagation/hackin/wormhole_merged/')
 alphas_1=np.linspace(-2.5, 2.5, 512)
 loss_2d_1=np.load(wormhole_dir+'000.npy')
 
-class Dot3D(Sphere):
-    def __init__(self, center=ORIGIN, radius=0.05, **kwargs):
+class Dot3D(m.Sphere):
+    def __init__(self, center=m.ORIGIN, radius=0.05, **kwargs):
         super().__init__(radius=radius, **kwargs)
         self.move_to(center)
 def param_surface_1(u, v):
@@ -36,85 +41,12 @@ def param_surface_2(u, v, surf_array):
         z = 0
     return np.array([u, v, z])
 
-def get_pivot_and_scale(axis_min, axis_max, axis_end):
-    '''Above collapses into scaling around a single pivot when axis_start=0'''
-    scale = axis_end / (axis_max - axis_min)
-    return axis_min, scale
-
-def get_numerical_gradient(surface_fn, u, v, epsilon=0.01):
-    height = surface_fn(u, v)[2]
-    height_du = surface_fn(u + epsilon, v)[2]
-    du = (height_du - height) / epsilon
-    height_dv = surface_fn(u, v + epsilon)[2]
-    dv = (height_dv - height) / epsilon
-    return (du, dv)
 
 
-# Copying code to recreate state
-def copy_frame_positioning_precise(frame):
-    center = frame.get_center()
-    height = frame.get_height()
-    angles = frame.get_euler_angles()
-
-    call = f"reorient("
-    theta, phi, gamma = (angles / DEG)
-    call += f"{theta}, {phi}, {gamma}"
-    if any(center != 0):
-        call += f", {tuple(center)}"
-    if height != FRAME_HEIGHT:
-        call += ", {:.2f}".format(height)
-    call += ")"
-    print(call)
-    pyperclip.copy(call)
 
 
-# copy_frame_positioning_precise(self.frame)
 
-def manual_camera_interpolation(start_orientation, end_orientation, num_steps):
-    """
-    Linearly interpolate between two camera orientations.
-    
-    Parameters:
-    - start_orientation: List containing camera parameters with a tuple at index 3
-    - end_orientation: List containing camera parameters with a tuple at index 3
-    - num_steps: Number of interpolation steps (including start and end)
-    
-    Returns:
-    - List of interpolated orientations
-    """
-    result = []
-    
-    for step in range(num_steps):
-        # Calculate interpolation factor (0 to 1)
-        t = step / (num_steps - 1) if num_steps > 1 else 0
-        
-        # Create a new orientation for this step
-        interpolated = []
-        
-        for i in range(len(start_orientation)):
-            if i == 3:  # Handle the tuple at position 3
-                start_tuple = start_orientation[i]
-                end_tuple = end_orientation[i]
-                
-                # Interpolate each element of the tuple
-                interpolated_tuple = tuple(
-                    start_tuple[j] + t * (end_tuple[j] - start_tuple[j])
-                    for j in range(len(start_tuple))
-                )
-                
-                interpolated.append(interpolated_tuple)
-            else:  # Handle regular numeric values
-                start_val = start_orientation[i]
-                end_val = end_orientation[i]
-                interpolated_val = start_val + t * (end_val - start_val)
-                interpolated.append(interpolated_val)
-        
-        result.append(interpolated)
-    
-    return result
-
-
-class OpeningRewriteFour(InteractiveScene):
+class OpeningRewriteFour(WelchScene):
     def construct(self):    
         #Load up other surfaces to visualize
         loss_arrays=[]
@@ -135,45 +67,45 @@ class OpeningRewriteFour(InteractiveScene):
         #     plt.close()
 
 
-        surfaces=Group()
+        surfaces=m.Group()
         surf_functions=[] #Need this later to move dot around.
-        grids=Group()
+        grids=m.Group()
         print("Loading Surfaces and Gridlines...")
         for i in tqdm(range(num_time_steps)):
             surf_func=partial(param_surface_2, surf_array=loss_arrays[i])
             surf_functions.append(surf_func)
-            surface = ParametricSurface(
+            surface = parametric_surface(
                 surf_func,  
                 u_range=[-2.5, 2.5],
                 v_range=[-2.5, 2.5],
                 resolution=(512, 512),
             )
 
-            ts2 = TexturedSurface(surface, wormhole_dir+'loss_2d_1_'+str(i).zfill(3)+'.png')
-            ts2.set_shading(0.0, 0.1, 0)
+            ts2 = textured_surface(surface, wormhole_dir+'loss_2d_1_'+str(i).zfill(3)+'.png')
+            set_surface_shading(ts2, 0.0, 0.1, 0)
             surfaces.add(ts2)
 
             num_lines = 64  # Number of gridlines in each direction
             num_points = 512  # Number of points per line
-            u_gridlines = VGroup()
-            v_gridlines = VGroup()
+            u_gridlines = m.VGroup()
+            v_gridlines = m.VGroup()
             u_values = np.linspace(-2.5, 2.5, num_lines)
             v_points = np.linspace(-2.5, 2.5, num_points)
             for u in u_values:
                 points = [surf_func(u, v) for v in v_points]
-                line = VMobject()
+                line = m.VMobject()
                 line.set_points_smoothly(points)
-                line.set_stroke(width=1, color=WHITE, opacity=0.15)
+                line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
                 u_gridlines.add(line)
 
             u_points = np.linspace(-2.5, 2.5, num_points)
             for v in u_values:  # Using same number of lines for both directions
                 points = [surf_func(u, v) for u in u_points]
-                line = VMobject()
+                line = m.VMobject()
                 line.set_points_smoothly(points)
-                line.set_stroke(width=1, color=WHITE, opacity=0.15)
+                line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
                 v_gridlines.add(line)
-            grids.add(VGroup(u_gridlines, v_gridlines))
+            grids.add(m.VGroup(u_gridlines, v_gridlines))
 
         self.wait()
 
@@ -181,12 +113,12 @@ class OpeningRewriteFour(InteractiveScene):
         self.add(grids[0])
 
         #Starting semi-overhead
-        self.frame.reorient(0, 11, 0, (0.01, 0.03, 0.12), 6.37)
+        self.set_view(0, 11, 0, (0.01, 0.03, 0.12), 6.37)
         self.wait()
 
 
         #Cinematic pan around
-        self.play(self.frame.animate.reorient(91, 44, 0, (-0.15, -0.0, 0.07), 5.78), run_time=10.0)
+        self.play(self.animate_view(91, 44, 0, (-0.15, -0.0, 0.07), 5.78), run_time=10.0)
         self.wait()
 
 
@@ -195,7 +127,7 @@ class OpeningRewriteFour(InteractiveScene):
 
 
 
-        # self.play(self.frame.animate.reorient(122, 58, 0, (-1.15, -0.02, 0.11), 5.42), run_time=4.0)
+        # self.play(self.animate_view(122, 58, 0, (-1.15, -0.02, 0.11), 5.42), run_time=4.0)
         self.wait()
 
         starting_coords=[-0.7,0.95]  #[-0.7,1.0]  #
@@ -206,12 +138,12 @@ class OpeningRewriteFour(InteractiveScene):
         self.add(s1)
 
         self.play(s1.animate.shift([0,0,-1]),
-                  # self.frame.animate.reorient(120, 39, 0, (-0.89, 0.27, -0.07), 4.05),
+                  # self.animate_view(120, 39, 0, (-0.89, 0.27, -0.07), 4.05),
                   run_time=2.0)
 
         self.wait()
 
-        self.play(self.frame.animate.reorient(124, 37, 0, (-0.96, 0.01, 0.23), 3.41), run_time=4.0)
+        self.play(self.animate_view(124, 37, 0, (-0.96, 0.01, 0.23), 3.41), run_time=4.0)
         self.wait()
 
         num_steps=128 # I think it gest stuck around 30-40 at lr -0.01 - play with this for smoother/longer animation
@@ -240,21 +172,21 @@ class OpeningRewriteFour(InteractiveScene):
 
         self.wait()
 
-        t = VMobject()
+        t = m.VMobject()
         t.set_stroke(width=6, color="#FF00FF", opacity=1.0)
         self.add(t)
         for i in range(num_steps):
             s1.move_to(trajectory[i])
             t.set_points_smoothly(trajectory[:i])
-            self.frame.reorient(*interp_orientations[i])
+            self.set_view(*interp_orientations[i])
             self.wait(0.1)
         self.wait()
 
 
         #Move to side for hinton quote!
-        # self.play(self.frame.animate.reorient(89, 5, 0, (-0.02, 2.25, 0.0), 6.80), run_time=6.0) #This angling is finicky
-        self.play(self.frame.animate.reorient(90.18440887882339, 3.21213142627667, 0.0, (-0.0132118175, 2.2433786, -0.00072974624), 6.80), run_time=6.0)
-        # copy_frame_positioning_precise(self.frame)
+        # self.play(self.animate_view(89, 5, 0, (-0.02, 2.25, 0.0), 6.80), run_time=6.0) #This angling is finicky
+        self.play(self.animate_view(90.18440887882339, 3.21213142627667, 0.0, (-0.0132118175, 2.2433786, -0.00072974624), 6.80), run_time=6.0)
+        # copy_frame_positioning_precise(self.camera.frame)
 
         self.wait()
 
@@ -263,16 +195,16 @@ class OpeningRewriteFour(InteractiveScene):
         self.wait()
         self.remove(s1)
 
-        self.play(self.frame.animate.reorient(46, 46, 0, (0.17, -0.16, -0.02), 6.13), run_time=8.0)
+        self.play(self.animate_view(46, 46, 0, (0.17, -0.16, -0.02), 6.13), run_time=8.0)
         self.wait()
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 
-class ending_moves(InteractiveScene):
+class ending_moves(WelchScene):
     '''
     Hack on single frames. 
     '''
@@ -288,47 +220,47 @@ class ending_moves(InteractiveScene):
         for i in tqdm(range(num_time_steps)):
             loss_arrays.append(np.load(wormhole_dir+str(i).zfill(3)+'.npy'))
 
-        surfaces=Group()
+        surfaces=m.Group()
         surf_functions=[] #Need this later to move dot around.
-        grids=Group()
+        grids=m.Group()
         print("Loading Surfaces and Gridlines...")
         
         i=65
 
         surf_func=partial(param_surface_2, surf_array=loss_arrays[i])
         surf_functions.append(surf_func)
-        surface = ParametricSurface(
+        surface = parametric_surface(
             surf_func,  
             u_range=[-2.5, 2.5],
             v_range=[-2.5, 2.5],
             resolution=(512, 512),
         )
 
-        ts2 = TexturedSurface(surface, wormhole_dir+'loss_2d_1_'+str(i).zfill(3)+'.png')
-        ts2.set_shading(0.0, 0.1, 0)
+        ts2 = textured_surface(surface, wormhole_dir+'loss_2d_1_'+str(i).zfill(3)+'.png')
+        set_surface_shading(ts2, 0.0, 0.1, 0)
         surfaces.add(ts2)
 
         num_lines = 64  # Number of gridlines in each direction
         num_points = 512  # Number of points per line
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = m.VGroup()
+        v_gridlines = m.VGroup()
         u_values = np.linspace(-2.5, 2.5, num_lines)
         v_points = np.linspace(-2.5, 2.5, num_points)
         for u in u_values:
             points = [surf_func(u, v) for v in v_points]
-            line = VMobject()
+            line = m.VMobject()
             line.set_points_smoothly(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
             u_gridlines.add(line)
 
         u_points = np.linspace(-2.5, 2.5, num_points)
         for v in u_values:  # Using same number of lines for both directions
             points = [surf_func(u, v) for u in u_points]
-            line = VMobject()
+            line = m.VMobject()
             line.set_points_smoothly(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.15)
+            line.set_stroke(width=1, color=m.WHITE, opacity=0.15)
             v_gridlines.add(line)
-        grids.add(VGroup(u_gridlines, v_gridlines))
+        grids.add(m.VGroup(u_gridlines, v_gridlines))
 
 
         new_point_coords=surf_func(*starting_coords)
@@ -338,24 +270,24 @@ class ending_moves(InteractiveScene):
         self.add(grids[0])
         self.add(s2)
 
-        # self.frame.reorient(179, 32, 0, (0.1, -0.42, 1.36), 0.48) #Super tight on wormhole
-        self.frame.reorient(-179, 7, 0, (0.1, -0.43, 1.36), 0.48)
+        # self.set_view(179, 32, 0, (0.1, -0.42, 1.36), 0.48) #Super tight on wormhole
+        self.set_view(-179, 7, 0, (0.1, -0.43, 1.36), 0.48)
         self.wait()
-        self.play(self.frame.animate.reorient(-180, 24, 0, (0.05, 0.3, 0.97), 5.17), run_time=12)
+        self.play(self.animate_view(-180, 24, 0, (0.05, 0.3, 0.97), 5.17), run_time=12)
 
 
-        # self.frame.reorient(89, 180, 0, (0.04, -0.22, 1.32), 6.49) #Cool underneath view
-        # self.frame.reorient(89, 112, 0, (0.26, -0.03, 0.99), 6.22)
+        # self.set_view(89, 180, 0, (0.04, -0.22, 1.32), 6.49) #Cool underneath view
+        # self.set_view(89, 112, 0, (0.26, -0.03, 0.99), 6.22)
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(180, 82, 0, (0.02, -0.02, 0.97), 6.22), run_time=10)
+        # self.play(self.animate_view(180, 82, 0, (0.02, -0.02, 0.97), 6.22), run_time=10)
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(180, 12, 0, (0.12, 0.2, 1.3), 6.22), run_time=15)
+        # self.play(self.animate_view(180, 12, 0, (0.12, 0.2, 1.3), 6.22), run_time=15)
 
-        # self.play(self.frame.animate.reorient(-180, 12, 0, (0.12, 0.2, 1.3), 6.22), run_time=25, rate_func=linear)
+        # self.play(self.animate_view(-180, 12, 0, (0.12, 0.2, 1.3), 6.22), run_time=25, rate_func=linear)
         self.wait(5)
-        self.embed()
+        pass
 
 
 

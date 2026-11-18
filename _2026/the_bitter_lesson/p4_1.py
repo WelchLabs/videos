@@ -1,4 +1,5 @@
-from manimlib import *
+import manimgx as gx
+from welch_scene import WelchScene
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -8,7 +9,7 @@ SCALE_FACTOR = 1  # Scale down the coordinates from phone_dag.json
 
 json_dir=Path('/Users/stephen/manim/videos/_2026/the_bitter_lesson')
 
-class Node(VGroup):
+class Node(gx.VGroup):
     """Node for phone_dag.json format: [phoneme, id, x, y]"""
     def __init__(self, phoneme, node_id, x, y, buff=0.2, scale_factor=SCALE_FACTOR, **kwargs):
         super().__init__(**kwargs)
@@ -18,11 +19,11 @@ class Node(VGroup):
         self.x = x
         self.y = y
 
-        self.text = Text(phoneme, font="American Typewriter", color=CHILL_BROWN)
+        self.text = gx.Text(phoneme, font="American Typewriter", color=CHILL_BROWN)
 
-        self.box = RoundedRectangle(
-            width=self.text.get_width() + 2 * buff,
-            height=self.text.get_height() + 2 * buff,
+        self.box = gx.RoundedRectangle(
+            width=self.text.width + 2 * buff,
+            height=self.text.height + 2 * buff,
             corner_radius=0.15,
             color=CHILL_BROWN,
         )
@@ -34,18 +35,18 @@ class Node(VGroup):
         self.move_to([x * scale_factor, y * scale_factor, 0])
 
 
-class Connection(VGroup):
+class Connection(gx.VGroup):
     def __init__(self, node_from, node_to, **kwargs):
         super().__init__(**kwargs)
 
         self.node_from = node_from
         self.node_to = node_to
 
-        self.arrow = Arrow(
+        self.arrow = gx.Arrow(
             node_from.get_center(),
             node_to.get_center(),
             buff=0.5,
-            thickness=0.5,
+            stroke_width=0.5,
             fill_color=CHILL_BROWN,
         )
         self.arrow.set_color(CHILL_BROWN)
@@ -53,7 +54,7 @@ class Connection(VGroup):
         self.add(self.arrow)
 
 
-class Network(VGroup):
+class Network(gx.VGroup):
     """Network for phone_dag.json format with nodes and edges"""
     def __init__(self, data, layer_spacing=2.5, node_spacing=3.0, scale_factor=SCALE_FACTOR, **kwargs):
         super().__init__(**kwargs)
@@ -119,15 +120,14 @@ class Network(VGroup):
             self.add(node)
 
 
-class TestNode(Scene):
+class TestNode(gx.Scene):
     def construct(self):
         node = Node("T", 0, 0, 0)
         self.add(node)
         self.wait()
-        self.embed()
 
 
-class TestConnection(Scene):
+class TestConnection(gx.Scene):
     def construct(self):
         node1 = Node("T", 0, -2, 0, scale_factor=1)
         node2 = Node("E", 1, 2, 0, scale_factor=1)
@@ -137,7 +137,7 @@ class TestConnection(Scene):
         self.wait()
 
 
-class TestNetwork(Scene):
+class TestNetwork(gx.Scene):
     def construct(self):
         with open(json_dir/"phone_dag.json", "r") as f:
             data = json.load(f)
@@ -149,7 +149,7 @@ class TestNetwork(Scene):
         self.wait()
 
 
-class P4(Scene):
+class P4(gx.Scene):
     def construct(self):
         with open(json_dir/"phone_dag_v2.json", "r") as f:
             nodes_data = json.load(f)
@@ -184,20 +184,20 @@ class P4(Scene):
                     layer_mobjects.append(connection.arrow)
 
             if layer_mobjects:
-                layer_groups.append(VGroup(*layer_mobjects))
+                layer_groups.append(gx.VGroup(*layer_mobjects))
 
         # Pre-compute camera keyframes for each cumulative state
         # (what camera should be when layers 0..i are fully visible)
         padding = 0.5
-        aspect = self.camera.frame.get_width() / self.camera.frame.get_height()
+        aspect = self.camera.frame.width / self.camera.frame.height
         camera_keyframes = []  # List of (width, center_x, center_y)
 
         cumulative_mobjects = []
         for group in layer_groups:
             cumulative_mobjects.extend(group.submobjects)
-            cumulative_group = VGroup(*cumulative_mobjects)
-            w = cumulative_group.get_width() + padding
-            h = cumulative_group.get_height() + padding
+            cumulative_group = gx.VGroup(*cumulative_mobjects)
+            w = cumulative_group.width + padding
+            h = cumulative_group.height + padding
             needed_width = max(w, h * aspect)
             center = cumulative_group.get_center()
             camera_keyframes.append((needed_width, center[0], center[1]))
@@ -209,7 +209,7 @@ class P4(Scene):
 
         # Set initial camera
         init_w, init_cx, init_cy = camera_keyframes[0]
-        self.camera.frame.set_width(init_w)
+        self.camera.frame.scale_to_fit_width(init_w)
         self.camera.frame.move_to([init_cx, init_cy, 0])
 
         # Animation settings
@@ -222,7 +222,7 @@ class P4(Scene):
             return t * t * (3 - 2 * t)
 
         # Progress tracker
-        progress = ValueTracker(0)
+        progress = gx.ValueTracker(0)
 
         def update_scene(_):
             t = progress.get_value()
@@ -259,7 +259,7 @@ class P4(Scene):
             interp_cx = cx0 + (cx1 - cx0) * frac
             interp_cy = cy0 + (cy1 - cy0) * frac
 
-            self.camera.frame.set_width(interp_w)
+            self.camera.frame.scale_to_fit_width(interp_w)
             self.camera.frame.move_to([interp_cx, interp_cy, 0])
 
         progress.add_updater(update_scene)
@@ -275,7 +275,7 @@ class P4(Scene):
         progress.remove_updater(update_scene)
         self.wait(0.5)
         
-class AnimateNetwork(Scene):
+class AnimateNetwork(gx.Scene):
     def construct(self):
         with open(json_dir/"phone_dag_v2.json", "r") as f:
             nodes_data = json.load(f)
@@ -298,8 +298,8 @@ class AnimateNetwork(Scene):
                     shown_mobjects.append(node.text)
 
             if boxes_to_show:
-                self.play(*[ShowCreation(box) for box in boxes_to_show])
-                self.play(*[Write(text) for text in texts_to_show])
+                self.play(*[gx.Create(box) for box in boxes_to_show])
+                self.play(*[gx.Write(text) for text in texts_to_show])
 
             arrows_to_show = []
             for connection in network.connections:
@@ -319,22 +319,22 @@ class AnimateNetwork(Scene):
                     shown_mobjects.append(connection.arrow)
 
             if arrows_to_show and shown_mobjects:
-                group = VGroup(*shown_mobjects)
+                group = gx.VGroup(*shown_mobjects)
 
-                frame_width = group.get_width() + 4
-                frame_height = group.get_height() + 4
+                frame_width = group.width + 4
+                frame_height = group.height + 4
 
-                current_aspect = self.camera.frame.get_width() / self.camera.frame.get_height()
+                current_aspect = self.camera.frame.width / self.camera.frame.height
                 needed_width = max(frame_width, frame_height * current_aspect)
 
                 self.play(
-                    *[GrowArrow(arrow) for arrow in arrows_to_show],
-                    self.camera.frame.animate.set_width(needed_width).move_to(group.get_center())
+                    *[gx.GrowArrow(arrow) for arrow in arrows_to_show],
+                    self.camera.frame.animate.scale_to_fit_width(needed_width).move_to(group.get_center())
                 )
 
         self.wait()
 
-class TestArrow(InteractiveScene):
+class TestArrow(WelchScene):
     def construct(self):
         with open(json_dir/"phone_dag_claude_v2.json", "r") as f:
             nodes_data = json.load(f)
@@ -346,7 +346,7 @@ class TestArrow(InteractiveScene):
 
 
 
-class RenderNetworkV2(Scene):
+class RenderNetworkV2(gx.Scene):
     def construct(self):
         with open(json_dir/"phone_dag_v2.json", "r") as f:
             data = json.load(f)
@@ -354,7 +354,7 @@ class RenderNetworkV2(Scene):
         # Use raw coordinates from JSON (x = horizontal, y = vertical for branching)
         scale = 0.01
         nodes = {}
-        node_group = VGroup()
+        node_group = gx.VGroup()
 
         for node_data in data["nodes"]:
             node_id = node_data["id"]
@@ -362,46 +362,46 @@ class RenderNetworkV2(Scene):
             x = node_data["x"] * scale
             y = node_data["y"] * scale
 
-            text = Text(phoneme, font="American Typewriter", color=CHILL_BROWN)
-            box = RoundedRectangle(
-                width=text.get_width() + 0.4,
-                height=text.get_height() + 0.4,
+            text = gx.Text(phoneme, font="American Typewriter", color=CHILL_BROWN)
+            box = gx.RoundedRectangle(
+                width=text.width + 0.4,
+                height=text.height + 0.4,
                 corner_radius=0.15,
                 color=CHILL_BROWN,
             )
             text.move_to(box.get_center())
-            node = VGroup(box, text)
+            node = gx.VGroup(box, text)
             node.move_to([x, y, 0])
             nodes[node_id] = node
             node_group.add(node)
 
         # Create edges
-        edge_group = VGroup()
+        edge_group = gx.VGroup()
         for edge_data in data["edges"]:
             source_id = edge_data["source"]
             target_id = edge_data["target"]
             if source_id in nodes and target_id in nodes:
-                arrow = Arrow(
+                arrow = gx.Arrow(
                     nodes[source_id].get_center(),
                     nodes[target_id].get_center(),
                     buff=0.5,
-                    thickness=0.5,
+                    stroke_width=0.5,
                     fill_color=CHILL_BROWN,
                 )
                 arrow.set_color(CHILL_BROWN)
                 edge_group.add(arrow)
 
-        network = VGroup(edge_group, node_group)
+        network = gx.VGroup(edge_group, node_group)
         network.center()
 
         # Fit camera to network
         padding = 1.0
-        aspect = self.camera.frame.get_width() / self.camera.frame.get_height()
-        w = network.get_width() + padding
-        h = network.get_height() + padding
+        aspect = self.camera.frame.width / self.camera.frame.height
+        w = network.width + padding
+        h = network.height + padding
         needed_width = max(w, h * aspect)
 
-        self.camera.frame.set_width(needed_width)
+        self.camera.frame.scale_to_fit_width(needed_width)
         self.camera.frame.move_to(network.get_center())
 
         self.add(network)

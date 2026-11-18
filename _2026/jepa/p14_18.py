@@ -1,4 +1,6 @@
-from manimlib import *
+import manimgx as gx
+import numpy as np
+from welch_scene import WelchScene
 from tqdm import tqdm
 import re
 from pathlib import Path
@@ -24,25 +26,25 @@ def wire_prism(dims, color=CHILL_BROWN, stroke_width=10.0):
         (sx, sy, sz): np.array([sx * w / 2, sy * h / 2, sz * d / 2])
         for sx in (-1, 1) for sy in (-1, 1) for sz in (-1, 1)
     }
-    edges = VGroup()
+    edges = gx.VGroup()
     keys = list(corners.keys())
     overshoot = stroke_width / 400
     for i, k1 in enumerate(keys):
         for k2 in keys[i + 1:]:
             if sum(a != b for a, b in zip(k1, k2)) == 1:
                 p1, p2 = corners[k1], corners[k2]
-                v = normalize(p2 - p1)
-                edges.add(Line(
+                v = gx.normalize(p2 - p1)
+                edges.add(gx.Line(
                     p1 - v * overshoot, p2 + v * overshoot,
                     color=color, stroke_width=stroke_width,
                 ))
     return edges
 
 
-class LeNetSketch2(InteractiveScene):
+class LeNetSketch2(WelchScene):
     def construct(self):
         # Tilted 3D view so the prisms read as boxes
-        self.frame.reorient(-25, 65, 0)
+        self.set_view(-25, 65, 0)
 
         # Input image: thin slab, large spatial face
         img = wire_prism([0.3, 3.0, 3.0])
@@ -56,25 +58,24 @@ class LeNetSketch2(InteractiveScene):
         l3 = wire_prism([1.2, 0.7, 0.7])
         l3.move_to([-1.3, 0, 0])
 
-        layers = VGroup(img, l2, l3)
+        layers = gx.VGroup(img, l2, l3)
         # self.add(layers)
 
-        # self.frame.reorient(30, 64, 0, (-2.25, -0.05, 0.28), 6.55)
-        # self.frame.reorient(31, 55, 0, (-2.27, -0.11, 0.21), 6.55)
-        self.frame.reorient(24, 64, 0, (-2.27, -0.11, 0.21), 6.55)
+        # self.set_view(30, 64, 0, (-2.25, -0.05, 0.28), 6.55)
+        # self.set_view(31, 55, 0, (-2.27, -0.11, 0.21), 6.55)
+        self.set_view(24, 64, 0, (-2.27, -0.11, 0.21), 6.55)
 
-        self.play(Write(layers), run_time=5)
-
-
-
-        self.embed()
+        self.play(gx.Write(layers), run_time=5)
 
 
 
-class AlexNetSketch3(InteractiveScene):
+
+
+
+class AlexNetSketch3(WelchScene):
     def construct(self):
         # Tilted 3D view so the prisms read as boxes
-        self.frame.reorient(-25, 65, 0)
+        self.set_view(-25, 65, 0)
 
         # Input image: thin slab, large spatial face
         img = wire_prism([0.3, 3.0, 3.0])
@@ -94,30 +95,16 @@ class AlexNetSketch3(InteractiveScene):
         l5 = wire_prism([0.7, 0.7, 0.7])
         l5.move_to([0.8, 0, 0])
 
-        layers = VGroup(img, l2, l3, l4, l5)
+        layers = gx.VGroup(img, l2, l3, l4, l5)
         # self.add(layers)
 
-        # self.frame.reorient(24, 64, 0, (-2.27, -0.11, 0.21), 6.55)
-        self.frame.reorient(20, 63, 0, (-1.7, 0.08, -0.03), 6.55)
+        # self.set_view(24, 64, 0, (-2.27, -0.11, 0.21), 6.55)
+        self.set_view(20, 63, 0, (-1.7, 0.08, -0.03), 6.55)
 
-        self.play(Write(layers), run_time=5)
+        self.play(gx.Write(layers), run_time=5)
 
 
-        # self.frame.reorient(3, 65, 0, (-1.44, -0.02, -0.24), 7.21)
+        # self.set_view(3, 65, 0, (-1.44, -0.02, -0.24), 7.21)
         self.wait()
-        self.play(self.frame.animate.reorient(1, 62, 0, (-1.39, 0.05, -0.11), 6.55),
+        self.play(self.animate_view(1, 62, 0, (-1.39, 0.05, -0.11), 6.55),
                   run_time=5)
-
-        self.embed()
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,12 +1,27 @@
+from welch_paths import welch_path
 from functools import partial
 import sys
 
 sys.path.append('_2025/backprop_3') #Point to folder where plane_folding_utils.py is
-from geometric_dl_utils import *
-from plane_folding_utils import *
-from geometric_dl_utils_simplified import *
+import copy
+import manimgx as gx
+import numpy as np
+import torch
+from geometric_dl_utils import BaarleNet, manim_polygons_from_np_list, surface_func_from_model
+from geometric_dl_utils_simplified import (
+    clip_polygons,
+    compute_top_polytope,
+    merge_zero_regions,
+    order_closed_loops_with_closure,
+    process_with_layers,
+    recompute_tiling_general,
+    split_polygons_with_relu_simple,
+)
+from plane_folding_utils import get_relu_joint, line_from_joint_points_1
+from welch_scene import WelchScene, image_at_height
+from welch_surface import parametric_surface, textured_surface
 from polytope_intersection_utils import intersect_polytopes
-from manimlib import *
+from welch_surface import set_surface_shading
 
 CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
@@ -19,20 +34,20 @@ FRESH_TAN='#dfd0b9'
 CYAN='#00FFFF'
 
 # graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/graphics/' #Point to folder where map images are
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/ai_book/4_deep_learning/graphics/'
+graphics_dir=welch_path('ai_book/4_deep_learning/graphics/')
 map_filename='baarle_hertog_maps-13.png'
 # colors = [BLUE, GREY, GREEN, TEAL, PURPLE, ORANGE, PINK, TEAL, RED, YELLOW ]
-colors = [GREY, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+colors = [gx.GREY, BLUE, GREEN, YELLOW, gx.PURPLE, gx.ORANGE, gx.PINK, gx.TEAL]
 
 
 
-class p47d(InteractiveScene):
+class p47d(WelchScene):
     def construct(self):
 
-        map_img=ImageMobject(graphics_dir+'/baarle_hertog_maps/'+map_filename)
-        map_img.set_height(2)  # This sets the height to 2 units (-1 to 1)
-        map_img.set_width(2)   # This sets the width to 2 units (-1 to 1)
-        map_img.move_to(ORIGIN)
+        map_img=image_at_height(graphics_dir+'/baarle_hertog_maps/'+map_filename)
+        map_img.scale_to_fit_height(2)  # This sets the height to 2 units (-1 to 1)
+        map_img.scale_to_fit_width(2)   # This sets the width to 2 units (-1 to 1)
+        map_img.move_to(gx.ORIGIN)
 
 
         model_path='_2025/backprop_3/models/2_2_1.pth'
@@ -50,13 +65,13 @@ class p47d(InteractiveScene):
         surfaces=[]
         surface_funcs=[]
         for layer_idx in range(len(model.model)):
-            s=Group()
+            s=gx.Group()
             surface_funcs.append([])
             for neuron_idx in range(num_neurons[layer_idx]):
                 surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=viz_scales[layer_idx])
-                bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                ts=TexturedSurface(bent_surface, graphics_dir+'/baarle_hertog_maps/'+map_filename)
-                ts.set_shading(0,0,0).set_opacity(0.8)
+                bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                ts=textured_surface(bent_surface, graphics_dir+'/baarle_hertog_maps/'+map_filename)
+                set_surface_shading(ts, 0,0,0).set_opacity(0.8)
                 s.add(ts)
                 surface_funcs[-1].append(surface_func)
             surfaces.append(s)
@@ -91,12 +106,12 @@ class p47d(InteractiveScene):
 
 
         joint_points_11 = get_relu_joint(w1[0,0], w1[0,1], b1[0], extent=1)
-        group_11=Group(surfaces[1][0]) #, polygons_11)
+        group_11=gx.Group(surfaces[1][0]) #, polygons_11)
         if len(joint_points_11)>0:
             joint_line_11=line_from_joint_points_1(joint_points_11).set_opacity(0.9)
             group_11.add(joint_line_11)
 
-        group_12=Group(surfaces[1][1]) #, polygons_12)
+        group_12=gx.Group(surfaces[1][1]) #, polygons_12)
         joint_points_12 = get_relu_joint(w1[1,0], w1[1,1], b1[1], extent=1)
         if len(joint_points_12)>0:
             joint_line_12=line_from_joint_points_1(joint_points_12).set_opacity(0.9)
@@ -110,8 +125,8 @@ class p47d(InteractiveScene):
         polygons_22=manim_polygons_from_np_list(polygons['1.linear_out'][1], colors=colors, viz_scale=viz_scales[2], opacity=0.6)
         polygons_22.shift([0, 0, 0.001]) #Move slightly above map
 
-        group_21=Group(surfaces[2][0], polygons_21)
-        group_22=Group(surfaces[2][1], polygons_22)
+        group_21=gx.Group(surfaces[2][0], polygons_21)
+        group_22=gx.Group(surfaces[2][1], polygons_22)
         group_21.shift([3.0, 0, 1.5])
         group_22.shift([3.0, 0, 0])
         group_21.set_opacity(0.5)
@@ -137,60 +152,60 @@ class p47d(InteractiveScene):
         # group_21.set_opacity(0.9)
         # group_22.set_opacity(0.9)
 
-        # self.frame.reorient(-1, 42, 0, (3.1, 0.59, -0.39), 6.92)
-        bent_plane_joint_lines=VGroup()
-        pre_move_lines=VGroup()
+        # self.set_view(-1, 42, 0, (3.1, 0.59, -0.39), 6.92)
+        bent_plane_joint_lines=gx.VGroup()
+        pre_move_lines=gx.VGroup()
 
         line_start=polygons['1.linear_out'][0][1][0]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][0][1][1]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([3, 0, 1.5])
         bent_plane_joint_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][1][0]*np.array([1,1,0]) #z=0 version
         line_end=polygons['1.linear_out'][0][1][1]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([0, 0, 1.5])
         pre_move_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][0][3]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][0][0][0]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([3, 0, 1.5])
         bent_plane_joint_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][0][3]*np.array([1,1,0]) #z=0 version
         line_end=polygons['1.linear_out'][0][0][0]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([0, 0, 1.5])
         pre_move_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][2][0]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][0][2][1]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([3, 0, 1.5])
         bent_plane_joint_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][2][0]*np.array([1,1,0]) #z=0 version
         line_end=polygons['1.linear_out'][0][2][1]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         # joint_line.shift([0, 0, 1.5])
         pre_move_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][0][2]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][0][0][3]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([3, 0, 1.5])
         bent_plane_joint_lines.add(joint_line)
 
         line_start=polygons['1.linear_out'][0][0][2]*np.array([1,1,0]) #z=0 version
         line_end=polygons['1.linear_out'][0][0][3]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         # joint_line.shift([0, 0, 1.5])
         pre_move_lines.add(joint_line)
 
 
-        self.frame.reorient(-2, 46, 0, (3.11, 0.22, -0.73), 6.89)
+        self.set_view(-2, 46, 0, (3.11, 0.22, -0.73), 6.89)
 
 
 
@@ -216,54 +231,54 @@ class p47d(InteractiveScene):
         # self.remove(bent_plane_joint_lines); self.add(bent_plane_joint_lines)
         # self.wait()
 
-        bent_plane_joint_lines_2=VGroup()
-        pre_move_lines_2=VGroup()
+        bent_plane_joint_lines_2=gx.VGroup()
+        pre_move_lines_2=gx.VGroup()
 
         line_start=polygons['1.linear_out'][1][1][0]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][1][1][1]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([3, 0, 0])
         bent_plane_joint_lines_2.add(joint_line)
 
         line_start=polygons['1.linear_out'][1][1][0]*np.array([1,1,0]) #z=0 version
         line_end=polygons['1.linear_out'][1][1][1]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([0, 0, 1.5])
         pre_move_lines_2.add(joint_line)
 
         line_start=polygons['1.linear_out'][1][0][3]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][1][0][0]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([3, 0, 0])
         bent_plane_joint_lines_2.add(joint_line)
 
         line_start=polygons['1.linear_out'][1][0][3]*np.array([1,1,0]) #z=0 version
         line_end=polygons['1.linear_out'][1][0][0]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([0, 0, 1.5])
         pre_move_lines_2.add(joint_line)
 
         line_start=polygons['1.linear_out'][1][2][0]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][1][2][1]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([3, 0, 0])
         bent_plane_joint_lines_2.add(joint_line)
 
         line_start=polygons['1.linear_out'][1][2][0]*np.array([1,1,0]) #z=0 version
         line_end=polygons['1.linear_out'][1][2][1]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         # joint_line.shift([0, 0, 1.5])
         pre_move_lines_2.add(joint_line)
 
         line_start=polygons['1.linear_out'][1][0][2]*np.array([1,1,viz_scales[2]])
         line_end=polygons['1.linear_out'][1][0][3]*np.array([1,1,viz_scales[2]])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         joint_line.shift([3, 0, 0])
         bent_plane_joint_lines_2.add(joint_line)
 
         line_start=polygons['1.linear_out'][1][0][2]*np.array([1,1,0]) #z=0 version
         line_end=polygons['1.linear_out'][1][0][3]*np.array([1,1,0])
-        joint_line = DashedLine(start=line_start, end=line_end, color=WHITE, stroke_width=3, dash_length=0.05)
+        joint_line = gx.DashedLine(start=line_start, end=line_end, color=gx.WHITE, stroke_width=3, dash_length=0.05)
         # joint_line.shift([0, 0, 1.5])
         pre_move_lines_2.add(joint_line)
 
@@ -291,32 +306,32 @@ class p47d(InteractiveScene):
         # I'm a bit torn on working off a copy to the right vs doing this in place -> 
         # I guess I'm leaning towards doing it in place?
         # Ok I think we add z=0 planes, actually let's focus/zoom on top neuron, and add the plane there
-        relu_intersections_planes_1=VGroup()
+        relu_intersections_planes_1=gx.VGroup()
         for neuron_idx in range(2):
             # plane = Rectangle( width=2,  height=2, fill_color=GREY, fill_opacity=0.3, stroke_color=WHITE, stroke_width=2)
-            plane = NumberPlane(
+            plane = gx.NumberPlane(
                 x_range=(-1, 1, 0.2),  # x from -1 to 1, grid every 0.2 units
                 y_range=(-1, 1, 0.2),  # y from -1 to 1, grid every 0.2 units
                 background_line_style={
-                    "stroke_color": BLACK,
+                    "stroke_color": gx.BLACK,
                     "stroke_width": 1.2,
                     "stroke_opacity": 0.9
                 },
                 faded_line_style={
-                    "stroke_color": BLACK,
+                    "stroke_color": gx.BLACK,
                     "stroke_width": 0.0,
                     "stroke_opacity": 0.0
                 },
                 axis_config={
-                    "stroke_color": BLACK,
+                    "stroke_color": gx.BLACK,
                     "stroke_width": 1.2
                 }
-            ).set_width(2).set_height(2)
+            ).scale_to_fit_width(2).scale_to_fit_height(2)
             plane.shift([3, 0, 1.5*neuron_idx])
             relu_intersections_planes_1.add(plane)
         
         # self.wait()
-        # self.play(self.frame.animate.reorient(30, 70, 0, (2.55, 1.16, 0.93), 4.27), 
+        # self.play(self.animate_view(30, 70, 0, (2.55, 1.16, 0.93), 4.27),
         #           group_11.animate.set_opacity(0.2), 
         #           group_12.animate.set_opacity(0.2),
         #           pre_move_lines.animate.set_opacity(0.0),
@@ -324,7 +339,7 @@ class p47d(InteractiveScene):
         # self.play(ShowCreation(relu_intersections_planes_1[1]))
         # self.wait()
 
-        # self.play(self.frame.animate.reorient(32, 83, 0, (2.55, 1.16, 0.93), 4.27), run_time=3)
+        # self.play(self.animate_view(32, 83, 0, (2.55, 1.16, 0.93), 4.27), run_time=3)
         # self.wait()
 
 
@@ -352,7 +367,7 @@ class p47d(InteractiveScene):
 
         # Ok ok ok now how do I animate folidng this surface up, and what's a good camera angle for it?
         # In the middle of p49. 
-        # self.play(self.frame.animate.reorient(33, 61, 0, (2.54, 0.96, 0.38), 4.24), run_time=2)
+        # self.play(self.animate_view(33, 61, 0, (2.54, 0.96, 0.38), 4.24), run_time=2)
 
         surfaces[3][0].shift([3, 0, 1.5])
 
@@ -363,8 +378,8 @@ class p47d(InteractiveScene):
         split_polygons_unraveled=[item for sublist in polygons['1.split_polygons_nested'][0] for item in sublist]
         split_polygons_unraveled_clipped=[item for sublist in polygons['1.split_polygons_nested_clipped'][0] for item in sublist] #Need to unravel this i think? And then try to animate to it? 
 
-        colors_2 = [GREY, BLUE, BLUE, GREEN, GREEN, YELLOW, YELLOW]
-        colors_3 = [GREY, BLUE, GREEN, YELLOW]
+        colors_2 = [gx.GREY, BLUE, BLUE, GREEN, GREEN, YELLOW, YELLOW]
+        colors_3 = [gx.GREY, BLUE, GREEN, YELLOW]
         polygons_31=manim_polygons_from_np_list(split_polygons_unraveled, colors=colors_2, viz_scale=viz_scales[2], opacity=0.6)
         polygons_31.shift([3, 0, 1.501]) #Move slightly above map
 
@@ -384,7 +399,7 @@ class p47d(InteractiveScene):
         polygons_32_clipped=manim_polygons_from_np_list(split_polygons_unraveled_clipped_2, colors=colors_2, viz_scale=viz_scales[2], opacity=0.6)
         polygons_32_clipped.shift([3, 0, 0.001]) #Move slightly above map
 
-        colors_4 = [GREY, GREY, BLUE, GREEN, YELLOW]
+        colors_4 = [gx.GREY, gx.GREY, BLUE, GREEN, YELLOW]
         polygons_32_merged=manim_polygons_from_np_list(polygons['1.split_polygons_merged'][1], colors=colors_4, viz_scale=viz_scales[2], opacity=0.6)
         polygons_32_merged.shift([3, 0, 0.001]) #Move slightly above map
 
@@ -395,21 +410,21 @@ class p47d(InteractiveScene):
         # Ok let's modularize the problem first and really focus in on the first 2 layer fold deal
         self.wait()
 
-        group_11[0].move_to(ORIGIN)
-        # self.frame.reorient(0, 44, 0, (-0.0, -0.13, -0.16), 2.74)
-        self.frame.reorient(0, 58, 0, (-0.0, -0.13, -0.16), 2.74)
+        group_11[0].move_to(gx.ORIGIN)
+        # self.set_view(0, 44, 0, (-0.0, -0.13, -0.16), 2.74)
+        self.set_view(0, 58, 0, (-0.0, -0.13, -0.16), 2.74)
         self.add(group_11[0])
         self.wait()
         self.remove(group_11[0])
 
 
-        group_12[0].move_to(ORIGIN)
+        group_12[0].move_to(gx.ORIGIN)
         self.add(group_12[0])
         self.wait()
         self.remove(group_12[0])
 
-        new_group_1=Group(surfaces[2][0], polygons_21, relu_intersections_planes_1[1])
-        new_group_1.move_to(ORIGIN)
+        new_group_1=gx.Group(surfaces[2][0], polygons_21, relu_intersections_planes_1[1])
+        new_group_1.move_to(gx.ORIGIN)
         # surfaces[2][0].move_to(ORIGIN)
         # polygons_21.move_to(ORIGIN)
         self.add(new_group_1[:2])
@@ -417,16 +432,16 @@ class p47d(InteractiveScene):
         self.add(new_group_1[2])
         self.wait()
 
-        self.frame.reorient(44, 88, 0, (-0.0, -0.13, -0.16), 2.74)
+        self.set_view(44, 88, 0, (-0.0, -0.13, -0.16), 2.74)
         self.wait()
         self.remove(new_group_1[2])
-        self.frame.reorient(0, 58, 0, (-0.0, -0.13, -0.16), 2.74)
+        self.set_view(0, 58, 0, (-0.0, -0.13, -0.16), 2.74)
         self.wait()
         self.remove(new_group_1)
 
-        new_group_2=Group(surfaces[2][1], polygons_22, relu_intersections_planes_1[0])
-        new_group_2.move_to(ORIGIN)
-        self.frame.reorient(1, 45, 0, (-0.0, -0.13, -0.16), 2.74)
+        new_group_2=gx.Group(surfaces[2][1], polygons_22, relu_intersections_planes_1[0])
+        new_group_2.move_to(gx.ORIGIN)
+        self.set_view(1, 45, 0, (-0.0, -0.13, -0.16), 2.74)
         # surfaces[2][0].move_to(ORIGIN)
         # polygons_21.move_to(ORIGIN)
         self.add(new_group_2[:2])
@@ -434,14 +449,14 @@ class p47d(InteractiveScene):
         self.add(new_group_2[2])
         self.wait()
 
-        self.frame.reorient(-123, 65, 0, (0.02, -0.05, -0.24), 2.74)
+        self.set_view(-123, 65, 0, (0.02, -0.05, -0.24), 2.74)
         self.wait()
         self.remove(new_group_2[2])
-        self.frame.reorient(1, 45, 0, (-0.0, -0.13, -0.16), 2.74)
+        self.set_view(1, 45, 0, (-0.0, -0.13, -0.16), 2.74)
         self.wait()
         self.remove(new_group_2)
 
-        self.frame.reorient(0, 58, 0, (-0.0, -0.13, -0.16), 2.74)
+        self.set_view(0, 58, 0, (-0.0, -0.13, -0.16), 2.74)
 
 
         # relu_intersections_planes_1.move_to(ORIGIN)
@@ -454,8 +469,8 @@ class p47d(InteractiveScene):
   
         self.wait()
 
-        new_group_3=Group(surfaces[3][0], polygons_31_clipped, polygons_31_merged)
-        new_group_3.move_to(ORIGIN)
+        new_group_3=gx.Group(surfaces[3][0], polygons_31_clipped, polygons_31_merged)
+        new_group_3.move_to(gx.ORIGIN)
 
 
         self.add(surfaces[3][0])
@@ -470,10 +485,10 @@ class p47d(InteractiveScene):
         self.wait()
 
 
-        new_group_4=Group(surfaces[3][1], polygons_32_clipped, polygons_32_merged)
-        new_group_4.move_to(ORIGIN)
+        new_group_4=gx.Group(surfaces[3][1], polygons_32_clipped, polygons_32_merged)
+        new_group_4.move_to(gx.ORIGIN)
 
-        self.frame.reorient(0, 50, 0, (-0.02, -0.15, -0.19), 2.74)
+        self.set_view(0, 50, 0, (-0.02, -0.15, -0.19), 2.74)
         self.add(surfaces[3][1])
         self.add(polygons_32_clipped)
         self.wait()
@@ -520,10 +535,10 @@ class p47d(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
-class p52b(InteractiveScene):
+class p52b(WelchScene):
     def construct(self):
 
         w1 = np.array([[-1.8741, 2.12215],
@@ -552,13 +567,13 @@ class p52b(InteractiveScene):
         surfaces=[]
         surface_funcs=[]
         for layer_idx in range(len(model.model)):
-            s=Group()
+            s=gx.Group()
             surface_funcs.append([])
             for neuron_idx in range(num_neurons[layer_idx]):
                 surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=viz_scales[layer_idx])
-                bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                ts=TexturedSurface(bent_surface, graphics_dir+'/baarle_hertog_maps/'+map_filename)
-                ts.set_shading(0,0,0).set_opacity(0.8)
+                bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                ts=textured_surface(bent_surface, graphics_dir+'/baarle_hertog_maps/'+map_filename)
+                set_surface_shading(ts, 0,0,0).set_opacity(0.8)
                 s.add(ts)
                 surface_funcs[-1].append(surface_func)
             surfaces.append(s)
@@ -594,24 +609,24 @@ class p52b(InteractiveScene):
 
 
         joint_points_11 = get_relu_joint(w1[0,0], w1[0,1], b1[0], extent=1)
-        group_11=Group(surfaces[1][0]) #, polygons_11)
+        group_11=gx.Group(surfaces[1][0]) #, polygons_11)
         if len(joint_points_11)>0:
             joint_line_11=line_from_joint_points_1(joint_points_11).set_opacity(0.9)
             group_11.add(joint_line_11)
 
-        group_12=Group(surfaces[1][1]) #, polygons_12)
+        group_12=gx.Group(surfaces[1][1]) #, polygons_12)
         joint_points_12 = get_relu_joint(w1[1,0], w1[1,1], b1[1], extent=1)
         if len(joint_points_12)>0:
             joint_line_12=line_from_joint_points_1(joint_points_12).set_opacity(0.9)
             group_12.add(joint_line_12)
 
-        group_13=Group(surfaces[1][2]) #, polygons_11)
+        group_13=gx.Group(surfaces[1][2]) #, polygons_11)
         joint_points_13 = get_relu_joint(w1[2,0], w1[2,1], b1[2], extent=1)
         if len(joint_points_13)>0:
             joint_line_13=line_from_joint_points_1(joint_points_13).set_opacity(0.9)
             group_13.add(joint_line_13)
 
-        group_14=Group(surfaces[1][3]) #, polygons_12)
+        group_14=gx.Group(surfaces[1][3]) #, polygons_12)
         joint_points_14 = get_relu_joint(w1[3,0], w1[3,1], b1[3], extent=1)
         if len(joint_points_14)>0:
             joint_line_14=line_from_joint_points_1(joint_points_14).set_opacity(0.9)
@@ -629,8 +644,8 @@ class p52b(InteractiveScene):
         polygons_22=manim_polygons_from_np_list(polygons['1.linear_out'][1], colors=colors, viz_scale=viz_scales[2], opacity=0.6)
         polygons_22.shift([0, 0, 0.001]) #Move slightly above map
 
-        group_21=Group(surfaces[2][0], polygons_21)
-        group_22=Group(surfaces[2][1], polygons_22)
+        group_21=gx.Group(surfaces[2][0], polygons_21)
+        group_22=gx.Group(surfaces[2][1], polygons_22)
         group_21.shift([3.0, 0, 2.4])
         group_22.shift([3.0, 0, 1.1])
         group_21.set_opacity(0.5)
@@ -647,10 +662,10 @@ class p52b(InteractiveScene):
         group_32.shift([3, 0, 0.65])
 
         loops=order_closed_loops_with_closure(intersection_lines)
-        lines=VGroup()
+        lines=gx.VGroup()
         for loop in loops: 
             loop=loop*np.array([1, 1, viz_scales[2]])
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(loop)
             line.set_stroke(color='#FF00FF', width=4)
             lines.add(line)
@@ -669,7 +684,7 @@ class p52b(InteractiveScene):
         layer_1_polygons_flat.shift([0, 0, -1.0])
 
 
-        top_polygons_vgroup_flat=VGroup()
+        top_polygons_vgroup_flat=gx.VGroup()
         for j, p in enumerate(my_top_polygons):
             if len(p)<3: continue
             if my_indicator[j]: color=YELLOW
@@ -677,7 +692,7 @@ class p52b(InteractiveScene):
             
             p_scaled=copy.deepcopy(p) #Scaling for viz
             p_scaled[:,2]=0 #p_scaled[:,2]*viz_scales[2] #Flatten that shit!
-            poly_3d = Polygon(*p_scaled,
+            poly_3d = gx.Polygon(*p_scaled,
                              fill_color=color,
                              fill_opacity=0.4,
                              stroke_color=color,
@@ -702,16 +717,16 @@ class p52b(InteractiveScene):
         # polygons_52_flat.set_opacity(0.5)
 
         def flat_surf_func(u, v): return [u, v, 0]
-        flat_map_surf = ParametricSurface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        flat_map_2=TexturedSurface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/'+map_filename)
-        flat_map_2.set_shading(0,0,0).set_opacity(0.8)
+        flat_map_surf = parametric_surface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        flat_map_2=textured_surface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/'+map_filename)
+        set_surface_shading(flat_map_2, 0,0,0).set_opacity(0.8)
         flat_map_2.shift([6, 0, -1.0])
 
-        lines_flat=VGroup()
+        lines_flat=gx.VGroup()
         for loop in intersection_lines: 
             # loop=np.hstack((loop, np.zeros((len(loop), 1))))
             loop[:,2]=0
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(loop)
             line.set_stroke(color='#FF00FF', width=4)
             lines_flat.add(line)
@@ -722,7 +737,7 @@ class p52b(InteractiveScene):
         #Was thinking thsi would be static, but one little collapsing animation migth be good?
         #Eh maybe just like a top to front pan is good? Would be faster obv.
 
-        self.frame.reorient(0, 32, 0, (2.97, -0.05, 0.59), 7.12)
+        self.set_view(0, 32, 0, (2.97, -0.05, 0.59), 7.12)
         self.add(group_11, group_12, group_13, group_14)
         self.add(group_21, group_22)
         self.add(group_31, group_32, lines)
@@ -734,25 +749,25 @@ class p52b(InteractiveScene):
 
         #Ok I think simple pan down is all the motion we need, this is quick sentence. 
         #Add netowrk in premeire in the gap below
-        self.play(self.frame.animate.reorient(-1, 56, 0, (2.97, -0.05, 0.59), 7.12), run_time=8)
+        self.play(self.animate_view(-1, 56, 0, (2.97, -0.05, 0.59), 7.12), run_time=8)
         self.wait()
 
-        self.play(FadeOut(group_11),
-                  FadeOut(group_12),
-                  FadeOut(group_13),
-                  FadeOut(group_14),
-                  FadeOut(group_21),
-                  FadeOut(group_22),
-                  FadeOut(group_31),
-                  FadeOut(group_32),
-                  FadeOut(lines),
+        self.play(gx.FadeOut(group_11),
+                  gx.FadeOut(group_12),
+                  gx.FadeOut(group_13),
+                  gx.FadeOut(group_14),
+                  gx.FadeOut(group_21),
+                  gx.FadeOut(group_22),
+                  gx.FadeOut(group_31),
+                  gx.FadeOut(group_32),
+                  gx.FadeOut(lines),
                   layer_1_polygons_flat.animate.shift([1.7, 0, 0]),
                   top_polygons_vgroup_flat.animate.shift([-1.7, 0, 0]),
                   lines_flat.animate.shift([-1.7, 0, 0]),
                   flat_map_2.animate.shift([-1.7, 0, 0]),
-                  self.frame.animate.reorient(0, 0, 0, (3.06, -1.13, 0.0), 4.36),
+                  self.animate_view(0, 0, 0, (3.06, -1.13, 0.0), 4.36),
                   run_time=6, 
-                  rate_func=linear
+                  rate_func=gx.linear
                   )
 
 
@@ -762,7 +777,7 @@ class p52b(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 

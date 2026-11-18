@@ -1,4 +1,7 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_scene import WelchScene, image_at_height
+from welch_surface import parametric_surface, set_surface_shading, textured_surface
 from functools import partial
 
  
@@ -11,7 +14,7 @@ CHILL_GREEN='#6c946f'
 CHILL_BLUE='#3d5c6f'
 FRESH_TAN='#dfd0b9'
 
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/graphics/'
+graphics_dir=welch_path('backprop_3/graphics/')
 
 from itertools import combinations, product
 
@@ -70,12 +73,12 @@ def find_region_vertices(constraints, extent=1):
             c2 = all_constraints[j]
             
             # Solve system: c1[0]*x + c1[1]*y = -c1[2] and c2[0]*x + c2[1]*y = -c2[2]
-            A = np.array([[c1[0], c1[1]], [c2[0], c2[1]]])
-            b = np.array([-c1[2], -c2[2]])
+            A = m.np.array([[c1[0], c1[1]], [c2[0], c2[1]]])
+            b = m.np.array([-c1[2], -c2[2]])
             
             try:
-                if np.abs(np.linalg.det(A)) > 1e-10:  # Non-parallel lines
-                    vertex = np.linalg.solve(A, b)
+                if m.np.abs(m.np.linalg.det(A)) > 1e-10:  # Non-parallel lines
+                    vertex = m.np.linalg.solve(A, b)
                     x, y = vertex[0], vertex[1]
                     
                     # Check if vertex satisfies all constraints
@@ -92,7 +95,7 @@ def find_region_vertices(constraints, extent=1):
                     
                     if valid and abs(x) <= extent + 1e-10 and abs(y) <= extent + 1e-10:
                         vertices.append([x, y])
-            except np.linalg.LinAlgError:
+            except m.np.linalg.LinAlgError:
                 continue
     
     # Remove duplicate vertices
@@ -100,7 +103,7 @@ def find_region_vertices(constraints, extent=1):
     for vertex in vertices:
         is_duplicate = False
         for existing in unique_vertices:
-            if np.linalg.norm(np.array(vertex) - np.array(existing)) < 1e-8:
+            if m.np.linalg.norm(m.np.array(vertex) - m.np.array(existing)) < 1e-8:
                 is_duplicate = True
                 break
         if not is_duplicate:
@@ -108,13 +111,13 @@ def find_region_vertices(constraints, extent=1):
     
     # Sort vertices in counter-clockwise order around centroid
     if len(unique_vertices) >= 3:
-        centroid = np.mean(unique_vertices, axis=0)
+        centroid = m.np.mean(unique_vertices, axis=0)
         angles = []
         for vertex in unique_vertices:
-            angle = np.arctan2(vertex[1] - centroid[1], vertex[0] - centroid[0])
+            angle = m.np.arctan2(vertex[1] - centroid[1], vertex[0] - centroid[0])
             angles.append(angle)
         
-        sorted_indices = np.argsort(angles)
+        sorted_indices = m.np.argsort(angles)
         unique_vertices = [unique_vertices[i] for i in sorted_indices]
     
     return unique_vertices
@@ -138,10 +141,10 @@ def create_polytope_boundary_lines(w1, b1, w2=None, b2=None, layer=1, neuron_idx
                 start_vertex = vertices[i]
                 end_vertex = vertices[(i + 1) % len(vertices)]  # Wrap around to first vertex
                 
-                line = Line(
+                line = m.Line(
                     start=[start_vertex[0], start_vertex[1], 0],
                     end=[end_vertex[0], end_vertex[1], 0],
-                    color=WHITE,
+                    color=m.WHITE,
                     stroke_width=2
                 )
                 boundary_lines.append(line)
@@ -167,10 +170,10 @@ def create_polytope_boundary_lines(w1, b1, w2=None, b2=None, layer=1, neuron_idx
             if joint_points and len(joint_points) >= 2:
                 clipped_points = clip_line_to_region(joint_points, region, extent)
                 if clipped_points and len(clipped_points) >= 2:
-                    line = Line(
+                    line = m.Line(
                         start=[clipped_points[0][0], clipped_points[0][1], 0],
                         end=[clipped_points[1][0], clipped_points[1][1], 0],
-                        color=RED,
+                        color=m.RED,
                         stroke_width=3
                     )
                     boundary_lines.append(line)
@@ -188,7 +191,7 @@ def clip_line_to_region(line_points, region, extent):
     
     # Sample points along the line and keep those in the region
     valid_points = []
-    for t in np.linspace(0, 1, 200):
+    for t in m.np.linspace(0, 1, 200):
         x = start[0] + t * (end[0] - start[0])
         y = start[1] + t * (end[1] - start[1])
         
@@ -221,7 +224,7 @@ def create_region_polygons(w1, b1, w2=None, b2=None, layer=1, neuron_idx=0, exte
     regions = get_activation_regions(w1, b1, extent)
     polygons = []
     
-    colors = [RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+    colors = [m.RED, BLUE, GREEN, YELLOW, m.PURPLE, m.ORANGE, m.PINK, m.TEAL]
     
     for i, region in enumerate(regions):
         vertices = find_region_vertices(region['constraints'], extent)
@@ -229,7 +232,7 @@ def create_region_polygons(w1, b1, w2=None, b2=None, layer=1, neuron_idx=0, exte
         if len(vertices) >= 3:
             # Create polygon
             vertices_3d = [[v[0], v[1], 0] for v in vertices]
-            polygon = Polygon(*vertices_3d)
+            polygon = m.Polygon(*vertices_3d)
             polygon.set_fill(colors[i % len(colors)], opacity=0.3)
             polygon.set_stroke(colors[i % len(colors)], width=2)
             
@@ -249,7 +252,7 @@ def create_complete_polytope_outlines(w1, b1, w2=None, b2=None, layer=1, neuron_
     regions = get_activation_regions(w1, b1, extent)
     outlines = []
     
-    colors = [WHITE, GREY, CHILL_BROWN, FRESH_TAN]
+    colors = [m.WHITE, m.GREY, CHILL_BROWN, FRESH_TAN]
     
     for i, region in enumerate(regions):
         vertices = find_region_vertices(region['constraints'], extent)
@@ -259,7 +262,7 @@ def create_complete_polytope_outlines(w1, b1, w2=None, b2=None, layer=1, neuron_
             vertices_3d = [[v[0], v[1], 0] for v in vertices]
             
             # Create polygon outline (no fill, just stroke)
-            polygon_outline = Polygon(*vertices_3d)
+            polygon_outline = m.Polygon(*vertices_3d)
             polygon_outline.set_fill(opacity=0)  # No fill
             polygon_outline.set_stroke(colors[i % len(colors)], width=3)
             
@@ -270,10 +273,10 @@ def create_complete_polytope_outlines(w1, b1, w2=None, b2=None, layer=1, neuron_
                 start_vertex = vertices[j]
                 end_vertex = vertices[(j + 1) % len(vertices)]
                 
-                line = Line(
+                line = m.Line(
                     start=[start_vertex[0], start_vertex[1], 0],
                     end=[end_vertex[0], end_vertex[1], 0],
-                    color=WHITE,
+                    color=m.WHITE,
                     stroke_width=2
                 )
                 outlines.append(line)
@@ -285,10 +288,10 @@ def create_complete_polytope_outlines(w1, b1, w2=None, b2=None, layer=1, neuron_
 
 
 def get_relu_joint(weight_1, weight_2, bias, extent=1):
-    if np.abs(weight_2) < 1e-8: 
+    if m.np.abs(weight_2) < 1e-8:
         x_intercept = -bias / weight_1
         return [[x_intercept, -extent], [x_intercept, extent]] if -extent <= x_intercept <= extent else []
-    elif np.abs(weight_1) < 1e-8:
+    elif m.np.abs(weight_1) < 1e-8:
         y_intercept = -bias / weight_2
         return [[-extent, y_intercept], [extent, y_intercept]] if -extent <= y_intercept <= extent else []
     else:
@@ -320,10 +323,10 @@ def line_from_joint_points_1(joint_points):
             joint_3d_points.append([x, y, z])
         
         if len(joint_3d_points) >= 2:
-            joint_line = DashedLine(
+            joint_line = m.DashedLine(
                 start=[joint_points[0][0], joint_points[0][1], 0],
                 end=[joint_points[1][0], joint_points[1][1], 0],
-                color=WHITE,
+                color=m.WHITE,
                 stroke_width=3,
                 dash_length=0.05
             )
@@ -334,7 +337,7 @@ def surface_func_general(u, v, w1, w2, b, viz_scale=0.5):
     linear_output = w1 * u + w2 * v + b
     relu_output = max(0, linear_output)
     z = relu_output * viz_scale 
-    return np.array([u, v, z])
+    return m.np.array([u, v, z])
 
 
 def surface_func_second_layer(u, v, w1, b1, w2, b2, neuron_idx=0, viz_scale=0.5):
@@ -366,7 +369,7 @@ def surface_func_second_layer(u, v, w1, b1, w2, b2, neuron_idx=0, viz_scale=0.5)
     # Use output as z-coordinate
     z = second_layer_output * viz_scale
     
-    return np.array([u, v, z])
+    return m.np.array([u, v, z])
 
 
 def get_second_layer_joints(w1, b1, w2, b2, neuron_idx=0, extent=1):
@@ -456,7 +459,7 @@ def clip_joint_to_region(joint_points, relu1_active, relu2_active, w1, b1, exten
     clipped_points = []
     
     # Check multiple points along the line
-    for t in np.linspace(0, 1, 100):
+    for t in m.np.linspace(0, 1, 100):
         x = start[0] + t * (end[0] - start[0])
         y = start[1] + t * (end[1] - start[1])
         
@@ -483,12 +486,12 @@ def create_second_layer_joint_lines(w1, b1, w2, b2, neuron_idx=0, extent=1):
     joint_lines = get_second_layer_joints(w1, b1, w2, b2, neuron_idx, extent)
     
     manim_lines = []
-    colors = [RED, BLUE, GREEN, YELLOW, PURPLE]  # Different colors for different joints
+    colors = [m.RED, BLUE, GREEN, YELLOW, m.PURPLE]  # Different colors for different joints
     
     for i, joint_points in enumerate(joint_lines):
         if len(joint_points) >= 2:
             color = colors[i % len(colors)]
-            joint_line = DashedLine(
+            joint_line = m.DashedLine(
                 start=[joint_points[0][0], joint_points[0][1], 0],
                 end=[joint_points[1][0], joint_points[1][1], 0],
                 color=color,
@@ -500,47 +503,47 @@ def create_second_layer_joint_lines(w1, b1, w2, b2, neuron_idx=0, extent=1):
     return manim_lines
 
 
-class plane_folding_sketch_1(InteractiveScene):
+class plane_folding_sketch_1(WelchScene):
     def construct(self):
 
         #nice trained 2 hidden layer model. 
-        w1=np.array([[-0.02866297,  1.6250265 ],
-             [-1.3056537 ,  0.46831134]], dtype=np.float32)
-        b1=np.array([-0.4677289,  1.0067637], dtype=np.float32)
-        w2=np.array([[ 1.3398709 ,  0.68694556],
-                     [-0.29886743, -1.8411286 ]], dtype=np.float32)
-        b2=np.array([-0.7817721 ,  0.90856946], dtype=np.float32)
-        w3=np.array([[ 1.8897862,  3.0432484],
-                     [-1.7220999, -2.2057745]], dtype=np.float32)
-        b3=np.array([-1.0249746 ,  0.61326534], dtype=np.float32)
+        w1=m.np.array([[-0.02866297,  1.6250265 ],
+             [-1.3056537 ,  0.46831134]], dtype=m.np.float32)
+        b1=m.np.array([-0.4677289,  1.0067637], dtype=m.np.float32)
+        w2=m.np.array([[ 1.3398709 ,  0.68694556],
+                     [-0.29886743, -1.8411286 ]], dtype=m.np.float32)
+        b2=m.np.array([-0.7817721 ,  0.90856946], dtype=m.np.float32)
+        w3=m.np.array([[ 1.8897862,  3.0432484],
+                     [-1.7220999, -2.2057745]], dtype=m.np.float32)
+        b3=m.np.array([-1.0249746 ,  0.61326534], dtype=m.np.float32)
         
         #Not using this flat map right now - but will probably want it
-        map_img=ImageMobject(graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        map_img.set_height(2)  # This sets the height to 2 units (-1 to 1)
-        map_img.set_width(2)   # This sets the width to 2 units (-1 to 1)
-        map_img.move_to(ORIGIN)
+        map_img=image_at_height(graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+        map_img.scale_to_fit_height(2)  # This sets the height to 2 units (-1 to 1)
+        map_img.scale_to_fit_width(2)   # This sets the width to 2 units (-1 to 1)
+        map_img.move_to(m.ORIGIN)
 
-        self.frame.reorient(0, 0, 0, (0.03, -0.02, 0.0), 3.27)
+        self.set_view(0, 0, 0, (0.03, -0.02, 0.0), 3.27)
         # self.add(map_img)
         # self.wait()
 
         surface_func_11=partial(surface_func_general, w1=w1[0,0], w2=w1[0,1], b=b1[0], viz_scale=0.3)
-        bent_surface_11 = ParametricSurface(surface_func_11, u_range=[-1, 1], v_range=[-1, 1], resolution=(50, 50))
-        ts11=TexturedSurface(bent_surface_11, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        ts11.set_shading(0,0,0)
+        bent_surface_11 = parametric_surface(surface_func_11, u_range=[-1, 1], v_range=[-1, 1], resolution=(50, 50))
+        ts11=textured_surface(bent_surface_11, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+        set_surface_shading(ts11, 0,0,0)
         ts11.set_opacity(0.75)
         joint_points_11 = get_relu_joint(w1[0,0], w1[0,1], b1[0], extent=1)
         joint_line_11=line_from_joint_points_1(joint_points_11).set_opacity(0.8)
-        group_11=Group(ts11, joint_line_11)
+        group_11=m.Group(ts11, joint_line_11)
 
         surface_func_12=partial(surface_func_general, w1=w1[1,0], w2=w1[1,1], b=b1[1], viz_scale=0.3)
-        bent_surface_12 = ParametricSurface(surface_func_12, u_range=[-1, 1], v_range=[-1, 1], resolution=(50, 50))
-        ts12=TexturedSurface(bent_surface_12, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        ts12.set_shading(0,0,0)
+        bent_surface_12 = parametric_surface(surface_func_12, u_range=[-1, 1], v_range=[-1, 1], resolution=(50, 50))
+        ts12=textured_surface(bent_surface_12, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+        set_surface_shading(ts12, 0,0,0)
         ts12.set_opacity(0.75)
         joint_points_12 = get_relu_joint(w1[1,0], w1[1,1], b1[1], extent=1)
         joint_line_12=line_from_joint_points_1(joint_points_12).set_opacity(0.8)
-        group_12=Group(ts12, joint_line_12)
+        group_12=m.Group(ts12, joint_line_12)
 
 
         self.add(group_11)
@@ -563,16 +566,17 @@ class plane_folding_sketch_1(InteractiveScene):
 
         self.wait()
 
-        bent_surface_21 = ParametricSurface(surface_func_21, u_range=[-1, 1], v_range=[-1, 1], resolution=(50, 50))
-        ts21 = TexturedSurface(bent_surface_21, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-        ts21.set_shading(0,0,0)
+        bent_surface_21 = parametric_surface(surface_func_21, u_range=[-1, 1], v_range=[-1, 1], resolution=(50, 50))
+        ts21 = textured_surface(bent_surface_21, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+        set_surface_shading(ts21, 0,0,0)
         ts21.set_opacity(0.75)
 
         joint_lines_21 = create_second_layer_joint_lines(w1, b1, w2, b2, neuron_idx=1, extent=1)
-        group_21_lines = Group(*joint_lines_21)
-        group_21=Group(ts21, group_21_lines)
+        group_21_lines = m.Group(*joint_lines_21)
+        group_21=m.Group(ts21, group_21_lines)
 
-        group_21.move_to([0, 0, 2.4])
+        z_offset = 2.4
+        group_21.move_to([0, 0, z_offset])
         self.add(group_21)  
 
 
@@ -621,7 +625,7 @@ class plane_folding_sketch_1(InteractiveScene):
         # )
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 

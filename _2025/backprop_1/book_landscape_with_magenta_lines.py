@@ -1,6 +1,13 @@
-from manimlib import *
-sys.path.append('/Users/stephen/manim/videos/welch_assets') #hacks
-from welch_axes import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_scene import manual_camera_interpolation
+from landscape_geometry import get_pivot_and_scale
+from landscape_geometry import get_numerical_gradient
+import numpy as np
+from welch_axes import WelchXAxis, WelchYAxis
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, set_surface_shading, textured_surface
+from welch_text import math_tex
 from functools import partial
 from tqdm import tqdm
 
@@ -8,17 +15,17 @@ CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
 BLUE='#65c8d0'
 
-loss_curve_1=np.load('/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/hackin/apr_24_5/all_execpt_embedding_random_64.npy')
-loss_curve_2=np.load('/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/hackin/apr_24_5/all_execpt_embedding_random_51.npy')
-loss_curve_3=np.load('/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/hackin/apr_24_7/all_execpt_embedding_pretrained_19.npy')
-loss_curve_4=np.load('/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/hackin/apr_24_7/all_execpt_embedding_pretrained_27.npy')
+loss_curve_1=np.load(welch_path('backpropagation/hackin/apr_24_5/all_execpt_embedding_random_64.npy'))
+loss_curve_2=np.load(welch_path('backpropagation/hackin/apr_24_5/all_execpt_embedding_random_51.npy'))
+loss_curve_3=np.load(welch_path('backpropagation/hackin/apr_24_7/all_execpt_embedding_pretrained_19.npy'))
+loss_curve_4=np.load(welch_path('backpropagation/hackin/apr_24_7/all_execpt_embedding_pretrained_27.npy'))
 
-wormhole_dir='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backpropagation/hackin/wormhole_merged/'
+wormhole_dir=welch_path('backpropagation/hackin/wormhole_merged/')
 alphas_1=np.linspace(-2.5, 2.5, 512)
 loss_2d_1=np.load(wormhole_dir+'000.npy')
 
-class Dot3D(Sphere):
-    def __init__(self, center=ORIGIN, radius=0.05, **kwargs):
+class Dot3D(m.Sphere):
+    def __init__(self, center=m.ORIGIN, radius=0.05, **kwargs):
         super().__init__(radius=radius, **kwargs)
         self.move_to(center)
 
@@ -43,7 +50,7 @@ class Dot3D(Sphere):
 # plt.close()
 
 # Comman for rendering all scenes
-# manimgl /Users/stephen/manim/videos/_2025/backprop_1/p39_48.py P39_47 P48_moving_view_1 P48_moving_view_2 P48_moving_view_3 P48_fixed_view -w
+# manimgx render /Users/stephen/manim/videos/_2025/backprop_1/p39_48.py P39_47 P48_moving_view_1 P48_moving_view_2 P48_moving_view_3 P48_fixed_view -w
 
 
 def param_surface_1(u, v):
@@ -66,64 +73,11 @@ def param_surface_2(u, v, surf_array):
         z = 0
     return np.array([u, v, z])
 
-def get_pivot_and_scale(axis_min, axis_max, axis_end):
-    '''Above collapses into scaling around a single pivot when axis_start=0'''
-    scale = axis_end / (axis_max - axis_min)
-    return axis_min, scale
-
-def get_numerical_gradient(surface_fn, u, v, epsilon=0.01):
-    height = surface_fn(u, v)[2]
-    height_du = surface_fn(u + epsilon, v)[2]
-    du = (height_du - height) / epsilon
-    height_dv = surface_fn(u, v + epsilon)[2]
-    dv = (height_dv - height) / epsilon
-    return (du, dv)
-
-def manual_camera_interpolation(start_orientation, end_orientation, num_steps):
-    """
-    Linearly interpolate between two camera orientations.
-    
-    Parameters:
-    - start_orientation: List containing camera parameters with a tuple at index 3
-    - end_orientation: List containing camera parameters with a tuple at index 3
-    - num_steps: Number of interpolation steps (including start and end)
-    
-    Returns:
-    - List of interpolated orientations
-    """
-    result = []
-    
-    for step in range(num_steps):
-        # Calculate interpolation factor (0 to 1)
-        t = step / (num_steps - 1) if num_steps > 1 else 0
-        
-        # Create a new orientation for this step
-        interpolated = []
-        
-        for i in range(len(start_orientation)):
-            if i == 3:  # Handle the tuple at position 3
-                start_tuple = start_orientation[i]
-                end_tuple = end_orientation[i]
-                
-                # Interpolate each element of the tuple
-                interpolated_tuple = tuple(
-                    start_tuple[j] + t * (end_tuple[j] - start_tuple[j])
-                    for j in range(len(start_tuple))
-                )
-                
-                interpolated.append(interpolated_tuple)
-            else:  # Handle regular numeric values
-                start_val = start_orientation[i]
-                end_val = end_orientation[i]
-                interpolated_val = start_val + t * (end_val - start_val)
-                interpolated.append(interpolated_val)
-        
-        result.append(interpolated)
-    
-    return result
 
 
-class BookLandscapeWithLines(InteractiveScene):
+
+
+class BookLandscapeWithLines(WelchScene):
     def construct(self):
         '''
         Ok this time I'm goint to start with setting up the surface and gridlines, at the origin. 
@@ -131,35 +85,35 @@ class BookLandscapeWithLines(InteractiveScene):
         '''
 
         ## ----- 1. Initial Surface Setup ----- ##
-        surface = ParametricSurface(
+        surface = parametric_surface(
             param_surface_1,  
             u_range=[-2.5, 2.5],
             v_range=[-2.5, 2.5],
             resolution=(512, 512),
         )
 
-        ts = TexturedSurface(surface, wormhole_dir+'loss_2d_1.png')
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, wormhole_dir+'loss_2d_1.png')
+        set_surface_shading(ts, 0.0, 0.1, 0)
 
         num_lines = 64  # Number of gridlines in each direction
         num_points = 512  # Number of points per line
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = m.VGroup()
+        v_gridlines = m.VGroup()
         u_values = np.linspace(-2.5, 2.5, num_lines)
         v_points = np.linspace(-2.5, 2.5, num_points)
         for u in u_values:
             points = [param_surface_1(u, v) for v in v_points]
-            line = VMobject()
+            line = m.VMobject()
             line.set_points_smoothly(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.4) #Book mod test
+            line.set_stroke(width=1, color=m.WHITE, opacity=0.4) #Book mod test
             u_gridlines.add(line)
 
         u_points = np.linspace(-2.5, 2.5, num_points)
         for v in u_values:  # Using same number of lines for both directions
             points = [param_surface_1(u, v) for u in u_points]
-            line = VMobject()
+            line = m.VMobject()
             line.set_points_smoothly(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.4) #Book mod test
+            line.set_stroke(width=1, color=m.WHITE, opacity=0.4) #Book mod test
             v_gridlines.add(line)
  
         # self.add(ts)
@@ -171,25 +125,25 @@ class BookLandscapeWithLines(InteractiveScene):
         y_axis_1=WelchYAxis(y_min=8, y_max=16, y_ticks=[8, 9, 10, 11, 12, 13, 14, 15 ], y_tick_width=0.15,        
                           y_label_font_size=20, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=3)
 
-        x_label_1 = Tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
-        y_label_1 = Tex('Loss', font_size=22).set_color(CHILL_BROWN)
-        x_label_1.next_to(x_axis_1, RIGHT, buff=0.05)
-        y_label_1.next_to(y_axis_1, UP, buff=0.08)
+        x_label_1 = math_tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
+        y_label_1 = math_tex('Loss', font_size=22).set_color(CHILL_BROWN)
+        x_label_1.next_to(x_axis_1, m.RIGHT, buff=0.05)
+        y_label_1.next_to(y_axis_1, m.UP, buff=0.08)
 
         mapped_x_1=x_axis_1.map_to_canvas(loss_curve_1[0,:]) 
         mapped_y_1=y_axis_1.map_to_canvas(loss_curve_1[1,:])
 
-        curve_1=VMobject()         
+        curve_1=m.VMobject()
         curve_1.set_points_smoothly(np.vstack((mapped_x_1, mapped_y_1, np.zeros_like(mapped_x_1))).T)
         curve_1.set_stroke(width=4, color=YELLOW, opacity=1.0)
 
-        axes_1=VGroup(x_axis_1, y_axis_1, x_label_1, y_label_1, curve_1)
+        axes_1=m.VGroup(x_axis_1, y_axis_1, x_label_1, y_label_1, curve_1)
         axes_1.move_to([-12.5, 0, 0]) #Start way over here, so the final 3d column of plots land close to origin
-        axes_1.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
-        self.frame.reorient(0, 89, 0, (-12.43, -0.01, 0.0), 4.99)
+        axes_1.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
+        self.set_view(0, 89, 0, (-12.43, -0.01, 0.0), 4.99)
         self.add(x_axis_1, y_axis_1, x_label_1, y_label_1)
         self.wait(0)
-        self.play(ShowCreation(curve_1), run_time=5)
+        self.play(m.Create(curve_1), run_time=5)
 
         self.wait() 
 
@@ -198,25 +152,25 @@ class BookLandscapeWithLines(InteractiveScene):
         y_axis_2=WelchYAxis(y_min=8, y_max=16, y_ticks=[8, 9, 10, 11, 12, 13, 14, 15 ], y_tick_width=0.15,        
                           y_label_font_size=20, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=3)
 
-        x_label_2 = Tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
-        y_label_2 = Tex('Loss', font_size=22).set_color(CHILL_BROWN)
-        x_label_2.next_to(x_axis_2, RIGHT, buff=0.05)
-        y_label_2.next_to(y_axis_2, UP, buff=0.08)
+        x_label_2 = math_tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
+        y_label_2 = math_tex('Loss', font_size=22).set_color(CHILL_BROWN)
+        x_label_2.next_to(x_axis_2, m.RIGHT, buff=0.05)
+        y_label_2.next_to(y_axis_2, m.UP, buff=0.08)
 
         mapped_x_2=x_axis_2.map_to_canvas(loss_curve_2[0,:]) 
         mapped_y_2=y_axis_2.map_to_canvas(loss_curve_2[1,:])
 
-        curve_2=VMobject()         
+        curve_2=m.VMobject()
         curve_2.set_points_smoothly(np.vstack((mapped_x_2, mapped_y_2, np.zeros_like(mapped_x_2))).T)
         curve_2.set_stroke(width=4, color=YELLOW, opacity=1.0)
 
-        axes_2=VGroup(x_axis_2, y_axis_2, x_label_2, y_label_2, curve_2)
-        axes_2.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
+        axes_2=m.VGroup(x_axis_2, y_axis_2, x_label_2, y_label_2, curve_2)
+        axes_2.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
         axes_2.move_to([-6.26, 0, 0])
 
-        self.play(self.frame.animate.reorient(0, 89, 0, (-9.28, 0.05, -0.11), 7.80), 
-                  FadeIn(VGroup(x_axis_2, y_axis_2, x_label_2, y_label_2)),
-                  ShowCreation(curve_2),
+        self.play(self.animate_view(0, 89, 0, (-9.28, 0.05, -0.11), 7.80),
+                  m.FadeIn(m.VGroup(x_axis_2, y_axis_2, x_label_2, y_label_2)),
+                  m.Create(curve_2),
                   run_time=3.0)
         self.wait()
 
@@ -225,20 +179,20 @@ class BookLandscapeWithLines(InteractiveScene):
         y_axis_3=WelchYAxis(y_min=0, y_max=40, y_ticks=[0, 5, 10, 15, 20, 25, 30, 35], y_tick_width=0.15,        
                           y_label_font_size=20, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=3)
 
-        x_label_3 = Tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
-        y_label_3 = Tex('Loss', font_size=22).set_color(CHILL_BROWN)
-        x_label_3.next_to(x_axis_3, RIGHT, buff=0.05)
-        y_label_3.next_to(y_axis_3, UP, buff=0.08)
+        x_label_3 = math_tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
+        y_label_3 = math_tex('Loss', font_size=22).set_color(CHILL_BROWN)
+        x_label_3.next_to(x_axis_3, m.RIGHT, buff=0.05)
+        y_label_3.next_to(y_axis_3, m.UP, buff=0.08)
 
         mapped_x_3=x_axis_3.map_to_canvas(loss_curve_3[0,:]) 
         mapped_y_3=y_axis_3.map_to_canvas(loss_curve_3[1,:])
 
-        curve_3=VMobject()         
+        curve_3=m.VMobject()
         curve_3.set_points_smoothly(np.vstack((mapped_x_3, mapped_y_3, np.zeros_like(mapped_x_3))).T)
         curve_3.set_stroke(width=4, color=BLUE, opacity=1.0)
 
-        axes_3=VGroup(x_axis_3, y_axis_3, x_label_3, y_label_3, curve_3)
-        axes_3.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
+        axes_3=m.VGroup(x_axis_3, y_axis_3, x_label_3, y_label_3, curve_3)
+        axes_3.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
         axes_3.move_to([-6.25, 0, 0])
 
 
@@ -247,32 +201,32 @@ class BookLandscapeWithLines(InteractiveScene):
         y_axis_4=WelchYAxis(y_min=0, y_max=40, y_ticks=[0, 5, 10, 15, 20, 25, 30, 35], y_tick_width=0.15,        
                           y_label_font_size=20, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=3)
 
-        x_label_4 = Tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
-        y_label_4 = Tex('Loss', font_size=22).set_color(CHILL_BROWN)
-        x_label_4.next_to(x_axis_4, RIGHT, buff=0.05)
-        y_label_4.next_to(y_axis_4, UP, buff=0.08)
+        x_label_4 = math_tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
+        y_label_4 = math_tex('Loss', font_size=22).set_color(CHILL_BROWN)
+        x_label_4.next_to(x_axis_4, m.RIGHT, buff=0.05)
+        y_label_4.next_to(y_axis_4, m.UP, buff=0.08)
 
         mapped_x_4=x_axis_4.map_to_canvas(loss_curve_4[0,:]) 
         mapped_y_4=y_axis_4.map_to_canvas(loss_curve_4[1,:])
 
-        curve_4=VMobject()         
+        curve_4=m.VMobject()
         curve_4.set_points_smoothly(np.vstack((mapped_x_4, mapped_y_4, np.zeros_like(mapped_x_3))).T)
         curve_4.set_stroke(width=4, color=BLUE, opacity=1.0)
 
-        axes_4=VGroup(x_axis_4, y_axis_4, x_label_4, y_label_4, curve_4)
-        axes_4.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
+        axes_4=m.VGroup(x_axis_4, y_axis_4, x_label_4, y_label_4, curve_4)
+        axes_4.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
         axes_4.move_to([-6.25, 0, -3.75])
 
         self.wait()
 
         self.play(axes_2.animate.move_to([-12.5, 0, -3.75]),
-                 self.frame.animate.reorient(0, 89, 0, (-9.24, -3.5, -2.04), 5.85),
+                 self.animate_view(0, 89, 0, (-9.24, -3.5, -2.04), 5.85),
                  run_time=2.0)
 
-        self.play(FadeIn(VGroup(x_axis_3, y_axis_3, x_label_3, y_label_3)),
-                  FadeIn(VGroup(x_axis_4, y_axis_4, x_label_4, y_label_4)),
-                  ShowCreation(curve_3),
-                  ShowCreation(curve_4),
+        self.play(m.FadeIn(m.VGroup(x_axis_3, y_axis_3, x_label_3, y_label_3)),
+                  m.FadeIn(m.VGroup(x_axis_4, y_axis_4, x_label_4, y_label_4)),
+                  m.Create(curve_3),
+                  m.Create(curve_4),
                   run_time=4)
 
         self.wait()
@@ -286,20 +240,20 @@ class BookLandscapeWithLines(InteractiveScene):
         y_axis_5=WelchYAxis(y_min=0, y_max=25, y_ticks=[0, 5, 10, 15, 20], y_tick_width=0.15,        
                           y_label_font_size=20, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=3)
 
-        x_label_5 = Tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
-        y_label_5 = Tex('Loss', font_size=22).set_color(CHILL_BROWN)
-        x_label_5.next_to(x_axis_5, RIGHT, buff=0.05)
-        y_label_5.next_to(y_axis_5, UP, buff=0.08)
+        x_label_5 = math_tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
+        y_label_5 = math_tex('Loss', font_size=22).set_color(CHILL_BROWN)
+        x_label_5.next_to(x_axis_5, m.RIGHT, buff=0.05)
+        y_label_5.next_to(y_axis_5, m.UP, buff=0.08)
 
         mapped_x_5=x_axis_5.map_to_canvas(alphas_1) 
         mapped_y_5=y_axis_5.map_to_canvas(slice_1)
 
-        curve_5=VMobject()         
+        curve_5=m.VMobject()
         curve_5.set_points_smoothly(np.vstack((mapped_x_5, mapped_y_5, np.zeros_like(mapped_x_5))).T)
         curve_5.set_stroke(width=4, color="#FF00FF", opacity=1.0)
 
-        axes_5=VGroup(x_axis_5, y_axis_5, x_label_5, y_label_5, curve_5)
-        axes_5.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
+        axes_5=m.VGroup(x_axis_5, y_axis_5, x_label_5, y_label_5, curve_5)
+        axes_5.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
         axes_5.move_to([0, 0, 0])
 
 
@@ -308,29 +262,29 @@ class BookLandscapeWithLines(InteractiveScene):
         y_axis_6=WelchYAxis(y_min=0, y_max=25, y_ticks=[0, 5, 10, 15, 20], y_tick_width=0.15,        
                           y_label_font_size=20, stroke_width=2.5, arrow_tip_scale=0.1, axis_length_on_canvas=3)
 
-        x_label_6 = Tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
-        y_label_6 = Tex('Loss', font_size=22).set_color(CHILL_BROWN)
-        x_label_6.next_to(x_axis_6, RIGHT, buff=0.05)
-        y_label_6.next_to(y_axis_6, UP, buff=0.08)
+        x_label_6 = math_tex(r'\alpha', font_size=28).set_color(CHILL_BROWN)
+        y_label_6 = math_tex('Loss', font_size=22).set_color(CHILL_BROWN)
+        x_label_6.next_to(x_axis_6, m.RIGHT, buff=0.05)
+        y_label_6.next_to(y_axis_6, m.UP, buff=0.08)
 
         mapped_x_6=x_axis_6.map_to_canvas(alphas_1) 
         mapped_y_6=y_axis_6.map_to_canvas(slice_2)
 
-        curve_6=VMobject()         
+        curve_6=m.VMobject()
         curve_6.set_points_smoothly(np.vstack((mapped_x_6, mapped_y_6, np.zeros_like(mapped_x_6))).T)
         curve_6.set_stroke(width=4, color="#00FFFF", opacity=1.0)
 
-        axes_6=VGroup(x_axis_6, y_axis_6, x_label_6, y_label_6, curve_6)
-        axes_6.rotate(90*DEGREES, [1,0,0], about_point=ORIGIN)
+        axes_6=m.VGroup(x_axis_6, y_axis_6, x_label_6, y_label_6, curve_6)
+        axes_6.rotate(90*m.DEGREES, [1,0,0], about_point=m.ORIGIN)
         axes_6.move_to([0, 0, -3.75])
 
         self.wait()
         # self.add(axes_5, axes_6)
-        self.play(FadeIn(VGroup(x_axis_5, y_axis_5, x_label_5, y_label_5)),
-          FadeIn(VGroup(x_axis_6, y_axis_6, x_label_6, y_label_6)),
-          ShowCreation(curve_5),
-          ShowCreation(curve_6),
-          self.frame.animate.reorient(0, 89, 0, (-6.26, -3.5, -2.13), 8.15),
+        self.play(m.FadeIn(m.VGroup(x_axis_5, y_axis_5, x_label_5, y_label_5)),
+          m.FadeIn(m.VGroup(x_axis_6, y_axis_6, x_label_6, y_label_6)),
+          m.Create(curve_5),
+          m.Create(curve_6),
+          self.animate_view(0, 89, 0, (-6.26, -3.5, -2.13), 8.15),
           run_time=6)
         
         self.wait()
@@ -359,31 +313,31 @@ class BookLandscapeWithLines(InteractiveScene):
                 curve_6.animate.scale([1/scale_x, 1/scale_x, 0.07/scale_y]),
                 axes_6[0].animate.shift([0,0,0.4]),
                 axes_5[0].animate.shift([0,0,0.4]),
-                self.frame.animate.reorient(0, 90, 0, (0.0, -3.5, -2.24), 5.28),
+                self.animate_view(0, 90, 0, (0.0, -3.5, -2.24), 5.28),
                 run_time=3.0)
 
         self.wait()
 
         #animation 2
         self.play(curve_5.animate.move_to([0,0,0.72]),
-                 curve_6.animate.move_to([0,0,0.65]).rotate(90*DEGREES, axis=[0,0,1]),
-                 axes_6[0].animate.move_to([0,0,-0.2]).rotate(90*DEGREES, axis=[0,0,1]),
+                 curve_6.animate.move_to([0,0,0.65]).rotate(90*m.DEGREES, axis=[0,0,1]),
+                 axes_6[0].animate.move_to([0,0,-0.2]).rotate(90*m.DEGREES, axis=[0,0,1]),
                  axes_5[0].animate.move_to([0,0,-0.2]),
-                 # self.frame.animate.reorient(9, 74, 0, (0.6, -3.05, 0.58), 4.05),
-                 self.frame.animate.reorient(36, 64, 0, (-0.07, 0.22, 0.23), 6.77),
+                 # self.animate_view(9, 74, 0, (0.6, -3.05, 0.58), 4.05),
+                 self.animate_view(36, 64, 0, (-0.07, 0.22, 0.23), 6.77),
                  run_time=5.0)
 
         self.wait()
-        self.play(ShowCreation(u_gridlines), 
-                  ShowCreation(v_gridlines),
-                  self.frame.animate.reorient(42, 58, 0, (-0.03, 0.06, 0.02), 6.19),
+        self.play(m.Create(u_gridlines),
+                  m.Create(v_gridlines),
+                  self.animate_view(42, 58, 0, (-0.03, 0.06, 0.02), 6.19),
                   run_time=4.0)
 
 
         self.wait()
         self.remove(axes_5[0])
         self.remove(axes_6[0])
-        self.frame.reorient(137, 41, 0, (0.18, -0.04, -0.12), 6.81)
+        self.set_view(137, 41, 0, (0.18, -0.04, -0.12), 6.81)
         #Book scene Here first?
         self.remove(curve_5, curve_6) #Occlusions
         self.add(curve_5, curve_6)
@@ -400,7 +354,7 @@ class BookLandscapeWithLines(InteractiveScene):
         self.add(u_gridlines, v_gridlines) #Occlusions
         self.add(curve_5, curve_6) #Occlusions
         self.play(ts.animate.set_opacity(1.0),
-                  self.frame.animate.reorient(51, 47, 0, (0.16, 0.06, -0.14), 6.10),
+                  self.animate_view(51, 47, 0, (0.16, 0.06, -0.14), 6.10),
                   run_time=3.0)
 
         self.wait(0)
@@ -409,7 +363,7 @@ class BookLandscapeWithLines(InteractiveScene):
         self.remove(axes_5[0])
         self.remove(axes_6[0])
 
-        self.frame.reorient(137, 41, 0, (0.48, 0.32, -0.52), 6.81)
+        self.set_view(137, 41, 0, (0.48, 0.32, -0.52), 6.81)
 
         self.wait()
 
@@ -422,7 +376,7 @@ class BookLandscapeWithLines(InteractiveScene):
 #                   axes_5[0].animate.set_opacity(0.0),
 #                   curve_5.animate.set_opacity(0.0),
 #                   curve_6.animate.set_opacity(0.0),
-#                   self.frame.animate.reorient(143, 26, 0, (0.08, 0.19, -0.04), 7.38),
+#                   self.animate_view(143, 26, 0, (0.08, 0.19, -0.04), 7.38),
 #                   run_time=6.0)
 #         self.wait()
 
@@ -430,7 +384,7 @@ class BookLandscapeWithLines(InteractiveScene):
 #         ## ---- 4. "Drop point in and, add gradient arrow, show global min. " ---- #
 
 
-#         self.play(self.frame.animate.reorient(122, 58, 0, (-1.15, -0.02, 0.11), 5.42), run_time=4.0)
+#         self.play(self.animate_view(122, 58, 0, (-1.15, -0.02, 0.11), 5.42), run_time=4.0)
 #         self.wait()
 
 #         starting_coords=[-0.7,0.95]  #[-0.7,1.0]  #
@@ -441,12 +395,12 @@ class BookLandscapeWithLines(InteractiveScene):
 #         self.add(s1)
 
 #         self.play(s1.animate.shift([0,0,-1]),
-#                   # self.frame.animate.reorient(120, 39, 0, (-0.89, 0.27, -0.07), 4.05),
+#                   # self.animate_view(120, 39, 0, (-0.89, 0.27, -0.07), 4.05),
 #                   run_time=2.0)
 
 #         self.wait()
 
-#         self.play(self.frame.animate.reorient(124, 37, 0, (-0.96, 0.01, 0.23), 3.41), run_time=4.0)
+#         self.play(self.animate_view(124, 37, 0, (-0.96, 0.01, 0.23), 3.41), run_time=4.0)
 #         self.wait()
 
 #         # Ok now I gotta add a little downhill arrow -> Hmm illustrator maybe?
@@ -489,12 +443,12 @@ class BookLandscapeWithLines(InteractiveScene):
 #         for i in range(num_steps):
 #             s1.move_to(trajectory[i])
 #             t.set_points_smoothly(trajectory[:i])
-#             self.frame.reorient(*interp_orientations[i])
+#             self.set_view(*interp_orientations[i])
 #             self.wait(0.1)
 #         self.wait()
 
 
-#         self.play(self.frame.animate.reorient(90, 0, 0, (0.04, -0.02, 0.0), 6.80), run_time=6.0)
+#         self.play(self.animate_view(90, 0, 0, (0.04, -0.02, 0.0), 6.80), run_time=6.0)
 #         self.wait()
 
 #         self.play(t.animate.set_opacity(0.0),
@@ -513,7 +467,7 @@ class BookLandscapeWithLines(InteractiveScene):
 #         # self.add(s1)
 
 #         self.wait()
-#         self.play(self.frame.animate.reorient(110, 38, 0, (-0.74, -0.43, 0.24), 3.00),
+#         self.play(self.animate_view(110, 38, 0, (-0.74, -0.43, 0.24), 3.00),
 #                   run_time=4.0)
 #         self.add(s1)
 #         self.wait()
@@ -570,7 +524,7 @@ class BookLandscapeWithLines(InteractiveScene):
 #             s1.move_to(trajectory[i])
 #             # t.set_points_smoothly(trajectory[:i])
 #             dot_path.add(Dot3D(center=trajectory[i], radius=0.017, color='$FF00FF'))
-#             self.frame.reorient(*interp_orientations[i])
+#             self.set_view(*interp_orientations[i])
 #             self.wait(0.1)
 #         self.wait()
 
@@ -583,11 +537,11 @@ class BookLandscapeWithLines(InteractiveScene):
 #             s1.move_to(trajectory[i])
 #             # t.set_points_smoothly(trajectory[:i])
 #             dot_path.add(Dot3D(center=trajectory[i], radius=0.017, color='$FF00FF'))
-#             self.frame.reorient(*interp_orientations[i-num_steps])
+#             self.set_view(*interp_orientations[i-num_steps])
 #             self.wait(0.1)
 #         self.wait()
 
-#         self.play(self.frame.animate.reorient(104, 11, 0, (-0.09, -0.35, -0.06), 2.60), run_time=4)
+#         self.play(self.animate_view(104, 11, 0, (-0.09, -0.35, -0.06), 2.60), run_time=4)
 
 
 #         ## ------------ Wormhole Time ---------------- ##
@@ -598,7 +552,7 @@ class BookLandscapeWithLines(InteractiveScene):
 #         self.wait()
 #         self.play(s1.animate.set_opacity(0.0), 
 #                   dot_path.animate.set_opacity(0.0),
-#                   self.frame.animate.reorient(142, 34, 0, (-0.09, -0.77, 0.15), 3.55),
+#                   self.animate_view(142, 34, 0, (-0.09, -0.77, 0.15), 3.55),
 #                   run_time=4.0)
 #         self.remove(s1)
 #         self.remove(dot_path)
@@ -700,7 +654,7 @@ class BookLandscapeWithLines(InteractiveScene):
 #                 surface_update_counter+=1
 
 #             # print(i, len(interp_orientations))
-#             self.frame.reorient(*interp_orientations[i])
+#             self.set_view(*interp_orientations[i])
 #             self.wait(0.1)
 
 #         self.wait()
@@ -710,26 +664,26 @@ class BookLandscapeWithLines(InteractiveScene):
 #         # animation again
 #         # This should be totally do-able in a separate viz. 
 
-#         # self.play(self.frame.animate.reorient(159, 35, 0, (-0.03, -0.62, 0.65), 1.95), run_time=8.0)
+#         # self.play(self.animate_view(159, 35, 0, (-0.03, -0.62, 0.65), 1.95), run_time=8.0)
 
 #         #ok ok ok ok ok let's actually go really with on the "WHat is going on here" question,
 #         #And then pan to the left in premiere, bring in the text, and replay the animation from this wide shot. 
 #         #Then we stay wide for a bit as we look at wikitext I think. 
-#         self.play(self.frame.animate.reorient(180, 23, 0, (-0.06, 0.09, 0.43), 5.81), run_time=10.0)
+#         self.play(self.animate_view(180, 23, 0, (-0.06, 0.09, 0.43), 5.81), run_time=10.0)
 
 #         self.wait() #Pick up in fixed animation from here
 
 
 
-#         self.play(self.frame.animate.reorient(360-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=20.0) #Pan Around
+#         self.play(self.animate_view(360-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=20.0) #Pan Around
 #         self.wait()
-#         self.play(self.frame.animate.reorient(360-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
+#         self.play(self.animate_view(360-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
 #         self.wait()
-#         self.play(self.frame.animate.reorient(360-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
+#         self.play(self.animate_view(360-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
 #         self.wait()
-#         self.play(self.frame.animate.reorient(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
+#         self.play(self.animate_view(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
 #         self.wait()
-#         self.play(self.frame.animate.reorient(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
+#         self.play(self.animate_view(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
 #         self.wait()
 
 #         # Ok I think from here it might make sense to do a "cut" (finally lol) for P48. 
@@ -739,7 +693,7 @@ class BookLandscapeWithLines(InteractiveScene):
 
 
 #         ## ----------------------------------------------------------------------- ##
-#         # self.frame.reorient(88, 41, 0, (-0.71, -0.37, 0.21), 2.60)
+#         # self.set_view(88, 41, 0, (-0.71, -0.37, 0.21), 2.60)
 #         # reorient(91, 28, 0, (-0.49, -0.34, 0.08), 2.60)
 
         
@@ -765,7 +719,7 @@ class BookLandscapeWithLines(InteractiveScene):
 #         #          curve_6.animate.move_to([0,0,0.65]).scale([1/scale_x, 1/scale_x, 0.07/scale_y]).rotate(90*DEGREES, axis=[0,0,1]),
 #         #          axes_6[0].animate.move_to([0,0,-0.2]).rotate(90*DEGREES, axis=[0,0,1]),
 #         #          axes_5[0].animate.move_to([0,0,-0.2]),
-#         #          self.frame.animate.reorient(9, 74, 0, (0.6, -3.05, 0.58), 4.05),
+#         #          self.animate_view(9, 74, 0, (0.6, -3.05, 0.58), 4.05),
 #         #          run_time=5.0)
 
 #         # axes_5[0].move_to([0,0,-0.2])
@@ -786,10 +740,10 @@ class BookLandscapeWithLines(InteractiveScene):
 #         # curve_6.move_to([0,0,0.65])
 
 
-#         # self.frame.reorient(35, 64, 0, (1.46, -2.03, 1.62), 4.55)
+#         # self.set_view(35, 64, 0, (1.46, -2.03, 1.62), 4.55)
 
 
-#         # self.frame.reorient(43, 51, 0, (0.07, 0.08, 0.01), 6.29)
+#         # self.set_view(43, 51, 0, (0.07, 0.08, 0.01), 6.29)
 
 #         #Scale and move axes in a similiar way, but move them up more. 
 
@@ -800,7 +754,7 @@ class BookLandscapeWithLines(InteractiveScene):
 #         # axes_6.move_to([0, 0, 0])
         
 
-#         # self.frame.reorient(40, 65, 0, (2.14, -2.09, -0.04), 7.91)
+#         # self.set_view(40, 65, 0, (2.14, -2.09, -0.04), 7.91)
 
 #         # self.wait()
 
@@ -912,21 +866,21 @@ class BookLandscapeWithLines(InteractiveScene):
 #                 surface_update_counter+=1
 
 #             # print(i, len(interp_orientations))
-#             self.frame.reorient(*interp_orientations[i])
+#             self.set_view(*interp_orientations[i])
 #             self.wait(0.1)
 
 
 
 #         self.wait()
-#         self.play(self.frame.animate.reorient(360-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=20.0) #Pan Around
+#         self.play(self.animate_view(360-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=20.0) #Pan Around
 #         self.wait()
-#         self.play(self.frame.animate.reorient(360-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
+#         self.play(self.animate_view(360-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
 #         self.wait()
-#         self.play(self.frame.animate.reorient(360-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
+#         self.play(self.animate_view(360-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
 #         self.wait()
-#         self.play(self.frame.animate.reorient(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
+#         self.play(self.animate_view(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
 #         self.wait()
-#         self.play(self.frame.animate.reorient(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
+#         self.play(self.animate_view(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
 #         self.wait()
 
 
@@ -999,15 +953,15 @@ class BookLandscapeWithLines(InteractiveScene):
 #         self.add(grids[0])
 #         self.add(s2)
 
-#         # self.frame.reorient(142, 34, 0, (-0.09, -0.77, 0.15), 3.55)
+#         # self.set_view(142, 34, 0, (-0.09, -0.77, 0.15), 3.55)
 #         # end_orientation=[131, 31, 0, (-0.12, -0.88, 0.22), 2.90]
-#         # self.frame.reorient(122, 13, 0, (0.03, -0.5, 0.57), 1.95) #Move overhead
-#         # self.frame.reorient(121, 20, 0, (0.01, -0.46, 0.57), 1.95)
-#         # self.frame.reorient(121, 20, 0, (0.01, -0.46, 0.57), 1.95)
-#         # self.frame.reorient(159, 35, 0, (-0.03, -0.62, 0.65), 1.95)
-#         # self.frame.reorient(121, 20, 0, (0.01, -0.46, 0.57), 1.95)
-#         # self.frame.reorient(-180, 23, 0, (-0.06, 0.09, 0.43), 5.81)
-#         self.frame.reorient(180, 23, 0, (-0.06, 0.09, 0.43), 5.81)
+#         # self.set_view(122, 13, 0, (0.03, -0.5, 0.57), 1.95) #Move overhead
+#         # self.set_view(121, 20, 0, (0.01, -0.46, 0.57), 1.95)
+#         # self.set_view(121, 20, 0, (0.01, -0.46, 0.57), 1.95)
+#         # self.set_view(159, 35, 0, (-0.03, -0.62, 0.65), 1.95)
+#         # self.set_view(121, 20, 0, (0.01, -0.46, 0.57), 1.95)
+#         # self.set_view(-180, 23, 0, (-0.06, 0.09, 0.43), 5.81)
+#         self.set_view(180, 23, 0, (-0.06, 0.09, 0.43), 5.81)
 #         self.embed()
 
 
@@ -1112,21 +1066,21 @@ class BookLandscapeWithLines(InteractiveScene):
 #                 self.add(s2) #Occlusions
 
 #             # print(i, len(interp_orientations))
-#             self.frame.reorient(*interp_orientations[i])
+#             self.set_view(*interp_orientations[i])
 #             self.wait(0.1)
 
 #         self.wait()
 
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=10.0) #Pan Around
+#         # self.play(self.animate_view(-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=10.0) #Pan Around
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
+#         # self.play(self.animate_view(-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
+#         # self.play(self.animate_view(-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
+#         # self.play(self.animate_view(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
+#         # self.play(self.animate_view(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
 #         # self.wait()
 
 #         self.wait(20)
@@ -1230,21 +1184,21 @@ class BookLandscapeWithLines(InteractiveScene):
 #                 surface_update_counter+=1
 
 #             # print(i, len(interp_orientations))
-#             self.frame.reorient(*interp_orientations[i])
+#             self.set_view(*interp_orientations[i])
 #             self.wait(0.1)
 
 #         self.wait()
 
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=10.0) #Pan Around
+#         # self.play(self.animate_view(-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=10.0) #Pan Around
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
+#         # self.play(self.animate_view(-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
+#         # self.play(self.animate_view(-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
+#         # self.play(self.animate_view(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
+#         # self.play(self.animate_view(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
 #         # self.wait()
 
 #         self.wait(20)
@@ -1323,10 +1277,10 @@ class BookLandscapeWithLines(InteractiveScene):
 #         self.add(s2)
 
 #         #Fixed orentation
-#         # self.frame.reorient(132, 28, 0, (-0.12, -0.56, 0.33), 4.50) #Kinda wide, but nice I think, could do a closer one too
-#         # self.frame.reorient(159, 35, 0, (-0.03, -0.62, 0.65), 1.95) #Match with long render
-#         # self.frame.reorient(180, 23, 0, (-0.06, 0.09, 0.43), 5.81) #Fixed wide veiew I can use at the beginning of 48
-#         self.frame.reorient(135, 47, 0, (0.15, 0.28, -0.04), 5.61) #V2 View for side-by-side in p49
+#         # self.set_view(132, 28, 0, (-0.12, -0.56, 0.33), 4.50) #Kinda wide, but nice I think, could do a closer one too
+#         # self.set_view(159, 35, 0, (-0.03, -0.62, 0.65), 1.95) #Match with long render
+#         # self.set_view(180, 23, 0, (-0.06, 0.09, 0.43), 5.81) #Fixed wide veiew I can use at the beginning of 48
+#         self.set_view(135, 47, 0, (0.15, 0.28, -0.04), 5.61) #V2 View for side-by-side in p49
 
 #         surface_update_counter=1
 #         # frames_per_surface_upddate=np.floor(num_total_steps/num_time_steps)
@@ -1348,15 +1302,15 @@ class BookLandscapeWithLines(InteractiveScene):
 #         self.wait()
 
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=10.0) #Pan Around
+#         # self.play(self.animate_view(-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=10.0) #Pan Around
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
+#         # self.play(self.animate_view(-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
+#         # self.play(self.animate_view(-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
+#         # self.play(self.animate_view(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
+#         # self.play(self.animate_view(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
 #         # self.wait()
 
 #         self.wait(20)
@@ -1434,10 +1388,10 @@ class BookLandscapeWithLines(InteractiveScene):
 #         self.add(s2)
 
 #         #Fixed orentation
-#         # self.frame.reorient(132, 28, 0, (-0.12, -0.56, 0.33), 4.50) #Kinda wide, but nice I think, could do a closer one too
-#         # self.frame.reorient(159, 35, 0, (-0.03, -0.62, 0.65), 1.95) #Match with long render
-#         # self.frame.reorient(180, 23, 0, (-0.06, 0.09, 0.43), 5.81) #Fixed wide veiew I can use at the beginning of 48
-#         self.frame.reorient(135, 47, 0, (0.15, 0.28, -0.04), 5.61) #Side by side for p349
+#         # self.set_view(132, 28, 0, (-0.12, -0.56, 0.33), 4.50) #Kinda wide, but nice I think, could do a closer one too
+#         # self.set_view(159, 35, 0, (-0.03, -0.62, 0.65), 1.95) #Match with long render
+#         # self.set_view(180, 23, 0, (-0.06, 0.09, 0.43), 5.81) #Fixed wide veiew I can use at the beginning of 48
+#         self.set_view(135, 47, 0, (0.15, 0.28, -0.04), 5.61) #Side by side for p349
 
 #         surface_update_counter=1
 #         # frames_per_surface_upddate=np.floor(num_total_steps/num_time_steps)
@@ -1459,15 +1413,15 @@ class BookLandscapeWithLines(InteractiveScene):
 #         self.wait()
 
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=10.0) #Pan Around
+#         # self.play(self.animate_view(-103, 12, 0, (0.01, -0.46, 0.57), 1.95), run_time=10.0) #Pan Around
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
+#         # self.play(self.animate_view(-89, 0, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Zoom out
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
+#         # self.play(self.animate_view(-85, 99, 0, (0.05, -0.09, 0.59), 5.82), run_time=8.0) #Pan below
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
+#         # self.play(self.animate_view(84, 102, 0, (0.05, -0.09, 0.59), 5.82), run_time=10.0) #Pan around below
 #         # self.wait()
-#         # self.play(self.frame.animate.reorient(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
+#         # self.play(self.animate_view(89, 0, 0, (-0.03, -0.14, 0.51), 6.38), run_time=8.0) #Back to overheaad
 #         # self.wait()
 
 #         self.wait(20)

@@ -1,30 +1,17 @@
-from manim import *
+"""ManimGX example for the shared WelchTip construct."""
 
-class WelchTip(VMobject):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+import manimgx as m
 
-        points = [
-            [32.33, 13.21, 0],
-            [0, 26.42, 0],
-            [7.67, 13.21, 0],
-            [0, 0, 0],
-            [32.33, 13.21, 0]
-        ]
+from welch_axes import WelchTip
 
-        scaled_points = [np.array(p) * 0.1 for p in points]
 
-        polygon = Polygon(*scaled_points, color="#948979", fill_color="#948979", fill_opacity=1)
-
-        self.add(polygon)
-
-class WelchTipExample(Scene):
+class WelchTipExample(m.Scene):
     def construct(self):
         welch_tip = WelchTip()
-        welch_tip.move_to(ORIGIN)
-        self.play(Create(welch_tip))
-        self.play(FadeOut(welch_tip))
-        self.play(DrawBorderThenFill(welch_tip))
-        self.play(FadeOut(welch_tip))
-        self.play(GrowFromEdge(welch_tip, LEFT))
-        self.play(FadeOut(welch_tip))
+        welch_tip.move_to(m.ORIGIN)
+        self.play(m.Create(welch_tip))
+        self.play(m.FadeOut(welch_tip))
+        self.play(m.DrawBorderThenFill(welch_tip))
+        self.play(m.FadeOut(welch_tip))
+        self.play(m.GrowFromEdge(welch_tip, m.LEFT))
+        self.play(m.FadeOut(welch_tip))

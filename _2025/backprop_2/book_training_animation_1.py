@@ -1,6 +1,8 @@
-from manimlib import *
-sys.path.append('/Users/stephen/manim/videos/welch_assets')
-from welch_axes import *
+from welch_paths import welch_path
+import manimgx as m
+from welch_surface import SampledSurface
+from welch_scene import WelchScene, image_at_height
+from welch_text import math_tex
 from functools import partial
 import numpy as np
 import torch
@@ -10,9 +12,9 @@ YELLOW='#ffd35a'
 BLUE='#65c8d0'
 GREEN='#00a14b'
 
-svg_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/graphics/to_manim'
-data_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/hackin'
-heatmap_path='/Users/stephen/Stephencwelch Dropbox/Stephen Welch/welch_labs/backprop2/graphics/to_manim/jun_6_1'
+svg_path=welch_path('backprop2/graphics/to_manim')
+data_path=welch_path('backprop2/hackin')
+heatmap_path=welch_path('backprop2/graphics/to_manim/jun_6_1')
 
 # map_min_x=0.38
 # map_max_x=1.54
@@ -68,74 +70,74 @@ def format_number_fixed_decimal(num, decimal_places=2, total_chars=6):
 
 def get_numbers(i, xs, weights, logits, yhats):
     x = xs[i, -1]
-    numbers = VGroup()
+    numbers = m.VGroup()
 
-    tx = Tex(str(x) + r'^\circ')
+    tx = math_tex(str(x) + r'^\circ')
     tx.scale(0.13)
     tx.move_to([-1.49, 0.02, 0])
     numbers.add(tx)
     
     # Weights - using consistent formatting
     w = weights[i, :]
-    tm1 = Tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
+    tm1 = math_tex(format_number(w[0], total_chars=6)).set_color('#00FFFF')
     tm1.scale(0.16)
     tm1.move_to([-1.195, 0.205, 0])
     numbers.add(tm1)
     
-    tm2 = Tex(format_number(w[1], total_chars=6)).set_color(YELLOW)
+    tm2 = math_tex(format_number(w[1], total_chars=6)).set_color(YELLOW)
     tm2.scale(0.15)
     tm2.move_to([-1.155, 0.015, 0])
     numbers.add(tm2)
     
-    tm3 = Tex(format_number(w[2], total_chars=6)).set_color(GREEN)
+    tm3 = math_tex(format_number(w[2], total_chars=6)).set_color(GREEN)
     tm3.scale(0.16)
     tm3.move_to([-1.19, -0.17, 0])
     numbers.add(tm3)
     
     # Biases
-    tb1 = Tex(format_number(w[3], total_chars=6)).set_color('#00FFFF')
+    tb1 = math_tex(format_number(w[3], total_chars=6)).set_color('#00FFFF')
     tb1.scale(0.16)
     tb1.move_to([-0.875, 0.365, 0])
     numbers.add(tb1)
     
-    tb2 = Tex(format_number(w[4], total_chars=6)).set_color(YELLOW)
+    tb2 = math_tex(format_number(w[4], total_chars=6)).set_color(YELLOW)
     tb2.scale(0.16)
     tb2.move_to([-0.875, 0.015, 0])
     numbers.add(tb2)
     
-    tb3 = Tex(format_number(w[5], total_chars=6)).set_color(GREEN)
+    tb3 = math_tex(format_number(w[5], total_chars=6)).set_color(GREEN)
     tb3.scale(0.16)
     tb3.move_to([-0.88, -0.335, 0])
     numbers.add(tb3)
     
     # Logits
-    tl1 = Tex(format_number(logits[i, 0], total_chars=6)).set_color('#00FFFF')
+    tl1 = math_tex(format_number(logits[i, 0], total_chars=6)).set_color('#00FFFF')
     tl1.scale(0.16)
     tl1.move_to([-0.52, 0.37, 0])
     numbers.add(tl1)
     
-    tl2 = Tex(format_number(logits[i, 1], total_chars=6)).set_color(YELLOW)
+    tl2 = math_tex(format_number(logits[i, 1], total_chars=6)).set_color(YELLOW)
     tl2.scale(0.16)
     tl2.move_to([-0.52, 0.015, 0])
     numbers.add(tl2)
     
-    tl3 = Tex(format_number(logits[i, 2], total_chars=6)).set_color(GREEN)
+    tl3 = math_tex(format_number(logits[i, 2], total_chars=6)).set_color(GREEN)
     tl3.scale(0.16)  
     tl3.move_to([-0.52, -0.335, 0])
     numbers.add(tl3)
     
     # Predictions
-    yhat1 = Tex(format_number(yhats[i, 0], total_chars=6)).set_color('#00FFFF')
+    yhat1 = math_tex(format_number(yhats[i, 0], total_chars=6)).set_color('#00FFFF')
     yhat1.scale(0.16)
     yhat1.move_to([0.22, 0.37, 0])
     numbers.add(yhat1)
     
-    yhat2 = Tex(format_number(yhats[i, 1], total_chars=6)).set_color(YELLOW)
+    yhat2 = math_tex(format_number(yhats[i, 1], total_chars=6)).set_color(YELLOW)
     yhat2.scale(0.16)
     yhat2.move_to([0.22, 0.015, 0])
     numbers.add(yhat2)
     
-    yhat3 = Tex(format_number(yhats[i, 2], total_chars=6)).set_color(GREEN)
+    yhat3 = math_tex(format_number(yhats[i, 2], total_chars=6)).set_color(GREEN)
     yhat3.scale(0.16)
     yhat3.move_to([0.22, -0.335, 0])
     numbers.add(yhat3)
@@ -197,56 +199,56 @@ def get_grad_regions(i, ys, yhats, grads):
     min_region_width=0.01
     region_scaling=0.15
 
-    grad_regions = VGroup()
+    grad_regions = m.VGroup()
 
     y_one_hot=torch.nn.functional.one_hot(torch.tensor(int(ys[i])),3).numpy()
     dldh=yhats[i]-y_one_hot
 
     rh1_width=np.clip(region_scaling*np.abs(dldh[0]), min_region_width, max_region_width)
-    rh1=Rectangle(0.425, rh1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
+    rh1=m.Rectangle(0.425, rh1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
     rh1.move_to([-0.52, 0.37, 0])
     grad_regions.add(rh1)
 
     rh2_width=np.clip(region_scaling*np.abs(dldh[1]), min_region_width, max_region_width)
-    rh2=Rectangle(0.425, rh2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
+    rh2=m.Rectangle(0.425, rh2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
     rh2.move_to([-0.52, 0.015, 0])
     grad_regions.add(rh2)
 
     rh3_width=np.clip(region_scaling*np.abs(dldh[2]), min_region_width, max_region_width)
-    rh3=Rectangle(0.425, rh3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
+    rh3=m.Rectangle(0.425, rh3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
     rh3.move_to([-0.52, -0.335, 0])
     grad_regions.add(rh3)
 
     rb1_width=np.clip(region_scaling*np.abs(grads[i,3]), min_region_width, max_region_width)
-    rb1=Rectangle(0.24, rb1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
+    rb1=m.Rectangle(0.24, rb1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
     rb1.move_to([-0.875, 0.37, 0])
     grad_regions.add(rb1)
 
     rb2_width=np.clip(region_scaling*np.abs(grads[i,4]), min_region_width, max_region_width)
-    rb2=Rectangle(0.24, rb2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
+    rb2=m.Rectangle(0.24, rb2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
     rb2.move_to([-0.875, 0.015, 0])
     grad_regions.add(rb2)
 
     rb3_width=np.clip(region_scaling*np.abs(grads[i,5]), min_region_width, max_region_width)
-    rb3=Rectangle(0.24, rb3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
+    rb3=m.Rectangle(0.24, rb3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
     rb3.move_to([-0.872, -0.335, 0])
     grad_regions.add(rb3)
 
     rm1_width=np.clip(region_scaling*np.abs(grads[i,0]), min_region_width, max_region_width)
-    rm1=Rectangle(0.42, rm1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
-    rm1.rotate(33*DEGREES)
+    rm1=m.Rectangle(0.42, rm1_width, stroke_width=0).set_color('#00FFFF').set_opacity(0.2)
+    rm1.rotate(33*m.DEGREES)
     rm1.move_to([-1.18, 0.20, 0])
     grad_regions.add(rm1)
 
     rm2_width=np.clip(region_scaling*np.abs(grads[i,1]), min_region_width, max_region_width)
-    rm2=Rectangle(0.33, rm2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
+    rm2=m.Rectangle(0.33, rm2_width, stroke_width=0).set_color(YELLOW).set_opacity(0.2)
     # rm2.rotate(33*DEGREES)
     rm2.move_to([-1.18, 0.015, 0])
     grad_regions.add(rm2)
 
     rm3_width=np.clip(region_scaling*np.abs(grads[i,2]), min_region_width, max_region_width)
-    rm3=Rectangle(0.42, rm3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
-    rm3.rotate(-30.5*DEGREES)
+    rm3=m.Rectangle(0.42, rm3_width, stroke_width=0).set_color(GREEN).set_opacity(0.2)
+    rm3.rotate(-30.5*m.DEGREES)
     rm3.move_to([-1.19, -0.175, 0])
     grad_regions.add(rm3)
 
@@ -271,12 +273,12 @@ def get_arrow_tip(line, color=None, scale=0.1, tip_position=1.0):
     direction = tip_point - direction_point
     
     # Create and position arrow tip
-    arrow_tip = ArrowTip().scale(scale)
+    arrow_tip = m.ArrowTip().scale(scale)
     if color is None:
         color = line.get_color()
     arrow_tip.set_color(color)
     arrow_tip.move_to(tip_point)
-    arrow_tip.rotate(angle_of_vector(direction))
+    arrow_tip.rotate(m.angle_of_vector(direction))
     
     return arrow_tip
 
@@ -307,7 +309,7 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
     top_right = end_point + np.array([0, y_extension, 0])
     
     # Create a custom surface class for this rectangular plane
-    class RectangularPlane(Surface):
+    class RectangularPlane(SampledSurface):
         def __init__(self, corners, **kwargs):
             self.corners = corners
             super().__init__(
@@ -322,11 +324,11 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
             # v goes from bottom to top (y extension)
             
             # Interpolate along bottom edge
-            bottom_point = interpolate(self.corners[0], self.corners[1], u)
+            bottom_point = m.interpolate(self.corners[0], self.corners[1], u)
             # Interpolate along top edge  
-            top_point = interpolate(self.corners[2], self.corners[3], u)
+            top_point = m.interpolate(self.corners[2], self.corners[3], u)
             # Interpolate between bottom and top
-            point = interpolate(bottom_point, top_point, v)
+            point = m.interpolate(bottom_point, top_point, v)
             
             return point
     
@@ -338,7 +340,7 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
     )
     
     # Now extrude this plane in the z direction to give it depth
-    class ExtrudedPlane(Surface):
+    class ExtrudedPlane(SampledSurface):
         def __init__(self, base_corners, depth, **kwargs):
             self.base_corners = base_corners
             self.depth = depth
@@ -354,12 +356,12 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
             # v parameter: interpolate in depth (z direction)
             
             # Get bottom and top points along the line at parameter u
-            bottom_point = interpolate(self.base_corners[0], self.base_corners[1], u)
-            top_point = interpolate(self.base_corners[2], self.base_corners[3], u)
+            bottom_point = m.interpolate(self.base_corners[0], self.base_corners[1], u)
+            top_point = m.interpolate(self.base_corners[2], self.base_corners[3], u)
             
             # Interpolate between bottom and top based on y-extension
             # For now, let's use the middle height
-            middle_point = interpolate(bottom_point, top_point, 0.5)
+            middle_point = m.interpolate(bottom_point, top_point, 0.5)
             
             # Add depth in z direction
             z_offset = v * self.depth / 2
@@ -368,7 +370,7 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
             return final_point
     
     # Actually, let's make this simpler - create a plane that extends from the line
-    class LineExtensionPlane(Surface):
+    class LineExtensionPlane(SampledSurface):
         def __init__(self, line_start, line_end, y_extension, depth, **kwargs):
             self.line_start = line_start
             self.line_end = line_end  
@@ -383,7 +385,7 @@ def create_plane_from_line_endpoints(line, color, depth=3.0, y_extension=2.0):
         
         def uv_func(self, u, v):
             # u: interpolate along original line
-            line_point = interpolate(self.line_start, self.line_end, u)
+            line_point = m.interpolate(self.line_start, self.line_end, u)
             
             # v: extend in positive y direction
             extended_point = line_point + np.array([0, v * self.y_extension, 0])
@@ -428,7 +430,7 @@ def create_surface_from_curve_simple(curve, y_extension=0.5, color='#00FFFF'):
     # Create extended points (top edge of surface)
     extended_points = curve_points + np.array([0, y_extension, 0])
     
-    class SimpleCurveSurface(Surface):
+    class SimpleCurveSurface(SampledSurface):
         def __init__(self, bottom_points, top_points, **kwargs):
             self.bottom_points = bottom_points
             self.top_points = top_points
@@ -478,7 +480,7 @@ def create_matching_plane_and_surface(line, curve, y_extension=0.5, color='#00FF
     curve_points = sample_points_from_curve(curve, num_points=32)
     
     # Create plane with same resolution as surface
-    class MatchingPlane(Surface):
+    class MatchingPlane(SampledSurface):
         def __init__(self, line_start, line_end, y_extension, **kwargs):
             self.line_start = line_start
             self.line_end = line_end
@@ -499,7 +501,7 @@ def create_matching_plane_and_surface(line, curve, y_extension=0.5, color='#00FF
             return extended_point
     
     # Create surface with same resolution
-    class MatchingSurface(Surface):
+    class MatchingSurface(SampledSurface):
         def __init__(self, curve_points, y_extension, **kwargs):
             self.curve_points = curve_points
             self.y_extension = y_extension
@@ -545,7 +547,7 @@ def create_matching_plane_and_surface(line, curve, y_extension=0.5, color='#00FF
     return plane, surface
 
 
-class p44(InteractiveScene):
+class p44(WelchScene):
     def construct(self):
 
         min_long=-9.8
@@ -562,25 +564,25 @@ class p44(InteractiveScene):
         yhats=data[:, 18:]
 
 
-        net_background=SVGMobject(svg_path+'/p44_background_1.svg')
+        net_background=m.SVGMobject(svg_path+'/p44_background_1.svg')
         
         i=0
         nums=get_numbers(i, xs, weights, logits, yhats)
         grad_regions=get_grad_regions(i, ys, yhats, grads)
-        heatmaps=Group()
-        heatmap_yhat3=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_3.png')
+        heatmaps=m.Group()
+        heatmap_yhat3=image_at_height(heatmap_path +'/'+str(i)+'_yhat_3.png')
         heatmap_yhat3.scale([0.29, 0.28, 0.28])
         heatmap_yhat3.move_to([0.96,0,0])
         heatmap_yhat3.set_opacity(0.5)
         heatmaps.add(heatmap_yhat3)
 
-        heatmap_yhat1=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_1.png')
+        heatmap_yhat1=image_at_height(heatmap_path +'/'+str(i)+'_yhat_1.png')
         heatmap_yhat1.scale([0.29, 0.28, 0.28])
         heatmap_yhat1.move_to([0.96,0,0])
         heatmap_yhat1.set_opacity(0.5)
         heatmaps.add(heatmap_yhat1)
 
-        heatmap_yhat2=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_2.png')
+        heatmap_yhat2=image_at_height(heatmap_path +'/'+str(i)+'_yhat_2.png')
         heatmap_yhat2.scale([0.29, 0.28, 0.28])
         heatmap_yhat2.move_to([0.96,0,0])
         heatmap_yhat2.set_opacity(0.5)
@@ -588,17 +590,17 @@ class p44(InteractiveScene):
 
         canvas_x, canvas_y=latlong_to_canvas(xs[i][0], xs[i][1], label=ys[i], min_long=min_long, 
                                              max_long=max_long, min_lat=min_lat, max_lat=max_lat, berlin_adjust=[-0.01, 0.02, 0])
-        training_point=Dot([canvas_x, canvas_y, 0], radius=0.012)
+        training_point=m.Dot([canvas_x, canvas_y, 0], radius=0.012)
         if ys[i]==0.0: training_point.set_color('#00FFFF')
         elif ys[i]==1.0: training_point.set_color(YELLOW)
         elif ys[i]==2.0: training_point.set_color(GREEN)   
 
-        self.frame.reorient(0, 0, 0, (-0.61, 0.01, 0.0), 1.50)
+        self.set_view(0, 0, 0, (-0.61, 0.01, 0.0), 1.50)
         self.add(net_background, nums)
         self.wait()
 
 
-        self.play(FadeIn(grad_regions))
+        self.play(m.FadeIn(grad_regions))
 
         # I want to have gradients grow in, but need to keep moving - I can add an arrow in editing pointing to a lart/small grad
         # Hmm actualy I maybe just shrink and grow one and then add labels there?
@@ -613,25 +615,25 @@ class p44(InteractiveScene):
         # self.play(*[g.animate.scale([1,50,1]) for g in grad_regions], run_time=2)
         # self.wait()        
 
-        europe_map=ImageMobject(svg_path +'/map_cropped_one.png')
+        europe_map=image_at_height(svg_path +'/map_cropped_one.png')
         europe_map.scale(0.28)
         europe_map.move_to([0.96,0,0])
 
-        map_tick_overlays=SVGMobject(svg_path+'/map_tick_overlays_1.svg')[1:]
+        map_tick_overlays=m.SVGMobject(svg_path+'/map_tick_overlays_1.svg')[1:]
         map_tick_overlays.scale([0.965, 0.96, 0.965])
         map_tick_overlays.shift([-0.077, 0.0185, 0])
         self.wait()
 
-        self.play(FadeIn(europe_map), FadeIn(map_tick_overlays), self.frame.animate.reorient(0, 0, 0, (-0.04, 0.01, 0.0), 1.94), run_time=2)
+        self.play(m.FadeIn(europe_map), m.FadeIn(map_tick_overlays), self.animate_view(0, 0, 0, (-0.04, 0.01, 0.0), 1.94), run_time=2)
 
         self.wait()
         self.add(training_point)
         self.wait()
 
-        box=SurroundingRectangle(training_point, color=YELLOW, buff=0.025)
-        self.play(ShowCreation(box))
+        box=m.SurroundingRectangle(training_point, color=YELLOW, buff=0.025)
+        self.play(m.Create(box))
         self.wait()
-        self.play(FadeOut(box))
+        self.play(m.FadeOut(box))
 
         self.add(heatmaps)
         heatmaps.set_opacity(0.0)
@@ -648,17 +650,17 @@ class p44(InteractiveScene):
         self.wait() 
         
 
-        step_label=Text("Step=")  
+        step_label=m.Text("Step=")
         step_label.set_color(CHILL_BROWN)
         step_label.scale(0.12)
         step_label.move_to([1.3, -0.85, 0])
 
-        step_count=Text(str(i).zfill(3))
+        step_count=m.Text(str(i).zfill(3))
         step_count.set_color(CHILL_BROWN)
         step_count.scale(0.12)
         step_count.move_to([1.43, -0.85, 0])
 
-        self.play(FadeIn(step_label), FadeIn(step_count))
+        self.play(m.FadeIn(step_label), m.FadeIn(step_count))
         self.wait()
 
         for i in range(1, len(xs)):
@@ -678,20 +680,20 @@ class p44(InteractiveScene):
             #Ok how do I do a cool surface again? Should i actually just try images first real quick?
             #Ok maybe images are fine for a bit - I'll switch to real surfaces when I need to
 
-            heatmaps=Group()
-            heatmap_yhat3=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_3.png')
+            heatmaps=m.Group()
+            heatmap_yhat3=image_at_height(heatmap_path +'/'+str(i)+'_yhat_3.png')
             heatmap_yhat3.scale([0.29, 0.28, 0.28])
             heatmap_yhat3.move_to([0.96,0,0])
             heatmap_yhat3.set_opacity(0.5)
             heatmaps.add(heatmap_yhat3)
 
-            heatmap_yhat1=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_1.png')
+            heatmap_yhat1=image_at_height(heatmap_path +'/'+str(i)+'_yhat_1.png')
             heatmap_yhat1.scale([0.29, 0.28, 0.28])
             heatmap_yhat1.move_to([0.96,0,0])
             heatmap_yhat1.set_opacity(0.5)
             heatmaps.add(heatmap_yhat1)
 
-            heatmap_yhat2=ImageMobject(heatmap_path +'/'+str(i)+'_yhat_2.png')
+            heatmap_yhat2=image_at_height(heatmap_path +'/'+str(i)+'_yhat_2.png')
             heatmap_yhat2.scale([0.29, 0.28, 0.28])
             heatmap_yhat2.move_to([0.96,0,0])
             heatmap_yhat2.set_opacity(0.5)
@@ -712,17 +714,17 @@ class p44(InteractiveScene):
             canvas_x, canvas_y=latlong_to_canvas(xs[i][0], xs[i][1], label=ys[i], min_long=min_long, 
                                              max_long=max_long, min_lat=min_lat, max_lat=max_lat, berlin_adjust=[-0.01, 0.02, 0], 
                                              paris_adjust=[-0.009, -0.002, 0], madrid_adjust=[-0.009, -0.002, 0])
-            training_point=Dot([canvas_x, canvas_y, 0], radius=0.012)
+            training_point=m.Dot([canvas_x, canvas_y, 0], radius=0.012)
             if ys[i]==0.0: training_point.set_color('#00FFFF')
             elif ys[i]==1.0: training_point.set_color(YELLOW)
             elif ys[i]==2.0: training_point.set_color(GREEN)   
 
-            step_label=Text("Step=")  
+            step_label=m.Text("Step=")
             step_label.set_color(CHILL_BROWN)
             step_label.scale(0.12)
             step_label.move_to([1.3, -0.85, 0])
 
-            step_count=Text(str(i).zfill(3))
+            step_count=m.Text(str(i).zfill(3))
             step_count.set_color(CHILL_BROWN)
             step_count.scale(0.12)
             step_count.move_to([1.43, -0.85, 0])
@@ -737,4 +739,4 @@ class p44(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
+        pass

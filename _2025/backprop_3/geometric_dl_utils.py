@@ -1,4 +1,4 @@
-from manimlib import *
+import manimgx as m
 from functools import partial
 from itertools import combinations
 import math
@@ -22,15 +22,15 @@ class BaarleNet(nn.Module):
 
 def manim_polygons_from_np_list(np_polygon_list, colors=None, viz_scale=1.0, stroke_width=2, polygon_max_height=None, opacity=0.3):
     if colors is None: 
-        colors = [RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
-    polygons=VGroup()
+        colors = [m.RED, m.BLUE, m.GREEN, m.YELLOW, m.PURPLE, m.ORANGE, m.PINK, m.TEAL]
+    polygons=m.VGroup()
     list_copy=copy.deepcopy(np_polygon_list)
     for j, p in enumerate(list_copy):
         if len(p)<3: continue
         p[:,2]=p[:,2]*viz_scale 
         if polygon_max_height is not None:
             p[:, -1] = np.clip(p[:, -1], -polygon_max_height, polygon_max_height)
-        poly_3d = Polygon(*p,
+        poly_3d = m.Polygon(*p,
                          fill_color=colors[j%len(colors)],
                          fill_opacity=0.7,
                          stroke_color=colors[j%len(colors)],
@@ -40,9 +40,9 @@ def manim_polygons_from_np_list(np_polygon_list, colors=None, viz_scale=1.0, str
     return polygons
 
 def get_relu_intersection_planes(num_neurons, layer_idx, neuron_idx, horizontal_spacing, vertical_spacing):
-    relu_intersections_planes=VGroup()
+    relu_intersections_planes=m.VGroup()
     for neuron_idx in range(num_neurons):
-        plane = Rectangle( width=2, height=2, fill_color=GREY, fill_opacity=0.15, stroke_color=WHITE, stroke_width=0.5)
+        plane = m.Rectangle( width=2, height=2, fill_color=m.GREY, fill_opacity=0.15, stroke_color=m.WHITE, stroke_width=0.5)
         plane.shift([horizontal_spacing*layer_idx-6, 0, vertical_spacing*neuron_idx])
         relu_intersections_planes.add(plane)
     return relu_intersections_planes
@@ -75,18 +75,18 @@ def get_3d_polygons(polygons_2d, num_neurons, surface_funcs, layer_idx):
 def viz_3d_polygons(polygons_3d, layer_idx, colors=None, color_gray_index=0):
     #Now move to rigth locations and visualize polygons. 
     if colors==None: 
-        colors=[BLUE, RED, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+        colors=[m.BLUE, m.RED, m.GREEN, m.YELLOW, m.PURPLE, m.ORANGE, m.PINK, m.TEAL]
 
-    polygons_vgroup=VGroup()
+    polygons_vgroup=m.VGroup()
     for neuron_idx, polygons in enumerate(polygons_3d):
         for j, p in enumerate(polygons):
             if len(p)<3: continue
             color = colors[j%len(colors)]
             if color_gray_index is not None:
                 if color_gray_index==j:
-                    color=GREY
+                    color=m.GREY
             else: color = colors[j%len(colors)]
-            poly_3d = Polygon(*p,
+            poly_3d = m.Polygon(*p,
                              fill_color=color,
                              fill_opacity=0.7,
                              stroke_color=color,
@@ -98,10 +98,10 @@ def viz_3d_polygons(polygons_3d, layer_idx, colors=None, color_gray_index=0):
 
 def viz_carved_regions_flat(layer_2_polygons, horizontal_spacing, layer_idx, colors=None):
     if colors==None: 
-        colors=[BLUE, RED, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
-    output_poygons_2d=VGroup()
+        colors=[m.BLUE, m.RED, m.GREEN, m.YELLOW, m.PURPLE, m.ORANGE, m.PINK, m.TEAL]
+    output_poygons_2d=m.VGroup()
     for j, polygon in enumerate(layer_2_polygons):
-            polygon = Polygon(*np.hstack((np.array(polygon), np.zeros((len(polygon),1)))),
+            polygon = m.Polygon(*np.hstack((np.array(polygon), np.zeros((len(polygon),1)))),
                              fill_color=colors[j%len(colors)],
                              fill_opacity=0.7,
                              stroke_color=colors[j%len(colors)],

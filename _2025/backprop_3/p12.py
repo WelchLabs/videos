@@ -1,18 +1,31 @@
+from welch_paths import welch_path
 from functools import partial
 import sys
 
 sys.path.append('_2025/backprop_3') #Point to folder where plane_folding_utils.py is
-from geometric_dl_utils import *
+import copy
+import manimgx as gx
+import numpy as np
+import pickle
+import torch
+from geometric_dl_utils import BaarleNet
+from geometric_dl_utils_simplified import (
+    clip_polygons,
+    compute_top_polytope,
+    process_with_layers,
+    recompute_tiling,
+    split_polygons_with_relu_simple,
+)
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, textured_surface
 
-from plane_folding_utils import *
-from geometric_dl_utils_simplified import *
 from polytope_intersection_utils import intersect_polytopes
 # from decision_boundary_utils import *
-from manimlib import *
+from welch_surface import set_surface_shading
 from gap_filler import fill_gaps
 
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/ai_book/4_deep_learning/graphics/'
-colors = [RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+graphics_dir=welch_path('ai_book/4_deep_learning/graphics/')
+colors = [gx.RED, gx.BLUE, gx.GREEN, gx.YELLOW, gx.PURPLE, gx.ORANGE, gx.PINK, gx.TEAL]
 map_filename='baarle_hertog_maps-13.png'
 
 CHILL_BROWN='#948979'
@@ -81,7 +94,7 @@ def order_closed_loops_with_closure(segments, tol=1e-6):
 
     return loops_pts
 
-class p12b_flat_2(InteractiveScene):
+class p12b_flat_2(WelchScene):
     def construct(self):
     	#Start with 512, move to as big as I can for final
         model_path='_2025/backprop_3/models/32_32_32_32_1.pth'
@@ -142,16 +155,16 @@ class p12b_flat_2(InteractiveScene):
         #     lines.add(line)
         # lines.shift([3, 0, 0])
 
-        lines=VGroup()
+        lines=gx.VGroup()
         for loop in borders_interp: 
             loop=np.hstack((loop, np.zeros((len(loop), 1))))
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(loop)
             line.set_stroke(color='#ec008c', width=5)
             lines.add(line)
         lines.shift([3, 0, 0])
 
-        top_polygons_vgroup_flat=VGroup()
+        top_polygons_vgroup_flat=gx.VGroup()
         for j, p in enumerate(my_top_polygons):
             if len(p)<3: continue
             if my_indicator[j]: color=YELLOW
@@ -160,7 +173,7 @@ class p12b_flat_2(InteractiveScene):
             p_scaled=copy.deepcopy(p) #Scaling for viz
             p_scaled[:,2]=0 #p_scaled[:,2]*viz_scales[2] #Flatten that shit!
             # p_scaled[:, -1] = np.clip(p_scaled[:, -1], -polygon_max_height, polygon_max_height)
-            poly_3d = Polygon(*p_scaled,
+            poly_3d = gx.Polygon(*p_scaled,
                              fill_color=color,
                              fill_opacity=0.4,
                              stroke_color=color,
@@ -172,21 +185,21 @@ class p12b_flat_2(InteractiveScene):
         top_polygons_vgroup_flat.set_opacity(0.5) #Eh?
 
         def flat_surf_func(u, v): return [u, v, 0]
-        flat_map_surf = ParametricSurface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-        flat_map=TexturedSurface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/'+map_filename)
-        flat_map.set_shading(0,0,0).set_opacity(0.8)
+        flat_map_surf = parametric_surface(flat_surf_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+        flat_map=textured_surface(flat_map_surf, graphics_dir+'/baarle_hertog_maps/'+map_filename)
+        set_surface_shading(flat_map, 0,0,0).set_opacity(0.8)
         flat_map.shift([5.7, 0, 0])
 
-        lines_flat_cleaner=VGroup()
+        lines_flat_cleaner=gx.VGroup()
         for loop in borders_interp: 
             loop=np.hstack((loop, np.zeros((len(loop), 1))))
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(loop)
             line.set_stroke(color='#ec008c', width=4)
             lines_flat_cleaner.add(line)
         lines_flat_cleaner.shift([5.7, 0, 0])      
 
-        self.frame.reorient(0, 0, 0, (4.34, 0.02, -0.19), 3.47)
+        self.set_view(0, 0, 0, (4.34, 0.02, -0.19), 3.47)
         self.add(top_polygons_vgroup_flat)
         self.add(lines)
 
@@ -196,12 +209,12 @@ class p12b_flat_2(InteractiveScene):
         #Optional fade and center on just map -> although I think i actually want to do it on 1024!
         # self.play(top_polygons_vgroup_flat.animate.set_opacity(0.0),
         #           lines.animate.set_opacity(0.0),
-        #           self.frame.animate.reorient(0, 0, 0, (5.67, -0.01, -0.19), 3.47),
+        #           self.animate_view(0, 0, 0, (5.67, -0.01, -0.19), 3.47),
         #           run_time=5.0)
 
 
         self.wait(20)
-        self.embed()
+        pass
 
 
 
@@ -353,7 +366,7 @@ class p12b_flat_2(InteractiveScene):
 
 #         #First just render out overhead
 #         self.add(flat_map, lines_flat)	
-#         self.frame.reorient(0, 0, 0, (-0.18, 0.01, 0.0), 2.39)
+#         self.set_view(0, 0, 0, (-0.18, 0.01, 0.0), 2.39)
 #         self.wait()
 #         self.remove(flat_map, lines_flat)	
 #         self.wait()
@@ -367,16 +380,16 @@ class p12b_flat_2(InteractiveScene):
 #         self.add(top_polygons_vgroup)
 #         self.add(lines)
 
-#         self.frame.reorient(0, 0, 0, (2.95, -0.01, 0.15), 3.18)
+#         self.set_view(0, 0, 0, (2.95, -0.01, 0.15), 3.18)
 #         self.wait()
 
-#         self.play(self.frame.animate.reorient(0, 38, 0, (2.97, -0.11, 0.06), 3.18), run_time=8)
+#         self.play(self.animate_view(0, 38, 0, (2.97, -0.11, 0.06), 3.18), run_time=8)
 #         self.wait()
 
-#         self.play(self.frame.animate.reorient(-40, 58, 0, (2.89, -0.22, -0.2), 3.20), run_time=8)
+#         self.play(self.animate_view(-40, 58, 0, (2.89, -0.22, -0.2), 3.20), run_time=8)
 #         self.wait()
 
-#         self.play(self.frame.animate.reorient(42, 0, 0, (3.0, -0.04, -0.08), 3.86), run_time=8)
+#         self.play(self.animate_view(42, 0, 0, (3.0, -0.04, -0.08), 3.86), run_time=8)
 #         self.wait()
 
         
@@ -524,7 +537,7 @@ class p12b_flat_2(InteractiveScene):
 
 #         #First just render out overhead
 #         self.add(flat_map, lines_flat)	
-#         self.frame.reorient(0, 0, 0, (-0.18, 0.01, 0.0), 2.39)
+#         self.set_view(0, 0, 0, (-0.18, 0.01, 0.0), 2.39)
 #         self.wait()
 #         self.remove(flat_map, lines_flat)	
 #         self.wait()
@@ -538,16 +551,16 @@ class p12b_flat_2(InteractiveScene):
 #         self.add(top_polygons_vgroup)
 #         self.add(lines)
 
-#         self.frame.reorient(0, 0, 0, (2.95, -0.01, 0.15), 3.18)
+#         self.set_view(0, 0, 0, (2.95, -0.01, 0.15), 3.18)
 #         self.wait()
 
-#         self.play(self.frame.animate.reorient(0, 38, 0, (2.97, -0.11, 0.06), 3.18), run_time=8)
+#         self.play(self.animate_view(0, 38, 0, (2.97, -0.11, 0.06), 3.18), run_time=8)
 #         self.wait()
 
-#         self.play(self.frame.animate.reorient(-40, 58, 0, (2.89, -0.22, -0.2), 3.20), run_time=8)
+#         self.play(self.animate_view(-40, 58, 0, (2.89, -0.22, -0.2), 3.20), run_time=8)
 #         self.wait()
 
-#         self.play(self.frame.animate.reorient(42, 0, 0, (3.0, -0.04, -0.08), 3.86), run_time=8)
+#         self.play(self.animate_view(42, 0, 0, (3.0, -0.04, -0.08), 3.86), run_time=8)
 #         self.wait()
 
         

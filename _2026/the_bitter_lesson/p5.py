@@ -1,4 +1,8 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+from _2026.the_bitter_lesson.phoneme_graph import get_rect_edge_point
+import numpy as np
+from welch_scene import WelchScene
 from tqdm import tqdm
 import re
 from pathlib import Path
@@ -21,8 +25,6 @@ SCALE_FACTOR=0.4
 SCALE_FACTOR_2=0.5
 
 
-audio_fn='/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/exports/tell_me_about_china.wav'
-spectra_path='/Users/stephen/Stephencwelch Dropbox/welch_labs/bitter_lesson/hacking/spectral_envelopes_final.npy'
 
 #Small graph configuration - Phone, node index, x coord, y coord
 nodes=[['start', 0, 0, 0],
@@ -140,55 +142,32 @@ spectra_keys_2 = ["stephen_tell_T", "stephen_tell_EL",
                "stephen_china_UH"]
 
 
-def get_rect_edge_point(rect, direction):
-    """
-    Get the point on a rectangle's edge in a given direction from its center.
-    direction should be a unit vector.
-    """
-    center = rect.get_center()
-    w = rect.get_width() / 2
-    h = rect.get_height() / 2
-    
-    dx, dy = direction[0], direction[1]
-    
-    # Avoid division by zero
-    if abs(dx) < 1e-8:
-        # Vertical line
-        t = h / abs(dy) if abs(dy) > 1e-8 else 0
-    elif abs(dy) < 1e-8:
-        # Horizontal line
-        t = w / abs(dx)
-    else:
-        # Find intersection with both edges and take the closer one
-        t_x = w / abs(dx)  # time to hit vertical edge
-        t_y = h / abs(dy)  # time to hit horizontal edge
-        t = min(t_x, t_y)
-    
-    return center + t * direction
 
 
 
 
-class P5(InteractiveScene):
+class P5(WelchScene):
+    audio_fn=welch_path('bitter_lesson/exports/tell_me_about_china.wav')
+    spectra_path=welch_path('bitter_lesson/hacking/spectral_envelopes_final.npy')
     def construct(self): 
         fast=False #False for final render
 
         node_mobjects = {}
         buff = 0.2
         for label, idx, x, y in nodes:
-            text = Text(label, font="American Typewriter", color=CHILL_BROWN)
+            text = gx.Text(label, font="American Typewriter", color=CHILL_BROWN)
             text.set_color(CHILL_BROWN)
-            box = RoundedRectangle(
-                width=text.get_width() + 2 * buff,
-                height=text.get_height() + 2 * buff,
+            box = gx.RoundedRectangle(
+                width=text.width + 2 * buff,
+                height=text.height + 2 * buff,
                 corner_radius=0.15,
                 color=CHILL_BROWN,
             )
-            node = VGroup(box, text)
+            node = gx.VGroup(box, text)
             node.move_to([x*SCALE_FACTOR, y*SCALE_FACTOR, 0])
             node_mobjects[idx] = node
         
-        arrows = VGroup()
+        arrows = gx.VGroup()
         arrow_dict={}
         for start_idx, end_idx in edges:
             start_node = node_mobjects[start_idx]
@@ -210,17 +189,17 @@ class P5(InteractiveScene):
             start_point = start_point + gap * direction
             end_point = end_point - gap * direction
             
-            arrow = Arrow(start_point, end_point, buff=0)
+            arrow = gx.Arrow(start_point, end_point, buff=0)
             arrow.set_color(CHILL_BROWN)
             arrows.add(arrow)
             arrow_dict[(start_idx, end_idx)]=arrow
 
         # Group everything
-        all_nodes = VGroup(*node_mobjects.values())
-        graph = VGroup(arrows, all_nodes)
+        all_nodes = gx.VGroup(*node_mobjects.values())
+        graph = gx.VGroup(arrows, all_nodes)
         graph.center()
         
-        self.frame.reorient(0, 0, 0, (-0.11, 0.17, 0.0), 14.76)
+        self.set_view(0, 0, 0, (-0.11, 0.17, 0.0), 14.76)
 
         self.wait()
         self.add(graph)
@@ -273,7 +252,7 @@ class P5(InteractiveScene):
         # And figure out how to animate between them. 
         # self.remove(graph)
 
-        spectral_envelope_outputs_loaded = np.load(spectra_path, allow_pickle=True)
+        spectral_envelope_outputs_loaded = np.load(self.spectra_path, allow_pickle=True)
         spectral_envelopes_loaded_dict = spectral_envelope_outputs_loaded.item()
 
         # self.wait()
@@ -282,28 +261,28 @@ class P5(InteractiveScene):
         buff = 0.2
         for spectra_key, (label, idx, x, y) in zip(spectra_keys_1, nodes):
 
-            n=Group()
+            n=gx.Group()
             if spectra_key == '':
-                text = Text(label, font="American Typewriter", color=CHILL_BROWN)
+                text = gx.Text(label, font="American Typewriter", color=CHILL_BROWN)
                 text.set_color(CHILL_BROWN)
-                box = RoundedRectangle(
-                    width=text.get_width() + 2 * buff,
-                    height=text.get_height() + 2 * buff,
+                box = gx.RoundedRectangle(
+                    width=text.width + 2 * buff,
+                    height=text.height + 2 * buff,
                     corner_radius=0.15,
                     color=CHILL_BROWN,
                 )
                 box.set_stroke(width=2)
-                node = VGroup(text, box)
+                node = gx.VGroup(text, box)
                 # node.move_to([x*SCALE_FACTOR, y*SCALE_FACTOR, 0])
                 node.move_to([x*SCALE_FACTOR_2-12, y*SCALE_FACTOR_2, 0])
                 node_mobjects_2[idx] = node
 
             else:
-                axes = Axes(
+                axes = gx.Axes(
                     x_range=[0, 25000, 5000],
                     y_range=[0, 1, 0.5],
-                    width=0.9,
-                    height=0.6,
+                    x_length=0.9,
+                    y_length=0.6,
                     axis_config={
                         "color": CHILL_BROWN,
                         "stroke_width": 3.0,
@@ -319,7 +298,7 @@ class P5(InteractiveScene):
                 s=np.log10(lpc_envelope / np.max(lpc_envelope))[0]
                 s=(s-s.min())/(s.max()-s.min())
 
-                spectra_1 = VMobject()
+                spectra_1 = gx.VMobject()
                 spectra_1.set_stroke(YELLOW, width=4)
 
                 points = [axes.c2p(w[j], s[j]) for j in range(len(s))]
@@ -329,25 +308,25 @@ class P5(InteractiveScene):
                 n.add(spectra_1)
                 node_mobjects_2[idx]=n
 
-                text = Text(label, font="American Typewriter", color=CHILL_BROWN)
+                text = gx.Text(label, font="American Typewriter", color=CHILL_BROWN)
                 text.set_color(CHILL_BROWN)
                 text.scale(0.8)
 
-                box = RoundedRectangle(
-                    width=axes.get_width() + 2 * buff,
-                    height=axes.get_height() + 2 * buff,
+                box = gx.RoundedRectangle(
+                    width=axes.width + 2 * buff,
+                    height=axes.height + 2 * buff,
                     corner_radius=0.15,
                     color=CHILL_BROWN,
                 )
                 box.set_stroke(width=2)
 
-                node = VGroup(axes, spectra_1, text, box)
+                node = gx.VGroup(axes, spectra_1, text, box)
                 node.move_to([x*SCALE_FACTOR_2-12, y*SCALE_FACTOR_2, 0])
                 text.move_to([x*SCALE_FACTOR_2+0.25-12, y*SCALE_FACTOR_2+0.2, 0])
                 node_mobjects_2[idx] = node
 
 
-        arrows_2 = VGroup()
+        arrows_2 = gx.VGroup()
         arrow_dict_2={}
         for start_idx, end_idx in edges:
             start_node = node_mobjects_2[start_idx]
@@ -369,41 +348,41 @@ class P5(InteractiveScene):
             start_point = start_point + gap * direction
             end_point = end_point - gap * direction
             
-            arrow = Arrow(start_point, end_point, buff=0)
+            arrow = gx.Arrow(start_point, end_point, buff=0)
             arrow.set_color(CHILL_BROWN)
             arrows_2.add(arrow)
             arrow_dict_2[(start_idx, end_idx)]=arrow
 
         # Group everything
-        all_nodes_2 = VGroup(*node_mobjects_2.values())
-        graph_2 = VGroup(arrows_2, all_nodes_2)
+        all_nodes_2 = gx.VGroup(*node_mobjects_2.values())
+        graph_2 = gx.VGroup(arrows_2, all_nodes_2)
         graph_2.center()
 
 
         self.wait()
         #Hell yeah - so this not perfect, but I think totally workable, and easy!
-        self.play(ReplacementTransform(graph, graph_2), 
-                 self.frame.animate.reorient(0, 0, 0, (0.18, 0.5, 0.0), 18.15), 
+        self.play(gx.ReplacementTransform(graph, graph_2),
+                 self.animate_view(0, 0, 0, (0.18, 0.5, 0.0), 18.15),
                  run_time=5)
         self.wait()
 
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (-7.31, 0.11, 0.0), 9.90), 
+        self.play(self.animate_view(0, 0, 0, (-7.31, 0.11, 0.0), 9.90),
                   run_time=5)
         self.wait(0)
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (-0.08, 2.77, 0.0), 17.74),
+        self.play(self.animate_view(0, 0, 0, (-0.08, 2.77, 0.0), 17.74),
                  run_time=5)
         self.wait()
 
 
-        # self.frame.reorient(0, 0, 0, (-0.08, 3.68, 0.0), 17.74)
-        # self.frame.reorient(0, 0, 0, (-0.08, 2.77, 0.0), 17.74)
+        # self.set_view(0, 0, 0, (-0.08, 3.68, 0.0), 17.74)
+        # self.set_view(0, 0, 0, (-0.08, 2.77, 0.0), 17.74)
 
 
         ## --- Ok! Now we can introduce some waveform action!
         axes_width = 22 #Initial axis width
-        sample_rate, data = wavfile.read(audio_fn)
+        sample_rate, data = wavfile.read(self.audio_fn)
         data = data / np.max(np.abs(data))
         
         downsample_factor=12
@@ -413,11 +392,11 @@ class P5(InteractiveScene):
         duration = len(data) / sample_rate
         t = np.linspace(0, duration, len(data_ds))
 
-        axes = Axes(
+        axes = gx.Axes(
             x_range=[0, duration, duration/4],
             y_range=[-1, 1, 0.5],
-            width=axes_width,
-            height=2.5,
+            x_length=axes_width,
+            y_length=2.5,
             axis_config={
                 "color": CHILL_BROWN,
                 "stroke_width": 2,
@@ -430,7 +409,7 @@ class P5(InteractiveScene):
         axes.move_to([0, 9, 0])
         # self.add(axes)
         
-        waveform = VMobject()
+        waveform = gx.VMobject()
         waveform.set_stroke(BLUE, width=3)
         self.add(waveform)
 
@@ -476,7 +455,7 @@ class P5(InteractiveScene):
         self.remove(waveform)
         # gap_width = 0.3  # scene units between blocks
         for count, gap_width in enumerate(np.linspace(0, spacing, num_steps)):
-            segments = VGroup()
+            segments = gx.VGroup()
             x_cursor = axes_left
             
             for i in range(len(cut_points_ds) - 1):
@@ -489,7 +468,7 @@ class P5(InteractiveScene):
                 
                 segment_data = data_ds[start_idx:end_idx]
                 
-                seg = VMobject()
+                seg = gx.VMobject()
                 seg.set_stroke(BLUE, width=3)
                 
                 local_x = np.linspace(0, seg_width, n_samples)
@@ -515,19 +494,19 @@ class P5(InteractiveScene):
         # self.remove(segments)
 
         #Now convert to sepctogrames
-        spectral_envelope_outputs_loaded = np.load(spectra_path, allow_pickle=True)
+        spectral_envelope_outputs_loaded = np.load(self.spectra_path, allow_pickle=True)
         spectral_envelopes_loaded_dict = spectral_envelope_outputs_loaded.item()
 
         horizontal_spacing = 2.3
 
-        spectra_plots=Group()
+        spectra_plots=gx.Group()
         for count, phone_key in enumerate(spectra_keys_2):
 
-            axes_2 = Axes(
+            axes_2 = gx.Axes(
                 x_range=[0, 25000, 5000],
                 y_range=[0, 1, 0.5],
-                width=1.9,
-                height=1.3,
+                x_length=1.9,
+                y_length=1.3,
                 axis_config={
                     "color": CHILL_BROWN,
                     "stroke_width": 4.0,
@@ -544,13 +523,13 @@ class P5(InteractiveScene):
             s=np.log10(lpc_envelope / np.max(lpc_envelope))[0]
             s=(s-s.min())/(s.max()-s.min())
 
-            spectra_1 = VMobject()
+            spectra_1 = gx.VMobject()
             spectra_1.set_stroke(BLUE, width=4)
 
             points = [axes_2.c2p(w[j], s[j]) for j in range(len(s))]
             spectra_1.set_points_as_corners(points)
 
-            spectra_plot=Group()
+            spectra_plot=gx.Group()
             spectra_plot.add(axes_2)
             spectra_plot.add(spectra_1)
             spectra_plots.add(spectra_plot)
@@ -561,15 +540,15 @@ class P5(InteractiveScene):
         self.wait()
         segments_copy=segments.copy()
         for i in range(len(segments)):
-            self.play(ReplacementTransform(segments_copy[i], spectra_plots[i][1]), 
-                      ShowCreation(spectra_plots[i][0]), #axis
+            self.play(gx.ReplacementTransform(segments_copy[i], spectra_plots[i][1]),
+                      gx.Create(spectra_plots[i][0]), #axis
                       run_time=3)
         self.wait()
 
 
         # Ok now start doing comparison and building out path in blue or maybe magenta!
         # So I kinda had two punch ins -> but I think just doing 1 is the way to go
-        # self.play(self.frame.animate.reorient(0, 0, 0, (-5.66, 2.1, 0.0), 11.14),
+        # self.play(self.animate_view(0, 0, 0, (-5.66, 2.1, 0.0), 11.14),
         #           run_time=5)
         # self.wait()
 
@@ -585,7 +564,7 @@ class P5(InteractiveScene):
         self.wait()
         self.play(spectra_curve_copy.animate.move_to(all_nodes_2[1].get_center()).scale(0.5), 
                   spectra_curve_copy_2.animate.move_to(all_nodes_2[22].get_center()).scale(0.5), 
-                  self.frame.animate.reorient(0, 0, 0, (-9.17, 0.08, 0.0), 7.06), #Eh?
+                  self.animate_view(0, 0, 0, (-9.17, 0.08, 0.0), 7.06), #Eh?
                   run_time=7)
         self.wait()
 
@@ -598,7 +577,7 @@ class P5(InteractiveScene):
         self.wait()
 
 
-        self.play(self.frame.animate.reorient(0, 0, 0, (-8.74, 3.66, 0.0), 7.59), 
+        self.play(self.animate_view(0, 0, 0, (-8.74, 3.66, 0.0), 7.59),
                   run_time=5)
         self.wait()
 
@@ -643,7 +622,7 @@ class P5(InteractiveScene):
 
         # Ok since the script goes kinda fast here, I kinda feel like we 
         # go to the full wide zoom out. 
-        self.play(self.frame.animate.reorient(0, 0, 0, (-0.02, 3.14, 0.0), 17.59), 
+        self.play(self.animate_view(0, 0, 0, (-0.02, 3.14, 0.0), 17.59),
                   run_time=4)
 
         #A
@@ -719,7 +698,6 @@ class P5(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
 
 
 

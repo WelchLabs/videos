@@ -28,6 +28,7 @@ Typical launch (survives ssh disconnects):
     tmux new -s sweep
     python train_depth_sweep.py --data /home/stephen/imagenet --out runs
 """
+from welch_paths import welch_path
 
 import argparse
 import json
@@ -421,7 +422,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--data", type=Path, default=Path("/home/stephen/imagenet"))
-    p.add_argument("--out", type=Path, default=Path("/home/stephen/Stephencwelch Dropbox/welch_labs/resnet/hackin/aug_17_run"))
+    p.add_argument("--out", type=Path, default=Path(welch_path('resnet/hackin/aug_17_run')))
     p.add_argument("--batch", type=int, default=256)
     p.add_argument("--workers", type=int, default=12)
     p.add_argument("--lr", type=float, default=0.1)

@@ -1,4 +1,9 @@
-from manimlib import *
+import manimgx as gx
+from sora_motion import manual_camera_interpolation
+import numpy as np
+from welch_geometry import diagram_axes
+from welch_scene import WelchScene
+
 import glob
 
 CHILL_BROWN='#948979'
@@ -13,50 +18,7 @@ from smalldiffusion import (
     ScheduleLogLinear, samples, Swissroll, ModelMixin
 )
 
-def manual_camera_interpolation(start_orientation, end_orientation, num_steps):
-    """
-    Linearly interpolate between two camera orientations.
-    
-    Parameters:
-    - start_orientation: List containing camera parameters with a tuple at index 3
-    - end_orientation: List containing camera parameters with a tuple at index 3
-    - num_steps: Number of interpolation steps (including start and end)
-    
-    Returns:
-    - List of interpolated orientations
-    """
-    result = []
-    
-    for step in range(num_steps):
-        # Calculate interpolation factor (0 to 1)
-        t = step / (num_steps - 1) if num_steps > 1 else 0
-        
-        # Create a new orientation for this step
-        interpolated = []
-        
-        for i in range(len(start_orientation)):
-            if i == 3:  # Handle the tuple at position 3
-                start_tuple = start_orientation[i]
-                end_tuple = end_orientation[i]
-                
-                # Interpolate each element of the tuple
-                interpolated_tuple = tuple(
-                    start_tuple[j] + t * (end_tuple[j] - start_tuple[j])
-                    for j in range(len(start_tuple))
-                )
-                
-                interpolated.append(interpolated_tuple)
-            else:  # Handle regular numeric values
-                start_val = start_orientation[i]
-                end_val = end_orientation[i]
-                interpolated_val = start_val + t * (end_val - start_val)
-                interpolated.append(interpolated_val)
-        
-        result.append(interpolated)
-    
-    return result
-
-class p40_51_sketch(InteractiveScene):
+class p40_51_sketch(WelchScene):
     def construct(self):
 
         batch_size=2130
@@ -64,7 +26,7 @@ class p40_51_sketch(InteractiveScene):
         loader = DataLoader(dataset, batch_size=batch_size)
         batch=next(iter(loader)).numpy()
 
-        axes = Axes(
+        axes = diagram_axes(
             x_range=[-1.2, 1.2, 0.5],
             y_range=[-1.2, 1.2, 0.5],
             height=7,
@@ -82,11 +44,11 @@ class p40_51_sketch(InteractiveScene):
         self.add(axes)
         # self.wait()
 
-        dots = VGroup()
+        dots = gx.VGroup()
         for point in batch:
             # Map the point coordinates to the axes
             screen_point = axes.c2p(point[0], point[1])
-            dot = Dot(screen_point, radius=0.04)
+            dot = gx.Dot(screen_point, radius=0.04)
             # dot.set_color(YELLOW)
             dots.add(dot)
         dots.set_color(YELLOW)
@@ -94,7 +56,7 @@ class p40_51_sketch(InteractiveScene):
         self.wait()
 
         # Animate the points appearing
-        self.play(FadeIn(dots, lag_ratio=0.1), run_time=2)
+        self.play(gx.FadeIn(dots, lag_ratio=0.1), run_time=2)
 
         self.wait()
 
@@ -110,13 +72,13 @@ class p40_51_sketch(InteractiveScene):
         self.wait()
         self.play(dots.animate.set_opacity(0.1), 
                  dot_to_move.animate.scale(1.25), #Make main dot a little bigger!
-                 self.frame.animate.reorient(0, 0, 0, (2.92, 1.65, 0.0), 4.19), 
+                 self.animate_view(0, 0, 0, (2.92, 1.65, 0.0), 4.19),
                  run_time=2.0)
 
 
         self.wait()
 
-        traced_path = TracedPath(dot_to_move.get_center, stroke_color=YELLOW, stroke_width=2)
+        traced_path = gx.TracedPath(dot_to_move.get_center, stroke_color=YELLOW, stroke_width=2)
         traced_path.set_opacity(0.5)
         traced_path.set_fill(opacity=0)
         self.add(traced_path)
@@ -157,7 +119,7 @@ class p40_51_sketch(InteractiveScene):
         #Hmm do I want an arrow or does the point just move with a tail?
         self.wait()
         
-        dot_history=VGroup()
+        dot_history=gx.VGroup()
         dot_history.add(dot_to_move.copy().scale(0.25))
         self.add(dot_history[-1])
         self.play(dot_to_move.animate.move_to(axes.c2p(*random_walk_shifted[0])), run_time=1.0)
@@ -168,7 +130,7 @@ class p40_51_sketch(InteractiveScene):
         for i in range(100):
             dot_history.add(dot_to_move.copy().scale(0.25))
             self.add(dot_history[-1])
-            self.play(dot_to_move.animate.move_to(axes.c2p(*random_walk_shifted[i])), run_time=0.2, rate_func=linear)
+            self.play(dot_to_move.animate.move_to(axes.c2p(*random_walk_shifted[i])), run_time=0.2, rate_func=gx.linear)
 
         self.wait()
 
@@ -177,7 +139,7 @@ class p40_51_sketch(InteractiveScene):
         # the batch option. 
 
         #Ok so I want to fadd in rest of point and center my plot. Then diffuse everybody!!
-        self.play(self.frame.animate.reorient(0, 0, 0, (-0.07, 0.01, 0.0), 7.59), 
+        self.play(self.animate_view(0, 0, 0, (-0.07, 0.01, 0.0), 7.59),
                         dots.animate.set_opacity(1.0), 
                         run_time=3.0)
         self.wait()
@@ -196,9 +158,9 @@ class p40_51_sketch(InteractiveScene):
         # maybe we actually totally lost the spiral for this animation? That might make for a more dramatic
         # bringing stuff back together phase
 
-        traced_paths=VGroup()
+        traced_paths=gx.VGroup()
         for d in dots: 
-            tp = TracedPath(d.get_center, stroke_color=YELLOW, stroke_width=2)
+            tp = gx.TracedPath(d.get_center, stroke_color=YELLOW, stroke_width=2)
             tp.set_opacity(0.2)
             tp.set_fill(opacity=0)
             traced_path.add(tp)
@@ -214,8 +176,8 @@ class p40_51_sketch(InteractiveScene):
         remaining_indices=np.concatenate((np.arange(75), np.arange(76,len(batch))))
         for step in range(100):
             self.play(*[dots[i].animate.move_to(axes.c2p(*random_walks[i][step])) for i in remaining_indices], 
-                     self.frame.animate.reorient(*interp_orientations[step]), 
-                     run_time=0.1, rate_func=linear)
+                     self.animate_view(*interp_orientations[step]),
+                     run_time=0.1, rate_func=gx.linear)
 
 
         #So there are 3 nice to haves here that I think I'll skip for now, can do if i have time
@@ -235,31 +197,4 @@ class p40_51_sketch(InteractiveScene):
 
 
         self.wait(20)
-        self.embed()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        # Scene authoring stops here in the interactive editor.

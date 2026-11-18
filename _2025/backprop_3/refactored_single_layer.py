@@ -1,9 +1,20 @@
-from manimlib import *
+from welch_paths import welch_path
+from welch_surface import set_surface_shading
 from functools import partial
 import sys
 
 sys.path.append('_2025/backprop_3') #Point to folder where plane_folding_utils.py is
-from geometric_dl_utils import *
+import manimgx as gx
+import numpy as np
+import torch
+from geometric_dl_utils import (
+    BaarleNet,
+    carve_plane_with_relu_joints,
+    get_polygon_corners_layer_1,
+    surface_func_from_model,
+)
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, textured_surface
 
 
 CHILL_BROWN='#948979'
@@ -17,9 +28,9 @@ FRESH_TAN='#dfd0b9'
 
 
 
-graphics_dir='/Users/stephen/Stephencwelch Dropbox/welch_labs/backprop_3/graphics/' #Point to folder where map images are
+graphics_dir=welch_path('backprop_3/graphics/') #Point to folder where map images are
 
-class refactor_sketch_2(InteractiveScene):
+class refactor_sketch_2(WelchScene):
     def construct(self):
 
         #2
@@ -32,13 +43,13 @@ class refactor_sketch_2(InteractiveScene):
         surfaces=[]
         surface_funcs=[]
         for layer_idx in range(len(model.model)):
-            s=Group()
+            s=gx.Group()
             surface_funcs.append([])
             for neuron_idx in range(num_neurons[layer_idx]):
                 surface_func=partial(surface_func_from_model, model=model, layer_idx=layer_idx, neuron_idx=neuron_idx, viz_scale=viz_scales[layer_idx])
-                bent_surface = ParametricSurface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
-                ts=TexturedSurface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
-                ts.set_shading(0,0,0).set_opacity(0.75)
+                bent_surface = parametric_surface(surface_func, u_range=[-1, 1], v_range=[-1, 1], resolution=(64, 64))
+                ts=textured_surface(bent_surface, graphics_dir+'/baarle_hertog_maps/baarle_hertog_maps-11.png')
+                set_surface_shading(ts, 0,0,0).set_opacity(0.75)
                 s.add(ts)
                 surface_funcs[-1].append(surface_func)
             surfaces.append(s)
@@ -48,17 +59,17 @@ class refactor_sketch_2(InteractiveScene):
                 s.shift([3*layer_idx-6, 0, 1.5*neuron_idx])
                 self.add(s)
 
-        self.frame.reorient(0, 38, 0, (-0.16, 0.17, 0.1), 9.70)
+        self.set_view(0, 38, 0, (-0.16, 0.17, 0.1), 9.70)
 
         # Ok now here's where I'm getting thown off ->  oh wait I think I might have forgotten that the 
         # first layer weights are actually just rotating/shifting our INITIAL planes -> that's right. 
         # Alright let me add some polygons, but I think i solved my current writing issue. 
 
         #Optional but kinda nice RuLu intersection planes
-        relu_intersections_planes_1=VGroup()
+        relu_intersections_planes_1=gx.VGroup()
         layer_idx=0
         for neuron_idx in range(num_neurons[layer_idx]):
-            plane = Rectangle( width=2,  height=2, fill_color=GREY, fill_opacity=0.3, stroke_color=WHITE, stroke_width=1)
+            plane = gx.Rectangle( width=2,  height=2, fill_color=gx.GREY, fill_opacity=0.3, stroke_color=gx.WHITE, stroke_width=1)
             plane.shift([3*layer_idx-6, 0, 1.5*neuron_idx])
             relu_intersections_planes_1.add(plane)
         self.add(relu_intersections_planes_1)
@@ -78,11 +89,11 @@ class refactor_sketch_2(InteractiveScene):
                 layer_1_polygons_3d[-1].append(a)
 
         #Now move to rigth locations and visualize polygons. 
-        layer_1_polygons_vgroup=VGroup()
-        layer_1_colors=[TEAL, GREY]
+        layer_1_polygons_vgroup=gx.VGroup()
+        layer_1_colors=[gx.TEAL, gx.GREY]
         for neuron_idx, polygons in enumerate(layer_1_polygons_3d):
             for j, p in enumerate(polygons):
-                poly_3d = Polygon(*p,
+                poly_3d = gx.Polygon(*p,
                                  fill_color=layer_1_colors[j],
                                  fill_opacity=0.7,
                                  stroke_color=layer_1_colors[j],
@@ -107,11 +118,11 @@ class refactor_sketch_2(InteractiveScene):
                 a=np.array(a)
                 layer_2_polygons_3d[-1].append(a)
 
-        layer_2_polygons_vgroup=VGroup()
-        layer_2_colors = [RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE, PINK, TEAL]
+        layer_2_polygons_vgroup=gx.VGroup()
+        layer_2_colors = [gx.RED, BLUE, GREEN, YELLOW, gx.PURPLE, gx.ORANGE, gx.PINK, gx.TEAL]
         for neuron_idx, polygons in enumerate(layer_2_polygons_3d):
             for j, p in enumerate(polygons):
-                poly_3d = Polygon(*p,
+                poly_3d = gx.Polygon(*p,
                                  fill_color=layer_2_colors[j%len(layer_2_colors)],
                                  fill_opacity=0.7,
                                  stroke_color=layer_2_colors[j%len(layer_2_colors)],
@@ -127,7 +138,7 @@ class refactor_sketch_2(InteractiveScene):
 
 
         self.wait()
-        self.embed()
+        pass
 
 
 

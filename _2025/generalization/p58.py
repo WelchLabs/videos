@@ -1,4 +1,10 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+from welch_geometry import diagram_axes_3d
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, set_surface_shading, textured_surface
+from welch_text import math_tex
+
 from functools import partial
 import torch
 import torch.nn as nn
@@ -6,8 +12,7 @@ import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-# from manimlib.mobject.svg.old_tex_mobject import *
-
+#
 CHILL_BROWN='#948979'
 YELLOW='#ffd35a'
 BLUE='#65c8d0'
@@ -66,7 +71,7 @@ class NeuralNetworkTwoParam(nn.Module):
         y = self.activation_function(torch.matmul(h, self.w2) + self.b2)
         return y
 
-class P66v3(InteractiveScene):
+class P66v3(WelchScene):
     def construct(self):
         # Create the same model and compute losses as before
         model = NeuralNetwork(StepFunction())
@@ -96,7 +101,7 @@ class P66v3(InteractiveScene):
         all_losses_batch = all_losses_batch*2  # Quick hacky scaling thing
           
        # Create the surface
-        axes = ThreeDAxes(
+        axes = diagram_axes_3d(
             x_range=[-4, 4, 1],
             y_range=[-4, 4, 1],
             z_range=[0, 2.0, 0.5],
@@ -113,13 +118,13 @@ class P66v3(InteractiveScene):
         )
         
         # Add labels
-        x_label = Tex('w_{00}', font_size=28).set_color(CHILL_BROWN)
-        y_label = Tex('w_{01}', font_size=28).set_color(CHILL_BROWN)
-        z_label = Tex('Error^2', font_size=28).set_color(CHILL_BROWN)
-        x_label.next_to(axes.x_axis, RIGHT)
-        y_label.next_to(axes.y_axis, UP)
-        z_label.next_to(axes.z_axis, OUT)
-        z_label.rotate(90*DEGREES, [1,0,0])
+        x_label = math_tex('w_{00}', font_size=28).set_color(CHILL_BROWN)
+        y_label = math_tex('w_{01}', font_size=28).set_color(CHILL_BROWN)
+        z_label = math_tex('Error^2', font_size=28).set_color(CHILL_BROWN)
+        x_label.next_to(axes.x_axis, gx.RIGHT)
+        y_label.next_to(axes.y_axis, gx.UP)
+        z_label.next_to(axes.z_axis, gx.OUT)
+        z_label.rotate(90*gx.DEGREES, [1,0,0])
     
         def param_surface(u, v):
             x = u
@@ -132,7 +137,7 @@ class P66v3(InteractiveScene):
             return np.array([x, y, z])
 
         # Create main surface
-        surface = ParametricSurface(
+        surface = parametric_surface(
             param_surface,
             u_range=[-4, 4],
             v_range=[-4, 4],
@@ -140,15 +145,15 @@ class P66v3(InteractiveScene):
         )
         
         # Create the textured surface
-        ts = TexturedSurface(surface, 'step_function_activation_landscape_1.png')
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, 'step_function_activation_landscape_1.png')
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(0.7)
         
         # Create gridlines using polylines instead of parametric curves
         num_lines = 20  # Number of gridlines in each direction
         num_points = 256  # Number of points per line
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = gx.VGroup()
+        v_gridlines = gx.VGroup()
         
         # Create u-direction gridlines
         u_values = np.linspace(-4, 4, num_lines)
@@ -156,36 +161,36 @@ class P66v3(InteractiveScene):
         
         for u in u_values:
             points = [param_surface(u, v) for v in v_points]
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.3)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.3)
             u_gridlines.add(line)
         
         # Create v-direction gridlines
         u_points = np.linspace(-4, 4, num_points)
         for v in u_values:  # Using same number of lines for both directions
             points = [param_surface(u, v) for u in u_points]
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.3)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.3)
             v_gridlines.add(line)
         
         # Add everything to the scene
-        self.frame.reorient(0, 0, 0, (0.05, -0.06, 0.0), 12)
+        self.set_view(0, 0, 0, (0.05, -0.06, 0.0), 12)
         self.add(ts)
         self.add(u_gridlines, v_gridlines)
         self.add(axes, x_label, y_label, z_label)
         self.wait(1)
 
-        self.play(self.frame.animate.reorient(35, 57, 0, (-0.02, -0.09, 0.03), 10.69), run_time=4)
+        self.play(self.animate_view(35, 57, 0, (-0.02, -0.09, 0.03), 10.69), run_time=4)
         self.wait()
-        self.play(self.frame.animate.reorient(137, 56, 0, (-0.02, -0.09, 0.03), 10.69), run_time=16, rate_func=linear)
+        self.play(self.animate_view(137, 56, 0, (-0.02, -0.09, 0.03), 10.69), run_time=16, rate_func=gx.linear)
         self.wait()
 
         #One more move at the same angles as the otehr one. 
-        self.play(self.frame.animate.reorient(26, 45, 0, (-0.41, 0.51, 1.03), 10.85), run_time=4)
+        self.play(self.animate_view(26, 45, 0, (-0.41, 0.51, 1.03), 10.85), run_time=4)
         self.wait()
-        self.play(self.frame.animate.reorient(122, 66, 0, (-0.41, 0.51, 1.03), 10.85), run_time=4)
+        self.play(self.animate_view(122, 66, 0, (-0.41, 0.51, 1.03), 10.85), run_time=4)
         self.wait()
 
         # reorient(26, 45, 0, (-0.41, 0.51, 1.03), 10.85)
@@ -196,7 +201,7 @@ class P66v3(InteractiveScene):
 
         # self.embed()     
 
-class P58(InteractiveScene):
+class P58(WelchScene):
     def construct(self):
 
         model = NeuralNetworkTwoParam(nn.Sigmoid())
@@ -240,7 +245,7 @@ class P58(InteractiveScene):
         history=np.array(history)
 
         # Create the surface
-        axes = ThreeDAxes(
+        axes = diagram_axes_3d(
             x_range=[-4, 4, 1],
             y_range=[-4, 4, 1],
             z_range=[0, 2.0, 0.5],
@@ -257,13 +262,13 @@ class P58(InteractiveScene):
         )
         
         # Add labels
-        x_label = Tex('w_{00}', font_size=28).set_color(CHILL_BROWN)
-        y_label = Tex('w_{01}', font_size=28).set_color(CHILL_BROWN)
-        z_label = Tex('Error^2', font_size=28).set_color(CHILL_BROWN)
-        x_label.next_to(axes.x_axis, RIGHT)
-        y_label.next_to(axes.y_axis, UP)
-        z_label.next_to(axes.z_axis, OUT)
-        z_label.rotate(90*DEGREES, [1,0,0])
+        x_label = math_tex('w_{00}', font_size=28).set_color(CHILL_BROWN)
+        y_label = math_tex('w_{01}', font_size=28).set_color(CHILL_BROWN)
+        z_label = math_tex('Error^2', font_size=28).set_color(CHILL_BROWN)
+        x_label.next_to(axes.x_axis, gx.RIGHT)
+        y_label.next_to(axes.y_axis, gx.UP)
+        z_label.next_to(axes.z_axis, gx.OUT)
+        z_label.rotate(90*gx.DEGREES, [1,0,0])
     
         def param_surface(u, v):
             x = u
@@ -276,7 +281,7 @@ class P58(InteractiveScene):
             return np.array([x, y, z])
 
         # Create main surface
-        surface = ParametricSurface(
+        surface = parametric_surface(
             param_surface,
             u_range=[-4, 4],
             v_range=[-4, 4],
@@ -284,15 +289,15 @@ class P58(InteractiveScene):
         )
         
         # Create the textured surface
-        ts = TexturedSurface(surface, '/Users/stephen/Stephencwelch Dropbox/welch_labs/double_descent/graphics/sigmoid_function_activation_landscape_1.png')
-        ts.set_shading(0.0, 0.1, 0)
+        ts = textured_surface(surface, welch_path('double_descent/graphics/sigmoid_function_activation_landscape_1.png'))
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(0.7)
         
         # Create gridlines using polylines instead of parametric curves
         num_lines = 20  # Number of gridlines in each direction
         num_points = 256  # Number of points per line
-        u_gridlines = VGroup()
-        v_gridlines = VGroup()
+        u_gridlines = gx.VGroup()
+        v_gridlines = gx.VGroup()
         
         # Create u-direction gridlines
         u_values = np.linspace(-4, 4, num_lines)
@@ -300,18 +305,18 @@ class P58(InteractiveScene):
         
         for u in u_values:
             points = [param_surface(u, v) for v in v_points]
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.3)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.3)
             u_gridlines.add(line)
         
         # Create v-direction gridlines
         u_points = np.linspace(-4, 4, num_points)
         for v in u_values:  # Using same number of lines for both directions
             points = [param_surface(u, v) for u in u_points]
-            line = VMobject()
+            line = gx.VMobject()
             line.set_points_as_corners(points)
-            line.set_stroke(width=1, color=WHITE, opacity=0.3)
+            line.set_stroke(width=1, color=gx.WHITE, opacity=0.3)
             v_gridlines.add(line)
         
 
@@ -327,44 +332,44 @@ class P58(InteractiveScene):
             path_points.append([w0, w1, z])
         
         # Create segments for the path with fading opacity
-        path_segments = Group()
+        path_segments = gx.Group()
         for i in range(len(path_points) - 1):
             start = np.array(path_points[i])
             end = np.array(path_points[i + 1])
             
             # Create line segment
-            line = Line3D(
+            line = gx.Line3D(
                 start=start,
                 end=end,
                 width=0.05,
                 #stroke_color=WHITE,
                 #stroke_opacity=min(0.8, 0.1 + i/len(path_points))  # Opacity increases along path
             )
-            line.set_color(WHITE)
+            line.set_color(gx.WHITE)
             path_segments.add(line)
         
         # Add start and end points markers
-        start_point = Sphere(radius=0.05, color=YELLOW)
+        start_point = gx.Sphere(radius=0.05, color=YELLOW)
         start_point.move_to(path_points[0])
         
-        end_point = Sphere(radius=0.125, color=RED)
+        end_point = gx.Sphere(radius=0.125, color=gx.RED)
         end_point.move_to(path_points[0])
 
         # Add everything to the scene
-        # self.frame.reorient(0, 0, 0, (0.05, -0.06, 0.0), 12)
+        # self.set_view(0, 0, 0, (0.05, -0.06, 0.0), 12)
         self.add(ts)
         self.add(u_gridlines, v_gridlines)
         self.add(axes, z_label) #, x_label, y_label, z_label)
         self.wait(1)
 
 
-        self.frame.reorient(137, 56, 0, (-0.02, -0.09, 0.03), 10.69) #Where p66 left of I think
+        self.set_view(137, 56, 0, (-0.02, -0.09, 0.03), 10.69) #Where p66 left of I think
 
 
         
         self.wait(1)
 
-        self.play(self.frame.animate.reorient(26, 45, 0, (-0.41, 0.51, 1.03), 10.85), run_time=10)
+        self.play(self.animate_view(26, 45, 0, (-0.41, 0.51, 1.03), 10.85), run_time=10)
         self.wait()
         self.add(end_point)
         self.wait()
@@ -388,7 +393,7 @@ class P58(InteractiveScene):
             current_gamma = initial_orientation[2] + (final_orientation[2] - initial_orientation[2]) * progress
             
             # Update camera position
-            self.frame.reorient(current_theta, current_phi, current_gamma, (-0.41, 0.51, 1.03), 10.85)  
+            self.set_view(current_theta, current_phi, current_gamma, (-0.41, 0.51, 1.03), 10.85)
             self.wait(1./30)   
             point_count += 1    
 
@@ -419,7 +424,7 @@ class P58(InteractiveScene):
         #         current_gamma = initial_orientation[2] + (final_orientation[2] - initial_orientation[2]) * progress
                 
         #         # Update camera position
-        #         self.frame.reorient(current_theta, current_phi, current_gamma, (-0.11, 0.15, 1.36), 8.00) #This is looking dope!
+        #         self.set_view(current_theta, current_phi, current_gamma, (-0.11, 0.15, 1.36), 8.00) #This is looking dope!
 
 
 
@@ -513,9 +518,9 @@ class P58(InteractiveScene):
 #         )
 
 #         ts=TexturedSurface(surface, 'step_function_activation_landscape_1.png')
-#         ts.set_shading(0.0,0.2,0)
-#         # ts.set_shading(0,1,0)
-#         # ts.set_shading(0,0d,1)
+#         set_surface_shading(ts, 0.0,0.2,0)
+#         # set_surface_shading(ts, 0,1,0)
+#         # set_surface_shading(ts, 0,0d,1)
 #         ts.set_opacity(0.7)
 
 #         self.add(ts)

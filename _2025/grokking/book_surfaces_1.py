@@ -1,11 +1,18 @@
-from manimlib import *
+from welch_paths import welch_path
+import manimgx as gx
+import numpy as np
+from welch_geometry import diagram_axes_3d
+from welch_scene import WelchScene
+from welch_surface import parametric_surface, set_surface_shading, textured_surface
+from welch_text import math_tex
+
 from pathlib import Path
 
 # Static book version of P45_3Db: neuron surface on top, with its three
 # Fourier components stacked underneath.
 
 # data_dir = Path('/Volumes/hot_1/Stephencwelch Dropbox/welch_labs/grokking/from_linux/grok_1764706121')
-data_dir = Path('/Users/stephen/Library/CloudStorage/Dropbox-Stephencwelch/welch_labs/grokking/from_linux/grok_1764706121')
+data_dir = Path(welch_path('grokking/from_linux/grok_1764706121'))
 
 CHILL_BROWN = '#948979'
 ORANGE = '#eb8423'
@@ -47,7 +54,7 @@ FOURIER_FUNCS = [
 
 
 def make_axes(z_range, z_shift=0):
-    axes = ThreeDAxes(
+    axes = diagram_axes_3d(
         x_range=[0, P, 10],
         y_range=[0, P, 10],
         z_range=z_range,
@@ -63,25 +70,25 @@ def make_axes(z_range, z_shift=0):
             "tip_config": {"width": 0.05, "length": 0.05},
         },
     )
-    x_label = Tex("x", font_size=32).next_to(axes.x_axis.get_end(), RIGHT, buff=0.1)
-    y_label = Tex("y", font_size=32).next_to(axes.y_axis.get_end(), UP, buff=0.1)
-    x_label.rotate(90*DEGREES, RIGHT).rotate(180*DEGREES, OUT)
-    y_label.rotate(90*DEGREES, RIGHT).rotate(90*DEGREES, OUT)
-    labels = VGroup(x_label, y_label).set_color(CHILL_BROWN)
+    x_label = math_tex("x", font_size=32).next_to(axes.x_axis.get_end(), gx.RIGHT, buff=0.1)
+    y_label = math_tex("y", font_size=32).next_to(axes.y_axis.get_end(), gx.UP, buff=0.1)
+    x_label.rotate(90*gx.DEGREES, gx.RIGHT).rotate(180*gx.DEGREES, gx.OUT)
+    y_label.rotate(90*gx.DEGREES, gx.RIGHT).rotate(90*gx.DEGREES, gx.OUT)
+    labels = gx.VGroup(x_label, y_label).set_color(CHILL_BROWN)
 
-    axes.x_axis.rotate(90*DEGREES, RIGHT)
-    axes.y_axis.rotate(90*DEGREES, UP)
+    axes.x_axis.rotate(90*gx.DEGREES, gx.RIGHT)
+    axes.y_axis.rotate(90*gx.DEGREES, gx.UP)
 
-    Group(axes, labels).shift(z_shift * OUT)
+    gx.Group(axes, labels).shift(z_shift * gx.OUT)
     return axes, labels
 
 
 def make_surface(uv_func):
-    return ParametricSurface(uv_func, u_range=[0, 1], v_range=[0, 1], resolution=(P, P))
+    return parametric_surface(uv_func, u_range=[0, 1], v_range=[0, 1], resolution=(P, P))
 
 
 def make_curve(points, color):
-    curve = VMobject(stroke_color=color, stroke_width=LINE_WIDTH)
+    curve = gx.VMobject(stroke_color=color, stroke_width=LINE_WIDTH)
     curve.set_points_smoothly(points)
     return curve
 
@@ -94,7 +101,7 @@ WIRE_CAMERA = (132, 36, 0, (-0.4, -0.43, -0.72), 8.05)  # Top-surface-only view 
 
 
 
-class P45_3Db_book(InteractiveScene):
+class P45_3Db_book(WelchScene):
     def construct(self):
         act = np.load(data_dir/'mlp_hook_pre.npy')[:, :, 2, NEURON_IDX]
         act = act - (act.mean() - 0.20)  # Same vertical offset as the video
@@ -106,11 +113,11 @@ class P45_3Db_book(InteractiveScene):
             i, j = int(round(u*(P - 1))), int(round(v*(P - 1)))
             return axes_1.c2p(u*P, v*P, act[i, j])
 
-        ts = TexturedSurface(
+        ts = textured_surface(
             make_surface(neuron_point),
             str(data_dir/f'activations_{NEURON_IDX:03d}.png'),
         )
-        ts.set_shading(0.0, 0.1, 0)
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(1.0) #0.8
 
         # Pure x / pure y slices, drawn along the y=0 and x=0 edges of the top surface.
@@ -120,32 +127,32 @@ class P45_3Db_book(InteractiveScene):
         y_line = make_curve([neuron_point(0, v) for v in us], Y_LINE_COLOR)
 
         # Fourier components, stacked below
-        component_axes = Group()
-        component_labels = VGroup()
-        component_surfaces = Group()
+        component_axes = gx.Group()
+        component_labels = gx.VGroup()
+        component_surfaces = gx.Group()
         for func, color, z in zip(FOURIER_FUNCS, SURFACE_COLORS, -np.cumsum(SURFACE_GAPS)):
             ax, labels = make_axes([-0.5, 0.5, 0.5], z_shift=z)
             surf = make_surface(lambda u, v, ax=ax, func=func: ax.c2p(u*P, v*P, func(u*P, v*P)))
-            surf.set_color(color).set_shading(0.1, 0.5, 0.5)
+            set_surface_shading(surf.set_color(color), reflectiveness=1)
             component_axes.add(ax)
             component_labels.add(labels)
             component_surfaces.add(surf)
 
-        self.frame.reorient(*CAMERA)
+        self.set_view(*CAMERA)
 
         self.add(axes_1)
         self.add(x_line, y_line)
         self.add(ts)
-        self.frame.reorient(135, 37, 0, (np.float32(-0.39), np.float32(-0.44), np.float32(-1.26)), 7.05)
+        self.set_view(135, 37, 0, (np.float32(-0.39), np.float32(-0.44), np.float32(-1.26)), 7.05)
         self.wait()
 
         # self.add(component_axes) #, component_labels, labels_1)
         # self.add(component_surfaces)
 
         self.wait()
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-class P45_3Db_book_2(InteractiveScene):
+class P45_3Db_book_2(WelchScene):
     def construct(self):
         act = np.load(data_dir/'mlp_hook_pre.npy')[:, :, 2, NEURON_IDX]
         act = act - (act.mean() - 0.20)  # Same vertical offset as the video
@@ -157,11 +164,11 @@ class P45_3Db_book_2(InteractiveScene):
             i, j = int(round(u*(P - 1))), int(round(v*(P - 1)))
             return axes_1.c2p(u*P, v*P, act[i, j])
 
-        ts = TexturedSurface(
+        ts = textured_surface(
             make_surface(neuron_point),
             str(data_dir/f'activations_{NEURON_IDX:03d}.png'),
         )
-        ts.set_shading(0.0, 0.1, 0)
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(1.0) #0.8
 
         # Pure x / pure y slices, drawn along the y=0 and x=0 edges of the top surface.
@@ -171,36 +178,34 @@ class P45_3Db_book_2(InteractiveScene):
         y_line = make_curve([neuron_point(0, v) for v in us], Y_LINE_COLOR)
 
         # Fourier components, stacked below
-        component_axes = Group()
-        component_labels = VGroup()
-        component_surfaces = Group()
+        component_axes = gx.Group()
+        component_labels = gx.VGroup()
+        component_surfaces = gx.Group()
         for func, color, z in zip(FOURIER_FUNCS, SURFACE_COLORS, -np.cumsum(SURFACE_GAPS)):
             ax, labels = make_axes([-0.5, 0.5, 0.5], z_shift=z)
             surf = make_surface(lambda u, v, ax=ax, func=func: ax.c2p(u*P, v*P, func(u*P, v*P)))
-            surf.set_color(color).set_shading(0.1, 0.5, 0.5)
+            set_surface_shading(surf.set_color(color), reflectiveness=1)
             component_axes.add(ax)
             component_labels.add(labels)
             component_surfaces.add(surf)
 
-        self.frame.reorient(*CAMERA)
+        self.set_view(*CAMERA)
 
         self.add(axes_1)
         # self.add(x_line, y_line)
         # self.add(ts)
-        # self.frame.reorient(135, 37, 0, (np.float32(-0.39), np.float32(-0.44), np.float32(-1.26)), 7.05)
+        # self.set_view(135, 37, 0, (np.float32(-0.39), np.float32(-0.44), np.float32(-1.26)), 7.05)
         self.wait()
 
         self.add(component_axes) #, component_labels, labels_1)
         self.add(component_surfaces)
         self.add(ts)
-        self.frame.reorient(133, 51, 0, (np.float32(0.27), np.float32(0.28), np.float32(-2.58)), 9.29)
+        self.set_view(133, 51, 0, (np.float32(0.27), np.float32(0.28), np.float32(-2.58)), 9.29)
 
         self.wait()
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-
-class P45_3Db_wireframe(InteractiveScene):
+class P45_3Db_wireframe(WelchScene):
     def construct(self):
         act = np.load(data_dir/'mlp_hook_pre.npy')[:, :, 2, NEURON_IDX]
         act = act - (act.mean() - 0.20)  # Same vertical offset as the video
@@ -216,7 +221,7 @@ class P45_3Db_wireframe(InteractiveScene):
         ])
 
         # Wireframe: one curve per sweep step, in both directions
-        wires = VGroup(
+        wires = gx.VGroup(
             *[make_curve(pts[:, j], FRESH_TAN) for j in range(P)],  # x sweeps, one per y
             *[make_curve(pts[i, :], FRESH_TAN) for i in range(P)],  # y sweeps, one per x
         )
@@ -226,50 +231,45 @@ class P45_3Db_wireframe(InteractiveScene):
         x_line = make_curve(pts[:, 0], X_LINE_COLOR)
         y_line = make_curve(pts[0, :], Y_LINE_COLOR)
 
-        self.frame.reorient(*WIRE_CAMERA)
+        self.set_view(*WIRE_CAMERA)
         self.add(axes, labels, wires, x_line, y_line)
 
         self.wait()
-        self.embed()
-
-
-
-
+        # Scene authoring stops here in the interactive editor.
 
 OUT_NEURON_IDX = 1
 OUT_HEIGHT = 0.5  # Peak height as a fraction of the z axis (final video frame used 0.5, earlier shots 0.75)
 OUT_CAMERA = (42, 52, 0, (-0.02, -0.06, -0.46), 7.20)
 
 
-class P49_51_3D_book(InteractiveScene):
+class P49_51_3D_book(WelchScene):
     def construct(self):
         act = np.load(data_dir/'hook_mlp_out.npy')[:, :, 2, OUT_NEURON_IDX]
         act = act - act.mean()
         act = OUT_HEIGHT * act / np.abs(act).max()
 
         axes, labels = make_axes([-1, 1, 1])
-        labels[0].rotate(180*DEGREES, OUT)  # Face the x label toward this camera
+        labels[0].rotate(180*gx.DEGREES, gx.OUT)  # Face the x label toward this camera
 
         def neuron_point(u, v):
             i, j = int(round(u*(P - 1))), int(round(v*(P - 1)))
             return axes.c2p(u*P, v*P, act[i, j])
 
-        ts = TexturedSurface(
+        ts = textured_surface(
             make_surface(neuron_point),
             str(data_dir/f'activations_post_{OUT_NEURON_IDX:03d}.png'),
         )
-        ts.set_shading(0.0, 0.1, 0)
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(1.0)
 
-        self.frame.reorient(*OUT_CAMERA)
+        self.set_view(*OUT_CAMERA)
         self.add(axes) #, labels, ts)
         self.add(ts)
 
         self.wait()
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-class P45_3Db_book_3(InteractiveScene):
+class P45_3Db_book_3(WelchScene):
     def construct(self):
         act = np.load(data_dir/'mlp_hook_pre.npy')[:, :, 2, NEURON_IDX]
         act = act - (act.mean() - 0.20)  # Same vertical offset as the video
@@ -281,41 +281,40 @@ class P45_3Db_book_3(InteractiveScene):
             i, j = int(round(u*(P - 1))), int(round(v*(P - 1)))
             return axes_1.c2p(u*P, v*P, act[i, j])
 
-        ts = TexturedSurface(
+        ts = textured_surface(
             make_surface(neuron_point),
             str(data_dir/f'activations_{NEURON_IDX:03d}.png'),
         )
-        ts.set_shading(0.0, 0.1, 0)
+        set_surface_shading(ts, 0.0, 0.1, 0)
         ts.set_opacity(1.0) #0.8
 
 
         # Fourier components, stacked below
-        component_axes = Group()
-        component_labels = VGroup()
-        component_surfaces = Group()
+        component_axes = gx.Group()
+        component_labels = gx.VGroup()
+        component_surfaces = gx.Group()
         for func, color, z in zip(FOURIER_FUNCS, SURFACE_COLORS, -np.cumsum(SURFACE_GAPS)):
             ax, labels = make_axes([-0.5, 0.5, 0.5], z_shift=z)
             surf = make_surface(lambda u, v, ax=ax, func=func: ax.c2p(u*P, v*P, func(u*P, v*P)))
-            surf.set_color(color).set_shading(0.1, 0.5, 0.5)
+            set_surface_shading(surf.set_color(color), reflectiveness=1)
             component_axes.add(ax)
             component_labels.add(labels)
             component_surfaces.add(surf)
 
-        self.frame.reorient(*CAMERA)
+        self.set_view(*CAMERA)
 
         self.add(axes_1)
         # self.add(x_line, y_line)
         self.add(ts)
-        # self.frame.reorient(135, 37, 0, (np.float32(-0.39), np.float32(-0.44), np.float32(-1.26)), 7.05)
+        # self.set_view(135, 37, 0, (np.float32(-0.39), np.float32(-0.44), np.float32(-1.26)), 7.05)
         self.wait()
-        self.frame.reorient(*OUT_CAMERA)
+        self.set_view(*OUT_CAMERA)
 
         # self.add(component_axes) #, component_labels, labels_1)
         # self.add(component_surfaces)
 
         self.wait()
-        self.embed()
-
+        # Scene authoring stops here in the interactive editor.
 
 # ------------------------------ P52_54 config ------------------------------- #
 GREEN = '#419c52'  # Book green from the notebook palette
@@ -360,11 +359,11 @@ P52_COMPONENTS = [
 
 def rotate_all(mob, rotations):
     for angle, axis in rotations:
-        mob.rotate(angle*DEGREES, axis)
+        mob.rotate(angle*gx.DEGREES, axis)
     return mob
 
 
-class P52_54_surfaces_book(InteractiveScene):
+class P52_54_surfaces_book(WelchScene):
     def construct(self):
         pre = np.load(data_dir/'mlp_hook_pre.npy')
 
@@ -378,44 +377,42 @@ class P52_54_surfaces_book(InteractiveScene):
                 i, j = int(round(u*(P - 1))), int(round(v*(P - 1)))
                 return axes.c2p(u*P, v*P, act[i, j])
 
-            ts = TexturedSurface(
+            ts = textured_surface(
                 make_surface(neuron_point),
                 str(data_dir/f"activations_{cfg['idx']:03d}.png"),
             )
-            ts.set_shading(0.0, 0.1, 0)
+            set_surface_shading(ts, 0.0, 0.1, 0)
             ts.set_opacity(cfg['opacity'])
-            groups.append(Group(axes.x_axis, axes.y_axis, labels, ts))  # No z axis, as in the video
+            groups.append(gx.Group(axes.x_axis, axes.y_axis, labels, ts))  # No z axis, as in the video
 
         rotate_all(groups[0], P52_SURFACE_1_TILT)
         groups[1].move_to(P52_SURFACE_2_CENTER)
         rotate_all(groups[1], P52_SURFACE_2_TILT)
         groups[1].scale(P52_SURFACE_2_SCALE)
 
-        self.frame.reorient(*P52_CAMERA)
+        self.set_view(*P52_CAMERA)
         self.add(*groups)
 
         self.wait()
-        self.embed()
+        # Scene authoring stops here in the interactive editor.
 
-
-class P52_54_components_book(InteractiveScene):
+class P52_54_components_book(WelchScene):
     def construct(self):
         axes, _ = make_axes([-1, 1, 1])  # Only used for coordinates, not drawn
 
-        surfaces = Group()
+        surfaces = gx.Group()
         for cfg in P52_COMPONENTS:
             surf = make_surface(lambda u, v, f=cfg['func']: axes.c2p(u*P, v*P, f(u*P, v*P)))
-            surf.set_color(cfg['color']).set_shading(0.1, 0.5, 0.5)
+            set_surface_shading(surf.set_color(cfg['color']), reflectiveness=1)
             rotate_all(surf, cfg['rotations'])
             surf.scale(cfg['scale']).move_to(cfg['center'])
             surfaces.add(surf)
 
-        self.frame.reorient(*P52_CAMERA)
+        self.set_view(*P52_CAMERA)
         self.add(surfaces)
 
         self.wait()
-        self.embed()
-
+        # Scene authoring stops here in the interactive editor.
 
 P52_STACK_GAP = 2.2            # Vertical spacing between surfaces
 P52_STACK_VIEW = (137, 59, 0)  # theta, phi, gamma (same angle as the first stacked figure)
@@ -423,25 +420,24 @@ P52_STACK_HEIGHT = 8.0         # Frame height, lower to zoom in
 P52_STACK_AXES = False         # True to draw x/y/z axes under each surface
 
 
-class P52_54_components_stacked_book(InteractiveScene):
+class P52_54_components_stacked_book(WelchScene):
     def construct(self):
-        surfaces = Group()
-        all_axes = Group()
+        surfaces = gx.Group()
+        all_axes = gx.Group()
         for k, cfg in enumerate(P52_COMPONENTS):
             axes, labels = make_axes([-1, 1, 1], z_shift=-k*P52_STACK_GAP)
             surf = make_surface(lambda u, v, ax=axes, f=cfg['func']: ax.c2p(u*P, v*P, f(u*P, v*P)))
-            surf.set_color(cfg['color']).set_shading(0.1, 0.5, 0.5)
+            set_surface_shading(surf.set_color(cfg['color']), reflectiveness=1)
             surfaces.add(surf)
             all_axes.add(axes, labels)
 
         # Camera centers itself on the stack, so changing the gap keeps it centered
-        self.frame.reorient(*P52_STACK_VIEW, surfaces.get_center(), P52_STACK_HEIGHT)
+        self.set_view(*P52_STACK_VIEW, surfaces.get_center(), P52_STACK_HEIGHT)
         if P52_STACK_AXES:
             self.add(all_axes)
         self.add(surfaces)
 
-        self.frame.reorient(134, 58, 0, (np.float32(0.01), np.float32(0.1), np.float32(-2.58)), 8.08)
+        self.set_view(134, 58, 0, (np.float32(0.01), np.float32(0.1), np.float32(-2.58)), 8.08)
 
         self.wait()
-        self.embed()
-
+        # Scene authoring stops here in the interactive editor.
