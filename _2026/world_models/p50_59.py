@@ -101,7 +101,29 @@ runtime; everything else is redrawn from the storyboard's coordinates.
                         storyboard -21 (three clean inputs -> the fourth frame). left: the four frames denoise
                         together in ONE pass spread over that whole time, so both sides finish on the same frame
                         (left_sync = False: the left pass runs at the right side's pace and finishes early).
-  Same faked diffusion on the real frames as P53 (RealTile + NOISE_CURVE).
+  ... storyboard p43_59-22, left side (bidirectional diffusion as a grid: video time across, diffusion down)
+    beat_axes           a "Video Time" arrow + label draws in under each half
+    beat_diffusion_axis the dividing line becomes the "Diffusion Progress" axis: arrowhead at the bottom, label
+                        written down its right side
+    beat_left_to_top    the four left frames shrink a little and rise to the top row, noising up as they go and
+                        landing as pure noise
+    beat_model_in       the model graphic fades in under them, all at once: VIDEO MODEL box, a line into it from
+                        each of the four frames and a line out of it for each frame of the next row
+                        (model_lines = "single": one arrow in and one out instead)
+    beat_model_out      the four slightly denoised frames appear on the row below
+    beat_model_slide    the whole graphic slides down to the next gap, leaving a dim copy of itself behind;
+                        then beat_model_out again, and so on: four rows, the last one clean
+  ... storyboard p43_59-22, right side (teacher forcing on the same grid, one column = one frame at a time)
+    beat_tf_clear       the P56 row on the right (three inputs, arrow, output) fades, leaving that half empty
+    beat_tf_column(k)   column k builds from the top: a pure-noise frame together with the model graphic (VIDEO MODEL box,
+                        arrow in from the frame above, arrow out below, and one arrow from every finished frame in
+                        the bottom row: straight up from that frame, one right turn, into the model's side), then
+                        the next frame down, the graphic slides down leaving a dim copy, ... until the clean frame
+                        lands in the bottom row. Column 1 has no finished frames to draw on, so its model has just
+                        the one input and one output.
+    beat_tf_remove_column  everything in that column above its clean frame fades (not done for the last column,
+                        which stays: storyboard -22's right side)
+  Same faked diffusion on the real frames as P53 (RealTile + NOISE_CURVE); the rows sit at ROW_LEVELS.
 
 The ball frames in P52 are stills from the finished Wan2.2 clip, read from the same notebook output folder
 p43_59.py uses (<RUN>/p43/xt/step_NN_final/frame_FFF.png; set WM_P43_59 to point somewhere else).
@@ -1781,6 +1803,7 @@ class P56_58(InteractiveScene):
     # --- toggles -------------------------------------------------------------------------------------------
     show_text = True            # titles as manim Text. False: add them in post
     left_sync = True            # left side's single pass is stretched so both sides finish together
+    model_lines = "four"        # lines between the frames and the model: "four" (one per frame) or "single" arrow
 
     # --- timings (seconds) ---------------------------------------------------------------------------------
     intro_time = 2.0            # dividing line draws down, titles write in
@@ -1792,6 +1815,29 @@ class P56_58(InteractiveScene):
     next_noise_time = 0.5       # the next noise frame fades in on the output side
     next_noise_hold = 0.3
     p56_end_hold = 5.0
+
+    # storyboard -22, left side
+    axes_time = 1.5             # the two Video Time axes
+    diffusion_axis_time = 1.5   # divider -> Diffusion Progress axis
+    axes_hold = 1.0
+    to_top_time = 2.5           # left frames rise to the top row, noising up
+    to_top_hold = 0.8
+    model_in_time = 1.0         # model box + all its lines fade in
+    model_out_time = 1.0        # the next row of frames fades in
+    row_hold = 1.0              # a new row sits there before the model moves on
+    model_slide_time = 1.2
+    left_grid_end_hold = 5.0
+
+    # storyboard -22, right side (teacher forcing)
+    tf_clear_time = 1.0         # the P56 row on the right fades
+    tf_start_time = 0.8         # a column's noise frame and its model graphic (box + all arrows) fade in together
+    tf_frame_time = 0.8         # the next frame down fades in
+    tf_frame_hold = 0.5
+    tf_slide_time = 1.0         # graphic slides down a row
+    tf_column_hold = 1.5        # finished column sits there
+    tf_remove_time = 1.0        # ... then everything above its clean frame fades
+    tf_between_columns = 0.3
+    tf_end_hold = 5.0
 
     # --- layout: storyboard p43_59-21 (192 x 108 units) ----------------------------------------------------
     DIVIDER = (96.0, 7.49, 103.99)              # x, top y, bottom y
@@ -1807,6 +1853,30 @@ class P56_58(InteractiveScene):
     RIGHT_ARROW = (161.35, 166.77)              # tail x, tip x
     N_STEPS = len(NOISE_CURVE) - 1              # 40
 
+    # --- layout: storyboard p43_59-22 ----------------------------------------------------------------------
+    TIME_AXES = ((11.97, 86.12, 48.4), (106.72, 180.86, 143.8))     # per half: tail x, tip x, label center x
+    TIME_AXIS_Y, TIME_LABEL_Y, TIME_LABEL_SIZE = 98.93, 103.48, 3.2
+    DIFFUSION_AXIS = (96.0, 7.89, 104.39)       # x, top y, arrow tip y
+    DIFFUSION_LABEL = ("Diffusion Progress", 3.2, 97.8, 40.5)       # string, size, baseline x, top y (reads downwards)
+    GRID_X = (9.96, 29.34, 48.72, 68.10)        # left edges of the four columns (one per frame)
+    GRID_TOP = (23.9, 42.9, 61.9, 80.9)         # top edge of each row
+    GRID_W, GRID_H = 18.7, 10.8
+    ROW_LEVELS = (1.0, 0.75, 0.45, 0.0)         # how much noise is left on each row (1 = pure noise, 0 = clean)
+    BOX_W, BOX_H, BOX_R = 36.0, 3.03, 0.87      # the VIDEO MODEL box between two rows
+    BOX_LABEL_SIZE = 2.04
+    LINE_STROKE = 0.2
+    LINE_HEAD = (1.0, 0.41, 0.76)               # small arrowheads: length, half width, notch depth
+    LINE_R = 0.5                                # corner radius of the bent lines
+    LINE_IN_BEND, LINE_OUT_BEND = 1.0, 0.75     # how far below the frames / below the box the lines turn
+    LINE_GAP = 0.3                              # air between a frame's edge and its line
+    LINE_SPREAD = (0.10, 0.37, 0.63, 0.90)      # where along the box the four lines meet it
+    GHOST_OPACITY = 0.3                         # the copy of the model left behind
+
+    # right half of the grid (teacher forcing): same rows, columns shifted across
+    TF_DX = 96.07                               # left grid column x -> right grid column x
+    TF_BOX_W = 18.7                             # the model box sits over one column
+    CONTEXT_HEAD = (0.8, 0.33, 0.6)             # arrowheads of the lines coming in from the finished frames
+
     def construct(self):
         self.setup_scene()
         # P56
@@ -1815,6 +1885,30 @@ class P56_58(InteractiveScene):
         self.wait(self.tiles_hold)
         self.beat_run()
         self.wait(self.p56_end_hold)
+        # storyboard -22, left side
+        self.beat_axes()
+        self.beat_diffusion_axis()
+        self.wait(self.axes_hold)
+        self.beat_left_to_top()
+        self.wait(self.to_top_hold)
+        self.beat_model_in()
+        n_rows = len(self.GRID_TOP)
+        for r in range(1, n_rows):
+            self.beat_model_out()
+            self.wait(self.row_hold)
+            if r < n_rows - 1:
+                self.beat_model_slide()
+        self.wait(self.left_grid_end_hold)
+        # storyboard -22, right side: teacher forcing, one column at a time
+        self.beat_tf_clear()
+        n_cols = len(self.GRID_X)
+        for col in range(n_cols):
+            self.beat_tf_column(col)
+            self.wait(self.tf_column_hold)
+            if col < n_cols - 1:
+                self.beat_tf_remove_column()
+                self.wait(self.tf_between_columns)
+        self.wait(self.tf_end_hold)
 
     # ------------------------------------------------------------------------------------------- helpers
     def left_slot(self, k):
@@ -1935,3 +2029,246 @@ class P56_58(InteractiveScene):
             self.remove(ticker)
             for t in self.left_tiles:   # land exactly on the last step, whatever the frame rounding did
                 t.set_step(self.N_STEPS)
+
+    # ------------------------------------------------------------------------------------------- storyboard -22
+    def grid_slot(self, row, col):
+        return (self.GRID_X[col], self.GRID_TOP[row], self.GRID_W, self.GRID_H)
+
+    def beat_axes(self, run_time=None):
+        """A Video Time axis under each half."""
+        self.time_axes, self.time_labels = VGroup(), VGroup()
+        for x0, x1, cx in self.TIME_AXES:
+            self.time_axes.add(arrow((x0, self.TIME_AXIS_Y), (x1, self.TIME_AXIS_Y), 0.2, color=CHILL_BROWN))
+            self.time_labels.add(u_text("Video Time", self.TIME_LABEL_SIZE, cx, self.TIME_LABEL_Y, font=TEXT_FONT,
+                                        italic=True, align="center", color=CHILL_BROWN))
+        anims = [AnimationGroup(ShowCreation(a[0]), FadeIn(a[1])) for a in self.time_axes]
+        if self.show_text:
+            anims.append(Write(self.time_labels))
+        self.play(*anims, run_time=run_time or self.axes_time)
+
+    def beat_diffusion_axis(self, run_time=None):
+        """The dividing line becomes the Diffusion Progress axis: arrowhead at the bottom, label down its side."""
+        x, y0, y1 = self.DIFFUSION_AXIS
+        axis = arrow((x, y0), (x, y1), 0.2, color=CHILL_BROWN)
+        string, size, lx, ly = self.DIFFUSION_LABEL
+        self.diffusion_label = u_text(string, size, lx, ly, font=TEXT_FONT, italic=True, color=CHILL_BROWN)
+        self.diffusion_label.rotate(-PI / 2, about_point=P(lx, ly))         # reads top to bottom, right of the line
+        anims = [Transform(self.divider, axis[0]), FadeIn(axis[1])]
+        if self.show_text:
+            anims.append(Write(self.diffusion_label))
+        self.play(*anims, run_time=run_time or self.diffusion_axis_time)
+        self.diffusion_axis = VGroup(self.divider, axis[1])
+
+    def beat_left_to_top(self, run_time=None):
+        """The four left frames rise to the top row of the grid, noising up on the way: they land as pure noise."""
+        start_level, end_level = self.left_tiles[0].level, self.ROW_LEVELS[0]
+        moves = []
+        for k, t in enumerate(self.left_tiles):
+            a0, a1 = np.array(self.left_slot(k), float), np.array(self.grid_slot(0, k), float)
+
+            def update(m, alpha, a0=a0, a1=a1):
+                m.place(*interpolate(a0, a1, alpha))
+                m.set_level(interpolate(start_level, end_level, alpha))
+
+            moves.append(UpdateFromAlphaFunc(t, update))
+        self.play(*moves, run_time=run_time or self.to_top_time)
+        for t in self.left_tiles:
+            t.set_level(end_level)
+        self.grid_rows = [list(self.left_tiles)]            # rows of the grid so far, top first
+
+    # --- the model graphic between two rows
+    def bent_arrow(self, x0, y0, x1, y1, bend_y):
+        """Thin brown arrow from (x0, y0) straight down to bend_y, across to x1, then down to its tip at (x1, y1),
+        with rounded corners (a plain vertical arrow when x0 == x1) -> VGroup(line, head)"""
+        r = min(self.LINE_R, abs(x1 - x0) / 2)
+        length, half, notch = self.LINE_HEAD
+        pts = [(x0, y0)]
+        if r > 1e-6:
+            sx = 1.0 if x1 > x0 else -1.0
+            t = np.linspace(0, PI / 2, 6)
+            pts += [(x0 + sx * r * (1 - np.cos(a)), bend_y - r + r * np.sin(a)) for a in t]         # down -> across
+            pts += [(x1 - sx * r * (1 - np.sin(a)), bend_y + r * (1 - np.cos(a))) for a in t]       # across -> down
+        pts.append((x1, y1 - notch))
+        line = VMobject().set_points_as_corners([P(*q) for q in pts])
+        line.set_stroke(CHILL_BROWN, self.LINE_STROKE * STROKE_PER_U).set_fill(opacity=0)
+        head = Polygon(P(x1, y1), P(x1 - half, y1 - length), P(x1, y1 - notch), P(x1 + half, y1 - length))
+        head.set_fill(CHILL_BROWN, 1).set_stroke(CHILL_BROWN, 0)
+        return VGroup(line, head)
+
+    def model_geometry(self, gap):
+        """(center x, box top y, box bottom y, bottom of the row above, top of the row below) for the model in
+        the gap under row `gap`."""
+        above = self.GRID_TOP[gap] + self.GRID_H
+        below = self.GRID_TOP[gap + 1]
+        top = (above + below - self.BOX_H) / 2
+        cx = (self.GRID_X[0] + self.GRID_X[-1] + self.GRID_W) / 2
+        return cx, top, top + self.BOX_H, above, below
+
+    def model_box(self, gap):
+        """VIDEO MODEL box (+ label) in the gap under row `gap` -> VGroup(box, label)"""
+        cx, top, bottom, _, _ = self.model_geometry(gap)
+        box = RoundedRectangle(self.BOX_W * U, self.BOX_H * U, corner_radius=self.BOX_R * U)
+        box.move_to(P(cx, (top + bottom) / 2)).set_stroke(CHILL_BROWN, self.LINE_STROKE * STROKE_PER_U)
+        box.set_fill(opacity=0)
+        label = VGroup()
+        if self.show_text:
+            size = self.BOX_LABEL_SIZE
+            label = u_text("VIDEO MODEL", size, cx, (top + bottom) / 2 + CAP[LABEL_FONT] * size / 2, bold=True,
+                           align="center", color=CHILL_BROWN)
+        return VGroup(box, label)
+
+    def model_arrows(self, gap, side):
+        """The arrows into ("in": from the row above) or out of ("out": to the row below) the model in that gap
+        -> VGroup of arrows, each VGroup(line, head). One per frame, or a single one (model_lines)."""
+        cx, top, bottom, above, below = self.model_geometry(gap)
+        if self.model_lines == "single":
+            if side == "in":
+                return VGroup(self.bent_arrow(cx, above + self.LINE_GAP, cx, top, top))
+            return VGroup(self.bent_arrow(cx, bottom, cx, below - self.LINE_GAP, below))
+        left = cx - self.BOX_W / 2
+        out = VGroup()
+        for col, frac in enumerate(self.LINE_SPREAD):
+            frame_x = self.GRID_X[col] + self.GRID_W / 2
+            box_x = left + frac * self.BOX_W
+            if side == "in":
+                out.add(self.bent_arrow(frame_x, above + self.LINE_GAP, box_x, top, above + self.LINE_IN_BEND))
+            else:
+                out.add(self.bent_arrow(box_x, bottom, frame_x, below - self.LINE_GAP, bottom + self.LINE_OUT_BEND))
+        return out
+
+    @staticmethod
+    def dimmed(mob, factor):
+        """A copy with every stroke and fill opacity multiplied by factor (things with no fill stay unfilled)."""
+        ghost = mob.copy()
+        for m in ghost.family_members_with_points():
+            m.set_stroke(opacity=float(m.get_stroke_opacity()) * factor)
+            m.set_fill(opacity=float(m.get_fill_opacity()) * factor)
+        return ghost
+
+    def beat_model_in(self, run_time=None):
+        """The whole model graphic fades in under the top row: box, lines in from the frames, lines out below."""
+        self.model_gap = 0
+        self.model_core = self.model_box(0)
+        self.model_in = self.model_arrows(0, "in")
+        self.model_out = self.model_arrows(0, "out")
+        self.model = VGroup(self.model_core, self.model_in, self.model_out)
+        self.model_ghosts = VGroup()
+        self.play(FadeIn(self.model), run_time=run_time or self.model_in_time)
+
+    def beat_model_out(self, run_time=None):
+        """The next row appears under the model: the four frames, a step less noisy."""
+        row = self.model_gap + 1
+        tiles = [self.real_tile(f, level=self.ROW_LEVELS[row]).place(*self.grid_slot(row, col)).set_opacity(0)
+                 for col, f in enumerate(self.FRAMES)]
+        self.add(*tiles)
+        self.play(*[self.fade(t) for t in tiles], run_time=run_time or self.model_out_time)
+        self.grid_rows.append(tiles)
+
+    def beat_model_slide(self, run_time=None):
+        """The whole model graphic moves down to the next gap; a dim copy of it stays where it was."""
+        ghost = self.model.copy()
+        self.add(ghost)
+        self.bring_to_front(self.model)
+        gap = self.model_gap + 1
+        down = (self.GRID_TOP[gap] - self.GRID_TOP[self.model_gap]) * U * DOWN
+        self.play(Transform(ghost, self.dimmed(ghost, self.GHOST_OPACITY)), self.model.animate.shift(down),
+                  run_time=run_time or self.model_slide_time)
+        self.model_ghosts.add(ghost)
+        self.model_gap = gap
+
+    # ------------------------------------------------------------------------------------------- teacher forcing grid
+    def tf_slot(self, row, col):
+        return (self.GRID_X[col] + self.TF_DX, self.GRID_TOP[row], self.GRID_W, self.GRID_H)
+
+    def tf_column_x(self, col):
+        """Center x of a column on the right half."""
+        return self.GRID_X[col] + self.TF_DX + self.GRID_W / 2
+
+    def context_arrow(self, x0, y0, x1, y1, head=None):
+        """Thin brown arrow straight up from (x0, y0), one rounded right turn at height y1, tip at (x1, y1)
+        -> VGroup(line, head)"""
+        r = self.LINE_R
+        length, half, notch = head or self.CONTEXT_HEAD
+        t = np.linspace(0, PI / 2, 6)
+        pts = [(x0, y0)] + [(x0 + r * (1 - np.cos(a)), y1 + r * (1 - np.sin(a))) for a in t] + [(x1 - notch, y1)]
+        line = VMobject().set_points_as_corners([P(*q) for q in pts])
+        line.set_stroke(CHILL_BROWN, self.LINE_STROKE * STROKE_PER_U).set_fill(opacity=0)
+        tip = Polygon(P(x1, y1), P(x1 - length, y1 - half), P(x1 - notch, y1), P(x1 - length, y1 + half))
+        tip.set_fill(CHILL_BROWN, 1).set_stroke(CHILL_BROWN, 0)
+        return VGroup(line, tip)
+
+    def tf_graphic(self, col, gap):
+        """The model graphic for column `col`, in the gap under row `gap`
+        -> VGroup(VGroup(box, label), arrow in, arrow out, VGroup(context arrows))
+        One context arrow per finished frame (columns 0 .. col - 1 of the bottom row). The nearest frame's arrow
+        turns lowest and the farthest one's highest, so no two of them cross."""
+        _, top, bottom, above, below = self.model_geometry(gap)
+        cx = self.tf_column_x(col)
+        box = RoundedRectangle(self.TF_BOX_W * U, self.BOX_H * U, corner_radius=self.BOX_R * U)
+        box.move_to(P(cx, (top + bottom) / 2)).set_stroke(CHILL_BROWN, self.LINE_STROKE * STROKE_PER_U)
+        box.set_fill(opacity=0)
+        label = VGroup()
+        if self.show_text:
+            size = self.BOX_LABEL_SIZE
+            label = u_text("VIDEO MODEL", size, cx, (top + bottom) / 2 + CAP[LABEL_FONT] * size / 2, bold=True,
+                           align="center", color=CHILL_BROWN)
+        arrow_in = self.bent_arrow(cx, above + self.LINE_GAP, cx, top, top)
+        arrow_out = self.bent_arrow(cx, bottom, cx, below - self.LINE_GAP, below)
+        context = VGroup()
+        frame_top = self.GRID_TOP[-1] - self.LINE_GAP          # the lines start just above the bottom row
+        for j in range(col):
+            y = top + self.BOX_H * (j + 1) / (col + 1)
+            context.add(self.context_arrow(self.tf_column_x(j), frame_top, cx - self.TF_BOX_W / 2, y))
+        return VGroup(VGroup(box, label), arrow_in, arrow_out, context)
+
+    def beat_tf_clear(self, run_time=None):
+        """The P56 row on the right goes: frames and arrow fade."""
+        tiles = [*self.right_context, *([self.right_output] if self.right_output is not None else [])]
+        self.play(*[self.fade(t, 1.0, 0.0) for t in tiles], FadeOut(self.right_arrow),
+                  run_time=run_time or self.tf_clear_time)
+        self.remove(*tiles)
+        self.tf_bottom = []             # the clean frames in the bottom row so far, one per finished column
+        self.tf_column_parts = None
+
+    def beat_tf_column(self, col):
+        """One column, top to bottom: noise frame + model graphic, next frame, slide, ... , clean frame."""
+        n_rows = len(self.GRID_TOP)
+        f = self.FRAMES[col]
+        tiles, ghosts = [], VGroup()
+
+        def frame_in(row, run_time, *with_anims):
+            t = self.real_tile(f, level=self.ROW_LEVELS[row], noise_shift=2).place(*self.tf_slot(row, col))
+            t.set_opacity(0)
+            self.add(t)
+            self.play(self.fade(t), *with_anims, run_time=run_time)
+            tiles.append(t)
+
+        graphic = self.tf_graphic(col, 0)
+        frame_in(0, self.tf_start_time, FadeIn(graphic))        # noise frame and model graphic together
+        for gap in range(n_rows - 1):
+            frame_in(gap + 1, self.tf_frame_time)
+            if gap < n_rows - 2:
+                self.wait(self.tf_frame_hold)
+                # slide down: a dim copy stays; box + in / out arrows move as they are, the context arrows reshape
+                # (their turn drops with the model, their run up from the bottom row gets shorter)
+                ghost = graphic.copy()
+                self.add(ghost)
+                self.bring_to_front(graphic)
+                core, arrow_in, arrow_out, context = graphic
+                down = (self.GRID_TOP[gap + 1] - self.GRID_TOP[gap]) * U * DOWN
+                anims = [Transform(ghost, self.dimmed(ghost, self.GHOST_OPACITY)),
+                         VGroup(core, arrow_in, arrow_out).animate.shift(down)]
+                if len(context):
+                    anims.append(Transform(context, self.tf_graphic(col, gap + 1)[3]))
+                self.play(*anims, run_time=self.tf_slide_time)
+                ghosts.add(ghost)
+        self.tf_bottom.append(tiles[-1])
+        self.tf_column_parts = dict(tiles=tiles[:-1], graphic=graphic, ghosts=ghosts)
+
+    def beat_tf_remove_column(self, run_time=None):
+        """Everything in the column just built, above its clean frame, fades."""
+        parts = self.tf_column_parts
+        self.play(*[self.fade(t, 1.0, 0.0) for t in parts["tiles"]], FadeOut(parts["graphic"]),
+                  FadeOut(parts["ghosts"]), run_time=run_time or self.tf_remove_time)
+        self.remove(*parts["tiles"])
+        self.tf_column_parts = None
