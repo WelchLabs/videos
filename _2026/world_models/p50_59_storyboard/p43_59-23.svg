@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        font-size: 4.38px;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4 {
+        fill: #948678;
+      }
+
+      .cls-1, .cls-3, .cls-4 {
+        font-weight: 700;
+      }
+
+      .cls-1, .cls-4 {
+        font-family: OpenSans-ExtraBold, 'Open Sans';
+      }
+
+      .cls-5 {
+        stroke: #eb8423;
+      }
+
+      .cls-5, .cls-6, .cls-7, .cls-8, .cls-9 {
+        stroke-width: .2px;
+      }
+
+      .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10 {
+        fill: none;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-11 {
+        fill: #031e1e;
+      }
+
+      .cls-12, .cls-13, .cls-14, .cls-15 {
+        font-family: STIXTwoText-Italic, 'STIX Two Text';
+        font-size: 3.8px;
+        font-style: italic;
+        font-variation-settings: 'wght' 400;
+      }
+
+      .cls-12, .cls-16 {
+        fill: #fcc947;
+      }
+
+      .cls-13, .cls-17 {
+        fill: #419c52;
+      }
+
+      .cls-3 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-size: 3.6px;
+      }
+
+      .cls-14 {
+        fill: #eb8423;
+      }
+
+      .cls-6 {
+        stroke: #419c52;
+      }
+
+      .cls-15 {
+        fill: #5badb6;
+      }
+
+      .cls-7 {
+        stroke: #5badb6;
+      }
+
+      .cls-8 {
+        stroke: #fcc947;
+      }
+
+      .cls-4 {
+        font-size: 2.5px;
+      }
+
+      .cls-18 {
+        opacity: .6;
+      }
+
+      .cls-19 {
+        opacity: .25;
+      }
+
+      .cls-20 {
+        opacity: .1;
+      }
+
+      .cls-9, .cls-10 {
+        stroke: #948678;
+      }
+
+      .cls-10 {
+        stroke-width: .15px;
+      }
+
+      .cls-21 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-22 {
+        letter-spacing: 0em;
+      }
+
+      .cls-23 {
+        letter-spacing: -.01em;
+      }
+    </style>
+    <image id="image" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_00_46.Still001.jpg"/>
+  </defs>
+  <g>
+    <polygon class="cls-11" points="-.18 107.95 -.13 0 192.18 .05 192.13 107.95 -.18 107.95"/>
+    <path d="M192.08.1v107.8H-.08V.1h192.17M192.18,0H-.18v108h192.37V0h0Z"/>
+  </g>
+  <g>
+    <line class="cls-6" x1="39.53" y1="5.75" x2="39.53" y2="100.84"/>
+    <polygon class="cls-17" points="39.53 102.25 38.72 100.26 39.53 100.73 40.35 100.26 39.53 102.25"/>
+  </g>
+  <text class="cls-13" transform="translate(42.14 28.32) rotate(90)"><tspan x="0" y="0">Diffusion P</tspan><tspan class="cls-22" x="17.47" y="0">r</tspan><tspan x="18.9" y="0">og</tspan><tspan class="cls-22" x="22.46" y="0">r</tspan><tspan x="23.9" y="0">ess - </tspan><tspan class="cls-21" x="31.16" y="0">F</tspan><tspan class="cls-23" x="33.32" y="0">r</tspan><tspan x="34.73" y="0">ame 1</tspan></text>
+  <line class="cls-7" x1="73.63" y1="23.88" x2="73.63" y2="118.96"/>
+  <text class="cls-15" transform="translate(76.23 46.45) rotate(90)"><tspan x="0" y="0">Diffusion P</tspan><tspan class="cls-22" x="17.47" y="0">r</tspan><tspan x="18.9" y="0">og</tspan><tspan class="cls-22" x="22.46" y="0">r</tspan><tspan x="23.9" y="0">ess - </tspan><tspan class="cls-21" x="31.16" y="0">F</tspan><tspan class="cls-23" x="33.32" y="0">r</tspan><tspan x="34.73" y="0">ame 2</tspan></text>
+  <g>
+    <line class="cls-8" x1="107.72" y1="-21.53" x2="107.72" y2="73.56"/>
+    <polygon class="cls-16" points="107.72 74.97 106.91 72.98 107.72 73.45 108.53 72.98 107.72 74.97"/>
+  </g>
+  <text class="cls-12" transform="translate(110.32 1.04) rotate(90)"><tspan x="0" y="0">Diffusion P</tspan><tspan class="cls-22" x="17.47" y="0">r</tspan><tspan x="18.9" y="0">og</tspan><tspan class="cls-22" x="22.46" y="0">r</tspan><tspan x="23.9" y="0">ess - </tspan><tspan class="cls-21" x="31.16" y="0">F</tspan><tspan class="cls-23" x="33.32" y="0">r</tspan><tspan x="34.73" y="0">ame 3</tspan></text>
+  <line class="cls-5" x1="132.07" y1="20.64" x2="132.07" y2="115.73"/>
+  <text class="cls-14" transform="translate(134.68 43.22) rotate(90)"><tspan x="0" y="0">Diffusion P</tspan><tspan class="cls-22" x="17.47" y="0">r</tspan><tspan x="18.9" y="0">og</tspan><tspan class="cls-22" x="22.46" y="0">r</tspan><tspan x="23.9" y="0">ess - </tspan><tspan class="cls-21" x="31.16" y="0">F</tspan><tspan class="cls-23" x="33.32" y="0">r</tspan><tspan x="34.73" y="0">ame 4</tspan></text>
+  <use class="cls-20" transform="translate(13.64 15.29) scale(0)" xlink:href="#image"/>
+  <use class="cls-19" transform="translate(13.96 33.71) scale(0)" xlink:href="#image"/>
+  <use class="cls-18" transform="translate(13.96 52.88) scale(0)" xlink:href="#image"/>
+  <use transform="translate(14.18 72.28) scale(0)" xlink:href="#image"/>
+  <rect class="cls-9" x="65.73" y="56.07" width="50.57" height="6.5" rx=".87" ry=".87"/>
+  <text class="cls-1" transform="translate(75.67 60.76)"><tspan x="0" y="0">VIDEO MODEL</tspan></text>
+  <g>
+    <path class="cls-10" d="M37.02,52.13v.64c0,.31.25.55.55.55h32.46c.35,0,.64.29.64.64v1.41"/>
+    <polygon class="cls-2" points="70.67 56.07 70.28 55.1 70.67 55.33 71.07 55.1 70.67 56.07"/>
+  </g>
+  <g>
+    <path class="cls-10" d="M73.93,52.13v.58c0,.29.24.53.53.53h12.7c.29,0,.53.24.53.53v1.6"/>
+    <polygon class="cls-2" points="87.7 56.07 87.3 55.1 87.7 55.33 88.09 55.1 87.7 56.07"/>
+  </g>
+  <g>
+    <path class="cls-10" d="M145.2,52.13v.64c0,.31-.25.55-.55.55h-32.46c-.35,0-.64.29-.64.64v1.41"/>
+    <polygon class="cls-2" points="111.54 56.07 111.15 55.1 111.54 55.33 111.94 55.1 111.54 56.07"/>
+  </g>
+  <g>
+    <path class="cls-10" d="M108.28,52.13v.58c0,.29-.24.53-.53.53h-12.7c-.29,0-.53.24-.53.53v1.6"/>
+    <polygon class="cls-2" points="94.52 56.07 94.12 55.1 94.52 55.33 94.91 55.1 94.52 56.07"/>
+  </g>
+  <g>
+    <path class="cls-10" d="M145.11,65.82v-1.43c0-.31-.25-.56-.55-.56h-32.46c-.35,0-.64-.29-.64-.64v-.62"/>
+    <polygon class="cls-2" points="145.11 66.51 145.5 65.54 145.11 65.77 144.71 65.54 145.11 66.51"/>
+  </g>
+  <g>
+    <path class="cls-10" d="M108.19,65.82v-1.37c0-.29-.24-.53-.53-.53h-12.7c-.29,0-.53-.24-.53-.53v-.81"/>
+    <polygon class="cls-2" points="108.19 66.51 108.59 65.54 108.19 65.77 107.8 65.54 108.19 66.51"/>
+  </g>
+  <g>
+    <path class="cls-10" d="M36.92,65.82v-1.43c0-.31.25-.56.55-.56h32.46c.35,0,.64-.29.64-.64v-.62"/>
+    <polygon class="cls-2" points="36.92 66.51 37.32 65.54 36.92 65.77 36.53 65.54 36.92 66.51"/>
+  </g>
+  <g>
+    <path class="cls-10" d="M73.84,65.82v-1.37c0-.29.24-.53.53-.53h12.7c.29,0,.53-.24.53-.53v-.81"/>
+    <polygon class="cls-2" points="73.84 66.51 74.23 65.54 73.84 65.77 73.44 65.54 73.84 66.51"/>
+  </g>
+  <text class="cls-4" transform="translate(156.86 47.06)"><tspan x="0" y="0">A little fuzzy on </tspan><tspan x="0" y="3">details, but I think </tspan><tspan x="0" y="6">i can keep a </tspan><tspan x="0" y="9">central video </tspan><tspan x="0" y="12">model like this for </tspan><tspan x="0" y="15">everything, I think </tspan><tspan x="0" y="18">this will help </tspan><tspan x="0" y="21">make things really </tspan><tspan x="0" y="24">clear</tspan></text>
+  <text class="cls-3" transform="translate(77.18 10.73)"><tspan x="0" y="0">DIFFUSION FORCING</tspan></text>
+</svg>

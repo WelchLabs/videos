@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2 {
+        fill: #948678;
+      }
+
+      .cls-2, .cls-3 {
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-size: 4.2px;
+        font-weight: 700;
+      }
+
+      .cls-4 {
+        font-family: STIXTwoText-Italic, 'STIX Two Text';
+        font-size: 3.8px;
+        font-style: italic;
+        font-variation-settings: 'wght' 400;
+      }
+
+      .cls-4, .cls-3, .cls-5 {
+        fill: #f4ebd9;
+      }
+
+      .cls-6 {
+        stroke-width: .3px;
+      }
+
+      .cls-6, .cls-7 {
+        fill: none;
+        stroke: #f4ebd9;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-7 {
+        stroke-width: .2px;
+      }
+
+      .cls-8 {
+        letter-spacing: 0em;
+      }
+    </style>
+  </defs>
+  <g>
+    <polygon class="cls-1" points="0 108.1 .05 .15 192 .2 191.95 108.1 0 108.1"/>
+    <path d="M191.9.25v107.8H.1V.25h191.8M192,.15H0v108h192V.15h0Z"/>
+  </g>
+  <text class="cls-3" transform="translate(93.42 52.44)"><tspan x="0" y="0">LLM</tspan></text>
+  <rect class="cls-7" x="90.61" y="43.7" width="14.32" height="14.32" rx="1.17" ry="1.17"/>
+  <text class="cls-4" transform="translate(69.52 52.12)"><tspan x="0" y="0">The </tspan></text>
+  <g>
+    <line class="cls-6" x1="79.1" y1="50.86" x2="84.81" y2="50.86"/>
+    <polygon class="cls-5" points="86.93 50.86 83.94 52.08 84.65 50.86 83.94 49.64 86.93 50.86"/>
+  </g>
+  <text class="cls-4" transform="translate(118.69 51.73)"><tspan class="cls-8" x="0" y="0">c</tspan><tspan x="1.53" y="0">apital</tspan></text>
+  <g>
+    <line class="cls-6" x1="107.9" y1="50.86" x2="113.6" y2="50.86"/>
+    <polygon class="cls-5" points="115.72 50.86 112.74 52.08 113.44 50.86 112.74 49.64 115.72 50.86"/>
+  </g>
+  <text class="cls-2" transform="translate(63.47 75.86)"><tspan x="0" y="0">Move outputs over to input one at a time</tspan></text>
+  <text class="cls-2" transform="translate(65.24 9.98)"><tspan x="0" y="0">AUTOREGRESSIVE INFERENCE</tspan></text>
+</svg>

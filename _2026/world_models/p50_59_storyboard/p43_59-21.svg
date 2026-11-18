@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 192 108">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #031e1e;
+      }
+
+      .cls-2 {
+        fill: #fcc947;
+        font-size: 3.8px;
+      }
+
+      .cls-2, .cls-3, .cls-4 {
+        font-family: STIXTwoText-Italic, 'STIX Two Text';
+        font-style: italic;
+        font-variation-settings: 'wght' 400;
+      }
+
+      .cls-5 {
+        fill: #948678;
+        font-family: OpenSans-Bold, 'Open Sans';
+        font-size: 3.6px;
+        font-weight: 700;
+      }
+
+      .cls-6 {
+        stroke: #f4ebd9;
+      }
+
+      .cls-6, .cls-7, .cls-8 {
+        fill: none;
+        stroke-miterlimit: 10;
+        stroke-width: .2px;
+      }
+
+      .cls-7 {
+        stroke: #fcc947;
+      }
+
+      .cls-9 {
+        opacity: .5;
+      }
+
+      .cls-8 {
+        stroke: #948678;
+      }
+
+      .cls-10, .cls-3, .cls-4 {
+        fill: #f4ebd9;
+      }
+
+      .cls-11 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-12 {
+        letter-spacing: 0em;
+      }
+
+      .cls-13 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-3 {
+        font-size: 2.56px;
+      }
+
+      .cls-4 {
+        font-size: 2.77px;
+      }
+    </style>
+    <image id="image" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_31.Still004.jpg"/>
+    <image id="image-2" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_00_46.Still001.jpg"/>
+    <image id="image-3" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_22.Still003.jpg"/>
+    <image id="image-4" width="1920" height="1080" xlink:href="../tennis_ball_frames/tennis_ball.00_00_01_12.Still002.jpg"/>
+  </defs>
+  <g>
+    <polygon class="cls-1" points="-.18 107.95 -.13 0 192.18 .05 192.13 107.95 -.18 107.95"/>
+    <path d="M192.08.1v107.8H-.08V.1h192.17M192.18,0H-.18v108h192.37V0h0Z"/>
+  </g>
+  <g>
+    <line class="cls-6" x1="161.35" y1="53.22" x2="165.36" y2="53.22"/>
+    <polygon class="cls-10" points="166.77 53.22 164.78 54.03 165.25 53.22 164.78 52.4 166.77 53.22"/>
+  </g>
+  <use transform="translate(101.91 47.98) scale(0)" xlink:href="#image-2"/>
+  <use transform="translate(121.14 47.98) scale(0)" xlink:href="#image-4"/>
+  <use transform="translate(140.36 47.98) scale(0)" xlink:href="#image-3"/>
+  <use class="cls-9" transform="translate(169.03 48.04) scale(0)" xlink:href="#image"/>
+  <use class="cls-9" transform="translate(6.39 48.65) scale(.01)" xlink:href="#image-2"/>
+  <use class="cls-9" transform="translate(27.21 48.65) scale(.01)" xlink:href="#image-4"/>
+  <use class="cls-9" transform="translate(48.02 48.65) scale(.01)" xlink:href="#image-3"/>
+  <use class="cls-9" transform="translate(68.95 48.65) scale(.01)" xlink:href="#image"/>
+  <text class="cls-4" transform="translate(40.89 55.2)"><tspan x="0" y="0">Show denoising</tspan></text>
+  <text class="cls-3" transform="translate(170.65 54.18)"><tspan x="0" y="0">Show denoising</tspan></text>
+  <line class="cls-7" x1="107.72" y1="92.47" x2="107.72" y2="187.56"/>
+  <text class="cls-2" transform="translate(110.32 115.04) rotate(90)"><tspan x="0" y="0">Diffusion P</tspan><tspan class="cls-12" x="17.47" y="0">r</tspan><tspan x="18.9" y="0">og</tspan><tspan class="cls-12" x="22.46" y="0">r</tspan><tspan x="23.9" y="0">ess - </tspan><tspan class="cls-11" x="31.16" y="0">F</tspan><tspan class="cls-13" x="33.32" y="0">r</tspan><tspan x="34.73" y="0">ame 3</tspan></text>
+  <text class="cls-5" transform="translate(25.43 9.9)"><tspan x="0" y="0">BIDIRECTIONAL DIFFUSION</tspan></text>
+  <text class="cls-5" transform="translate(122.1 9.9)"><tspan x="0" y="0">TEACHER FORCING</tspan></text>
+  <line class="cls-8" x1="96" y1="7.49" x2="96" y2="103.99"/>
+  <text class="cls-5" transform="translate(119.9 69.17)"><tspan x="0" y="0">These coming in one at a time </tspan><tspan x="0" y="4.32">would be good</tspan></text>
+</svg>

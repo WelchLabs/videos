@@ -50,6 +50,21 @@ One growing file for the whole sequence; scenes get split out when it makes sens
     beat_row_highlight  a yellow line draws across the pattern at the query token's row, with its number (15,322)
     beat_patch_link     a yellow square marks that token's spacetime patch on its frame; a dashed two-headed
                         connector joins the row to the patch
+    beat_drop_query     the heatmap, patch square, connector and row line all fade
+    beat_swap_pattern   the attention pattern (and its LAYER / HEAD label) crossfades to another head
+    beat_query_with_heat  for that head's query token: row line + number, then the patch square and connector draw
+                        while its heatmap fades in over the frames (no flying dots this time)
+  P49   storyboards p43_59-08, -09: which blocks a causal model is allowed to use
+    beat_causal_mask    back on the first pattern, the blocks above the diagonal (a frame looking at a later frame) dim
+    beat_block_pair     one block and its two frames in one color: border round the block, borders + numbers on the
+                        frames (the rest dim), a dashed arrow from each frame to the block (row frame into its side,
+                        column frame into its top), and a heavy arrow from the frame being looked at to the frame doing
+                        the looking, with a label. (2, 9, RED, "NON CAUSAL") then (9, 2, GREEN, "CAUSAL")
+    beat_crossfade_block_pair  one quick crossfade from the current highlight to another (red -> green)
+    beat_clear_block_pair  that highlight fades and the frames come back; the dimmed blocks stay dimmed
+  P47
+    beat_title_highlight  after the query is dropped and a pause: the letters of BIDIRECTIONAL in the title pop and
+                        turn yellow one after another, hold, then return to the title color
     beat_row_to_heat    all 18,720 values in the row leave it as colored dots, in order, and fly to their own patch
                         on their own frame; when they land they are the heatmap, which then sits over the frames
 
@@ -92,6 +107,8 @@ RUN = Path(os.environ.get(
     "attn_runs/ball_drop_s252/p43_59_3"))
 
 FRESH_TAN = "#f4ebd9"       # line art, prompt, TRANSFORMER
+RED = "#d73b2f"             # NON CAUSAL highlights (storyboard -08)
+GREEN = "#419c52"           # CAUSAL highlights (storyboard -09)
 YELLOW = "#fcc947"          # block / frame highlights and their dashed arrows (storyboard -05)
 FRAME_NUM = "#063336"       # the big frame numbers set over the highlighted frames
 PINK = "#ed5e78"            # the highlighted attention-pattern icon + its bracket
@@ -559,6 +576,32 @@ class P43(InteractiveScene):
     heat_settle_time = 1.0      # dots hand over to the heatmap images
     heat_hold = 6.0
 
+    # P45, second head: swap the pattern, then row + patch + connector with the heatmap fading in
+    drop_query_time = 1.0       # heatmap, patch square, connector, row line + number fade
+    swap_pattern_time = 1.5     # pattern (and its label) crossfade to the next head
+    swap_pattern_hold = 1.5
+    query_heat_time = 3.0       # patch square + connector draw while the heatmap fades in
+    query_heat_hold = 6.0
+
+    # P47: clear the query, pause, flash BIDIRECTIONAL in the title
+    p47_pause = 2.0             # clean pattern + frames before the title lights up
+    title_hl_time = 1.2         # letters pop and turn yellow, left to right
+    title_hl_hold = 2.5         # ... stay yellow this long
+    title_restore_time = 0.8    # ... and go back to the title color
+    p47_end_hold = 4.0
+
+    # P49: causal masking (-08, -09)
+    causal_mask_time = 1.5      # the blocks above the diagonal dim
+    causal_mask_hold = 2.0
+    pair_block_time = 1.0       # border round the block
+    pair_frames_time = 1.2      # borders + numbers on its two frames, the other frames dim
+    pair_links_time = 2.5       # both dashed arrows, frames -> block
+    pair_arrow_time = 1.2       # the heavy arrow between the frames + its label
+    block_pair_hold = 4.0
+    pair_crossfade_time = 0.6   # NON CAUSAL highlight -> CAUSAL highlight
+    clear_pair_time = 1.0
+    p49_end_hold = 5.0
+
     # --- storyboard -01 geometry (192 x 108 units) ---------------------------------------------------------
     SLOT_L = (11.99, 41.03, 49.92, 28.80)       # x, y, w, h of the input video
     SLOT_R = (131.03, 41.03, 49.92, 28.80)      # ... and the output video
@@ -603,7 +646,20 @@ class P43(InteractiveScene):
     PATCH_COLOR = PINK                          # patch outlines, the highlighted patch, the SPACETIME PATCH title
     RULE_WIDTHS = (0.08, 0.25)                  # patch outline width (storyboard units) pulled back / zoomed in
     QUERY_NAME = "step_05_layer_09_head_26_any_07_f09_tok15322"     # <RUN>/p45_48/data/<QUERY_NAME>.npz
+    MASK_OPACITY = 0.75                         # how much the non-causal blocks are covered (0.75 -> they show at 25%)
+    PAIR_DIM = 0.5                              # opacity of the frames that aren't part of the highlighted pair
+    LINK_BOTTOM_Y = 99.0                        # where a row frame's arrow runs when it has to go round underneath
+    LABEL_PLATE = 0.85                          # opacity of the dark plate behind NON CAUSAL / CAUSAL (0 = none)
+    PAIR_BORDER = 0.8                           # border width round the highlighted block and its two frames
+    PAIR_STROKE = 0.4                           # the heavy arrow between the two frames
+    TITLE_WORD = 13                             # how many letters of the title light up (BIDIRECTIONAL)
+    TITLE_POP = 0.18                            # how much each letter swells as it lights up
+    ATTN_NAME_2 = "step_29_layer_03_head_02_max_f10_log"            # the second head's pattern ...
+    QUERY_NAME_2 = "step_29_layer_03_head_02_ball_f02_tok03564"     # ... and the query token shown on it
+    ATTN_NAME_3 = "step_05_layer_00_head_38_max_f10_log"            # the third head's pattern ...
+    QUERY_NAME_3 = "step_05_layer_00_head_38_ball_02_f04_tok06997"  # ... and its query token
     ROW_STROKE = 0.3                            # yellow row line / patch square / connector width
+    PATCH_BOX_STROKE = 0.65                      # ... and the weight of the yellow square round the query patch
     ROW_LINK_X = 95.0                           # the connector drops down between the pattern and the frames here
     PATCH_BOX = 1.5                             # side of the yellow square drawn round the query patch (the patch is 0.48)
     HEAT_CMAP, HEAT_ALPHA = "magma", 0.5        # the heatmap's colormap, and its opacity over the frames
@@ -683,6 +739,34 @@ class P43(InteractiveScene):
         self.wait(self.patch_link_hold)
         self.beat_row_to_heat()
         self.wait(self.heat_hold)
+        # P45, second head
+        self.beat_drop_query()
+        self.beat_swap_pattern(self.ATTN_NAME_2)
+        self.wait(self.swap_pattern_hold)
+        self.beat_query_with_heat(self.QUERY_NAME_2, heat_alpha=0.7)
+        self.wait(self.query_heat_hold)
+        # P45, third head
+        self.beat_drop_query()
+        self.beat_swap_pattern(self.ATTN_NAME_3)
+        self.wait(self.swap_pattern_hold)
+        self.beat_query_with_heat(self.QUERY_NAME_3, heat_alpha=0.6, scale="linear")
+        self.wait(self.query_heat_hold)
+        # P47
+        self.beat_drop_query()
+        self.wait(self.p47_pause)
+        self.beat_title_highlight()
+        self.wait(self.p47_end_hold)
+        # P49
+        self.beat_swap_pattern(self.ATTN_NAME)
+        self.wait(self.swap_pattern_hold)
+        self.beat_causal_mask()
+        self.wait(self.causal_mask_hold)
+        self.beat_block_pair(2, 9, RED, "NON CAUSAL")
+        self.wait(self.block_pair_hold)
+        self.beat_crossfade_block_pair(9, 2, GREEN, "CAUSAL")
+        self.wait(self.block_pair_hold)
+        self.beat_clear_block_pair()
+        self.wait(self.p49_end_hold)
 
     # ------------------------------------------------------------------------------------------- pieces
     def setup_scene(self):
@@ -1562,9 +1646,12 @@ class P43(InteractiveScene):
         self.links[kind] = VGroup(border, label, arrow)
 
     # ============================================================================================= P45 (-06, -07)
-    def load_query(self):
-        """The query token's attention row: weights [12, 30, 52] + where the token is."""
-        path = RUN / "p45_48" / "data" / f"{self.QUERY_NAME}.npz"
+    def load_query(self, name=None, scale=None):
+        """The query token's attention row: weights [12, 30, 52] + where the token is.
+        scale: how this row is colored ("log", "gamma" or "linear"; default HEAT_SCALE)."""
+        self.q_name = name or self.QUERY_NAME
+        self.heat_scale = scale or self.HEAT_SCALE
+        path = RUN / "p45_48" / "data" / f"{self.q_name}.npz"
         if not path.exists():
             raise FileNotFoundError(f"Attention row not found: {path}")
         d = np.load(path, allow_pickle=True)
@@ -1610,7 +1697,7 @@ class P43(InteractiveScene):
         px, py = self.q_patch
         half = self.PATCH_BOX / 2
         self.patch_box = place_rect(Rectangle(), px - half, py - half, 2 * half, 2 * half)
-        self.patch_box.set_stroke(YELLOW, self.ROW_STROKE * STROKE_PER_U).set_fill(opacity=0)
+        self.patch_box.set_stroke(YELLOW, self.PATCH_BOX_STROKE * STROKE_PER_U).set_fill(opacity=0)
         self.play(ShowCreation(self.patch_box), run_time=run_time or self.patch_hl_time)
 
         f = self.q_fhw[0]
@@ -1626,11 +1713,19 @@ class P43(InteractiveScene):
         self.play(FadeIn(self.row_link[1]), run_time=t * 0.1)
 
     def heat_strength(self):
-        """The row mapped to 0-1 [12, 30, 52] for coloring, by HEAT_SCALE."""
+        """The row mapped to 0-1 [12, 30, 52] for coloring, by the loaded query's scale (see load_query)."""
         w = self.q_row / self.q_row.max()
-        if self.HEAT_SCALE == "log":
+        scale = getattr(self, "heat_scale", self.HEAT_SCALE)
+        if scale == "log":
             return np.clip(np.log10(np.maximum(w, 1e-30)) / self.HEAT_DECADES + 1, 0, 1)
+        if scale == "linear":
+            return w
         return w ** self.HEAT_GAMMA
+
+    def heat_tag(self):
+        """Short name of the current color scale, for the cached heatmap files."""
+        scale = getattr(self, "heat_scale", self.HEAT_SCALE)
+        return {"log": f"log{self.HEAT_DECADES}", "linear": "lin"}.get(scale, f"g{self.HEAT_GAMMA}")
 
     def heat_colors(self):
         """RGB [12, 30, 52, 3] for the row."""
@@ -1704,7 +1799,7 @@ class P43(InteractiveScene):
         cache.mkdir(exist_ok=True)
         self.heat_images = Group()
         for f in range(nf):
-            tag = f"log{self.HEAT_DECADES}" if self.HEAT_SCALE == "log" else f"g{self.HEAT_GAMMA}"
+            tag = self.heat_tag()
             path = cache / f"heat_{self.QUERY_NAME}_{self.HEAT_CMAP}_{tag}_f{f:02d}.png"
             if not path.exists():
                 im = Image.fromarray((rgb[f] * 255).round().astype(np.uint8))
@@ -1728,3 +1823,284 @@ class P43(InteractiveScene):
             dots.set_rgba_array(rgba)
         self.play(UpdateFromAlphaFunc(dots, settle), run_time=settle_time or self.heat_settle_time)
         self.remove(dots)
+        self.heat_alpha_now = self.HEAT_ALPHA
+
+    # ------------------------------------------------------------------------------------------- P45: next head
+    def make_heat_images(self):
+        """One heatmap image per frame for the loaded query (see load_query), placed over the frames, invisible."""
+        nf, nr, nc = self.q_row.shape
+        rgb = self.heat_colors()
+        cache = HERE / "_p43_59_cache"
+        cache.mkdir(exist_ok=True)
+        tag = self.heat_tag()
+        images = Group()
+        for f in range(nf):
+            path = cache / f"heat_{self.q_name}_{self.HEAT_CMAP}_{tag}_f{f:02d}.png"
+            if not path.exists():
+                im = Image.fromarray((rgb[f] * 255).round().astype(np.uint8))
+                im.resize((nc * 16, nr * 16), Image.NEAREST).save(path)
+            img = ImageMobject(str(path))
+            try:
+                img.image.load()
+            except Exception:
+                pass
+            images.add(place_rect(img, *self.small_grid_slot(f)).set_opacity(0))
+        return images
+
+    def beat_drop_query(self, run_time=None):
+        """Fade everything belonging to the current query: heatmap, patch square, connector, row line and number."""
+        heat = getattr(self, "heat_images", None)
+        going = [getattr(self, n, None) for n in ("patch_box", "row_link", "row_line", "row_label")]
+        going = [m for m in going if m is not None and len(m.get_family()) > 0]
+        anims = [FadeOut(m) for m in going]
+        if heat is not None and len(heat):
+            now = getattr(self, "heat_alpha_now", self.HEAT_ALPHA)      # whatever opacity the heatmap went up at
+            anims.append(UpdateFromAlphaFunc(
+                heat, lambda m, a: [img.set_opacity(float(now * (1 - a))) for img in m]))
+        if anims:
+            self.play(*anims, run_time=run_time or self.drop_query_time)
+        for m in going:
+            self.remove(*m.get_family())
+        if heat is not None:
+            self.remove(*heat)
+            self.heat_images = Group()
+
+    def beat_swap_pattern(self, name, run_time=None):
+        """Crossfade the attention pattern to <RUN>/p44/attn/<name>.png, and its LAYER / HEAD label with it."""
+        path = RUN / "p44" / "attn" / f"{name}.png"
+        if not path.exists():
+            raise FileNotFoundError(f"Attention pattern not found: {path}")
+        old = self.pattern
+        new = ImageMobject(str(path))
+        try:
+            new.image.load()
+        except Exception:
+            pass
+        place_rect(new, *self.ATTN).set_opacity(0)
+        self.add(new)
+        anims = [UpdateFromAlphaFunc(new, lambda m, a: m.set_opacity(float(a)))]     # new one fades in over the old
+        old_label, new_label = getattr(self, "attn_label", None), None
+        if self.show_text:
+            ax, ay, aw, ah = self.ATTN
+            m = re.search(r"layer_(\d+)_head_(\d+)", name)
+            new_label = u_text(f"LAYER {int(m.group(1))} HEAD {int(m.group(2))}", 2.2, ax + aw / 2,
+                               self.ATTN_LABEL_Y, weight="SEMIBOLD", align="center", color=CHILL_BROWN)
+            anims.append(FadeIn(new_label))
+            if old_label is not None:
+                anims.append(FadeOut(old_label))
+        self.play(*anims, run_time=run_time or self.swap_pattern_time)
+        self.remove(old)
+        if old_label is not None:
+            self.remove(*old_label.get_family())
+        self.pattern = new
+        if new_label is not None:
+            self.attn_label = new_label
+
+    def beat_query_with_heat(self, name, run_time=None, link_time=None, heat_alpha=None, scale=None):
+        """Row line + number for query `name`, then its patch square and connector draw (as in beat_patch_link)
+        while its heatmap fades in over the frames. heat_alpha: this heatmap's opacity (default HEAT_ALPHA).
+        scale: this heatmap's color scale, "log", "gamma" or "linear" (default HEAT_SCALE)."""
+        self.heat_alpha_now = alpha = self.HEAT_ALPHA if heat_alpha is None else heat_alpha
+        self.load_query(name, scale)
+        ax, ay, aw, ah = self.ATTN
+        self.row_line = u_line((ax, self.q_y), (ax + aw, self.q_y), self.ROW_STROKE, YELLOW)
+        anims = [ShowCreation(self.row_line)]
+        self.row_label = VGroup()
+        if self.show_text:
+            self.row_label = u_text(f"{self.q_tok:,}", 3.2, ax - 1.6, self.q_y + 0.5 * 0.683 * 3.2, font=DIM_FONT,
+                                    align="right", color=YELLOW)
+            anims.append(Write(self.row_label))
+        self.play(*anims, run_time=run_time or self.row_hl_time)
+
+        px, py = self.q_patch
+        half = self.PATCH_BOX / 2
+        self.patch_box = place_rect(Rectangle(), px - half, py - half, 2 * half, 2 * half)
+        self.patch_box.set_stroke(YELLOW, self.PATCH_BOX_STROKE * STROKE_PER_U).set_fill(opacity=0)
+        f = self.q_fhw[0]
+        gx, gy, gw, gh = self.small_grid_slot(f)
+        last_row = f // 3 == len(self.GRID3_Y) - 1
+        under = gy + gh + (4.2 if last_row else (self.GRID3_Y[f // 3 + 1] - gy - gh) / 2)
+        route = [(ax + aw + 0.8, self.q_y), (self.ROW_LINK_X, self.q_y), (self.ROW_LINK_X, under), (px, under),
+                 (px, py + half + 0.9)]
+        self.row_link = self.dashed_arrow(route, stroke_u=self.ROW_STROKE, start_head=True)
+        box, (dashes, head, head0) = self.patch_box, self.row_link
+
+        self.heat_images = self.make_heat_images()
+        self.add(self.heat_images)              # under the square and the connector
+        t = link_time or self.query_heat_time
+        # one play, each piece confined to its own slice of it (and invisible until its slice starts)
+        self.play(
+            UpdateFromAlphaFunc(self.heat_images, lambda m, a: [img.set_opacity(float(alpha * a)) for img in m]),
+            ShowCreation(box, rate_func=squish_rate_func(smooth, 0, 0.25)),
+            FadeIn(head0, rate_func=squish_rate_func(smooth, 0, 0.25)),
+            ShowCreation(dashes, lag_ratio=1, rate_func=squish_rate_func(smooth, 0.25, 0.9)),
+            FadeIn(head, rate_func=squish_rate_func(smooth, 0.9, 1)),
+            run_time=t)
+
+    # ============================================================================================= P47
+    def beat_title_highlight(self, run_time=None, hold=None, restore_time=None):
+        """BIDIRECTIONAL in the title: each letter swells a little and turns yellow, running left to right; they
+        stay yellow for `hold`, then fade back to the title color."""
+        if not self.show_text:
+            return
+        letters = list(self.title[:self.TITLE_WORD])
+        base = [(g.get_points().copy(), g.get_center().copy()) for g in letters]
+
+        def pop(g, pts, c):
+            def f(m, a):
+                m.set_points(c + (pts - c) * (1 + self.TITLE_POP * there_and_back(a)))
+                m.set_fill(interpolate_color(CHILL_BROWN, YELLOW, smooth(a)), 1)
+            return UpdateFromAlphaFunc(g, f, rate_func=linear)
+
+        self.play(LaggedStart(*[pop(g, *b) for g, b in zip(letters, base)], lag_ratio=0.12),
+                  run_time=run_time or self.title_hl_time)
+        for g, (pts, c) in zip(letters, base):
+            g.set_points(pts)
+        self.wait(self.title_hl_hold if hold is None else hold)
+        self.play(*[UpdateFromAlphaFunc(g, lambda m, a: m.set_fill(interpolate_color(YELLOW, CHILL_BROWN, a), 1))
+                    for g in letters], run_time=restore_time or self.title_restore_time)
+
+    # ============================================================================================= P49 (-08, -09)
+    def beat_causal_mask(self, run_time=None):
+        """Dim every block above the diagonal: row frame earlier than column frame, i.e. looking at the future."""
+        ax, ay, aw, ah = self.ATTN
+        n = len(self.tiles)
+        c = aw / n
+        pts = [(ax + c, ay), (ax + aw, ay), (ax + aw, ay + (n - 1) * c)]
+        for r in range(n - 2, -1, -1):                      # back up the staircase along the diagonal
+            pts += [(ax + (r + 1) * c, ay + (r + 1) * c), (ax + (r + 1) * c, ay + r * c)]
+        self.causal_mask = Polygon(*[P(*q) for q in pts]).set_fill(self.bg, 0.0).set_stroke(width=0)
+        self.add(self.causal_mask)
+        self.play(self.causal_mask.animate.set_fill(self.bg, self.MASK_OPACITY),
+                  run_time=run_time or self.causal_mask_time)
+
+    def make_block_pair(self, row_frame, col_frame, color, label):
+        """Everything for one block + its two frames, in `color` (nothing is added to the scene).
+        -> dict: block, borders, numbers, links (two dashed arrows), arrow (shaft, head), text, group, others."""
+        ax, ay, aw, ah = self.ATTN
+        n = len(self.tiles)
+        c = aw / n
+        bx, by = ax + (col_frame - 1) * c, ay + (row_frame - 1) * c
+        gap, w = 1.2, self.PAIR_BORDER * STROKE_PER_U
+
+        block = place_rect(Rectangle(), bx, by, c, c).set_stroke(color, w).set_fill(opacity=0)
+        slots = {f: self.small_grid_slot(f - 1) for f in (row_frame, col_frame)}
+        borders = VGroup(*[place_rect(Rectangle(), *slots[f]).set_stroke(color, w).set_fill(opacity=0)
+                           for f in (row_frame, col_frame)])
+        numbers = VGroup()
+        if self.show_text:
+            numbers = VGroup(*[u_text(str(f), 4.8, slots[f][0] + slots[f][2] / 2,
+                                      slots[f][1] + slots[f][3] / 2 + 0.5 * 0.714 * 4.8, bold=True, align="center",
+                                      color=FRAME_NUM) for f in (row_frame, col_frame)])
+
+        # dashed arrows, frame -> block: the row frame comes in from the side, the column frame from the top
+        fx, fy, fw, fh = slots[row_frame]
+        cy = by + c / 2
+        if (row_frame - 1) // 3 == 0:       # top row of the grid: up and over, down between pattern and frames
+            row_route = [(fx + fw / 2, fy - gap), (fx + fw / 2, self.LINK_OVER_Y), (self.LINK_MID_X, self.LINK_OVER_Y),
+                         (self.LINK_MID_X, cy), (bx + c + gap, cy)]
+        else:                               # otherwise out the right side, round underneath, back up
+            row_route = [(fx + fw + gap, fy + fh / 2), (self.LINK_SIDE_X, fy + fh / 2),
+                         (self.LINK_SIDE_X, self.LINK_BOTTOM_Y), (self.LINK_MID_X, self.LINK_BOTTOM_Y),
+                         (self.LINK_MID_X, cy), (bx + c + gap, cy)]
+        fx, fy, fw, fh = slots[col_frame]
+        cx = bx + c / 2
+        if (col_frame - 1) // 3 == 0:       # top row: straight up, across above the pattern, down into the block
+            col_route = [(fx + fw / 2, fy - gap), (fx + fw / 2, self.LINK_TOP_Y), (cx, self.LINK_TOP_Y), (cx, by - gap)]
+        else:
+            col_route = [(fx + fw + gap, fy + fh / 2), (self.LINK_SIDE_X, fy + fh / 2),
+                         (self.LINK_SIDE_X, self.LINK_TOP_Y), (cx, self.LINK_TOP_Y), (cx, by - gap)]
+        links = [self.dashed_arrow(r, color=color) for r in (row_route, col_route)]
+
+        # heavy arrow from the frame being looked at (column) to the frame doing the looking (row), and the label
+        def edge_point(slot, toward):       # where the line from this frame's center toward `toward` leaves the frame
+            x, y, sw, sh = slot
+            ctr = np.array([x + sw / 2, y + sh / 2])
+            d = np.array(toward) - ctr
+            k = min((sw / 2) / abs(d[0]) if d[0] else np.inf, (sh / 2) / abs(d[1]) if d[1] else np.inf)
+            return ctr + d * k, d / np.linalg.norm(d)
+        c_row = (slots[row_frame][0] + slots[row_frame][2] / 2, slots[row_frame][1] + slots[row_frame][3] / 2)
+        c_col = (slots[col_frame][0] + slots[col_frame][2] / 2, slots[col_frame][1] + slots[col_frame][3] / 2)
+        (a0, u), (b0, _) = edge_point(slots[col_frame], c_row), edge_point(slots[row_frame], c_col)
+        tail, tip = a0 + 2.0 * u, b0 - 2.0 * u
+        nrm = np.array([-u[1], u[0]])
+        k = 2.2                              # head size relative to the small connector heads
+        shaft = u_line(tail, tip - 1.52 * k * u, self.PAIR_STROKE, color)
+        head = Polygon(P(*tip), P(*(tip - 1.99 * k * u + 0.815 * k * nrm)), P(*(tip - 1.52 * k * u)),
+                       P(*(tip - 1.99 * k * u - 0.815 * k * nrm))).set_fill(color, 1).set_stroke(color, 0)
+        text = VGroup()
+        if self.show_text and label:
+            mid = (tail + tip) / 2
+            word = u_text(label, 3.6, mid[0] + 2.6, mid[1] + 1.3, bold=True, color=color)
+            plate = RoundedRectangle(width=word.get_width() + 1.6 * U, height=word.get_height() + 1.6 * U,
+                                     corner_radius=0.5 * U).move_to(word)
+            plate.set_fill(self.bg, self.LABEL_PLATE).set_stroke(width=0)      # so it reads over the frame behind it
+            text = VGroup(plate, word)
+        arrow = VGroup(shaft, head)
+        return dict(block=block, borders=borders, numbers=numbers, links=links, arrow=arrow, text=text,
+                    group=VGroup(block, borders, numbers, *links, arrow, text),
+                    others=[t for i, t in enumerate(self.tiles) if i + 1 not in (row_frame, col_frame)])
+
+    def beat_block_pair(self, row_frame, col_frame, color, label, run_time=None):
+        """Highlight the block in row `row_frame`, column `col_frame` (1-based) with its two frames, all in `color`,
+        drawing it in piece by piece.
+
+        The row frame is the one doing the looking, the column frame the one being looked at, so the heavy arrow
+        runs from the column frame to the row frame. run_time: total for the whole build (default: the pair_* times).
+        """
+        d = self.make_block_pair(row_frame, col_frame, color, label)
+        parts = [self.pair_block_time, self.pair_frames_time, self.pair_links_time, self.pair_arrow_time]
+        if run_time:
+            parts = [p * run_time / sum(parts) for p in parts]
+
+        self.play(ShowCreation(d["block"]), run_time=parts[0])
+        anims = [ShowCreation(d["borders"], lag_ratio=0.3),
+                 UpdateFromAlphaFunc(Group(*d["others"]),
+                                     lambda m, a: [t.set_opacity(float(interpolate(1.0, self.PAIR_DIM, a))) for t in m])]
+        if len(d["numbers"]):
+            anims.append(Write(d["numbers"]))
+        self.play(*anims, run_time=parts[1])
+        self.bring_to_front(d["borders"], d["numbers"])
+        links = d["links"]
+        self.play(*[ShowCreation(l[0], lag_ratio=1, rate_func=squish_rate_func(smooth, 0, 0.9)) for l in links],
+                  *[FadeIn(l[1], rate_func=squish_rate_func(smooth, 0.9, 1)) for l in links],
+                  run_time=parts[2])
+        shaft, head = d["arrow"]
+        anims = [ShowCreation(shaft, rate_func=squish_rate_func(smooth, 0, 0.7)),
+                 FadeIn(head, rate_func=squish_rate_func(smooth, 0.6, 1))]
+        if len(d["text"]):
+            anims += [FadeIn(d["text"][0]), Write(d["text"][1])]
+        self.play(*anims, run_time=parts[3])
+        self.block_pair, self.pair_dimmed = d["group"], d["others"]
+
+    def beat_crossfade_block_pair(self, row_frame, col_frame, color, label, run_time=None):
+        """Swap the current block / frame highlight for another one in a single quick crossfade (nothing is drawn
+        in). Frames that are in one pair but not the other fade to / from their dimmed level along the way."""
+        old, old_others = getattr(self, "block_pair", None), getattr(self, "pair_dimmed", [])
+        d = self.make_block_pair(row_frame, col_frame, color, label)
+        dim = lambda t, group: self.PAIR_DIM if any(t is o for o in group) else 1.0
+        levels = [(t, dim(t, old_others) if old is not None else 1.0, dim(t, d["others"])) for t in self.tiles]
+        # (the frames' animation goes first: play() re-adds what it animates in order, and the highlights must end
+        #  up above the frames)
+        anims = [UpdateFromAlphaFunc(Group(*self.tiles),
+                                     lambda m, a: [t.set_opacity(float(interpolate(o0, o1, a))) for t, o0, o1 in levels])]
+        if old is not None:
+            anims.append(FadeOut(old))
+        anims.append(FadeIn(d["group"]))
+        self.play(*anims, run_time=run_time or self.pair_crossfade_time)
+        if old is not None:
+            self.remove(*old.get_family())
+        self.bring_to_front(d["group"])
+        self.block_pair, self.pair_dimmed = d["group"], d["others"]
+
+    def beat_clear_block_pair(self, run_time=None):
+        """Fade the current block / frame highlight and bring the other frames back up. The causal mask stays."""
+        pair, others = getattr(self, "block_pair", None), getattr(self, "pair_dimmed", [])
+        if pair is None:
+            return
+        self.play(FadeOut(pair),
+                  UpdateFromAlphaFunc(Group(*others), lambda m, a: [t.set_opacity(float(interpolate(self.PAIR_DIM, 1.0, a)))
+                                                                    for t in m]),
+                  run_time=run_time or self.clear_pair_time)
+        self.remove(*pair.get_family())
+        self.block_pair, self.pair_dimmed = None, []
