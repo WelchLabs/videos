@@ -1833,7 +1833,7 @@ class P53(InteractiveScene):
 
 
 # ============================================================================= P56-58
-class P56_58(InteractiveScene):
+class P56_58b(InteractiveScene):
     # --- toggles -------------------------------------------------------------------------------------------
     show_text = True            # titles as manim Text. False: add them in post
     left_sync = True            # left side's single pass is stretched so both sides finish together
@@ -2029,7 +2029,7 @@ class P56_58(InteractiveScene):
                 self.wait(self.solo_wheel_hold)
         self.wait(self.teacher_end_hold)
         # diffusion forcing: every wheel on its own
-        self.beat_diffusion_forcing([2, 0, 1, None])
+        self.beat_diffusion_forcing([0, 2, 1, 0])
         self.wait(self.df_first_hold)
         self.beat_slot_spins()
         self.wait(self.df_end_hold)
